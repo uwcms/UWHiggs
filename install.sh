@@ -19,7 +19,7 @@ fi
 
 echo "Checking out FSA dependencies"
 pushd FinalStateAnalysis/recipe
-LIMIT=1 PATPROD=0 ./recipe.sh
+LIMITS=1 PATPROD=0 ./recipe.sh
 
 echo "Installing python tools"
 ./install_python.sh
