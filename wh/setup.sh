@@ -7,6 +7,8 @@ export datasrc=/scratch/efriis/data/
 export jobid=$jobid7
 export afile=`find $datasrc/$jobid | grep root | head -n 1`
 
+echo "Building cython wrappers from file: $afile"
+
 rake "make_wrapper[$afile, eet/final/Ntuple, EETauTree]"
 rake "make_wrapper[$afile, emt/final/Ntuple, EMuTauTree]"
 rake "make_wrapper[$afile, mmt/final/Ntuple, MuMuTauTree]"
