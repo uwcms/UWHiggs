@@ -21,6 +21,9 @@ echo "Checking out FSA dependencies"
 pushd FinalStateAnalysis/recipe
 LIMITS=1 PATPROD=0 ./recipe.sh
 
+echo "Manually creating FinalStateAnalysis python symlinks"
+./symlink_python.sh
+
 echo "Installing python tools"
 ./install_python.sh
 
