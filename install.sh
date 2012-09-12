@@ -13,7 +13,7 @@ set -o nounset
 echo "Symlinking FinalStateAnalysis into working area"
 
 pushd $CMSSW_BASE/src
-if ! [ -L FinalStateAnalysis]; then
+if ! [ -L FinalStateAnalysis ]; then
   ln -s UWHiggs/dependencies/FinalStateAnalysis FinalStateAnalysis
 fi
 
