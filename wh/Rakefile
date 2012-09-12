@@ -1,5 +1,5 @@
 # Get common recipes
-recipes = ENV['fsa'] + '/PlotTools/rake/recipes.rake'
+recipes = ENV['CMSSW_BASE'] + '/src/FinalStateAnalysis/PlotTools/rake/recipes.rake'
 import recipes
 
 $jobid = ENV['jobid']
