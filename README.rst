@@ -20,3 +20,16 @@ extra dependencies::
    cd UWHiggs
    ./install.sh
    scram b -j 8
+
+
+Quick Start
+-----------
+
+To run the WH analysis::
+   
+   source FinalStateAnalysis/environment.sh
+   cd UWHiggs/wh
+   ./setup.sh # run once
+   ./run.sh  # run anytime analyzers are changed
+   ./plot.sh # plot results
+
