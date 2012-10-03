@@ -18,24 +18,24 @@ import ROOT
 ################################################################################
 
 # Get fitted fake rate functions
-#frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
-#highpt_mu_fr = build_roofunctor(
-    #frfit_dir + '/m_wjets_pt20_pfidiso02_muonJetPt.root',
-    #'fit_efficiency', # workspace name
-    #'efficiency'
-#)
-#lowpt_mu_fr = build_roofunctor(
-    #frfit_dir + '/m_wjets_pt10_pfidiso02_muonJetPt.root',
-    #'fit_efficiency', # workspace name
-    #'efficiency'
-#)
+frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
+highpt_mu_fr = build_roofunctor(
+    frfit_dir + '/m_wjets_pt20_pfidiso02_muonJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+lowpt_mu_fr = build_roofunctor(
+    frfit_dir + '/m_wjets_pt10_pfidiso02_muonJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
 
 
-#tau_fr = build_roofunctor(
-    #frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
-    #'fit_efficiency', # workspace name
-    #'efficiency'
-#)
+tau_fr = build_roofunctor(
+    frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
 
 ################################################################################
 #### MC-DATA and PU corrections ################################################
@@ -103,7 +103,7 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
     def __init__(self, tree, outfile, **kwargs):
         super(WHAnalyzeMMT, self).__init__(tree, outfile, MuMuTauTree, **kwargs)
         # Hack to use S6 weights for the one 7TeV sample we use in 8TeV
-        target = os.environ.get('megatarget', '')
+        target = os.environ['megatarget']
         if 'HWW3l' in target:
             print "HACK using S6 PU weights for HWW3l"
             global pu_corrector
@@ -118,15 +118,11 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         self.book(folder, "m1Pt", "Muon 1 Pt", 100, 0, 100)
         self.book(folder, "m1JetPt", "Muon 1 Jet Pt", 100, 0, 200)
         self.book(folder, "m2Pt", "Muon 2 Pt", 100, 0, 100)
-        self.book(folder, "m1OverM2Pt", "Muon 1/2 Pt", 100, 0, 10)
         self.book(folder, "m2JetPt", "Muon 2 Jet Pt", 100, 0, 200)
         self.book(folder, "m1AbsEta", "Muon 1 AbsEta", 100, 0, 2.4)
         self.book(folder, "m2AbsEta", "Muon 2 AbsEta", 100, 0, 2.4)
         self.book(folder, "m1m2Mass", "Muon 1-2 Mass", 120, 0, 120)
         self.book(folder, "subMass", "subleadingMass", 200, 0, 200)
-        self.book(folder, "subMassVsM2JetPt", "subleadingMass vs M2 JetPt", 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
-        self.book(folder, "subMassVsM2Pt", "subleadingMass vs M2 Pt", 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
-        self.book(folder, "drPairs", "subleadingMass vs M2 Pt", 10, 0, 5, 10, 0, 5, type=ROOT.TH2F)
         self.book(folder, "leadMass", "leadingMass", 200, 0, 200)
         # Rank muons by less MT to MET, for WZ control region
         self.book(folder, "subMTMass", "subMTMass", 200, 0, 200)
@@ -134,14 +130,11 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
         self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
         self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
-        self.book(folder, "mass", "mass", 100, 0, 300)
-        self.book(folder, "LT", "LT", 100, 0, 300)
 
     def fill_histos(self, histos, folder, row, weight):
         histos['/'.join(folder + ('nTruePU',))].Fill(row.nTruePU)
-        def fill(name, *values):
-            values = values + (weight,)
-            histos['/'.join(folder + (name,))].Fill(*values)
+        def fill(name, value):
+            histos['/'.join(folder + (name,))].Fill(value, weight)
         histos['/'.join(folder + ('weight',))].Fill(weight)
 
         fill('prescale', row.doubleMuPrescale)
@@ -149,22 +142,16 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         fill('nvtx', row.nvtx)
         fill('m1Pt', row.m1Pt)
         fill('m2Pt', row.m2Pt)
-        fill('m1OverM2Pt', row.m1Pt/row.m2Pt)
         fill('m1JetPt', row.m1JetPt)
         fill('m2JetPt', row.m2JetPt)
         fill('m1AbsEta', row.m1AbsEta)
         fill('m2AbsEta', row.m2AbsEta)
         fill('m1m2Mass', row.m1_m2_Mass)
         fill('subMass', row.m2_t_Mass)
-        fill('subMassVsM2JetPt', row.m2_t_Mass, row.m2JetPt)
-        fill('subMassVsM2Pt', row.m2_t_Mass, row.m2Pt)
         fill('leadMass', row.m1_t_Mass)
         fill('m2Iso', row.m2RelPFIsoDB)
         fill('tPt', row.tPt)
         fill('tAbsEta', row.tAbsEta)
-        fill('mass', row.Mass)
-        fill('drPairs', row.m2_t_DR, row.m1_t_DR)
-        fill('LT', row.LT)
         if row.m1MtToMET > row.m2MtToMET:
             fill('subMTMass', row.m2_t_Mass)
         else:
@@ -201,8 +188,8 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
 
         if row.m1_m2_Mass < 20:
             return False
-        #if row.LT < 80:
-            #return False
+        if row.LT < 80:
+            return False
 
         if row.muVetoPt5:
             return False
@@ -290,18 +277,15 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         return mc_corrector(row)
 
     def obj1_weight(self, row):
-        return 0.01
-        #return highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
+        return highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
         #return highpt_mu_fr(row.m1Pt)
 
     def obj2_weight(self, row):
-        return 0.01
-        #return lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
+        return lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
         #return lowpt_mu_fr(row.m2Pt)
 
     def obj3_weight(self, row):
-        return 0.01
-        #return tau_fr(row.tPt)
+        return tau_fr(row.tPt)
 
     # For measuring charge flip probability
     # Not really used in this channel
