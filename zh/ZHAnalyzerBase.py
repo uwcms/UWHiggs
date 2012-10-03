@@ -23,6 +23,7 @@ control.  The subclasses must define the following functions:
 '''
 
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
+#import pprint
 
 class ZHAnalyzerBase(MegaBase):
     def __init__(self, tree, outfile, wrapper, channel, **kwargs):
@@ -50,7 +51,7 @@ class ZHAnalyzerBase(MegaBase):
         flag_map = {}
         for sign in ['ss', 'os']:
             for failing_objs in [(), (1,2), (1,), (2,),]:
-                region_label = '_'.join(['%sIsoFailed' % channel[obj-1] for obj in failing_objs]) if len(failing_objs) else 'All_Passed'
+                region_label = '_'.join(['%sIsoFailed' % self.H_decay_products()[obj-1] for obj in failing_objs]) if len(failing_objs) else 'All_Passed'
                 weightsAvail = [None, self.obj1_weight, self.obj2_weight]
                 flag_map[(sign,region_label)] = {
                     'selection' : {
@@ -60,6 +61,7 @@ class ZHAnalyzerBase(MegaBase):
                         },
                     'weights'   : [weightsAvail[i] for i in failing_objs], 
                     }
+        #print flag_map.keys()
         return flag_map
 
     def begin(self):
@@ -143,6 +145,19 @@ class ZHAnalyzerBase(MegaBase):
         for pos, obj1 in enumerate(args):
             for obj2 in args[pos+1:]:
                 self.book(folder, "%s_%s_Mass" % (obj1, obj2), "%s %s - %s %s Mass" % (get_name(obj1) + get_name(obj2) ), 150, 0, 150)
+
+    def book_resonance_histos(self, folder, products, name):
+        self.book(folder, "%s_%s_Pt"     % products, "%s candidate Pt"              % name, 100, 0, 100)
+        #self.book(folder, "%s_%s_AbsEta" % products, "%s candidate AbsEta"          % name, 100, 0, 2.4)
+        self.book(folder, "%s_%s_Mass"   % products, "%s candidate Mass"            % name, 150, 0, 150)
+        self.book(folder, "%s_%s_DR"     % products, "%s decay products #DeltaR"    % name, 100, 0, 100)
+        self.book(folder, "%s_%s_DPhi"   % products, "%s decay products #Delta#phi" % name, 100, 0, 100)
+
+    def book_Z_histos(self, folder):
+        self.book_resonance_histos(folder, self.Z_decay_products(), 'Z')
+
+    def book_H_histos(self, folder):
+        self.book_resonance_histos(folder, self.H_decay_products(), 'H')
             
     def fill_histos(self, histos, folder, row, weight):
         '''fills histograms'''

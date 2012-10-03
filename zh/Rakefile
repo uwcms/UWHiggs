@@ -245,6 +245,7 @@ analyzer_dependencies = Hash[
   "ZHAnalyzeMMET.py" => Array["baseSelections.py", "mcCorrectors.py", "ZHAnalyzerBase.py", "fake_rate_functions.py"],
   "ZHAnalyzeEEET.py" => Array["baseSelections.py", "mcCorrectors.py", "ZHAnalyzerBase.py", "fake_rate_functions.py"],
   "ZHAnalyzeMMEM.py" => Array["baseSelections.py", "mcCorrectors.py", "ZHAnalyzerBase.py", "fake_rate_functions.py"],
+  "ZHAnalyzeEEEM.py" => Array["baseSelections.py", "mcCorrectors.py", "ZHAnalyzerBase.py", "fake_rate_functions.py"],
   "ZHAnalyzeMMTT.py" => Array["baseSelections.py", "mcCorrectors.py", "ZHAnalyzerBase.py", "fake_rate_functions.py"],
   "ZHAnalyzeEETT.py" => Array["baseSelections.py", "mcCorrectors.py", "ZHAnalyzerBase.py", "fake_rate_functions.py"],
 ]
@@ -260,40 +261,50 @@ analyzer_dependencies.each do |analyzer, deps|
 end
 
 task :mmmt => get_analyzer_results("ZHAnalyzeMMMT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
-task :eemt => get_analyzer_results("ZHAnalyzeEEMT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
+task :eemt => get_analyzer_results("ZHAnalyzeEEMT.py", samples['ewk'] + samples['data_ee'] + samples['signal'])
 task :mmet => get_analyzer_results("ZHAnalyzeMMET.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
-task :eeet => get_analyzer_results("ZHAnalyzeEEET.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
+task :eeet => get_analyzer_results("ZHAnalyzeEEET.py", samples['ewk'] + samples['data_ee'] + samples['signal'])
           
 task :mmem => get_analyzer_results("ZHAnalyzeMMEM.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
-task :eeem => get_analyzer_results("ZHAnalyzeEEEM.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
+task :eeem => get_analyzer_results("ZHAnalyzeEEEM.py", samples['ewk'] + samples['data_ee'] + samples['signal'])
 task :mmtt => get_analyzer_results("ZHAnalyzeMMTT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
-task :eett => get_analyzer_results("ZHAnalyzeEETT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
+task :eett => get_analyzer_results("ZHAnalyzeEETT.py", samples['ewk'] + samples['data_ee'] + samples['signal'])
 
 #A Task to dominate all...
-task :analyze => [ :mmmt, :eemt, :mmet, :eeet, :mmem, :eeem, :mmtt, :eett] do
+task :analyzezh => [ :mmmt, :eemt, :mmet, :eeet, :mmem, :eeem, :mmtt, :eett] do
+  puts "called analyzezh task from local rakefile"
 end
 
-# 
-# ################################################################################
-# # Recipes to make data cards (plots come for free)
-# #  targets:
-# #      mmt_shapes
-# #      emt_shapes
-# #      eet_shapes
-# #      cards
-# #      copycards -> move cards to official HTT CVS area
-# ################################################################################
-# 
-# 
-# # Output directories
-# $mmtdir = "results/#{$jobid}/plots/mmt/"
-# $emtdir = "results/#{$jobid}/plots/emt/"
-# $eetdir = "results/#{$jobid}/plots/eet/"
-# 
-# directory $mmtdir
-# directory $eetdir
-# directory $emtdir
-# 
+
+################################################################################
+# Recipes to make data cards (plots come for free)
+#  targets:
+#      mmt_shapes
+#      emt_shapes
+#      eet_shapes
+#      cards
+#      copycards -> move cards to official HTT CVS area
+################################################################################
+
+
+# Output directories
+channels = [ "mmmt", "eemt", "mmet", "eeet", "mmem", "eeem", "mmtt", "eett"]
+chToRun  = ["python","ZHPlotterBase.py"]
+outFiles = Array.new
+channels.each do |channel|
+  $plotdir = "results/#{$jobid}/plots/#{channel}/"
+  directory $plotdir
+  outf = "#{$plotdir}/mmt_shapes_#{$period}.root"
+  outFiles << outf
+  file outf => ['ZHPlotterBase.py'] do |t|
+    chToRun << channel.upcase 
+  end
+end
+
+task :plots => outFiles do |t|
+  sh chToRun.join(" ")
+end
+
 # # Recipes for adding stat. error shapes.  Makes a new file task:
 # # input_file_stat_errors.root => input_file.root
 # def add_fake_errors(input_file, prefix)
@@ -304,24 +315,11 @@ end
 #   end
 # end
 # 
-# # The .root files with the shapes
-# file "#{$mmtdir}/mmt_shapes_#{$period}.root" => ['WHPlotterMMT.py', 'WHPlotterBase.py'] do |t|
-#   sh "python WHPlotterMMT.py"
-# end
+# The .root files with the shapes
 # add_fake_errors("#{$mmtdir}/mmt_shapes_#{$period}.root", "mmt")
 # task :mmt_shapes => ["#{$mmtdir}/mmt_shapes_#{$period}_statshapes.root" ]
 # 
-# file "#{$emtdir}/emt_shapes_#{$period}.root" => ['WHPlotterEMT.py', 'WHPlotterBase.py'] do |t|
-#   sh "python WHPlotterEMT.py"
-# end
-# add_fake_errors("#{$emtdir}/emt_shapes_#{$period}.root", "emt")
-# task :emt_shapes => ["#{$emtdir}/emt_shapes_#{$period}_statshapes.root" ]
 # 
-# file "#{$eetdir}/eet_shapes_#{$period}.root" => ['WHPlotterEET.py', 'WHPlotterBase.py'] do |t|
-#   sh "python WHPlotterEET.py"
-# end
-# add_fake_errors("#{$eetdir}/eet_shapes_#{$period}.root", "eet")
-# task :eet_shapes => ["#{$eetdir}/eet_shapes_#{$period}_statshapes.root" ]
 # 
 # $carddir = "vhtt_lep_cards_#{$period}"
 # 

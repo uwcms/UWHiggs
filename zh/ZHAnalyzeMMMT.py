@@ -32,14 +32,22 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
 
 ##     def get_channel(self):
 ##         return 'MT'
+    @staticmethod
+    def Z_decay_products():
+        return ('m1','m2')
+
+    @staticmethod
+    def H_decay_products():
+        return ('m3','t')
 
     def book_histos(self, folder):
-        super(ZHAnalyzeMMMT, self).book_general_histos(folder)
-        super(ZHAnalyzeMMMT, self).book_kin_histos(folder, 'm1')
-        super(ZHAnalyzeMMMT, self).book_kin_histos(folder, 'm2')
-        super(ZHAnalyzeMMMT, self).book_kin_histos(folder, 'm3')
-        super(ZHAnalyzeMMMT, self).book_kin_histos(folder, 't')
-        super(ZHAnalyzeMMMT, self).book_mass_histos(folder, 'm1','m2','m3','t')
+        self.book_general_histos(folder)
+        self.book_kin_histos(folder, 'm1')
+        self.book_kin_histos(folder, 'm2')
+        self.book_kin_histos(folder, 'm3')
+        self.book_kin_histos(folder, 't')
+        self.book_Z_histos(folder)
+        self.book_H_histos(folder)
         self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
 
     def probe1_id(self, row):

@@ -29,14 +29,21 @@ class ZHAnalyzeMMTT(ZHAnalyzerBase.ZHAnalyzerBase):
             print "HACK using S6 PU weights for HWW3l"
             mcCorrectors.force_pu_distribution('S6')
 
+    def Z_decay_products(self):
+        return ('m1','m2')
+
+    def H_decay_products(self):
+        return ('t1','t2')
+
     def book_histos(self, folder):
-        super(ZHAnalyzeMMTT, self).book_general_histos(folder)
-        super(ZHAnalyzeMMTT, self).book_kin_histos(folder, 'm1')
-        super(ZHAnalyzeMMTT, self).book_kin_histos(folder, 'm2')
-        super(ZHAnalyzeMMTT, self).book_kin_histos(folder, 't1')
-        super(ZHAnalyzeMMTT, self).book_kin_histos(folder, 't2')
-        super(ZHAnalyzeMMTT, self).book_mass_histos(folder, 'm1','m2','t1','t2')
+        self.book_general_histos(folder)
+        self.book_kin_histos(folder, 'm1')
+        self.book_kin_histos(folder, 'm2')
+        self.book_kin_histos(folder, 't1')
+        self.book_kin_histos(folder, 't2')
         self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
+        self.book_Z_histos(folder)
+        self.book_H_histos(folder)
 
     def probe1_id(self, row):
         return bool(row.t1MediumIso) ##THIS SEEMS too low
