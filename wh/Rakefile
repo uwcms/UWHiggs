@@ -72,7 +72,6 @@ task :fakerates => []
 
 # Create tasks for each sample + analyzer
 fr_analyzer_sample_map.each do |analyzer, the_samples|
-  puts "Creating tasks for analyzer: #{analyzer}"
   get_analyzer_results(analyzer, the_samples).each do |result|
     task :fakerates => result
   end
