@@ -30,13 +30,20 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
             print "HACK using S6 PU weights for HWW3l"
             mcCorrectors.force_pu_distribution('S6')
 
+    def Z_decay_products(self):
+        return ('e1','e2')
+
+    def H_decay_products(self):
+        return ('e3','t')
+
     def book_histos(self, folder):
-        super(ZHAnalyzeEEET, self).book_general_histos(folder)
-        super(ZHAnalyzeEEET, self).book_kin_histos(folder, 'e1')
-        super(ZHAnalyzeEEET, self).book_kin_histos(folder, 'e2')
-        super(ZHAnalyzeEEET, self).book_kin_histos(folder, 'm')
-        super(ZHAnalyzeEEET, self).book_kin_histos(folder, 't')
-        super(ZHAnalyzeEEET, self).book_mass_histos(folder, 'e1','e2','m','t')
+        self.book_general_histos(folder)
+        self.book_kin_histos(folder, 'e1')
+        self.book_kin_histos(folder, 'e2')
+        self.book_kin_histos(folder, 'm')
+        self.book_kin_histos(folder, 't')
+        self.book_Z_histos(folder)
+        self.book_H_histos(folder)
 
     def probe1_id(self, row):
         return bool(row.eRelPFIsoDB < 0.10) ##THIS SEEMS too low
