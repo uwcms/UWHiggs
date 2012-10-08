@@ -27,7 +27,7 @@ print "Is 7TeV:", is7TeV
 pu_distributions = glob.glob(os.path.join(
     'inputs', os.environ['jobid'], 'data_DoubleMu*pu.root'))
 pu_corrector = PileupWeight.PileupWeight(
-    'S6' if is7TeV else 'S7', *pu_distributions)
+    'S6' if is7TeV else 'S10', *pu_distributions)
 
 muon_pog_PFTight_2011 = MuonPOGCorrections.make_muon_pog_PFTight_2011()
 muon_pog_PFTight_2012 = MuonPOGCorrections.make_muon_pog_PFTight_2012()

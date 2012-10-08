@@ -49,8 +49,14 @@ print "Is 7TeV:", is7TeV
 # PU corrections .root files from pileupCalc.py
 pu_distributions = glob.glob(os.path.join(
     'inputs', os.environ['jobid'], 'data_DoubleMu*pu.root'))
-pu_corrector = PileupWeight.PileupWeight(
-    'S6' if is7TeV else 'S7', *pu_distributions)
+
+mc_pu_tag = 'S6' if is7TeV else 'S10'
+# Hack to use S6 weights for the HWW 7TeV sample we use in 8TeV
+if 'HWW3l' in os.environ['megatarget'] and not is7TeV:
+    print "Using S6_600bins PU weights for HWW3l"
+    mc_pu_tag = 'S6_600bins'
+
+pu_corrector = PileupWeight.PileupWeight(mc_pu_tag, *pu_distributions)
 
 muon_pog_PFTight_2011 = MuonPOGCorrections.make_muon_pog_PFTight_2011()
 muon_pog_PFTight_2012 = MuonPOGCorrections.make_muon_pog_PFTight_2012()
@@ -102,12 +108,6 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
     tree = 'mmt/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         super(WHAnalyzeMMT, self).__init__(tree, outfile, MuMuTauTree, **kwargs)
-        # Hack to use S6 weights for the one 7TeV sample we use in 8TeV
-        target = os.environ['megatarget']
-        if 'HWW3l' in target:
-            print "HACK using S6 PU weights for HWW3l"
-            global pu_corrector
-            pu_corrector =  PileupWeight.PileupWeight('S6', *pu_distributions)
 
     def book_histos(self, folder):
         self.book(folder, "weight", "Event weight", 100, 0, 5)
