@@ -28,6 +28,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     from rootpy import io
+    import ROOT
     import rootpy.plotting.views as views
     import rootpy.plotting as plotting
     from FinalStateAnalysis.MetaData.data_views import data_views
@@ -71,6 +72,19 @@ if __name__ == "__main__":
         ''' Make a view where all bins > 0 '''
         return views.FunctorView(x, all_bins_positive)
 
+    def round_to_ints(x):
+        new = x.Clone()
+        new.Reset()
+        for bin in range(x.GetNbinsX()+1):
+            nentries = ROOT.TMath.Nint(x.GetBinContent(bin))
+            center = x.GetBinLowEdge(bin) + 0.5*x.GetBinWidth(bin)
+            for _ in range(nentries):
+                new.Fill(center)
+        return new
+
+    def int_view(x):
+        return views.FunctorView(x, round_to_ints)
+
     def get_view(sample_pattern):
         for sample, sample_info in the_views.iteritems():
             if fnmatch.fnmatch(sample, sample_pattern):
@@ -84,7 +98,7 @@ if __name__ == "__main__":
 
     diboson_view = views.SumView(wz_view, zz_view)
     inverted_diboson_view = views.ScaleView(diboson_view, -1)
-    corrected_view = postive_view(views.SumView(data, inverted_diboson_view))
+    corrected_view = int_view(postive_view(views.SumView(data, inverted_diboson_view)))
 
     output = io.open(args.outputfile, 'RECREATE')
     output.cd()
