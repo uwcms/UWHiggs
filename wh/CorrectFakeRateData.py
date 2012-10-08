@@ -8,6 +8,7 @@ Author: Evan K. Frii
 
 from RecoLuminosity.LumiDB import argparse
 import fnmatch
+from FinalStateAnalysis.PlotTools.RebinView import RebinView
 import logging
 import glob
 import os
@@ -22,7 +23,7 @@ if __name__ == "__main__":
     parser.add_argument('--outputfile', required=True)
     parser.add_argument('--denom', required=True, help='Path to denom')
     parser.add_argument('--numerator', required=True, help='Path to numerator')
-    parser.add_argument('--rebin', type=int, default=1)
+    parser.add_argument('--rebin', type=str, default="1")
 
     args = parser.parse_args()
 
@@ -49,15 +50,15 @@ if __name__ == "__main__":
     if outputdir and not os.path.exists(outputdir):
         os.makedirs(outputdir)
 
-    log.info("Rebinning with factor %i", args.rebin)
-    def rebin_view(x, rebin):
+    log.info("Rebinning with factor %s", args.rebin)
+    def rebin_view(x):
         ''' Make a view which rebins histograms '''
-        if rebin > 1:
-            rebinner = lambda x: x.Rebin(rebin)
-            output = views.FunctorView(x, rebinner)
-            return output
+        binning = None
+        if ',' in args.rebin:
+            binning = tuple(int(x) for x in args.rebin.split(','))
         else:
-            return x
+            binning = int(args.rebin)
+        return RebinView(x, binning)
 
     def all_bins_positive(x):
         ''' Set all bins to be > 0 '''
@@ -73,13 +74,13 @@ if __name__ == "__main__":
     def get_view(sample_pattern):
         for sample, sample_info in the_views.iteritems():
             if fnmatch.fnmatch(sample, sample_pattern):
-                return rebin_view(sample_info['view'], args.rebin)
+                return rebin_view(sample_info['view'])
         raise KeyError("I can't find a view that matches %s, I have: %s" % (
             sample_pattern, " ".join(the_views.keys())))
 
     wz_view = get_view('WZ*')
     zz_view = get_view('ZZ*')
-    data = rebin_view(the_views['data']['view'], args.rebin)
+    data = rebin_view(the_views['data']['view'])
 
     diboson_view = views.SumView(wz_view, zz_view)
     inverted_diboson_view = views.ScaleView(diboson_view, -1)
