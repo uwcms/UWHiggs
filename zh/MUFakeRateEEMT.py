@@ -14,12 +14,9 @@ class MUFakeRateEEMT(EMUFakeRatesBase.EMUFakeRatesBase):
         self.branchId = 'm'
         
     def zSelection(self, row):
-        if not selections.ZEESelection(row): return False
+        if not selections.ZEESelectionNoVetos(row): return False
+        if bool(row.muGlbIsoVetoPt10):  return False
         if selections.overlap(row, 'e1','e2','m','t') : return False
-        if not selections.signalTauSelection(row,'t'): return False
-        if bool(row.tAntiMuonTight): return False
-        if bool(row.tAntiElectronLoose): return False
-        if not bool(row.tLooseIso): return False
         return selections.signalMuonSelection(row,'m')
 
     def lepton_passes_iso(self, row):

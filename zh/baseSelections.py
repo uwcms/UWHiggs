@@ -6,7 +6,7 @@ def Vetos(row):
     '''
     applies b-tag, muon, electron and tau veto
     '''
-    #if row.bjetCSVVeto:            return False
+    if bool(row.bjetCSVVeto):      return False
     if bool(row.muGlbIsoVetoPt10): return False
     if bool(row.tauVetoPt20):      return False
     if bool(row.eVetoMVAIso):      return False
@@ -15,7 +15,7 @@ def Vetos(row):
 def overlap(row,*args):
     return any( map( lambda x: x < 0.1, [getattr(row,'%s_%s_DR' % (l1,l2) ) for l1 in args for l2 in args if l1 <> l2 and hasattr(row,'%s_%s_DR' % (l1,l2) )] ) )
 
-def ZMuMuSelection(row):
+def ZMuMuSelectionNoVetos(row):
     '''
     Z Selection as AN
     '''
@@ -26,17 +26,20 @@ def ZMuMuSelection(row):
     if row.m2Pt < 10:                                  return False
     if row.m1AbsEta > 2.4:                             return False
     if row.m2AbsEta > 2.4:                             return False
-    if abs(row.m1DZ) > 0.2:                            return False
-    if abs(row.m2DZ) > 0.2:                            return False
+    if abs(row.m1DZ) > 0.1:                            return False
+    if abs(row.m2DZ) > 0.1:                            return False
     if not bool(row.m1PFIDTight):                      return False
     if bool(row.m1RelPFIsoDB > 0.25):                  return False
     if not bool(row.m2PFIDTight):                      return False
     if bool(row.m2RelPFIsoDB > 0.25):                  return False
     if bool(row.m1_m2_SS):                             return False
     if row.m1_m2_Mass < 71 or row.m1_m2_Mass > 111 :   return False
-    return Vetos(row)
+    return True
 
-def ZEESelection(row):
+def ZMuMuSelection(row):
+    return ZMuMuSelectionNoVetos(row) and Vetos(row)
+
+def ZEESelectionNoVetos(row):
     '''
     Z Selection as AN
     '''
@@ -46,15 +49,18 @@ def ZEESelection(row):
     if row.e2Pt < 10:                                return False
     if row.e1AbsEta > 2.5:                           return False
     if row.e2AbsEta > 2.5:                           return False
-    if abs(row.e1DZ) > 0.2:                          return False
-    if abs(row.e2DZ) > 0.2:                          return False
+    if abs(row.e1DZ) > 0.1:                          return False
+    if abs(row.e2DZ) > 0.1:                          return False
     if not bool(row.e1MVAIDH2TauWP):                 return False
     if bool(row.e1RelPFIsoDB > 0.25):                return False
     if not bool(row.e2MVAIDH2TauWP):                 return False
     if bool(row.e2RelPFIsoDB > 0.25):                return False
     if bool(row.e1_e2_SS):                           return False
     if row.e1_e2_Mass < 71 or row.e1_e2_Mass > 111 : return False
-    return Vetos(row)
+    return True
+
+def ZEESelection(row):
+    return ZEESelectionNoVetos(row) and Vetos(row)
 
 def signalMuonSelection(row,muId):
     '''
@@ -62,7 +68,7 @@ def signalMuonSelection(row,muId):
     '''
     if getattr(row, '%sPt' % muId) < 10:              return False
     if getattr(row, '%sAbsEta' % muId) > 2.4:         return False
-    if abs(getattr(row, '%sDZ' % muId)) > 0.2:        return False
+    if abs(getattr(row, '%sDZ' % muId)) > 0.1:        return False
     if not bool(getattr(row, '%sPFIDTight' % muId) ): return False
     return True
 
@@ -73,7 +79,7 @@ def signalTauSelection(row, tauId, ptThr = 20):
     if not bool( getattr( row, '%sDecayFinding' % tauId) ):      return False
     if getattr( row, '%sPt' % tauId)  < ptThr:                   return False
     if getattr( row, '%sAbsEta' % tauId)  > 2.3:                 return False
-    if abs(getattr( row, '%sDZ' % tauId) ) > 0.2:                return False
+    if abs(getattr( row, '%sDZ' % tauId) ) > 0.1:                return False
     return True
 
 
@@ -83,7 +89,7 @@ def signalElectronSelection(row, elId):
     '''
     if getattr(row, '%sPt' % elId) < 10:                 return False
     if getattr(row, '%sAbsEta' % elId) > 2.5:            return False
-    if abs(getattr(row, '%sDZ' % elId)) > 0.2:           return False
+    if abs(getattr(row, '%sDZ' % elId)) > 0.1:           return False
     if not bool(getattr(row, '%sMVAIDH2TauWP' % elId) ): return False
     return True
     
