@@ -245,26 +245,29 @@ class ZHPlotterBase(Plotter):
 
     def make_closure_plots(self, var, testDir, refDir, rebin=1, xaxis=''):
         '''helper function to make comparison between data and data (closure test for fakerates etc.)'''
+        self.canvas.cd()
         data_view = self.rebin_view(self.data, rebin)
         testData = data_view.Get('/'.join([testDir,var]) )
         refData  = data_view.Get('/'.join([refDir, var]) )
+        print type(refData)
         testData.GetXaxis().SetTitle(xaxis)
         refData.GetXaxis().SetTitle(xaxis)
-        self.keep.append(testData)
+        #self.keep.append(testData)
         self.keep.append(refData)
-        legend = self.add_legend([refData,testData], leftside=False, entries=2)
-        refData.Draw('hist')
-        testData.Draw('ep,same')
-        legend.Draw()
+        #legend = self.add_legend([refData,testData], leftside=False, entries=2)
+        refData.Draw("hist")
+        #print refData.Draw.__doc__
+        #testData.Draw('SAME')
+        #legend.Draw()
         self.add_cms_blurb(self.sqrts)
 
     def draw_closure_frobj1(self, var, rebin=1, xaxis=''):
         Zprod, Hprod = products_map[self.channel]
-        self.make_closure_plots( var, 'os/%sIsoFailed_%sIsoFailed/obj1_weight' % Hprod, 'os/%sIsoFailed/' % Hprod[1], rebin=1, xaxis='')
+        self.make_closure_plots( var, 'os/%sIsoFailed_%sIsoFailed/obj1_weight' % Hprod, 'os/%sIsoFailed/' % Hprod[1], rebin, xaxis='')
 
     def draw_closure_frobj2(self, var, rebin=1, xaxis=''):
         Zprod, Hprod = products_map[self.channel]
-        self.make_closure_plots( var, 'os/%sIsoFailed_%sIsoFailed/obj2_weight' % Hprod, 'os/%sIsoFailed/' % Hprod[0], rebin=1, xaxis='')
+        self.make_closure_plots( var, 'os/%sIsoFailed_%sIsoFailed/obj2_weight' % Hprod, 'os/%sIsoFailed/' % Hprod[0], rebin, xaxis='')
 
     def plot_final(self, variable, rebin=1, xaxis='', maxy=10, show_error=False, magnifyHiggs=5 ):
         ''' Plot the final output - with bkg. estimation '''
@@ -344,16 +347,16 @@ for channel in channels:
     ##  Fake rates control plots #####################################################
     ###########################################################################
 
-    plotter.draw_closure_frobj1('%s_%s_Pt' % Hprod, rebin=10, xaxis='p_{T%s%s} (GeV)' % texHprod)
+    plotter.draw_closure_frobj1('%s_%s_Pt' % Hprod, rebin=25, xaxis='p_{T%s%s} (GeV)' % texHprod)
     plotter.save('frclosureobj1-os-failed2-HPt')
 
-    plotter.draw_closure_frobj1('%s_%s_Mass' % Hprod, rebin=10, xaxis='M_{%s%s} (GeV)' % texHprod)
+    plotter.draw_closure_frobj1('%s_%s_Mass' % Hprod, rebin=25, xaxis='M_{%s%s} (GeV)' % texHprod)
     plotter.save('frclosureobj1-os-failed2-HMass')
 
-    plotter.draw_closure_frobj2('%s_%s_Pt' % Hprod, rebin=10, xaxis='p_{T%s%s} (GeV)' % texHprod)
+    plotter.draw_closure_frobj2('%s_%s_Pt' % Hprod, rebin=25, xaxis='p_{T%s%s} (GeV)' % texHprod)
     plotter.save('frclosureobj2-os-failed2-HPt')
 
-    plotter.draw_closure_frobj2('%s_%s_Mass' % Hprod, rebin=10, xaxis='M_{%s%s} (GeV)' % texHprod)
+    plotter.draw_closure_frobj2('%s_%s_Mass' % Hprod, rebin=25, xaxis='M_{%s%s} (GeV)' % texHprod)
     plotter.save('frclosureobj2-os-failed2-HMass')
 
     ###########################################################################
@@ -373,7 +376,7 @@ for channel in channels:
 
     shape_file = ROOT.TFile( os.path.join(plotter.outputdir, '%s_shapes_%s.root' % (channel.lower(), plotter.period)), 'RECREATE')
     shape_dir  = shape_file.mkdir( channel.lower() )
-    plotter.write_shapes('%s_%s_Mass' % Hprod, 20, shape_dir, unblinded=True)
+    plotter.write_shapes('%s_%s_Mass' % Hprod, 15, shape_dir, unblinded=True)
     #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
     shape_file.Close()
 
