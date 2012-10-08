@@ -22,7 +22,7 @@ def control_region(row):
     # Figure out what control region we are in.
     if row.mRelPFIsoDB < 0.15 and row.mMtToMET > 40 and row.eMtToMET < 30:
         return 'wjets'
-    elif row.mRelPFIsoDB > 0.3 and row.metSignificance < 3:
+    elif row.mRelPFIsoDB > 0.3 and row.metEt < 25:
         return 'qcd'
     else:
         return None
