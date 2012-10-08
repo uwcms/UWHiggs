@@ -68,7 +68,7 @@ class WHPlotterBase(Plotter):
             blinder = lambda x: BlindView(x, "ss/p1p2p3/.*")
         super(WHPlotterBase, self).__init__(files, lumifiles, outputdir, blinder)
 
-    def make_signal_views(self, rebin, unblinded=True):
+    def make_signal_views(self, rebin, unblinded=False):
         ''' Make signal views with FR background estimation '''
 
         wz_view = views.SubdirectoryView(
