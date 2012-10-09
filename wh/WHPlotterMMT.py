@@ -248,6 +248,10 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass')
 
+    plotter.plot_final_f3_split('subMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-split-subMass')
+
     plotter.plot_final_f3('subMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', show_error=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass-werror')

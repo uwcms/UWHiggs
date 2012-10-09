@@ -93,6 +93,14 @@ class WHPlotterBase(Plotter):
         # View of weighted obj1&2-fails data
         obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2p3/w12')
 
+        # Give the individual object views nice colors
+        obj1_view = views.TitleView(
+            views.StyleView(obj1_view, **data_styles['TT*']), 'Non-prompt Obj1')
+        obj2_view = views.TitleView(
+            views.StyleView(obj2_view, **data_styles['QCD*']), 'Non-prompt Obj2')
+        obj12_view = views.TitleView(
+            views.StyleView(obj12_view, **data_styles['WW*']), 'Non-prompt Obj12')
+
         subtract_obj12_view = views.ScaleView(obj12_view, -1)
         # Corrected fake view
         fakes_view = views.SumView(obj1_view, obj2_view, subtract_obj12_view)
@@ -110,6 +118,7 @@ class WHPlotterBase(Plotter):
             'data' : data_view,
             'obj1' : obj1_view,
             'obj2' : obj2_view,
+            'obj12' : obj12_view,
             'fakes' : fakes_view,
             'charge_fakes' : charge_fakes,
         }
@@ -151,6 +160,14 @@ class WHPlotterBase(Plotter):
         # View of weighted obj1&2-fails data
         obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2f3/w12')
 
+        # Give the individual object views nice colors
+        obj1_view = views.TitleView(
+            views.StyleView(obj1_view, **data_styles['TT*']), 'Non-prompt Obj1')
+        obj2_view = views.TitleView(
+            views.StyleView(obj2_view, **data_styles['QCD*']), 'Non-prompt Obj2')
+        obj12_view = views.TitleView(
+            views.StyleView(obj12_view, **data_styles['WW*']), 'Non-prompt Obj12')
+
         subtract_obj12_view = views.ScaleView(obj12_view, -1)
         # Corrected fake view
         fakes_view = views.SumView(obj1_view, obj2_view, subtract_obj12_view)
@@ -168,6 +185,7 @@ class WHPlotterBase(Plotter):
             'data' : data_view,
             'obj1' : obj1_view,
             'obj2' : obj2_view,
+            'obj12' : obj12_view,
             'fakes' : fakes_view,
             'charge_fakes' : charge_fakes,
         }
@@ -361,6 +379,38 @@ class WHPlotterBase(Plotter):
             self.keep.append(bkg_error)
             bkg_error.Draw('pe2,same')
             legend.AddEntry(bkg_error)
+
+        data = sig_view['data'].Get(variable)
+        data.Draw('same')
+        if maxy:
+            histo.SetMaximum(maxy)
+        else:
+            histo.SetMaximum(
+                1.2*max(histo.GetHistogram().GetMaximum(), data.GetMaximum()))
+        self.keep.append(data)
+        self.keep.append(histo)
+
+        #legend.AddEntry(data)
+        legend.Draw()
+
+    def plot_final_f3_split(self, variable, rebin=1, xaxis='', maxy=None):
+        ''' Plot the final F3 control region - with bkg. estimation '''
+        sig_view = self.make_obj3_fail_cr_views(rebin)
+
+        stack = views.StackView(
+            sig_view['zz'],
+            sig_view['charge_fakes'],
+            sig_view['wz'],
+            sig_view['obj1'],
+            sig_view['obj2'],
+            sig_view['obj12'],
+        )
+        histo = stack.Get(variable)
+        histo.Draw()
+        histo.GetHistogram().GetXaxis().SetTitle(xaxis)
+
+        # Add legend
+        legend = self.add_legend(histo, leftside=False, entries=4)
 
         data = sig_view['data'].Get(variable)
         data.Draw('same')
