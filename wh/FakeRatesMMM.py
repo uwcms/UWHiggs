@@ -119,8 +119,8 @@ class FakeRatesMMM(MegaBase):
         for row in self.tree:
             if not preselection(row):
                 continue
-            if not trigger_match(row):
-                continue
+            #if not trigger_match(row):
+                #continue
             region = control_region(row)
             if region is None:
                 continue
