@@ -360,12 +360,13 @@ end
 add_fake_errors("#{$eetdir}/eet_shapes_#{$period}.root", "eet")
 task :eet_shapes => ["#{$eetdir}/eet_shapes_#{$period}_statshapes.root" ]
 
-$carddir = "vhtt_lep_cards_#{$period}"
+$carddir = "results/#{$jobid}/cards"
 
 # Combine all category shape files into the datacard project
 file "#{$carddir}/shapes_unmorphed.root" => [
   "#{$mmtdir}/mmt_shapes_#{$period}_statshapes.root", 
   "#{$emtdir}/emt_shapes_#{$period}_statshapes.root"] do |t|
+  sh "mkdir -p #{$carddir}"
   sh "hadd -f #{t.name} #{t.prerequisites.join(' ')}"
 end
 
@@ -384,7 +385,7 @@ stat_shape_lists = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.txt")
 stat_shapes = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.root")
 
 # We need to build the unc.conf and unc.vals with our stat shapes
-file "#{$carddir}/unc.conf" => ["#{$carddir}/unc.conf.base"] + stat_shapes do |t|
+file "#{$carddir}/unc.conf" => ["card_config/unc.conf.base.#{$period}"] + stat_shapes do |t|
   # Copy the basic template
   sh "cp #{t.prerequisites[0]} #{t.name}"
   # Append all the stat shape types
@@ -395,7 +396,7 @@ file "#{$carddir}/unc.conf" => ["#{$carddir}/unc.conf.base"] + stat_shapes do |t
   end
 end
 
-file "#{$carddir}/unc.vals" => ["#{$carddir}/unc.vals.base"] + stat_shape_lists do |t|
+file "#{$carddir}/unc.vals" => ["card_config/unc.vals.base.#{$period}"] + stat_shape_lists do |t|
   # Copy the basic template
   puts t.investigation
   sh "cp #{t.prerequisites[0]} #{t.name}"
@@ -408,6 +409,9 @@ file "#{$carddir}/unc.vals" => ["#{$carddir}/unc.vals.base"] + stat_shape_lists 
   end
 end
 
+file "#{$carddir}/cgs.conf" => ["card_config/cgs.conf.#{$period}"] do |t|
+  sh "cp #{t.prerequisites[0]} #{t.name}"
+end
 
 def make_datacard_task(mass, channel, categories)
   card = "#{$carddir}/#{mass}/vhtt_#{channel}.txt"  
