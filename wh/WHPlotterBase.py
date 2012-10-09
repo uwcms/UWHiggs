@@ -339,10 +339,10 @@ class WHPlotterBase(Plotter):
         sig_view = self.make_obj3_fail_cr_views(rebin)
 
         stack = views.StackView(
-            sig_view['charge_fakes'],
-            sig_view['fakes'],
-            sig_view['wz'],
             sig_view['zz'],
+            sig_view['charge_fakes'],
+            sig_view['wz'],
+            sig_view['fakes'],
         )
         histo = stack.Get(variable)
         histo.Draw()
