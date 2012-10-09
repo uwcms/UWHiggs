@@ -21,7 +21,7 @@ import os
 
 def control_region(row):
     # Figure out what control region we are in.
-    if row.m1RelPFIsoDB < 0.15 and row.m1MtToMET > 40 and row.m2MtToMET < 30:
+    if row.m1RelPFIsoDB < 0.15 and row.m1MtToMET > 35 and row.m2MtToMET < 35:
         return 'wjets'
     elif row.m1RelPFIsoDB > 0.3 and row.metEt < 25:
         return 'qcd'
@@ -72,7 +72,6 @@ class FakeRatesMM(MegaBase):
         def preselection(row):
             if not row.m1_m2_SS: return False
             if not row.doubleMuPass: return False
-            if row.m1Pt < row.m2Pt: return False
             if not row.m1Pt > 20: return False
             if not row.m1PFIDTight: return False
             if not row.m2Pt > 10: return False
