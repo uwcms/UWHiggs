@@ -106,7 +106,7 @@ fr_binning_tight =  "10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,45,50,60,65
 fr_fits = Hash[
   # Format is type_region_denom_num_variable
   "e_wjets_pt10_mvaidiso03_eJetPt" => Hash[
-    "samples" => Array["ewk", "data_em"],
+    "samples" => Array["diboson", "data_em"],
     "analyzer" => "FakeRatesEM",
     #"function" => landau,
     #"variables" => landau_vars,
@@ -116,7 +116,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "e_wjets_pt10_mvaidiso02_eJetPt" => Hash[
-    "samples" => Array["ewk", "data_em"],
+    "samples" => Array["diboson", "data_em"],
     "analyzer" => "FakeRatesEM",
     "function" => landau,
     "variables" => landau_vars,
@@ -124,7 +124,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "e_wjets_pt10_mvaidiso01_eJetPt" => Hash[
-    "samples" => Array["ewk", "data_em"],
+    "samples" => Array["diboson", "data_em"],
     "analyzer" => "FakeRatesEM",
     "function" => landau,
     "variables" => landau_vars,
@@ -132,7 +132,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "m_wjets_pt10_pfidiso01_muonJetPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
     "function" => landau,
     "variables" => landau_vars,
@@ -140,7 +140,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "m_wjets_pt10_pfidiso03_muonJetPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
     "function" => landau,
     "variables" => landau_vars,
@@ -148,7 +148,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "m_wjets_pt20_pfidiso03_muonJetPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
     "function" => landau,
     "variables" => landau_vars,
@@ -156,7 +156,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "m_wjets_pt10_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
     "function" => landau,
     "variables" => landau_vars,
@@ -164,7 +164,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "m_qcd_pt10_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
     "function" => landau,
     "variables" => landau_vars,
@@ -172,7 +172,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "m_qcd_pt20_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
     "function" => landau,
     "variables" => landau_vars,
@@ -180,7 +180,7 @@ fr_fits = Hash[
     "range" => "20 100",
   ],
   "m_zmm_pt10_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMM",
     "function" => landau,
     "variables" => landau_vars,
@@ -188,7 +188,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "m_zmm_pt20_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMM",
     "function" => landau,
     "variables" => landau_vars,
@@ -196,7 +196,7 @@ fr_fits = Hash[
     "range" => "20 100",
   ],
   "m_wjets_pt20_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
     "function" => landau,
     "variables" => landau_vars,
@@ -204,7 +204,7 @@ fr_fits = Hash[
     "range" => "20 100",
   ],
   "m_wjets_pt20_pfidiso01_muonJetPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
     "function" => landau,
     "variables" => landau_vars,
@@ -213,7 +213,7 @@ fr_fits = Hash[
   ],
   # Versus regular pt
   "m_zmm_pt10_pfidiso02_muonPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMM",
     "function" => exponential,
     "variables" => exponential_vars,
@@ -221,7 +221,7 @@ fr_fits = Hash[
     "range" => "20 100",
   ],
   "m_wjets_pt10_pfidiso02_muonPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
     "function" => exponential,
     "variables" => exponential_vars,
@@ -229,7 +229,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "t_ztt_pt20_mvaloose_tauPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMT",
     "function" => exponential,
     "variables" => exponential_vars,
@@ -237,7 +237,7 @@ fr_fits = Hash[
     "range" => "20 100",
   ],
   "t_ztt_pt20_hpsloose_tauPt" => Hash[
-    "samples" => Array["ewk", "data_mm"],
+    "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMT",
     "function" => exponential,
     "variables" => exponential_vars,
