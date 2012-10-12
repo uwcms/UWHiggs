@@ -1,4 +1,6 @@
 build/
 *.cpp
 inputs
-results
+results*/
+*.pyx
+*_setup.py
