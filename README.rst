@@ -6,7 +6,7 @@ Contains final plotting/analysis code for UW H→ττ analyses.
 Installation
 ------------
 
-Start from a CMSSW 5_2_5 or greater working area.
+Start from a CMSSW 5_3_3 or greater working area.
 Clone the code from the remote repository::
 
    git clone --recursive https://github.com/ekfriis/UWHiggs.git
