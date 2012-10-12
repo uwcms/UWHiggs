@@ -88,6 +88,9 @@ class WHAnalyzerBase(MegaBase):
 
                 if len(failing_objs) == 3:
                     weights_to_apply.append( ((3,), "w3") )
+                    weights_to_apply.append( ((1,3,), "w13") )
+                    weights_to_apply.append( ((2,3,), "w23") )
+                    # Needed for f3 CR
                     # Needed for f3 CR
                     weights_to_apply.append( ((1,2), "w12"))
 
@@ -148,6 +151,8 @@ class WHAnalyzerBase(MegaBase):
             'w2' : (self.obj2_weight, ),
             'w3' : (self.obj3_weight, ),
             'w12' : (self.obj1_weight, self.obj2_weight),
+            'w13' : (self.obj1_weight, self.obj3_weight),
+            'w23' : (self.obj2_weight, self.obj3_weight),
         }
 
         for row in self.tree:
