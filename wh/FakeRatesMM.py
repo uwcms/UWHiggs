@@ -15,9 +15,11 @@ Author: Evan K. Friis, UW
 
 '''
 
+from array import array
 import MuMuTree
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 import os
+import ROOT
 
 def control_region(row):
     # Figure out what control region we are in.
@@ -52,16 +54,26 @@ class FakeRatesMM(MegaBase):
                     num_histos = {}
                     self.histograms[num_key] = num_histos
 
-                    def book_histo(name, *args):
+                    def book_histo(name, *args, **kwargs):
                         # Helper to book a histogram
                         if name not in denom_histos:
                             denom_histos[name] = self.book(os.path.join(
-                                region, denom), name, *args)
+                                region, denom), name, *args, **kwargs)
                         num_histos[name] = self.book(os.path.join(
-                            region, denom, numerator), name, *args)
+                            region, denom, numerator), name, *args, **kwargs)
+
+                    mu_binning = array(
+                        'd', [10, 12, 15, 20, 30, 50])
+                    jet_binning = array(
+                        'd', [10, 12, 15, 20, 25, 30, 50, 100])
+
+                    book_histo('muonJetVsLeptonPt', 'Muon Pt',
+                               len(jet_binning)-1, jet_binning,
+                               len(mu_binning)-1, mu_binning,
+                               type=ROOT.TH2F)
 
                     book_histo('muonPt', 'Muon Pt', 16, 10, 50)
-                    book_histo('muonJetPt', 'Muon Jet Pt', 100, 0, 100)
+                    book_histo('muonJetPt', 'Muon Jet Pt', 200, 0, 200)
                     book_histo('muonAbsEta', 'Muon Abs Eta', 100, -2.5, 2.5)
                     book_histo('metSignificance', 'MET sig.', 100, 0, 10)
                     book_histo('m1MtToMET', 'Muon 1 MT', 100, 0, 200)
@@ -92,6 +104,7 @@ class FakeRatesMM(MegaBase):
             weight = 1
             the_histos['muonPt'].Fill(row.m2Pt, weight)
             the_histos['muonJetPt'].Fill(max(row.m2JetPt, row.m2Pt), weight)
+            the_histos['muonJetVsLeptonPt'].Fill(max(row.m2JetPt, row.m2Pt), row.m2Pt, weight)
             the_histos['muonAbsEta'].Fill(row.m2AbsEta, weight)
             the_histos['metSignificance'].Fill(row.metSignificance, weight)
             the_histos['m1MtToMET'].Fill(row.m1MtToMET, weight)
