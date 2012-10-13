@@ -62,17 +62,6 @@ if __name__ == "__main__":
             binning = int(args.rebin)
         return RebinView(x, binning)
 
-    def all_bins_positive(x):
-        ''' Set all bins to be > 0 '''
-        for i in range(1, x.GetNbinsX()+1):
-            if x.GetBinContent(i) < 0:
-                x.SetBinContent(i, 0)
-        return x
-
-    def postive_view(x):
-        ''' Make a view where all bins > 0 '''
-        return views.FunctorView(x, all_bins_positive)
-
     def round_to_ints(x):
         new = x.Clone()
         new.Reset()
@@ -97,8 +86,6 @@ if __name__ == "__main__":
     zz_view = get_view('ZZ*')
     data = rebin_view(the_views['data']['view'])
 
-    #corrected_view = int_view(postive_view(
-        #SubtractionView(data, wz_view, zz_view)))
     corrected_view = int_view(
         SubtractionView(data, wz_view, zz_view, restrict_positive=True))
 
