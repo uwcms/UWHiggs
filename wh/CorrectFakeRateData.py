@@ -97,8 +97,10 @@ if __name__ == "__main__":
     zz_view = get_view('ZZ*')
     data = rebin_view(the_views['data']['view'])
 
-    corrected_view = int_view(postive_view(
-        SubtractionView(data, wz_view, zz_view)))
+    #corrected_view = int_view(postive_view(
+        #SubtractionView(data, wz_view, zz_view)))
+    corrected_view = int_view(
+        SubtractionView(data, wz_view, zz_view, restrict_positive=True))
 
     output = io.open(args.outputfile, 'RECREATE')
     output.cd()
