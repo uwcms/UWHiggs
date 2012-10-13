@@ -29,9 +29,23 @@ lowpt_mu_fr = build_roofunctor(
     'fit_efficiency', # workspace name
     'efficiency'
 )
-
-
 tau_fr = build_roofunctor(
+    frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+highpt_mu_qcd_fr = build_roofunctor(
+    frfit_dir + '/m_qcd_pt20_pfidiso02_muonJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+lowpt_mu_qcd_fr = build_roofunctor(
+    frfit_dir + '/m_qcd_pt10_pfidiso02_muonJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+tau_qcd_fr = build_roofunctor(
     frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
@@ -278,14 +292,21 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
 
     def obj1_weight(self, row):
         return highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
-        #return highpt_mu_fr(row.m1Pt)
 
     def obj2_weight(self, row):
         return lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
-        #return lowpt_mu_fr(row.m2Pt)
 
     def obj3_weight(self, row):
         return tau_fr(row.tPt)
+
+    def obj1_qcd_weight(self, row):
+        return highpt_mu_qcd_fr(max(row.m1JetPt, row.m1Pt))
+
+    def obj2_qcd_weight(self, row):
+        return lowpt_mu_qcd_fr(max(row.m2JetPt, row.m2Pt))
+
+    def obj3_qcd_weight(self, row):
+        return tau_qcd_fr(row.tPt)
 
     # For measuring charge flip probability
     # Not really used in this channel

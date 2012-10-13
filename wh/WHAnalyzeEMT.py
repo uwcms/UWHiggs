@@ -34,6 +34,21 @@ tau_fr = build_roofunctor(
     'fit_efficiency', # workspace name
     'efficiency'
 )
+highpt_mu_qcd_fr = build_roofunctor(
+    frfit_dir + '/m_qcd_pt20_pfidiso02_muonJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+lowpt_e_qcd_fr = build_roofunctor(
+    frfit_dir + '/e_qcd_pt10_mvaidiso03_eJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+tau_qcd_fr = build_roofunctor(
+    frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
 
 ################################################################################
 #### MC-DATA and PU corrections ################################################
@@ -238,6 +253,15 @@ class WHAnalyzeEMT(WHAnalyzerBase.WHAnalyzerBase):
 
     def obj3_weight(self, row):
         return tau_fr(row.tPt)
+
+    def obj1_qcd_weight(self, row):
+        return highpt_mu_qcd_fr(max(row.mJetPt, row.mPt))
+
+    def obj2_qcd_weight(self, row):
+        return lowpt_e_qcd_fr(max(row.eJetPt, row.ePt))
+
+    def obj3_qcd_weight(self, row):
+        return tau_qcd_fr(row.tPt)
 
     # For measuring charge flip probability
     # Not really used in this channel

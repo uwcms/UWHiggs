@@ -21,6 +21,12 @@ control.  The subclasses must define the following functions:
     self.obj2_weight(row)
     self.obj3_weight(row)
 
+Additionally, the fake rate weight in QCD events must be defined.
+
+    self.obj1_qcd_weight(row) - returns double
+    self.obj2_qcd_weight(row)
+    self.obj3_qcd_weight(row)
+
     self.book_histos(folder) # books histograms in a given folder (region)
     self.fill_histos(histos, row, weight) # fill histograms in a given region
 
@@ -31,13 +37,16 @@ The output histogram has the following structure:
         == Type1 FRs ==
         p1p2f3/   - object 3 fails
             w3/   - with weight 3 applied
+            q3/   - with weight 3 (from QCD events) applied
         ... same for 1 and 2
         == Type2 FRs ==
         f1f2p3/   - objects 1 & 2 fail
             w1w2/
+            q1q2/
         == Type3 FRs ==
         f1f2f3/   - everything fails
             w3/   - extrapolate triple fakes to type2 region
+            q3/
 
     os/           - OS control region
 
@@ -76,23 +85,39 @@ class WHAnalyzerBase(MegaBase):
                 if len(failing_objs) == 1:
                     weights_to_apply.append(
                         (failing_objs, "w%i" % failing_objs))
+                    # A version using the QCD fake rate
+                    weights_to_apply.append(
+                        (failing_objs, "q%i" % failing_objs))
                 if len(failing_objs) == 2:
                     # in the 1-2 case, apply both.  Otherwise, just apply the
                     # first (a light lepton)
                     if 3 not in failing_objs:
                         weights_to_apply.append(
                             (failing_objs, "w%i%i" % failing_objs))
+                        # Using QCD rate
+                        weights_to_apply.append(
+                            (failing_objs, "q%i%i" % failing_objs))
                     else:
                         weights_to_apply.append(
                             (failing_objs, "w%i" % failing_objs[0]))
+                        # Using QCD rate
+                        weights_to_apply.append(
+                            (failing_objs, "q%i" % failing_objs[0]))
 
                 if len(failing_objs) == 3:
                     weights_to_apply.append( ((3,), "w3") )
                     weights_to_apply.append( ((1,3,), "w13") )
                     weights_to_apply.append( ((2,3,), "w23") )
-                    # Needed for f3 CR
+                    # QCD weight versions
+                    weights_to_apply.append( ((1,3,), "q13") )
+                    weights_to_apply.append( ((2,3,), "q23") )
                     # Needed for f3 CR
                     weights_to_apply.append( ((1,2), "w12"))
+                    weights_to_apply.append( ((1,), "w1"))
+                    weights_to_apply.append( ((2,), "w2"))
+                    weights_to_apply.append( ((1,2), "q12"))
+                    weights_to_apply.append( ((1,), "q1"))
+                    weights_to_apply.append( ((2,), "q2"))
 
                 #folders_to_add = [ (sign, region_label) ]
                 # Which objects to weight for each region
@@ -153,6 +178,13 @@ class WHAnalyzerBase(MegaBase):
             'w12' : (self.obj1_weight, self.obj2_weight),
             'w13' : (self.obj1_weight, self.obj3_weight),
             'w23' : (self.obj2_weight, self.obj3_weight),
+
+            'q1' : (self.obj1_qcd_weight, ),
+            'q2' : (self.obj2_qcd_weight, ),
+            'q3' : (self.obj3_qcd_weight, ),
+            'q12' : (self.obj1_qcd_weight, self.obj2_qcd_weight),
+            'q13' : (self.obj1_qcd_weight, self.obj3_qcd_weight),
+            'q23' : (self.obj2_qcd_weight, self.obj3_qcd_weight),
         }
 
         for row in self.tree:

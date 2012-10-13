@@ -92,7 +92,7 @@ exponential = "scale*TMath::Exp(x*decay)+offset"
 exponential_vars =  "scale[0.5, 0, 5],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
 
 landau = "scale*TMath::Landau(x,mu,sigma,0)+offset"
-landau_vars =  "scale[0.5, 0, 5],mu[5, 0, 100],sigma[1.9, 0.1, 20],offset[1e-2, 0, 0.5]"
+landau_vars =  "scale[0.5, 0, 5],mu[5, 0, 25],sigma[1.9, 0.1, 20],offset[1e-2, 0, 0.5]"
 
 flat = "offset"
 flat_vars =  "offset[1e-2, 0, 0.5]"
@@ -106,6 +106,16 @@ fr_binning_tight =  "10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,45,50,60,65
 fr_fits = Hash[
   # Format is type_region_denom_num_variable
   "e_wjets_pt10_mvaidiso03_eJetPt" => Hash[
+    "samples" => Array["diboson", "data_em"],
+    "analyzer" => "FakeRatesEM",
+    #"function" => landau,
+    #"variables" => landau_vars,
+    "function" => exponential,
+    "variables" => exponential_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+  "e_qcd_pt10_mvaidiso03_eJetPt" => Hash[
     "samples" => Array["diboson", "data_em"],
     "analyzer" => "FakeRatesEM",
     #"function" => landau,
@@ -290,21 +300,63 @@ end
 ## Recipes to analyze WH
 ##  targets:
 ##     mmt
+##     emt
+##     mmcontrol
+##     emcontrol
 ################################################################################
 
-task :mmt => get_analyzer_results("WHAnalyzeMMT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
 
-task :emt => get_analyzer_results("WHAnalyzeEMT.py", samples['ewk'] + samples['data_em'] + samples['signal'])
+mmt_fake_rates = Array[
+  "#{$frfit_dir}/m_wjets_pt20_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/m_wjets_pt10_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/m_qcd_pt20_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/m_qcd_pt10_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",
+]
 
+emt_fake_rates = Array[
+  "#{$frfit_dir}/e_wjets_pt10_mvaidiso03_eJetPt.root", 
+  "#{$frfit_dir}/e_qcd_pt10_mvaidiso03_eJetPt.root", 
+  "#{$frfit_dir}/m_wjets_pt20_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/m_qcd_pt20_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",
+]
+
+mmt_results = get_analyzer_results("WHAnalyzeMMT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
+emt_results = get_analyzer_results("WHAnalyzeEMT.py", samples['ewk'] + samples['data_em'] + samples['signal'])
+
+# Make the analyzer results also depend on the necessary fake rates
+#mmt_results.each do |result|
+  #mmt_fake_rates.each do |needed_fakerate|
+    #file result => needed_fakerate
+  #end
+#end
+#emt_results.each do |result|
+  #emt_fake_rates.each do |needed_fakerate|
+    #file result => needed_fakerate
+  #end
+#end
+
+task :mmt => mmt_results
+task :emt => emt_results
 task :mmcontrol => get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm'])
-
 task :emcontrol => get_analyzer_results("ControlEM.py", samples['ewk'] + samples['data_em'])
 
 # IF the FR fits change, make sure we re-run the analyses
-file "WHAnalyzeEMT.py" => [ "#{$frfit_dir}/e_wjets_pt10_mvaidiso03_eJetPt.root", "#{$frfit_dir}/m_wjets_pt20_pfidiso02_muonJetPt.root", "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
+file "WHAnalyzeEMT.py" => [ 
+  "#{$frfit_dir}/e_wjets_pt10_mvaidiso03_eJetPt.root", 
+  "#{$frfit_dir}/m_wjets_pt20_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/e_qcd_pt10_mvaidiso03_eJetPt.root", 
+  "#{$frfit_dir}/m_qcd_pt20_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
   sh "touch #{t.name}"
 end
-file "WHAnalyzeMMT.py" => [ "#{$frfit_dir}/m_wjets_pt20_pfidiso02_muonJetPt.root", "#{$frfit_dir}/m_wjets_pt10_pfidiso02_muonJetPt.root", "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
+file "WHAnalyzeMMT.py" => [ 
+  "#{$frfit_dir}/m_wjets_pt20_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/m_wjets_pt10_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/m_qcd_pt20_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/m_qcd_pt10_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
   sh "touch #{t.name}"
 end
 file "WHAnalyzeEET.py" => [ "#{$frfit_dir}/ee_wjets_pt20_mvaidiso01_e2JetPt-data_ee.root", "#{$frfit_dir}/ee_wjets_pt10_mvaidiso01_e2JetPt-data_ee.root", "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt-data_mm.root"] do |t|
