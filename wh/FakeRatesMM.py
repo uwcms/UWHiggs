@@ -30,6 +30,7 @@ def control_region(row):
     else:
         return None
 
+
 class FakeRatesMM(MegaBase):
     tree = 'mm/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
@@ -43,7 +44,7 @@ class FakeRatesMM(MegaBase):
 
     def begin(self):
         for region in ['wjets', 'qcd']:
-            for denom in ['pt10', 'pt20']:
+            for denom in ['pt10', 'pt20', 'pt10b', 'pt10t', 'pt10f']:
                 denom_key = (region, denom)
                 denom_histos = {}
                 self.histograms[denom_key] = denom_histos
@@ -63,9 +64,9 @@ class FakeRatesMM(MegaBase):
                             region, denom, numerator), name, *args, **kwargs)
 
                     mu_binning = array(
-                        'd', [10, 12, 15, 20, 30, 50])
+                        'd', [10, 12, 15, 20, 30, 50, 100, 200])
                     jet_binning = array(
-                        'd', [10, 12, 15, 20, 25, 30, 50, 100])
+                        'd', [10, 12, 15, 20, 25, 30, 50, 100, 200])
 
                     book_histo('muonJetVsLeptonPt', 'Muon Pt',
                                len(jet_binning)-1, jet_binning,
@@ -116,40 +117,38 @@ class FakeRatesMM(MegaBase):
             region = control_region(row)
             if region is None:
                 continue
-            # This is a QCD or Wjets
-            fill(histos[(region, 'pt10')], row)
 
-            if row.m2PFIDTight:
-                fill(histos[(region, 'pt10', 'pfid')], row)
+            def fill_denominator(denominator_tag):
+                # This is a QCD or Wjets
+                fill(histos[(region, denominator_tag)], row)
 
-            if row.m2RelPFIsoDB < 0.3:
-                fill(histos[(region, 'pt10', 'iso03')], row)
-
-            if row.m2PFIDTight and row.m2RelPFIsoDB < 0.3:
-                fill(histos[(region, 'pt10', 'pfidiso03')], row)
-
-            if row.m2PFIDTight and row.m2RelPFIsoDB < 0.2:
-                fill(histos[(region, 'pt10', 'pfidiso02')], row)
-
-            if row.m2PFIDTight and row.m2RelPFIsoDB < 0.1:
-                fill(histos[(region, 'pt10', 'pfidiso01')], row)
-
-            if row.m2Pt > 20:
-                fill(histos[(region, 'pt20')], row)
                 if row.m2PFIDTight:
-                    fill(histos[(region, 'pt20', 'pfid')], row)
+                    fill(histos[(region, denominator_tag, 'pfid')], row)
 
                 if row.m2RelPFIsoDB < 0.3:
-                    fill(histos[(region, 'pt20', 'iso03')], row)
+                    fill(histos[(region, denominator_tag, 'iso03')], row)
 
                 if row.m2PFIDTight and row.m2RelPFIsoDB < 0.3:
-                    fill(histos[(region, 'pt20', 'pfidiso03')], row)
+                    fill(histos[(region, denominator_tag, 'pfidiso03')], row)
 
                 if row.m2PFIDTight and row.m2RelPFIsoDB < 0.2:
-                    fill(histos[(region, 'pt20', 'pfidiso02')], row)
+                    fill(histos[(region, denominator_tag, 'pfidiso02')], row)
 
                 if row.m2PFIDTight and row.m2RelPFIsoDB < 0.1:
-                    fill(histos[(region, 'pt20', 'pfidiso01')], row)
+                    fill(histos[(region, denominator_tag, 'pfidiso01')], row)
+
+            fill_denominator('pt10')
+
+            # Barrel/forward
+            if row.m2AbsEta < 0.8:
+                fill_denominator('pt10b')
+            elif row.m2AbsEta < 1.3:
+                fill_denominator('pt10t')
+            else:
+                fill_denominator('pt10f')
+
+            if row.m2Pt > 20:
+                fill_denominator('pt20')
 
     def finish(self):
         self.write_histos()
