@@ -186,6 +186,14 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-f1p2p3-w1-subMass')
 
+    plotter.plot_mc_vs_data('ss/p1f2f3', 'm2AbsEta', rebin=10, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('mcdata-ss-p1f2f3-m2AbsEta')
+
+    plotter.plot_mc_vs_data('ss/p1f2p3', 'm2AbsEta', rebin=10, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('mcdata-ss-p1f2p3-m2AbsEta')
+
 
 
     ###########################################################################
@@ -260,9 +268,17 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass-werror')
 
-    plotter.plot_final_f3('m2Pt', 2, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_f3('m2Pt', 5, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-m2Pt')
+
+    plotter.plot_final_f3('m2AbsEta', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-m2AbsEta')
+
+    plotter.plot_final_f3('m2AbsEta', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3q-m2AbsEta')
 
     plotter.plot_final_f3('m2JetPt', 5, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
