@@ -28,38 +28,65 @@ if __name__ == "__main__":
     wjets_view = views.SubdirectoryView(data, "wjets")
     ROOT.gStyle.SetPaintTextFormat("0.1f")
 
-    qcd_denom_2d = qcd_view.Get("pt10/muonJetVsLeptonPt")
-    qcd_num_2d = qcd_view.Get("pt10/pfidiso02/muonJetVsLeptonPt")
+    #canvas = plotting.Canvas(name='adsf', title='asdf')
+    #canvas.SetLogy(False)
+
+    #qcd_num_eta = RebinView(qcd_view, 2).Get("pt10/pfidiso02/muonAbsEta")
+    #qcd_denom_eta = RebinView(qcd_view, 2).Get("pt10/muonAbsEta")
+    #qcd_eta_eff = ROOT.TGraphAsymmErrors(qcd_num_eta, qcd_denom_eta)
+    #qcd_eta_eff.Draw('ape')
+    #canvas.SaveAs("fake_study_plots/qcd_eta_eff.png")
+
+    #wjets_num_eta = RebinView(wjets_view,5).Get("pt10/pfidiso02/muonAbsEta")
+    #wjets_denom_eta = RebinView(wjets_view,5).Get("pt10/muonAbsEta")
+    #wjets_eta_eff = ROOT.TGraphAsymmErrors(wjets_num_eta, wjets_denom_eta)
+    #wjets_eta_eff.Draw('ape')
+    #canvas.SaveAs("fake_study_plots/wjets_eta_eff.png")
+
+    #twodeff_type='muonJetVsLeptonPt'
+    twodeff_type='muonJetVsEta'
+
+    qcd_denom_2d = qcd_view.Get("pt10/%s" % twodeff_type)
+    qcd_num_2d = qcd_view.Get("pt10/pfidiso02/%s" % twodeff_type)
     qcd_eff_2d = qcd_num_2d.Clone()
     qcd_eff_2d.Divide(qcd_denom_2d)
     qcd_eff_2d.Scale(100)
 
-    triptych = ROOT.TCanvas("asdf", "asdf", 1200, 600)
+    triptych = ROOT.TCanvas("asdffff", "aaaaasdf", 1200, 600)
     triptych.Divide(2)
 
-    wjets_denom_2d = wjets_view.Get("pt10/muonJetVsLeptonPt")
-    wjets_num_2d = wjets_view.Get("pt10/pfidiso02/muonJetVsLeptonPt")
+    print "wtf"
+
+    wjets_denom_2d = wjets_view.Get("pt10/%s" % twodeff_type)
+    wjets_num_2d = wjets_view.Get("pt10/pfidiso02/%s" % twodeff_type)
     wjets_eff_2d = wjets_num_2d.Clone()
     wjets_eff_2d.Divide(wjets_denom_2d)
     wjets_eff_2d.Scale(100)
 
     triptych.cd(1)
+    ROOT.gPad.SetLogx(True)
     wjets_denom_2d.Draw("text")
     #import pdb; pdb.set_trace()
     triptych.cd(2)
+    ROOT.gPad.SetLogx(True)
     qcd_denom_2d.Draw("text")
     triptych.Draw()
+    triptych.Update()
     triptych.SaveAs("fake_study_plots/2d_denoms.png")
 
     triptych.cd(1)
+    ROOT.gPad.SetLogx(True)
     wjets_num_2d.Draw("text")
     triptych.cd(2)
+    ROOT.gPad.SetLogx(True)
     qcd_num_2d.Draw("text")
     triptych.SaveAs("fake_study_plots/2d_nums.png")
 
     triptych.cd(1)
+    ROOT.gPad.SetLogx(True)
     wjets_eff_2d.Draw("text")
     triptych.cd(2)
+    ROOT.gPad.SetLogx(True)
     qcd_eff_2d.Draw("text")
     triptych.SaveAs("fake_study_plots/2d_effs.png")
 
