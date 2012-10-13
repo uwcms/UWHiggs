@@ -9,6 +9,7 @@ Author: Evan K. Frii
 from RecoLuminosity.LumiDB import argparse
 import fnmatch
 from FinalStateAnalysis.PlotTools.RebinView import RebinView
+from FinalStateAnalysis.PlotTools.SubtractionView import SubtractionView
 import logging
 import glob
 import os
@@ -96,9 +97,8 @@ if __name__ == "__main__":
     zz_view = get_view('ZZ*')
     data = rebin_view(the_views['data']['view'])
 
-    diboson_view = views.SumView(wz_view, zz_view)
-    inverted_diboson_view = views.ScaleView(diboson_view, -1)
-    corrected_view = int_view(postive_view(views.SumView(data, inverted_diboson_view)))
+    corrected_view = int_view(postive_view(
+        SubtractionView(data, wz_view, zz_view)))
 
     output = io.open(args.outputfile, 'RECREATE')
     output.cd()
