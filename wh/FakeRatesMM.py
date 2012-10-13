@@ -67,10 +67,16 @@ class FakeRatesMM(MegaBase):
                         'd', [10, 12, 15, 20, 30, 50, 100, 200])
                     jet_binning = array(
                         'd', [10, 12, 15, 20, 25, 30, 50, 100, 200])
+                    eta_binning = array(
+                        'd', [0, 0.25, 0.8, 1.3, 1.8, 2.4])
 
                     book_histo('muonJetVsLeptonPt', 'Muon Pt',
                                len(jet_binning)-1, jet_binning,
                                len(mu_binning)-1, mu_binning,
+                               type=ROOT.TH2F)
+                    book_histo('muonJetVsEta', 'Muon Pt',
+                               len(jet_binning)-1, jet_binning,
+                               len(eta_binning)-1, eta_binning,
                                type=ROOT.TH2F)
 
                     book_histo('muonPt', 'Muon Pt', 16, 10, 50)
@@ -106,6 +112,7 @@ class FakeRatesMM(MegaBase):
             the_histos['muonPt'].Fill(row.m2Pt, weight)
             the_histos['muonJetPt'].Fill(max(row.m2JetPt, row.m2Pt), weight)
             the_histos['muonJetVsLeptonPt'].Fill(max(row.m2JetPt, row.m2Pt), row.m2Pt, weight)
+            the_histos['muonJetVsEta'].Fill(max(row.m2JetPt, row.m2Pt), row.m2AbsEta, weight)
             the_histos['muonAbsEta'].Fill(row.m2AbsEta, weight)
             the_histos['metSignificance'].Fill(row.metSignificance, weight)
             the_histos['m1MtToMET'].Fill(row.m1MtToMET, weight)

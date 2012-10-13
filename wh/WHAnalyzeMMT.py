@@ -5,13 +5,20 @@ Analyze MMT events for the WH analysis
 '''
 
 from FinalStateAnalysis.StatTools.RooFunctorFromWS import build_roofunctor
+import fnmatch
 import glob
 from MuMuTauTree import MuMuTauTree
 import os
 import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
 import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
+import FinalStateAnalysis.MetaData.data_views as data_views
+import logging
+data_views.log.setLevel(logging.INFO)
+#import sys
+#logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 import WHAnalyzerBase
 import ROOT
+from TwoDimFakeRate import TwoDimFakeRate
 
 ################################################################################
 #### Fitted fake rate functions ################################################
@@ -51,6 +58,61 @@ tau_qcd_fr = build_roofunctor(
     'efficiency'
 )
 
+# Get 2D fake rates
+
+fr_data_views = data_views.data_views(
+    glob.glob(os.path.join('results', os.environ['jobid'], 'FakeRatesMM', '*.root')),
+    glob.glob(os.path.join('inputs', os.environ['jobid'], '*.sum')),
+)
+
+def get_view(sample_pattern):
+    for sample, sample_info in fr_data_views.iteritems():
+        if fnmatch.fnmatch(sample, sample_pattern):
+            return sample_info['view']
+    raise KeyError("I can't find a view that matches %s, I have: %s" % (
+        sample_pattern, " ".join(fr_data_views.keys())))
+
+# FR data, subtracting WZ and ZZ.
+mu_fr_ewk_2d = TwoDimFakeRate(
+    'wjets/pt10/pfidiso02/muonJetVsLeptonPt', 'wjets/pt10/muonJetVsLeptonPt',
+    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
+
+mu_fr_qcd_2d = TwoDimFakeRate(
+    'qcd/pt10/pfidiso02/muonJetVsLeptonPt', 'qcd/pt10/muonJetVsLeptonPt',
+    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
+
+# eta dependent
+mu_fr_ewk_2d_f = TwoDimFakeRate(
+    'wjets/pt10f/pfidiso02/muonJetVsLeptonPt', 'wjets/pt10f/muonJetVsLeptonPt',
+    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
+mu_fr_qcd_2d_f = TwoDimFakeRate(
+    'qcd/pt10f/pfidiso02/muonJetVsLeptonPt', 'qcd/pt10f/muonJetVsLeptonPt',
+    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
+
+mu_fr_ewk_2d_t = TwoDimFakeRate(
+    'wjets/pt10t/pfidiso02/muonJetVsLeptonPt', 'wjets/pt10f/muonJetVsLeptonPt',
+    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
+mu_fr_qcd_2d_t = TwoDimFakeRate(
+    'qcd/pt10t/pfidiso02/muonJetVsLeptonPt', 'qcd/pt10f/muonJetVsLeptonPt',
+    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
+
+mu_fr_ewk_2d_b = TwoDimFakeRate(
+    'wjets/pt10b/pfidiso02/muonJetVsLeptonPt', 'wjets/pt10b/muonJetVsLeptonPt',
+    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
+mu_fr_qcd_2d_b = TwoDimFakeRate(
+    'qcd/pt10b/pfidiso02/muonJetVsLeptonPt', 'qcd/pt10b/muonJetVsLeptonPt',
+    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
+
+if __name__ == "__main__":
+    mu_fr_ewk_2d.plot("ewk_2d_frs.png")
+    mu_fr_qcd_2d.plot("qcd_2d_frs.png")
+    mu_fr_ewk_2d_f.plot("ewk_2df_frs.png")
+    mu_fr_qcd_2d_f.plot("qcd_2df_frs.png")
+    mu_fr_ewk_2d_b.plot("ewk_2db_frs.png")
+    mu_fr_qcd_2d_b.plot("qcd_2db_frs.png")
+    mu_fr_ewk_2d_t.plot("ewk_2dt_frs.png")
+    mu_fr_qcd_2d_t.plot("qcd_2dt_frs.png")
+
 ################################################################################
 #### MC-DATA and PU corrections ################################################
 ################################################################################
@@ -66,7 +128,7 @@ pu_distributions = glob.glob(os.path.join(
 
 mc_pu_tag = 'S6' if is7TeV else 'S10'
 # Hack to use S6 weights for the HWW 7TeV sample we use in 8TeV
-if 'HWW3l' in os.environ['megatarget'] and not is7TeV:
+if 'HWW3l' in os.environ.get('megatarget', 'NOTSET') and not is7TeV:
     print "Using S6_600bins PU weights for HWW3l"
     mc_pu_tag = 'S6_600bins'
 
@@ -291,19 +353,43 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         return mc_corrector(row)
 
     def obj1_weight(self, row):
-        return highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
+        #return highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
+        if row.m1AbsEta < 0.8:
+            return mu_fr_ewk_2d_b(max(row.m1JetPt, row.m1Pt), row.m1Pt)
+        elif row.m1AbsEta < 1.3:
+            return mu_fr_ewk_2d_t(max(row.m1JetPt, row.m1Pt), row.m1Pt)
+        else:
+            return mu_fr_ewk_2d_f(max(row.m1JetPt, row.m1Pt), row.m1Pt)
 
     def obj2_weight(self, row):
-        return lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
+        #return lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
+        if row.m2AbsEta < 0.8:
+            return mu_fr_ewk_2d_b(max(row.m2JetPt, row.m2Pt), row.m2Pt)
+        elif row.m2AbsEta < 1.3:
+            return mu_fr_ewk_2d_t(max(row.m2JetPt, row.m2Pt), row.m2Pt)
+        else:
+            return mu_fr_ewk_2d_f(max(row.m2JetPt, row.m2Pt), row.m2Pt)
 
     def obj3_weight(self, row):
         return tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row):
-        return highpt_mu_qcd_fr(max(row.m1JetPt, row.m1Pt))
+        #return highpt_mu_qcd_fr(max(row.m1JetPt, row.m1Pt))
+        if row.m1AbsEta < 0.8:
+            return mu_fr_qcd_2d_b(max(row.m1JetPt, row.m1Pt), row.m1Pt)
+        elif row.m1AbsEta < 1.3:
+            return mu_fr_qcd_2d_t(max(row.m1JetPt, row.m1Pt), row.m1Pt)
+        else:
+            return mu_fr_qcd_2d_f(max(row.m1JetPt, row.m1Pt), row.m1Pt)
 
     def obj2_qcd_weight(self, row):
-        return lowpt_mu_qcd_fr(max(row.m2JetPt, row.m2Pt))
+        #return lowpt_mu_qcd_fr(max(row.m2JetPt, row.m2Pt))
+        if row.m2AbsEta < 0.8:
+            return mu_fr_qcd_2d_b(max(row.m2JetPt, row.m2Pt), row.m2Pt)
+        elif row.m2AbsEta < 1.3:
+            return mu_fr_qcd_2d_t(max(row.m2JetPt, row.m2Pt), row.m2Pt)
+        else:
+            return mu_fr_qcd_2d_f(max(row.m2JetPt, row.m2Pt), row.m2Pt)
 
     def obj3_qcd_weight(self, row):
         return tau_qcd_fr(row.tPt)
