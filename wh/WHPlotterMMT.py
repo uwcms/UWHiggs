@@ -244,9 +244,13 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-leadMass')
 
-    plotter.plot_final_f3('subMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3q-subMass')
 
     plotter.plot_final_f3_split('subMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
@@ -264,6 +268,25 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-m2JetPt')
 
+    ###########################################################################
+    ##  Check QCD contamination in control regions ############################
+    ###########################################################################
+
+    plotter.plot_qcd_contamination('subMass', 2, 10)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-qcd2-subMass')
+
+    plotter.plot_qcd_contamination('subMass', 1, 20)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-qcd1-subMass')
+
+    plotter.plot_qcd_contamination('m2JetPt', 2, 10)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-qcd2-m2JetPt')
+
+    plotter.plot_qcd_contamination('m1JetPt', 1, 20)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-qcd1-m1JetPt')
 
     ###########################################################################
     ##  Making shape file     #################################################

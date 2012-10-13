@@ -209,9 +209,21 @@ if __name__ == "__main__":
     #plotter.add_cms_blurb(sqrts)
     #plotter.save('final-wz-mJetPt')
 
-    plotter.plot_final_f3('subMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass')
+
+    plotter.plot_final_f3('etMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-etMass')
+
+    plotter.plot_final_f3('emMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-emMass')
+
+    #plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=True)
+    #plotter.add_cms_blurb(sqrts)
+    #plotter.save('final-f3q-subMass')
 
     plotter.plot_final_f3('subMass', 10, xaxis='m_{#l_{1}#tau_{#mu}} (GeV)', show_error=True)
     plotter.add_cms_blurb(sqrts)

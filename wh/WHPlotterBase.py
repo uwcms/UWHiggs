@@ -15,7 +15,7 @@ import rootpy.plotting.views as views
 from FinalStateAnalysis.PlotTools.Plotter import Plotter
 from FinalStateAnalysis.PlotTools.BlindView import BlindView
 from FinalStateAnalysis.PlotTools.PoissonView import PoissonView
-from FinalStateAnalysis.MetaData.data_styles import data_styles
+from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 
 import math
 
@@ -59,6 +59,60 @@ class BackgroundErrorView(object):
         bkg_error.SetFillStyle(3013)
         bkg_error.legendstyle = 'f'
         return bkg_error
+
+class QCDCorrectionView(object):
+    ''' Get the estimate of the fake rate, correcting for QCD contamination
+
+    The amount of QCD contamination "q" in each control region (cr) bin
+    is cr_qcd_est/cr.
+
+    The final estimate is then:
+
+        q*cr_qcd_weight + (1-q)*cr_ewk_weight
+
+    '''
+    def __init__(self, data_view, cr, cr_qcd_est, cr_ewk_weight, cr_qcd_weight):
+        self.cr = views.SubdirectoryView(data_view, cr)
+        self.cr_qcd_est= views.SubdirectoryView(data_view, cr_qcd_est)
+        self.cr_ewk_weight = views.SubdirectoryView(data_view, cr_ewk_weight)
+        self.cr_qcd_weight = views.SubdirectoryView(data_view, cr_qcd_weight)
+
+    def Get(self, path):
+        ''' Get the fake est histo corrected for the QCD effect '''
+
+        # Compute the fraction of QCD in each bin
+        qcd_fraction = self.cr_qcd_est.Get(path).Clone()
+        qcd_fraction.Divide(self.cr.Get(path))
+        # A histogram where each bin is initially 1.0
+        ewk_fraction = self.cr_qcd_est.Get(path).Clone()
+        ewk_fraction.Reset()
+        # Make sure each bin is <= 1
+        for bin in range(0, qcd_fraction.GetNbinsX()+1):
+            ewk_fraction.SetBinContent(bin, 1)
+            ewk_fraction.SetBinError(bin, 0)
+            #print bin, qcd_fraction.GetBinContent(bin)
+            if qcd_fraction.GetBinContent(bin) > 1:
+                qcd_fraction.SetBinContent(bin, 1)
+
+        ewk_fraction.Sumw2()
+        ewk_fraction.Add(qcd_fraction, -1)
+        for bin in range(0, qcd_fraction.GetNbinsX()+1):
+            pass
+            #print ewk_fraction.GetBinContent(bin)
+
+        cr_ewk_weight_corrected = self.cr_ewk_weight.Get(path).Clone()
+        print "ewk", cr_ewk_weight_corrected.Integral()
+        cr_ewk_weight_corrected.Multiply(ewk_fraction)
+
+        cr_qcd_weight_corrected = self.cr_qcd_weight.Get(path).Clone()
+        print "qcd", cr_qcd_weight_corrected.Integral()
+        cr_qcd_weight_corrected.Multiply(qcd_fraction)
+
+        total = cr_ewk_weight_corrected.Clone()
+        total.Add(cr_qcd_weight_corrected)
+        print "total", total.Integral()
+
+        return total
 
 class WHPlotterBase(Plotter):
     def __init__(self, files, lumifiles, outputdir, blind=True):
@@ -139,7 +193,38 @@ class WHPlotterBase(Plotter):
 
         return output
 
-    def make_obj3_fail_cr_views(self, rebin):
+    def make_qcd_proj_views(self, control_region, rebin):
+        ''' Make views when obj1 or obj2 fails, projecting QCD in
+
+        QCD comes from the triple fake region
+        '''
+        all_data_view =self.rebin_view(self.get_view('data'), rebin)
+
+        mapping = {
+            1: {
+                'obs' : 'ss/f1p2p3',
+                'qcd' : 'ss/f1f2f3/w23',
+            },
+            2: {
+                'obs' : 'ss/p1f2p3',
+                'qcd' : 'ss/f1f2f3/w13',
+            },
+        }
+
+        data_view = views.TitleView(views.SubdirectoryView(
+            all_data_view, mapping[control_region]['obs']),
+            "Anti-iso obj %i" % control_region)
+
+        qcd_view = views.TitleView(views.SubdirectoryView(
+            all_data_view, mapping[control_region]['qcd']), "QCD")
+
+        qcd_view = views.StyleView(
+            qcd_view, format='hist', linecolor=colors['red'],
+            fillstyle=0, legendstyle='l'
+        )
+        return { 'obs' : data_view, 'qcd' : qcd_view }
+
+    def make_obj3_fail_cr_views(self, rebin, qcd_correction=False):
         ''' Make views when obj3 fails, estimating the bkg in obj1 pass using
             f1p2f3 '''
         wz_view = views.SubdirectoryView(
@@ -159,6 +244,20 @@ class WHPlotterBase(Plotter):
         obj2_view = views.SubdirectoryView(all_data_view, 'ss/p1f2f3/w2')
         # View of weighted obj1&2-fails data
         obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2f3/w12')
+
+        if qcd_correction:
+            obj1_view = QCDCorrectionView(all_data_view,
+                                          'ss/f1p2f3',
+                                          'ss/f1f2f3/q2',
+                                          'ss/f1p2f3/w1',
+                                          'ss/f1p2f3/q1')
+            obj2_view = QCDCorrectionView(all_data_view,
+                                          'ss/p1f2f3',
+                                          'ss/f1f2f3/q1',
+                                          'ss/p1f2f3/w2',
+                                          'ss/p1f2f3/q2')
+            obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2f3/w12')
+
 
         # Give the individual object views nice colors
         obj1_view = views.TitleView(
@@ -281,7 +380,7 @@ class WHPlotterBase(Plotter):
         nbins = sig_view['wz'].Get(variable).GetNbinsX()
         return self.write_shapes(variable, nbins, outdir, unblinded)
 
-    def plot_final(self, variable, rebin=1, xaxis='', maxy=10, show_error=False):
+    def plot_final(self, variable, rebin=1, xaxis='', maxy=10, show_error=False, qcd_correction=False):
         ''' Plot the final output - with bkg. estimation '''
         sig_view = self.make_signal_views(rebin)
         vh_10x = views.TitleView(
@@ -352,9 +451,9 @@ class WHPlotterBase(Plotter):
         # Add legend
         self.add_legend(histo, leftside=False, entries=4)
 
-    def plot_final_f3(self, variable, rebin=1, xaxis='', maxy=None, show_error=False):
+    def plot_final_f3(self, variable, rebin=1, xaxis='', maxy=None, show_error=False, qcd_correction=False):
         ''' Plot the final F3 control region - with bkg. estimation '''
-        sig_view = self.make_obj3_fail_cr_views(rebin)
+        sig_view = self.make_obj3_fail_cr_views(rebin, qcd_correction)
 
         stack = views.StackView(
             sig_view['zz'],
@@ -423,4 +522,17 @@ class WHPlotterBase(Plotter):
         self.keep.append(histo)
 
         #legend.AddEntry(data)
+        legend.Draw()
+
+    def plot_qcd_contamination(self, variable, control_region, rebin):
+        proj_views = self.make_qcd_proj_views(control_region, rebin)
+        data = proj_views['obs'].Get(variable)
+        qcd = proj_views['qcd'].Get(variable)
+
+        data.Draw()
+        qcd.Draw('same')
+        self.keep.append(data)
+        self.keep.append(qcd)
+
+        legend = self.add_legend([data, qcd], leftside=False, entries=2)
         legend.Draw()
