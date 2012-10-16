@@ -173,6 +173,15 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
+  # Version in W->e nu events (EMu ntpule)
+  "m_wejets_pt10_pfidiso01_muonJetPt" => Hash[
+    "samples" => Array["diboson", "data_em"],
+    "analyzer" => "FakeRatesMuInEM",
+    "function" => landau,
+    "variables" => landau_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
   "m_wjets_pt10t_pfidiso02_muonJetPt" => Hash[
     "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
@@ -195,6 +204,14 @@ fr_fits = Hash[
     "function" => landau,
     "variables" => landau_vars,
     "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+  "m_qcd_pt10_pfidiso01_muonJetPt" => Hash[
+    "samples" => Array["diboson", "data_mm"],
+    "analyzer" => "FakeRatesMM",
+    "function" => landau,
+    "variables" => landau_vars,
+    "rebin" => fr_binning_tight,
     "range" => "10 100",
   ],
   "m_qcd_pt10_pfidiso02_muonJetPt" => Hash[
