@@ -165,6 +165,14 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
+  "m_wjets_pt10_pfidiso02_muonJetPt" => Hash[
+    "samples" => Array["diboson", "data_mm"],
+    "analyzer" => "FakeRatesMM",
+    "function" => landau,
+    "variables" => landau_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
   "m_wjets_pt10t_pfidiso02_muonJetPt" => Hash[
     "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
@@ -515,8 +523,7 @@ end
 ### Copying card configuration to official place ###############################
 ################################################################################
 
-#$httcombodir="#{ENV['CMSSW_BASE']}/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
-$httcombodir="/afs/hep.wisc.edu/cms/efriis/Limits2/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
+$httcombodir="/afs/hep.wisc.edu/cms/efriis/HIG-12-051/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
 
 file "#{$httcombodir}/cgs-sm-#{$period}-00.conf" => ["#{$carddir}/cgs.conf"] do |t|
     puts t.investigation
