@@ -50,18 +50,23 @@ mc_view = views.SumView(
 
 mc_inverted = views.ScaleView(mc_view, -1)
 
+sqrts = 7 if '7TeV' in jobid else 8
+
 qcd_view = views.StyleView(
     views.TitleView(
-        views.SumView(views.PathModifierView(plotter.data, get_ss), mc_inverted),
+        views.ScaleView(
+            views.SumView(views.PathModifierView(plotter.data, get_ss), mc_inverted),
+            1.4 if sqrts == 8 else 1.28 # OS/SS from Valentina
+        ),
         'QCD'),
-    **data_styles['QCD*'])
+    **data_styles['WZ*'])
 
 plotter.views['QCD'] = { 'view': qcd_view }
 
 # Override ordering
 plotter.mc_samples = [
-    'WZJetsTo3LNu*',
-    'ZZJetsTo4L*',
+    #'WZJetsTo3LNu*',
+    #'ZZJetsTo4L*',
     'QCD',
     'WW*',
     'WplusJets_madgraph',
@@ -69,9 +74,8 @@ plotter.mc_samples = [
     'Zjets_M50',
 ]
 
-sqrts = 7 if '7TeV' in jobid else 8
 
-plotter.plot_mc_vs_data('em', 'emMass', rebin=10, leftside=False,
+plotter.plot_mc_vs_data('em', 'emMass', rebin=5, leftside=False,
                         xaxis='m_{e#mu} (GeV)')
 plotter.add_cms_blurb(sqrts)
 plotter.save('mass')
