@@ -219,6 +219,15 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass')
 
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', show_error=True,
+                       fake_error=0, wz_error=0, zz_error=0)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-wshaperror-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', show_error=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-werror-subMass')
+
     plotter.plot_final_f3('etMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-etMass')
