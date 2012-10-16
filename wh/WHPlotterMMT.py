@@ -228,9 +228,18 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass')
 
+    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', use_qcd_weight=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-qweight-subMass')
+
     plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', show_error=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass-werror')
+
+    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)',
+                       show_error=True, fake_error=0, wz_error=0, zz_error=0)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-subMass-wshapeerror')
 
     plotter.plot_final('m2Iso', 10)
     plotter.add_cms_blurb(sqrts)
@@ -256,9 +265,17 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass')
 
+    plotter.plot_final_f3('m2JetBtag', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-m2JetBtag')
+
     plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3q-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, use_qcd_weight=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-qweight-subMass')
 
     plotter.plot_final_f3_split('subMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)

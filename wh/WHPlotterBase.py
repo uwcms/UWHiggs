@@ -99,6 +99,7 @@ class QCDCorrectionView(object):
         for bin in range(0, qcd_fraction.GetNbinsX()+1):
             pass
             #print ewk_fraction.GetBinContent(bin)
+        print "QCD correction in %s" % path
 
         cr_ewk_weight_corrected = self.cr_ewk_weight.Get(path).Clone()
         print "ewk", cr_ewk_weight_corrected.Integral()
@@ -117,12 +118,13 @@ class QCDCorrectionView(object):
 class WHPlotterBase(Plotter):
     def __init__(self, files, lumifiles, outputdir, blind=True):
         blinder = None
+        self.blind = blind
         if blind:
             # Don't look at the SS all pass region
             blinder = lambda x: BlindView(x, "ss/p1p2p3/.*")
         super(WHPlotterBase, self).__init__(files, lumifiles, outputdir, blinder)
 
-    def make_signal_views(self, rebin, unblinded=False):
+    def make_signal_views(self, rebin, unblinded=False, use_qcd_weight=False):
         ''' Make signal views with FR background estimation '''
 
         wz_view = views.SubdirectoryView(
@@ -134,18 +136,20 @@ class WHPlotterBase(Plotter):
             'ss/p1p2p3/'
         )
         all_data_view =self.rebin_view(self.get_view('data'), rebin)
-        if unblinded:
+        if False and unblinded:
             all_data_view =self.rebin_view(
                 self.get_view('data', 'unblinded_view'), rebin)
 
         data_view = views.SubdirectoryView(all_data_view, 'ss/p1p2p3/')
 
+        weight_type = 'w' if not use_qcd_weight else 'q'
+
         # View of weighted obj1-fails data
-        obj1_view = views.SubdirectoryView(all_data_view, 'ss/f1p2p3/w1')
+        obj1_view = views.SubdirectoryView(all_data_view, 'ss/f1p2p3/%s1' % weight_type)
         # View of weighted obj2-fails data
-        obj2_view = views.SubdirectoryView(all_data_view, 'ss/p1f2p3/w2')
+        obj2_view = views.SubdirectoryView(all_data_view, 'ss/p1f2p3/%s2' % weight_type)
         # View of weighted obj1&2-fails data
-        obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2p3/w12')
+        obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2p3/%s12' % weight_type)
 
         # Give the individual object views nice colors
         obj1_view = views.TitleView(
@@ -224,7 +228,8 @@ class WHPlotterBase(Plotter):
         )
         return { 'obs' : data_view, 'qcd' : qcd_view }
 
-    def make_obj3_fail_cr_views(self, rebin, qcd_correction=False):
+    def make_obj3_fail_cr_views(self, rebin, qcd_correction=False,
+                               use_qcd_weight=False):
         ''' Make views when obj3 fails, estimating the bkg in obj1 pass using
             f1p2f3 '''
         wz_view = views.SubdirectoryView(
@@ -238,12 +243,14 @@ class WHPlotterBase(Plotter):
         all_data_view =self.rebin_view(self.get_view('data'), rebin)
         data_view = views.SubdirectoryView(all_data_view, 'ss/p1p2f3/')
 
+        weight_type = 'w' if not use_qcd_weight else 'q'
+
         # View of weighted obj1-fails data
-        obj1_view = views.SubdirectoryView(all_data_view, 'ss/f1p2f3/w1')
+        obj1_view = views.SubdirectoryView(all_data_view, 'ss/f1p2f3/%s1' % weight_type)
         # View of weighted obj2-fails data
-        obj2_view = views.SubdirectoryView(all_data_view, 'ss/p1f2f3/w2')
+        obj2_view = views.SubdirectoryView(all_data_view, 'ss/p1f2f3/%s2' % weight_type)
         # View of weighted obj1&2-fails data
-        obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2f3/w12')
+        obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2f3/%s12' % weight_type)
 
         if qcd_correction:
             obj1_view = QCDCorrectionView(all_data_view,
@@ -380,9 +387,10 @@ class WHPlotterBase(Plotter):
         nbins = sig_view['wz'].Get(variable).GetNbinsX()
         return self.write_shapes(variable, nbins, outdir, unblinded)
 
-    def plot_final(self, variable, rebin=1, xaxis='', maxy=10, show_error=False, qcd_correction=False):
+    def plot_final(self, variable, rebin=1, xaxis='', maxy=15, show_error=False,
+                   qcd_correction=False, use_qcd_weight=False, **kwargs):
         ''' Plot the final output - with bkg. estimation '''
-        sig_view = self.make_signal_views(rebin)
+        sig_view = self.make_signal_views(rebin, use_qcd_weight=use_qcd_weight)
         vh_10x = views.TitleView(
             views.StyleView(
                 views.ScaleView(sig_view['signal120'], 5),
@@ -411,6 +419,7 @@ class WHPlotterBase(Plotter):
                 sig_view['fakes'],
                 sig_view['wz'],
                 sig_view['zz'],
+                **kwargs
             )
             bkg_error = bkg_error_view.Get(variable)
             self.keep.append(bkg_error)
@@ -421,7 +430,8 @@ class WHPlotterBase(Plotter):
         sig_view['data'] = PoissonView(sig_view['data'], x_err=False)
 
         data = sig_view['data'].Get(variable)
-        data.Draw('pe,same')
+        if not self.blind:
+            data.Draw('pe,same')
         self.keep.append(data)
 
         #legend.AddEntry(data)
@@ -451,9 +461,11 @@ class WHPlotterBase(Plotter):
         # Add legend
         self.add_legend(histo, leftside=False, entries=4)
 
-    def plot_final_f3(self, variable, rebin=1, xaxis='', maxy=None, show_error=False, qcd_correction=False):
+    def plot_final_f3(self, variable, rebin=1, xaxis='', maxy=None,
+                      show_error=False, qcd_correction=False,
+                      use_qcd_weight=False, **kwargs):
         ''' Plot the final F3 control region - with bkg. estimation '''
-        sig_view = self.make_obj3_fail_cr_views(rebin, qcd_correction)
+        sig_view = self.make_obj3_fail_cr_views(rebin, qcd_correction, use_qcd_weight)
 
         stack = views.StackView(
             sig_view['zz'],
@@ -473,6 +485,7 @@ class WHPlotterBase(Plotter):
                 views.SumView(sig_view['fakes'], sig_view['charge_fakes']),
                 sig_view['wz'],
                 sig_view['zz'],
+                **kwargs
             )
             bkg_error = bkg_error_view.Get(variable)
             self.keep.append(bkg_error)
