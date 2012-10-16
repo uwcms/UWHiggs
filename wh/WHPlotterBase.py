@@ -353,7 +353,8 @@ class WHPlotterBase(Plotter):
 
     def write_shapes(self, variable, rebin, outdir, unblinded=False):
         ''' Write final shape histos for [variable] into a TDirectory [outputdir] '''
-        sig_view = self.make_signal_views(rebin, unblinded)
+        unblinded = False
+        sig_view = self.make_signal_views(rebin, unblinded=unblinded)
         outdir.cd()
         wz = sig_view['wz'].Get(variable)
         zz = sig_view['zz'].Get(variable)
@@ -396,8 +397,11 @@ class WHPlotterBase(Plotter):
                 views.ScaleView(sig_view['signal120'], 5),
                 **data_styles['VH*']
             ),
-            "(5#times) m_{H} = 120"
+            "(5#times) m_{H} = 125"
         )
+
+        # Fudge factor to go from 120->125 - change in xsec*BR
+        vh_10x = views.ScaleView(vh_10x, .783)
 
         stack = views.StackView(
             sig_view['wz'],
