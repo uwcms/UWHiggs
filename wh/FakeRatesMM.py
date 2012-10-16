@@ -91,6 +91,7 @@ class FakeRatesMM(MegaBase):
         def preselection(row):
             if not row.m1_m2_SS: return False
             if not row.doubleMuPass: return False
+            if row.m2Pt > row.m1Pt: return False
             if not row.m1Pt > 20: return False
             if not row.m1PFIDTight: return False
             if not row.m2Pt > 10: return False
