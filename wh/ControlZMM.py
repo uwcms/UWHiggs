@@ -10,6 +10,7 @@ import MuMuTree
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 import glob
 import os
+import FinalStateAnalysis.TagAndProbe.H2TauCorrections as H2TauCorrections
 import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
 import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
 import ROOT
@@ -58,13 +59,11 @@ def mc_corrector_2012(row):
     if row.run > 2:
         return 1
     pu = pu_corrector(row.nTruePU)
-    m1id = muon_pog_PFTight_2012(row.m1Pt, row.m1Eta)
-    m2id = muon_pog_PFTight_2012(row.m2Pt, row.m2Eta)
-    m1iso = muon_pog_PFRelIsoDB02_2012(row.m1Pt, row.m1Eta)
-    m2iso = muon_pog_PFRelIsoDB02_2012(row.m2Pt, row.m2Eta)
+    m1idiso = H2TauCorrections.correct_mu_idiso_2012(row.m1Pt, row.m1AbsEta)
+    m2idiso = H2TauCorrections.correct_mu_idiso_2012(row.m2Pt, row.m2AbsEta)
     m1Trig = muon_pog_Mu17Mu8_Mu17_2012(row.m1Pt, row.m1Eta)
     m2Trig = muon_pog_Mu17Mu8_Mu8_2012(row.m2Pt, row.m2Eta)
-    return pu*m1id*m2id*m1iso*m2iso*m1Trig*m2Trig
+    return pu*m1idiso*m2idiso*m1Trig*m2Trig
 
 # Determine which set of corrections to use
 mc_corrector = mc_corrector_2011
