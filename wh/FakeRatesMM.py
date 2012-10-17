@@ -50,7 +50,7 @@ class FakeRatesMM(MegaBase):
                 self.histograms[denom_key] = denom_histos
 
                 for numerator in ['pfid', 'iso03', 'pfidiso03',
-                                  'pfidiso02', 'pfidiso01']:
+                                  'pfidiso02', 'pfidiso01', 'h2taucuts']:
                     num_key = (region, denom, numerator)
                     num_histos = {}
                     self.histograms[num_key] = num_histos
@@ -130,20 +130,23 @@ class FakeRatesMM(MegaBase):
                 # This is a QCD or Wjets
                 fill(histos[(region, denominator_tag)], row)
 
-                if row.m2PFIDTight:
-                    fill(histos[(region, denominator_tag, 'pfid')], row)
-
                 if row.m2RelPFIsoDB < 0.3:
                     fill(histos[(region, denominator_tag, 'iso03')], row)
 
-                if row.m2PFIDTight and row.m2RelPFIsoDB < 0.3:
-                    fill(histos[(region, denominator_tag, 'pfidiso03')], row)
+                if row.m2PFIDTight:
+                    fill(histos[(region, denominator_tag, 'pfid')], row)
 
-                if row.m2PFIDTight and row.m2RelPFIsoDB < 0.2:
-                    fill(histos[(region, denominator_tag, 'pfidiso02')], row)
+                    if row.m2RelPFIsoDB < 0.3:
+                        fill(histos[(region, denominator_tag, 'pfidiso03')], row)
 
-                if row.m2PFIDTight and row.m2RelPFIsoDB < 0.1:
-                    fill(histos[(region, denominator_tag, 'pfidiso01')], row)
+                    if row.m2RelPFIsoDB < 0.2:
+                        fill(histos[(region, denominator_tag, 'pfidiso02')], row)
+
+                    if row.m2RelPFIsoDB < 0.1:
+                        fill(histos[(region, denominator_tag, 'pfidiso01')], row)
+
+                    if (row.m2RelPFIsoDB < 0.15 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.1:
+                        fill(histos[(region, denominator_tag, 'h2taucuts')], row)
 
             fill_denominator('pt10')
 
