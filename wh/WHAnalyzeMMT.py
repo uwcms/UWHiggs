@@ -28,12 +28,14 @@ from TwoDimFakeRate import TwoDimFakeRate
 # Get fitted fake rate functions
 frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
 highpt_mu_fr = build_roofunctor(
-    frfit_dir + '/m_wjets_pt20_pfidiso02_muonJetPt.root',
+    #frfit_dir + '/m_wjets_pt20_pfidiso02_muonJetPt.root',
+    frfit_dir + '/m_wjets_pt20_h2taucuts_muonJetPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
 )
 lowpt_mu_fr = build_roofunctor(
-    frfit_dir + '/m_wjets_pt10_pfidiso02_muonJetPt.root',
+    #frfit_dir + '/m_wjets_pt10_pfidiso02_muonJetPt.root',
+    frfit_dir + '/m_wjets_pt10_h2taucuts_muonJetPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
 )
@@ -44,12 +46,12 @@ tau_fr = build_roofunctor(
 )
 
 highpt_mu_qcd_fr = build_roofunctor(
-    frfit_dir + '/m_qcd_pt20_pfidiso02_muonJetPt.root',
+    frfit_dir + '/m_qcd_pt20_h2taucuts_muonJetPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
 )
 lowpt_mu_qcd_fr = build_roofunctor(
-    frfit_dir + '/m_qcd_pt10_pfidiso02_muonJetPt.root',
+    frfit_dir + '/m_qcd_pt10_h2taucuts_muonJetPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
 )
@@ -331,10 +333,14 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         return bool(row.m1_m2_SS)
 
     def obj1_id(self, row):
-        return bool(row.m1PFIDTight) and bool(row.m1RelPFIsoDB < 0.2)
+        return bool(row.m1PFIDTight) and (
+            row.m1RelPFIsoDB < 0.1 or
+            (row.m1RelPFIsoDB < 0.15 and row.m1AbsEta < 1.479))
 
     def obj2_id(self, row):
-        return bool(row.m2PFIDTight) and bool(row.m2RelPFIsoDB < 0.2)
+        return bool(row.m2PFIDTight) and (
+            row.m2RelPFIsoDB < 0.1 or
+            (row.m2RelPFIsoDB < 0.15 and row.m2AbsEta < 1.479))
 
     def obj3_id(self, row):
         return bool(row.tLooseMVAIso)

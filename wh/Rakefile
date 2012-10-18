@@ -125,6 +125,26 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
+  "e_wjets_pt10_h2taucuts_eJetPt" => Hash[
+    "samples" => Array["diboson", "data_em"],
+    "analyzer" => "FakeRatesEM",
+    #"function" => landau,
+    #"variables" => landau_vars,
+    "function" => exponential,
+    "variables" => exponential_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+  "e_qcd_pt10_h2taucuts_eJetPt" => Hash[
+    "samples" => Array["diboson", "data_em"],
+    "analyzer" => "FakeRatesEM",
+    #"function" => landau,
+    #"variables" => landau_vars,
+    "function" => exponential,
+    "variables" => exponential_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
   "e_wjets_pt10_mvaidiso02_eJetPt" => Hash[
     "samples" => Array["diboson", "data_em"],
     "analyzer" => "FakeRatesEM",
@@ -158,6 +178,38 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
   "m_wjets_pt20_pfidiso03_muonJetPt" => Hash[
+    "samples" => Array["diboson", "data_mm"],
+    "analyzer" => "FakeRatesMM",
+    "function" => landau,
+    "variables" => landau_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+  "m_wjets_pt10_h2taucuts_muonJetPt" => Hash[
+    "samples" => Array["diboson", "data_mm"],
+    "analyzer" => "FakeRatesMM",
+    "function" => landau,
+    "variables" => landau_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+  "m_wjets_pt20_h2taucuts_muonJetPt" => Hash[
+    "samples" => Array["diboson", "data_mm"],
+    "analyzer" => "FakeRatesMM",
+    "function" => landau,
+    "variables" => landau_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+  "m_qcd_pt10_h2taucuts_muonJetPt" => Hash[
+    "samples" => Array["diboson", "data_mm"],
+    "analyzer" => "FakeRatesMM",
+    "function" => landau,
+    "variables" => landau_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+  "m_qcd_pt20_h2taucuts_muonJetPt" => Hash[
     "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
     "function" => landau,
@@ -385,18 +437,18 @@ task :emcontrol => get_analyzer_results("ControlEM.py", samples['ewk'] + samples
 
 # IF the FR fits change, make sure we re-run the analyses
 file "WHAnalyzeEMT.py" => [ 
-  "#{$frfit_dir}/e_wjets_pt10_mvaidiso03_eJetPt.root", 
-  "#{$frfit_dir}/m_wjets_pt20_pfidiso02_muonJetPt.root", 
-  "#{$frfit_dir}/e_qcd_pt10_mvaidiso03_eJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt20_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/e_wjets_pt10_h2taucuts_eJetPt.root", 
+  "#{$frfit_dir}/m_wjets_pt20_h2taucuts_muonJetPt.root", 
+  "#{$frfit_dir}/e_qcd_pt10_h2taucuts_eJetPt.root", 
+  "#{$frfit_dir}/m_qcd_pt20_h2taucuts_muonJetPt.root", 
   "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
   sh "touch #{t.name}"
 end
 file "WHAnalyzeMMT.py" => [ 
-  "#{$frfit_dir}/m_wjets_pt20_pfidiso02_muonJetPt.root", 
-  "#{$frfit_dir}/m_wjets_pt10_pfidiso02_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt20_pfidiso02_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt10_pfidiso02_muonJetPt.root", 
+  "#{$frfit_dir}/m_wjets_pt20_h2taucuts_muonJetPt.root", 
+  "#{$frfit_dir}/m_wjets_pt10_h2taucuts_muonJetPt.root", 
+  "#{$frfit_dir}/m_qcd_pt20_h2taucuts_muonJetPt.root", 
+  "#{$frfit_dir}/m_qcd_pt10_h2taucuts_muonJetPt.root", 
   "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
   sh "touch #{t.name}"
 end

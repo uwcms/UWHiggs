@@ -20,12 +20,14 @@ import ROOT
 
 frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
 highpt_mu_fr = build_roofunctor(
-    frfit_dir + '/m_wjets_pt20_pfidiso02_muonJetPt.root',
+    #frfit_dir + '/m_wjets_pt20_pfidiso02_muonJetPt.root',
+    frfit_dir + '/m_wjets_pt20_h2taucuts_muonJetPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
 )
 lowpt_e_fr = build_roofunctor(
-    frfit_dir + '/e_wjets_pt10_mvaidiso03_eJetPt.root',
+    #frfit_dir + '/e_wjets_pt10_mvaidiso03_eJetPt.root',
+    frfit_dir + '/e_wjets_pt10_h2taucuts_eJetPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
 )
@@ -35,12 +37,14 @@ tau_fr = build_roofunctor(
     'efficiency'
 )
 highpt_mu_qcd_fr = build_roofunctor(
-    frfit_dir + '/m_qcd_pt20_pfidiso02_muonJetPt.root',
+    #frfit_dir + '/m_qcd_pt20_pfidiso02_muonJetPt.root',
+    frfit_dir + '/m_qcd_pt20_h2taucuts_muonJetPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
 )
 lowpt_e_qcd_fr = build_roofunctor(
-    frfit_dir + '/e_qcd_pt10_mvaidiso03_eJetPt.root',
+    #frfit_dir + '/e_qcd_pt10_mvaidiso03_eJetPt.root',
+    frfit_dir + '/e_qcd_pt10_h2taucuts_eJetPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
 )
@@ -215,10 +219,15 @@ class WHAnalyzeEMT(WHAnalyzerBase.WHAnalyzerBase):
         return bool(row.e_m_SS)
 
     def obj1_id(self, row):
-        return bool(row.mPFIDTight) and bool(row.mRelPFIsoDB < 0.2)
+        #return bool(row.mPFIDTight) and bool(row.mRelPFIsoDB < 0.2)
+        return bool(row.mPFIDTight) and (
+            row.mRelPFIsoDB < 0.1 or
+            (row.mRelPFIsoDB < 0.15 and row.mAbsEta < 1.479))
 
     def obj2_id(self, row):
-        return bool(row.eMVAIDH2TauWP) and bool(row.eRelPFIsoDB < 0.3)
+        return bool(row.eMVAIDH2TauWP) and bool(
+            row.eRelPFIsoDB < 0.1 or
+            (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479))
 
     def obj3_id(self, row):
         return bool(row.tLooseMVAIso)
