@@ -77,40 +77,33 @@ def get_view(sample_pattern):
 
 # FR data, subtracting WZ and ZZ.
 mu_fr_ewk_2d = TwoDimFakeRate(
-    'wjets/pt10/pfidiso02/muonJetVsLeptonPt', 'wjets/pt10/muonJetVsLeptonPt',
+    'wjets/pt10/h2taucuts/muonJetVsLeptonPt', 'wjets/pt10/muonJetVsLeptonPt',
     get_view('data'), get_view('WZ*'), get_view('ZZ*'))
 
 mu_fr_qcd_2d = TwoDimFakeRate(
-    'qcd/pt10/pfidiso02/muonJetVsLeptonPt', 'qcd/pt10/muonJetVsLeptonPt',
+    'qcd/pt10/h2taucuts/muonJetVsLeptonPt', 'qcd/pt10/muonJetVsLeptonPt',
     get_view('data'), get_view('WZ*'), get_view('ZZ*'))
 
 # eta dependent jet-pt vs pt
 mu_fr_ewk_2d_f = TwoDimFakeRate(
-    'wjets/pt10f/pfidiso02/muonJetVsLeptonPt', 'wjets/pt10f/muonJetVsLeptonPt',
+    'wjets/pt10f/h2taucuts/muonJetVsLeptonPt', 'wjets/pt10f/muonJetVsLeptonPt',
     get_view('data'), get_view('WZ*'), get_view('ZZ*'))
 mu_fr_qcd_2d_f = TwoDimFakeRate(
-    'qcd/pt10f/pfidiso02/muonJetVsLeptonPt', 'qcd/pt10f/muonJetVsLeptonPt',
+    'qcd/pt10f/h2taucuts/muonJetVsLeptonPt', 'qcd/pt10f/muonJetVsLeptonPt',
     get_view('data'), get_view('WZ*'), get_view('ZZ*'))
 
 mu_fr_ewk_2d_t = TwoDimFakeRate(
-    'wjets/pt10t/pfidiso02/muonJetVsLeptonPt', 'wjets/pt10t/muonJetVsLeptonPt',
+    'wjets/pt10t/h2taucuts/muonJetVsLeptonPt', 'wjets/pt10t/muonJetVsLeptonPt',
     get_view('data'), get_view('WZ*'), get_view('ZZ*'))
 mu_fr_qcd_2d_t = TwoDimFakeRate(
-    'qcd/pt10t/pfidiso02/muonJetVsLeptonPt', 'qcd/pt10t/muonJetVsLeptonPt',
+    'qcd/pt10t/h2taucuts/muonJetVsLeptonPt', 'qcd/pt10t/muonJetVsLeptonPt',
     get_view('data'), get_view('WZ*'), get_view('ZZ*'))
 
 mu_fr_ewk_2d_b = TwoDimFakeRate(
-    'wjets/pt10b/pfidiso02/muonJetVsLeptonPt', 'wjets/pt10b/muonJetVsLeptonPt',
+    'wjets/pt10b/h2taucuts/muonJetVsLeptonPt', 'wjets/pt10b/muonJetVsLeptonPt',
     get_view('data'), get_view('WZ*'), get_view('ZZ*'))
 mu_fr_qcd_2d_b = TwoDimFakeRate(
-    'qcd/pt10b/pfidiso02/muonJetVsLeptonPt', 'qcd/pt10b/muonJetVsLeptonPt',
-    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
-
-mu_fr_ewk_2d_eta = TwoDimFakeRate(
-    'wjets/pt10/pfidiso02/muonJetVsEta', 'wjets/pt10/muonJetVsEta',
-    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
-mu_fr_qcd_2d_eta = TwoDimFakeRate(
-    'qcd/pt10/pfidiso02/muonJetVsEta', 'qcd/pt10/muonJetVsEta',
+    'qcd/pt10b/h2taucuts/muonJetVsLeptonPt', 'qcd/pt10b/muonJetVsLeptonPt',
     get_view('data'), get_view('WZ*'), get_view('ZZ*'))
 
 if __name__ == "__main__":
