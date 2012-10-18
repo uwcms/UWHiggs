@@ -357,8 +357,8 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         return mc_corrector(row)
 
     def obj1_weight(self, row):
-        return highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
-        #return mu_fr_ewk_2d(max(row.m1JetPt, row.m1Pt), row.m1Pt)
+        #return highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
+        return mu_fr_ewk_2d(max(row.m1JetPt, row.m1Pt), row.m1Pt)
         if row.m1AbsEta < 0.8:
             return mu_fr_ewk_2d_b(max(row.m1JetPt, row.m1Pt), row.m1Pt)
         elif row.m1AbsEta < 1.3:
@@ -367,8 +367,8 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
             return mu_fr_ewk_2d_f(max(row.m1JetPt, row.m1Pt), row.m1Pt)
 
     def obj2_weight(self, row):
-        return lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
-        #return mu_fr_ewk_2d(max(row.m2JetPt, row.m2Pt), row.m2Pt)
+        #return lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
+        return mu_fr_ewk_2d(max(row.m2JetPt, row.m2Pt), row.m2Pt)
         if row.m2AbsEta < 0.8:
             return mu_fr_ewk_2d_b(max(row.m2JetPt, row.m2Pt), row.m2Pt)
         elif row.m2AbsEta < 1.3:
@@ -380,8 +380,8 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         return tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row):
-        return highpt_mu_qcd_fr(max(row.m1JetPt, row.m1Pt))
-        #return mu_fr_qcd_2d(max(row.m1JetPt, row.m1Pt), row.m1Pt)
+        #return highpt_mu_qcd_fr(max(row.m1JetPt, row.m1Pt))
+        return mu_fr_qcd_2d(max(row.m1JetPt, row.m1Pt), row.m1Pt)
         if row.m1AbsEta < 0.8:
             return mu_fr_qcd_2d_b(max(row.m1JetPt, row.m1Pt), row.m1Pt)
         elif row.m1AbsEta < 1.3:
@@ -390,8 +390,8 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
             return mu_fr_qcd_2d_f(max(row.m1JetPt, row.m1Pt), row.m1Pt)
 
     def obj2_qcd_weight(self, row):
-        return lowpt_mu_qcd_fr(max(row.m2JetPt, row.m2Pt))
-        #return mu_fr_qcd_2d(max(row.m2JetPt, row.m2Pt), row.m2Pt)
+        #return lowpt_mu_qcd_fr(max(row.m2JetPt, row.m2Pt))
+        return mu_fr_qcd_2d(max(row.m2JetPt, row.m2Pt), row.m2Pt)
         if row.m2AbsEta < 0.8:
             return mu_fr_qcd_2d_b(max(row.m2JetPt, row.m2Pt), row.m2Pt)
         elif row.m2AbsEta < 1.3:
