@@ -26,7 +26,7 @@ class EMUFakeRatesBase(MegaBase):
             denom_histos = {}
             self.histograms[denom_key] = denom_histos
 
-            for numerator in ['idPassed']:
+            for numerator in ['looseId','tightId']:
                 num_key = (region, denom, numerator)
                 num_histos = {}
                 self.histograms[num_key] = num_histos
@@ -53,24 +53,18 @@ class EMUFakeRatesBase(MegaBase):
 
         def preselection(self, row):
             if not self.zSelection(row):    return False
-                #print 'Passed Z Selection'
-            if not row.metEt > 20:          return False
-                #print 'Passed MET Selection'
-            if row.tPt  < 20:               return False
-            if row.tAbsEta  > 2.3:          return False
-            if abs(row.tDZ) > 0.2:          return False    
-                #print 'Passed TAU Selection'
-            if not bool(row.tDecayFinding): return False
-            if not bool(row.tLooseIso):     return False
-                #print 'Passed TAU Isolation'
-            ## if not row.tAntiElectronMedium: return False #in the AN is not specified but seems reasonable
-            ## if not row.tAntiMuonTight:      return False #in the AN is not specified but seems reasonable
-            if not getattr(row,self.branchId+'MtToMET') > 30:           return False
-                #print 'Passed MT Isolation'
-            #Vetos
-            ## if bool(row.muGlbIsoVetoPt10): return False
-            ## if bool(row.tauVetoPt20):      return False
-            ## if bool(row.eVetoMVAIso):      return False
+
+            if row.metEt > 20:                            return False
+            if getattr(row,self.branchId+'MtToMET') > 30: return False
+            if not getattr(row,self.branchId+'_t_SS'):    return False
+        
+            if row.tAbsEta  > 2.3:                return False
+            if abs(row.tDZ) > 0.1:                return False    
+            if not bool(row.tDecayFinding):       return False
+            if not bool(row.tAntiElectronLoose):  return False #in the AN is not specified but seems reasonable
+            if not bool(row.tAntiMuonLoose):      return False #in the AN is not specified but seems reasonable
+            #BTag on the jet associated to the tau. Not exactly as Abdollah but close enough
+            if row.tJetCSVBtag > 0.679:     return False
             return True
 
         histos = self.histograms
@@ -85,9 +79,12 @@ class EMUFakeRatesBase(MegaBase):
             # Fill denominator
             #print 'PRESELECTION PASSED!'
             fill(pt10, row)
-            if self.lepton_passes_iso(row):
+            if self.lepton_passes_loose_iso(row):
                 #print 'ISOLATION PASSED!'
-                fill(histos[('zlt', 'pt10', 'idPassed')], row)
+                fill(histos[('zlt', 'pt10', 'looseId')], row)
+            if self.lepton_passes_tight_iso(row):
+                #print 'ISOLATION PASSED!'
+                fill(histos[('zlt', 'pt10', 'tightId')], row)
 
 
     def finish(self):

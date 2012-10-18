@@ -57,13 +57,13 @@ class ZHAnalyzeMMTT(ZHAnalyzerBase.ZHAnalyzerBase):
         Excludes FR object IDs and sign cut.
         '''
         if not selections.ZMuMuSelection(row): return False
-        if not selections.overlap(row, 'm1','m2','t1','t2') : return False
+        if selections.overlap(row, 'm1','m2','t1','t2') : return False
         if not selections.signalTauSelection(row,'t1'): return False
         if not selections.signalTauSelection(row,'t2'): return False
-        if bool(row.t1AntiMuonTight): return False
-        if bool(row.t1AntiElectronMedium): return False
-        if bool(row.t2AntiMuonTight): return False
-        if bool(row.t2AntiElectronMedium): return False
+        if not bool(row.t1AntiMuonTight): return False
+        if not bool(row.t1AntiElectronMedium): return False
+        if not bool(row.t2AntiMuonTight): return False
+        if not bool(row.t2AntiElectronMedium): return False
         return True
 
     def sign_cut(self, row):
@@ -73,9 +73,9 @@ class ZHAnalyzeMMTT(ZHAnalyzerBase.ZHAnalyzerBase):
     def event_weight(self, row):
         if row.run > 2:
             return 1.
-        return meCorrectors.pu_corrector(row.nTruePU) * \
-            meCorrectors.get_muon_corrections(row,'m1','m2') * \
-            double_muon_trigger(row,'m1','m2')
+        return mcCorrectors.pu_corrector(row.nTruePU) * \
+            mcCorrectors.get_muon_corrections(row,'m1','m2') * \
+            mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row):
         return fr_fcn.tau_fr(max(row.t1JetPt, row.t1Pt))

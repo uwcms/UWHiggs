@@ -9,10 +9,10 @@ source jobid.sh
 export jobid=$jobid7
 rake fakerates
 rake fits
-rake analyze
+#rake analyzezh
 
 export jobid=$jobid8
 rake fakerates
 rake fits
-rake analyze
+#rake analyzezh
 

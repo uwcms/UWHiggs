@@ -113,6 +113,8 @@ class ZHAnalyzerBase(MegaBase):
                     fill_histos(histos, folder, row, event_weight)
                     wToApply = [ (w, w(row) )  for w in region_info['weights'] ]
                     for w_fcn, w_val in wToApply:
+                        if w_val > 1. :
+                            print 'obj1_weight: %s' % w_val
                         fill_histos(histos, folder+(w_fcn.__name__,), row, event_weight*w_val)
                     if len(wToApply) > 1:
                         w_prod = reduce(lambda x, y: x*y, [x for y,x in wToApply])
@@ -164,7 +166,8 @@ class ZHAnalyzerBase(MegaBase):
         #find all keys mathing
         folder_str = '/'.join(folder + ('',))
         for key, value in histos.iteritems():
-            if folder_str not in key:
+            location = key[ : key.rfind('/')]+'/'
+            if folder_str != location:
                 continue
             attr = key[ key.rfind('/') + 1 :]
             if attr == 'nTruePU':

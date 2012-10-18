@@ -4,4 +4,5 @@
 #export jobid8='2012-08-18-8TeV-Higgs'
 
 export jobid7='2012-07-29-7TeV-Higgs'
-export jobid8='2012-07-29-8TeV-Higgs'
+#export jobid8='2012-07-29-8TeV-Higgs'
+export jobid8='2012-10-11-8TeV-v3-Higgs'

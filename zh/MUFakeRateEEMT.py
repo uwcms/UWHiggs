@@ -14,14 +14,14 @@ class MUFakeRateEEMT(EMUFakeRatesBase.EMUFakeRatesBase):
         self.branchId = 'm'
         
     def zSelection(self, row):
-        if not selections.ZEESelection(row): return False
+        if not selections.ZEESelectionNoVetos(row): return False
+        if bool(row.muGlbIsoVetoPt10):  return False
         if selections.overlap(row, 'e1','e2','m','t') : return False
-        if not selections.signalTauSelection(row,'t'): return False
-        if bool(row.tAntiMuonTight): return False
-        if bool(row.tAntiElectronLoose): return False
-        if not bool(row.tLooseIso): return False
         return selections.signalMuonSelection(row,'m')
 
-    def lepton_passes_iso(self, row):
-        return bool(row.mRelPFIsoDB < 0.15) ##THIS SEEMS too low        
+    def lepton_passes_tight_iso(self, row):
+        return bool(row.mRelPFIsoDB < 0.15)# and bool(getattr(row, 'm3PFIDTight') ) ##THIS SEEMS too low        
+
+    def lepton_passes_loose_iso(self, row):
+        return bool(row.mRelPFIsoDB < 0.25)# and bool(getattr(row, 'm3PFIDTight') ) ##THIS SEEMS too low        
     

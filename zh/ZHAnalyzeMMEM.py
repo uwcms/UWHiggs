@@ -56,7 +56,7 @@ class ZHAnalyzeMMEM(ZHAnalyzerBase.ZHAnalyzerBase):
         Excludes FR object IDs and sign cut.
         '''
         if not selections.ZMuMuSelection(row): return False
-        if not selections.overlap(row, 'm1','m2','e','m3') : return False
+        if selections.overlap(row, 'm1','m2','e','m3') : return False
         if not selections.signalMuonSelection(row,'m3'): return False
         if not selections.signalElectronSelection(row,'e'): return False
         return True
@@ -68,9 +68,9 @@ class ZHAnalyzeMMEM(ZHAnalyzerBase.ZHAnalyzerBase):
     def event_weight(self, row):
         if row.run > 2:
             return 1.
-        return meCorrectors.pu_corrector(row.nTruePU) * \
-            meCorrectors.get_muon_corrections(row,'m1','m2', 'm3') * \
-            double_muon_trigger(row,'m1','m2')
+        return mcCorrectors.pu_corrector(row.nTruePU) * \
+            mcCorrectors.get_muon_corrections(row,'m1','m2', 'm3') * \
+            mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row):
         return fr_fcn.e_fr(max(row.eJetPt, row.ePt))

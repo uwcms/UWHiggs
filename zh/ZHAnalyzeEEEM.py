@@ -57,10 +57,9 @@ class ZHAnalyzeEEEM(ZHAnalyzerBase.ZHAnalyzerBase):
         Excludes FR object IDs and sign cut.
         '''
         if not selections.ZEESelection(row): return False
-        if not selections.overlap(row, 'e1','e2','e3','m') : return False
+        if selections.overlap(row, 'e1','e2','e3','m') : return False
         if not selections.signalMuonSelection(row,'m'): return False
         if not selections.signalElectronSelection(row,'e3'): return False
-        if bool(row.e3_m_SS): return False
         return True
 
     def sign_cut(self, row):
@@ -70,9 +69,9 @@ class ZHAnalyzeEEEM(ZHAnalyzerBase.ZHAnalyzerBase):
     def event_weight(self, row):
         if row.run > 2:
             return 1.
-        return meCorrectors.pu_corrector(row.nTruePU) * \
-            meCorrectors.get_muon_corrections(row,'m') * \
-            get_electron_corrections(row, 'e1','e2')
+        return mcCorrectors.pu_corrector(row.nTruePU) * \
+            mcCorrectors.get_muon_corrections(row,'m') * \
+            mcCorrectors.get_electron_corrections(row, 'e1','e2')
 
     def obj1_weight(self, row):
         return fr_fcn.e_fr(max(row.e3JetPt, row.e3Pt))

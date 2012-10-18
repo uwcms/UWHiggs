@@ -12,6 +12,7 @@ If [blind] is true, data in the p1p2p3 region will not be plotted.
 '''
 
 import rootpy.plotting.views as views
+import rootpy.plotting as plotting
 from FinalStateAnalysis.PlotTools.Plotter import Plotter
 from FinalStateAnalysis.PlotTools.BlindView import BlindView
 from FinalStateAnalysis.PlotTools.PoissonView import PoissonView
@@ -30,6 +31,22 @@ ROOT.gStyle.SetOptTitle(0)
 
 def quad(*xs):
     return math.sqrt(sum(x*x for x in xs))
+
+#To Be moved somewhere else
+def HistToTGRaphErrors(h):
+    import array
+    x, y, ex, ey = (array.array('d',[]), array.array('d',[]), array.array('d',[]), array.array('d',[]) )
+    for ibin in zipBins(h):
+        x.append( ibin.center )
+        y.append( ibin.content )
+        ex.append( ibin.width / 2. )
+        ey.append( ibin.error )
+    gr = ROOT.TGraphErrors(len(x),x,y,ex,ey)
+    gr.SetTitle( h.GetTitle() )
+    gr.SetMarkerColor( h.GetMarkerColor() )
+    gr.SetMarkerStyle( h.GetMarkerStyle() )
+    gr.SetFillColor( h.GetFillColor() )
+    return gr
 
 class BackgroundErrorView(object):
     ''' Compute the total background error in each bin. '''
@@ -243,6 +260,50 @@ class ZHPlotterBase(Plotter):
         nbins = sig_view['wz'].Get(variable).GetNbinsX()
         return self.write_shapes(variable, nbins, outdir, unblinded)
 
+    def make_closure_plots(self, var, testDir, refDir, rebin=1, xaxis=''):
+        '''helper function to make comparison between data and data (closure test for fakerates etc.)'''
+        self.canvas.cd()
+        data_view = self.rebin_view(self.data, rebin)
+        testData = data_view.Get('/'.join([testDir,var]) )
+        refData  = data_view.Get('/'.join([refDir, var]) )
+        #refData.format = 
+        testData.format = "ep same"
+
+        testSampleName = '_'.join(testDir.split('/')[1:]).replace('IsoFailed','fail').replace('_weight','w')
+        refSampleName  = refDir.split('/')[1].replace('IsoFailed','fail').replace('_weight','w')
+        testData.SetTitle(testSampleName)
+        refData.SetTitle(refSampleName)
+        
+        testData.SetFillColor( 7 ) #Fill color matches the canvas
+        tgTest = HistToTGRaphErrors( testData )
+        refData.GetXaxis().SetTitle(xaxis)
+        tgTest.GetXaxis().SetTitle(xaxis)
+        refData.SetMarkerStyle(20)
+        refData.SetMarkerSize(1)
+        hmax = max( [max([b.content for b in zipBins(refData)]),max([b.content for b in zipBins(testData)] ) ] )
+        tgTest.GetYaxis().SetRangeUser(0,hmax*1.2)
+        self.keep.append(refData)
+        self.keep.append(tgTest)
+        tgTest.Draw('a2')
+        refData.Draw('same')
+        
+        legend = plotting.Legend(2, rightmargin=0.06, topmargin=0.05, leftmargin=0.45)
+        legend.AddEntry(refData, 'ep')
+        legend.AddEntry(testData, 'f')
+        legend.SetEntrySeparation(0.0)
+        legend.SetMargin(0.35)
+        legend.Draw()
+        #self.canvas.SetLogY(True)
+        self.keep.append(legend)
+        self.add_cms_blurb(self.sqrts)
+
+    def draw_closure_frobj1(self, var, rebin=1, xaxis=''):
+        Zprod, Hprod = products_map[self.channel]
+        self.make_closure_plots( var, 'os/%sIsoFailed_%sIsoFailed/obj1_weight' % Hprod, 'os/%sIsoFailed/' % Hprod[1], rebin, xaxis)
+
+    def draw_closure_frobj2(self, var, rebin=1, xaxis=''):
+        Zprod, Hprod = products_map[self.channel]
+        self.make_closure_plots( var, 'os/%sIsoFailed_%sIsoFailed/obj2_weight' % Hprod, 'os/%sIsoFailed/' % Hprod[0], rebin, xaxis)
 
     def plot_final(self, variable, rebin=1, xaxis='', maxy=10, show_error=False, magnifyHiggs=5 ):
         ''' Plot the final output - with bkg. estimation '''
@@ -315,6 +376,31 @@ for channel in channels:
     plotter.plot_mc_vs_data('os/All_Passed', '%s_%s_Mass' % Zprod, rebin=10, xaxis='M_{%s%s} (GeV)' % texZprod, leftside=False)
     plotter.save('mcdata-os-all_passed_ZMass')
 
+    plotter.plot_mc_vs_data('os/%sIsoFailed_%sIsoFailed' % Hprod, '%s_%s_Mass' % Zprod, rebin=10, xaxis='M_{%s%s} (GeV)' % texZprod, leftside=False)
+    plotter.save('mcdata-os-all_failed_ZMass')
+
+    ###########################################################################
+    ##  Fake rates control plots #####################################################
+    ###########################################################################
+
+    plotter.draw_closure_frobj1('%s_%s_Pt' % Hprod, rebin=25, xaxis='p_{T%s%s} (GeV)' % texHprod)
+    plotter.save('frclosureobj1-os-failed2-HPt')
+
+    plotter.draw_closure_frobj1('%s_%s_Mass' % Hprod, rebin=25, xaxis='M_{%s%s} (GeV)' % texHprod)
+    plotter.save('frclosureobj1-os-failed2-HMass')
+
+    plotter.draw_closure_frobj1('%sPt' % Hprod[0], rebin=25, xaxis='p_{T%s} (GeV)' % texHprod[0])
+    plotter.save('frclosureobj1-os-failed2-obj1Pt')
+
+    plotter.draw_closure_frobj2('%s_%s_Pt' % Hprod, rebin=25, xaxis='p_{T%s%s} (GeV)' % texHprod)
+    plotter.save('frclosureobj2-os-failed1-HPt')
+
+    plotter.draw_closure_frobj2('%s_%s_Mass' % Hprod, rebin=25, xaxis='M_{%s%s} (GeV)' % texHprod)
+    plotter.save('frclosureobj2-os-failed1-HMass')
+
+    plotter.draw_closure_frobj2('%sPt' % Hprod[1], rebin=25, xaxis='p_{T%s} (GeV)' % texHprod[1])
+    plotter.save('frclosureobj2-os-failed1-obj2Pt')
+
     ###########################################################################
     ##  H control plots #####################################################
     ###########################################################################
@@ -324,13 +410,15 @@ for channel in channels:
     plotter.plot_mc_vs_data('os/All_Passed', '%s_%s_Mass' % Hprod, rebin=10, xaxis='M_{%s%s} (GeV)' % texHprod, leftside=False)
     plotter.save('mcdata-os-all_passed_HMass')
 
+
+
     ###########################################################################
     ##  Making shape file     #################################################
     ###########################################################################
 
     shape_file = ROOT.TFile( os.path.join(plotter.outputdir, '%s_shapes_%s.root' % (channel.lower(), plotter.period)), 'RECREATE')
     shape_dir  = shape_file.mkdir( channel.lower() )
-    plotter.write_shapes('%s_%s_Mass' % Hprod, 20, shape_dir, unblinded=True)
+    plotter.write_shapes('%s_%s_Mass' % Hprod, 15, shape_dir, unblinded=True)
     #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
     shape_file.Close()
 

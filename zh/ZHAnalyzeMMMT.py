@@ -80,11 +80,11 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row):
-        return fr_fcn.mu_fr(max(row.m3JetPt, row.m3Pt))
+        return fr_fcn.mu_fr( row.m3Pt)
         #return highpt_mu_fr(row.m1Pt)
 
     def obj2_weight(self, row):
-        return fr_fcn.tau_fr(max(row.tJetPt, row.tPt))
+        return fr_fcn.tau_fr(row.tPt)
         #return lowpt_mu_fr(row.m2Pt)
 
 

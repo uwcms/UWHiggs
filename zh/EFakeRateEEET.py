@@ -15,13 +15,15 @@ class EFakeRateEEET(EMUFakeRatesBase.EMUFakeRatesBase):
         self.branchId = 'e3'
         
     def zSelection(self, row):
-        if not selections.ZEESelection(row): return False
+        if not selections.ZEESelectionNoVetos(row): return False
         if selections.overlap(row, 'e1','e2','e3','t') : return False
-        if not selections.signalTauSelection(row,'t'): return False
-        if not bool(row.tLooseIso): return False
+        if bool(row.eVetoMVAIso):       return False
         return selections.signalElectronSelection(row,'e3')
 
-    def lepton_passes_iso(self, row):
-        return bool(row.e3RelPFIsoDB < 0.15) ##THIS SEEMS too low        
+    def lepton_passes_tight_iso(self, row):
+        return bool(row.e3RelPFIsoDB < 0.10) ##THIS SEEMS too low        
+
+    def lepton_passes_loose_iso(self, row):
+        return bool(row.e3RelPFIsoDB < 0.25) ##THIS SEEMS too low        
 
     

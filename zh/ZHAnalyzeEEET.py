@@ -40,13 +40,13 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_general_histos(folder)
         self.book_kin_histos(folder, 'e1')
         self.book_kin_histos(folder, 'e2')
-        self.book_kin_histos(folder, 'm')
+        self.book_kin_histos(folder, 'e3')
         self.book_kin_histos(folder, 't')
         self.book_Z_histos(folder)
         self.book_H_histos(folder)
 
     def probe1_id(self, row):
-        return bool(row.eRelPFIsoDB < 0.10) ##THIS SEEMS too low
+        return bool(row.e3RelPFIsoDB < 0.10) ##THIS SEEMS too low
 
     def probe2_id(self, row):
         return bool(row.tMediumIso) ##Why not tMediumMVAIso
@@ -58,12 +58,11 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
         '''
         #Z Selection
         if not selections.ZEESelection(row): return False
-        if not selections.overlap(row, 'e1','e2','e','t') : return False
+        if selections.overlap(row, 'e1','e2','e3','t') : return False
         if not selections.signalTauSelection(row,'t'): return False
-        if bool(row.tAntiMuonLoose): return False
-        if bool(row.tAntiElectronMVA): return False
-        if bool(row.e_t_SS): return False
-        return selections.signalElectronSelection(row,'e')
+        if not bool(row.tAntiMuonLoose): return False
+        if not bool(row.tAntiElectronMVA): return False
+        return selections.signalElectronSelection(row,'e3')
 
     def sign_cut(self, row):
         ''' Returns true if muons are SS '''
@@ -72,8 +71,8 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
     def event_weight(self, row):
         if row.run > 2:
             return 1.
-        return meCorrectors.pu_corrector(row.nTruePU) * \
-            get_electron_corrections(row, 'e1','e2','e3')
+        return mcCorrectors.pu_corrector(row.nTruePU) * \
+            mcCorrectors.get_electron_corrections(row, 'e1','e2','e3')
 
     def obj1_weight(self, row):
         return fr_fcn.e_fr(max(row.e3JetPt, row.e3Pt))

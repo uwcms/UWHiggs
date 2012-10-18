@@ -14,11 +14,13 @@ class EFakeRateMMET(EMUFakeRatesBase.EMUFakeRatesBase):
         self.branchId = 'e'
         
     def zSelection(self, row):
-        if not selections.ZMuMuSelection(row): return False
+        if not selections.ZMuMuSelectionNoVetos(row): return False
         if selections.overlap(row, 'm1','m2','e','t') : return False
-        if not selections.signalTauSelection(row,'t'): return False
-        if not bool(row.tLooseIso): return False
+        if bool(row.eVetoMVAIso):       return False
         return selections.signalElectronSelection(row,'e')
     
-    def lepton_passes_iso(self, row):
-        return bool(row.eRelPFIsoDB < 0.15) ##THIS SEEMS too low        
+    def lepton_passes_tight_iso(self, row):
+        return bool(row.eRelPFIsoDB < 0.10) ##THIS SEEMS too low        
+
+    def lepton_passes_loose_iso(self, row):
+        return bool(row.eRelPFIsoDB < 0.25) ##THIS SEEMS too low        

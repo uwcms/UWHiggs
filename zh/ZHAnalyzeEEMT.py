@@ -62,7 +62,6 @@ class ZHAnalyzeEEMT(ZHAnalyzerBase.ZHAnalyzerBase):
         if not selections.signalTauSelection(row,'t'): return False
         if not bool(row.tAntiMuonTight): return False
         if not bool(row.tAntiElectronLoose): return False
-        if not bool(row.tLooseIso): return False
         return selections.signalMuonSelection(row,'m')
 
     def sign_cut(self, row):
