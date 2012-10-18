@@ -4,8 +4,9 @@ Base class to do WH plotting.
 
 Author: Evan K. Friis, UW
 
-Takes as input a set of ROOT [files] with analysis histgrams, and the corresponding
-lumicalc.sum [lumifiles] that hve the effective lumi for each sample.
+Takes as input a set of ROOT [files] with analysis histgrams, and the
+corresponding lumicalc.sum [lumifiles] that hve the effective lumi for each
+sample.
 
 If [blind] is true, data in the p1p2p3 region will not be plotted.
 
@@ -19,12 +20,15 @@ from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 
 import math
 
+
 def quad(*xs):
-    return math.sqrt(sum(x*x for x in xs))
+    return math.sqrt(sum(x * x for x in xs))
+
 
 class BackgroundErrorView(object):
     ''' Compute the total background error in each bin. '''
-    def __init__(self, fakes, wz, zz, wz_error=0.1, zz_error=0.04, fake_error=0.3):
+    def __init__(self, fakes, wz, zz, wz_error=0.1, zz_error=0.04,
+                 fake_error=0.3):
         self.fakes = fakes
         self.wz = wz
         self.zz = zz
@@ -43,9 +47,9 @@ class BackgroundErrorView(object):
         for bin in range(1, bkg_error.GetNbinsX() + 1):
             error = quad(
                 fakes.GetBinError(bin),
-                fakes.GetBinContent(bin)*self.fake_error,
-                wz.GetBinContent(bin)*self.wz_error,
-                zz.GetBinContent(bin)*self.zz_error
+                fakes.GetBinContent(bin) * self.fake_error,
+                wz.GetBinContent(bin) * self.wz_error,
+                zz.GetBinContent(bin) * self.zz_error
             )
             total = (
                 fakes.GetBinContent(bin) +
@@ -60,6 +64,7 @@ class BackgroundErrorView(object):
         bkg_error.legendstyle = 'f'
         return bkg_error
 
+
 class QCDCorrectionView(object):
     ''' Get the estimate of the fake rate, correcting for QCD contamination
 
@@ -71,9 +76,10 @@ class QCDCorrectionView(object):
         q*cr_qcd_weight + (1-q)*cr_ewk_weight
 
     '''
-    def __init__(self, data_view, cr, cr_qcd_est, cr_ewk_weight, cr_qcd_weight):
+    def __init__(self, data_view, cr, cr_qcd_est, cr_ewk_weight,
+                 cr_qcd_weight):
         self.cr = views.SubdirectoryView(data_view, cr)
-        self.cr_qcd_est= views.SubdirectoryView(data_view, cr_qcd_est)
+        self.cr_qcd_est = views.SubdirectoryView(data_view, cr_qcd_est)
         self.cr_ewk_weight = views.SubdirectoryView(data_view, cr_ewk_weight)
         self.cr_qcd_weight = views.SubdirectoryView(data_view, cr_qcd_weight)
 
@@ -87,7 +93,7 @@ class QCDCorrectionView(object):
         ewk_fraction = self.cr_qcd_est.Get(path).Clone()
         ewk_fraction.Reset()
         # Make sure each bin is <= 1
-        for bin in range(0, qcd_fraction.GetNbinsX()+1):
+        for bin in range(0, qcd_fraction.GetNbinsX() + 1):
             ewk_fraction.SetBinContent(bin, 1)
             ewk_fraction.SetBinError(bin, 0)
             #print bin, qcd_fraction.GetBinContent(bin)
@@ -96,7 +102,7 @@ class QCDCorrectionView(object):
 
         ewk_fraction.Sumw2()
         ewk_fraction.Add(qcd_fraction, -1)
-        for bin in range(0, qcd_fraction.GetNbinsX()+1):
+        for bin in range(0, qcd_fraction.GetNbinsX() + 1):
             pass
             #print ewk_fraction.GetBinContent(bin)
         print "QCD correction in %s" % path
@@ -115,6 +121,7 @@ class QCDCorrectionView(object):
 
         return total
 
+
 class WHPlotterBase(Plotter):
     def __init__(self, files, lumifiles, outputdir, blind=True):
         blinder = None
@@ -122,7 +129,8 @@ class WHPlotterBase(Plotter):
         if blind:
             # Don't look at the SS all pass region
             blinder = lambda x: BlindView(x, "ss/p1p2p3/.*")
-        super(WHPlotterBase, self).__init__(files, lumifiles, outputdir, blinder)
+        super(WHPlotterBase, self).__init__(files, lumifiles, outputdir,
+                                            blinder)
 
     def make_signal_views(self, rebin, unblinded=False, qcd_weight_fraction=0):
         ''' Make signal views with FR background estimation '''
@@ -135,9 +143,9 @@ class WHPlotterBase(Plotter):
             self.rebin_view(self.get_view('ZZJetsTo4L*'), rebin),
             'ss/p1p2p3/'
         )
-        all_data_view =self.rebin_view(self.get_view('data'), rebin)
+        all_data_view = self.rebin_view(self.get_view('data'), rebin)
         if False and unblinded:
-            all_data_view =self.rebin_view(
+            all_data_view = self.rebin_view(
                 self.get_view('data', 'unblinded_view'), rebin)
 
         data_view = views.SubdirectoryView(all_data_view, 'ss/p1p2p3/')
@@ -145,25 +153,32 @@ class WHPlotterBase(Plotter):
         def make_fakes_view(weight_type, scale):
             scaled_data = views.ScaleView(all_data_view, scale)
             # View of weighted obj1-fails data
-            obj1_view = views.SubdirectoryView(scaled_data, 'ss/f1p2p3/%s1' % weight_type)
+            obj1_view = views.SubdirectoryView(
+                scaled_data, 'ss/f1p2p3/%s1' % weight_type)
             # View of weighted obj2-fails data
-            obj2_view = views.SubdirectoryView(scaled_data, 'ss/p1f2p3/%s2' % weight_type)
+            obj2_view = views.SubdirectoryView(
+                scaled_data, 'ss/p1f2p3/%s2' % weight_type)
             # View of weighted obj1&2-fails data
-            obj12_view = views.SubdirectoryView(scaled_data, 'ss/f1f2p3/%s12' % weight_type)
+            obj12_view = views.SubdirectoryView(
+                scaled_data, 'ss/f1f2p3/%s12' % weight_type)
 
             # Give the individual object views nice colors
             obj1_view = views.TitleView(
-                views.StyleView(obj1_view, **data_styles['TT*']), 'Non-prompt Obj1')
+                views.StyleView(obj1_view, **data_styles['TT*']),
+                'Non-prompt Obj1')
             obj2_view = views.TitleView(
-                views.StyleView(obj2_view, **data_styles['QCD*']), 'Non-prompt Obj2')
+                views.StyleView(obj2_view, **data_styles['QCD*']),
+                'Non-prompt Obj2')
             obj12_view = views.TitleView(
-                views.StyleView(obj12_view, **data_styles['WW*']), 'Non-prompt Obj12')
+                views.StyleView(obj12_view, **data_styles['WW*']),
+                'Non-prompt Obj12')
 
             subtract_obj12_view = views.ScaleView(obj12_view, -1)
             return obj1_view, obj2_view, obj12_view, subtract_obj12_view
 
         qcd1, qcd2, qcd12, negqcd12 = make_fakes_view('q', qcd_weight_fraction)
-        wjet1, wjet2, wjet12, negwjet12 = make_fakes_view('w', 1-qcd_weight_fraction)
+        wjet1, wjet2, wjet12, negwjet12 = make_fakes_view(
+            'w', 1 - qcd_weight_fraction)
 
         obj1_view = views.SumView(qcd1, wjet1)
         obj2_view = views.SumView(qcd2, wjet2)
@@ -181,25 +196,25 @@ class WHPlotterBase(Plotter):
                 **data_styles['TT*']), 'Charge mis-id')
 
         output = {
-            'wz' : wz_view,
-            'zz' : zz_view,
-            'data' : data_view,
-            'obj1' : obj1_view,
-            'obj2' : obj2_view,
-            'obj12' : obj12_view,
-            'fakes' : fakes_view,
-            'charge_fakes' : charge_fakes,
+            'wz': wz_view,
+            'zz': zz_view,
+            'data': data_view,
+            'obj1': obj1_view,
+            'obj2': obj2_view,
+            'obj12': obj12_view,
+            'fakes': fakes_view,
+            'charge_fakes': charge_fakes,
         }
 
         # Add signal
         for mass in [110, 120, 130, 140]:
             vh_view = views.SubdirectoryView(
-               self.rebin_view(self.get_view('VH_*%i' % mass), rebin),
+                self.rebin_view(self.get_view('VH_*%i' % mass), rebin),
                 'ss/p1p2p3/'
             )
             output['vh%i' % mass] = vh_view
             ww_view = views.SubdirectoryView(
-               self.rebin_view(self.get_view('WH_%i*' % mass), rebin),
+                self.rebin_view(self.get_view('WH_%i*' % mass), rebin),
                 'ss/p1p2p3/'
             )
             output['vh%i_hww' % mass] = ww_view
@@ -212,16 +227,16 @@ class WHPlotterBase(Plotter):
 
         QCD comes from the triple fake region
         '''
-        all_data_view =self.rebin_view(self.get_view('data'), rebin)
+        all_data_view = self.rebin_view(self.get_view('data'), rebin)
 
         mapping = {
             1: {
-                'obs' : 'ss/f1p2p3',
-                'qcd' : 'ss/f1f2f3/w23',
+                'obs': 'ss/f1p2p3',
+                'qcd': 'ss/f1f2f3/w23',
             },
             2: {
-                'obs' : 'ss/p1f2p3',
-                'qcd' : 'ss/f1f2f3/w13',
+                'obs': 'ss/p1f2p3',
+                'qcd': 'ss/f1f2f3/w13',
             },
         }
 
@@ -236,45 +251,52 @@ class WHPlotterBase(Plotter):
             qcd_view, format='hist', linecolor=colors['red'],
             fillstyle=0, legendstyle='l'
         )
-        return { 'obs' : data_view, 'qcd' : qcd_view }
+        return {'obs': data_view, 'qcd': qcd_view}
 
     def make_obj3_fail_cr_views(self, rebin, qcd_correction=False,
-                               qcd_weight_fraction=0):
+                                qcd_weight_fraction=0):
         ''' Make views when obj3 fails, estimating the bkg in obj1 pass using
             f1p2f3 '''
         wz_view = views.SubdirectoryView(
-           self.rebin_view(self.get_view('WZJetsTo3LNu*'), rebin),
+            self.rebin_view(self.get_view('WZJetsTo3LNu*'), rebin),
             'ss/p1p2f3/'
         )
         zz_view = views.SubdirectoryView(
-           self.rebin_view(self.get_view('ZZJetsTo4L*'), rebin),
+            self.rebin_view(self.get_view('ZZJetsTo4L*'), rebin),
             'ss/p1p2f3/'
         )
-        all_data_view =self.rebin_view(self.get_view('data'), rebin)
+        all_data_view = self.rebin_view(self.get_view('data'), rebin)
         data_view = views.SubdirectoryView(all_data_view, 'ss/p1p2f3/')
 
         def make_fakes_view(weight_type, scale):
             scaled_data = views.ScaleView(all_data_view, scale)
             # View of weighted obj1-fails data
-            obj1_view = views.SubdirectoryView(scaled_data, 'ss/f1p2f3/%s1' % weight_type)
+            obj1_view = views.SubdirectoryView(
+                scaled_data, 'ss/f1p2f3/%s1' % weight_type)
             # View of weighted obj2-fails data
-            obj2_view = views.SubdirectoryView(scaled_data, 'ss/p1f2f3/%s2' % weight_type)
+            obj2_view = views.SubdirectoryView(
+                scaled_data, 'ss/p1f2f3/%s2' % weight_type)
             # View of weighted obj1&2-fails data
-            obj12_view = views.SubdirectoryView(scaled_data, 'ss/f1f2f3/%s12' % weight_type)
+            obj12_view = views.SubdirectoryView(
+                scaled_data, 'ss/f1f2f3/%s12' % weight_type)
 
             # Give the individual object views nice colors
             obj1_view = views.TitleView(
-                views.StyleView(obj1_view, **data_styles['TT*']), 'Non-prompt Obj1')
+                views.StyleView(obj1_view, **data_styles['TT*']),
+                'Non-prompt Obj1')
             obj2_view = views.TitleView(
-                views.StyleView(obj2_view, **data_styles['QCD*']), 'Non-prompt Obj2')
+                views.StyleView(obj2_view, **data_styles['QCD*']),
+                'Non-prompt Obj2')
             obj12_view = views.TitleView(
-                views.StyleView(obj12_view, **data_styles['WW*']), 'Non-prompt Obj12')
+                views.StyleView(obj12_view, **data_styles['WW*']),
+                'Non-prompt Obj12')
 
             subtract_obj12_view = views.ScaleView(obj12_view, -1)
             return obj1_view, obj2_view, obj12_view, subtract_obj12_view
 
         qcd1, qcd2, qcd12, negqcd12 = make_fakes_view('q', qcd_weight_fraction)
-        wjet1, wjet2, wjet12, negwjet12 = make_fakes_view('w', 1-qcd_weight_fraction)
+        wjet1, wjet2, wjet12, negwjet12 = make_fakes_view(
+            'w', 1 - qcd_weight_fraction)
 
         obj1_view = views.SumView(qcd1, wjet1)
         obj2_view = views.SumView(qcd2, wjet2)
@@ -286,7 +308,7 @@ class WHPlotterBase(Plotter):
         fakes_view = views.TitleView(
             views.StyleView(fakes_view, **data_styles['Zjets*']), 'Non-prompt')
 
-        if False and qcd_correction: # broken
+        if False and qcd_correction:  # broken
             obj1_view = QCDCorrectionView(all_data_view,
                                           'ss/f1p2f3',
                                           'ss/f1f2f3/q2',
@@ -305,44 +327,45 @@ class WHPlotterBase(Plotter):
                 **data_styles['TT*']), 'Charge mis-id')
 
         output = {
-            'wz' : wz_view,
-            'zz' : zz_view,
-            'data' : data_view,
-            'obj1' : obj1_view,
-            'obj2' : obj2_view,
-            'obj12' : obj12_view,
-            'fakes' : fakes_view,
-            'charge_fakes' : charge_fakes,
+            'wz': wz_view,
+            'zz': zz_view,
+            'data': data_view,
+            'obj1': obj1_view,
+            'obj2': obj2_view,
+            'obj12': obj12_view,
+            'fakes': fakes_view,
+            'charge_fakes': charge_fakes,
         }
 
         return output
-
 
     def make_wz_cr_views(self, rebin):
         ''' Make WZ control region views with FR background estimation '''
 
         wz_view = views.SubdirectoryView(
-           self.rebin_view(self.get_view('WZJetsTo3LNu*'), rebin),
+            self.rebin_view(self.get_view('WZJetsTo3LNu*'), rebin),
             'ss/p1p2p3_enhance_wz/'
         )
         zz_view = views.SubdirectoryView(
-           self.rebin_view(self.get_view('ZZJetsTo4L*'), rebin),
+            self.rebin_view(self.get_view('ZZJetsTo4L*'), rebin),
             'ss/p1p2p3_enhance_wz/'
         )
-        all_data_view =self.rebin_view(self.get_view('data'), rebin)
-        data_view = views.SubdirectoryView(all_data_view, 'ss/p1p2p3_enhance_wz/')
+        all_data_view = self.rebin_view(self.get_view('data'), rebin)
+        data_view = views.SubdirectoryView(
+            all_data_view, 'ss/p1p2p3_enhance_wz/')
 
         # View of weighted obj2-fails data
-        fakes_view = views.SubdirectoryView(all_data_view, 'ss/p1f2p3_enhance_wz/w2')
+        fakes_view = views.SubdirectoryView(
+            all_data_view, 'ss/p1f2p3_enhance_wz/w2')
         fakes_view = views.StyleView(fakes_view, **data_styles['Zjets*'])
 
         # Correct
         wz_in_fakes_view = views.SubdirectoryView(
-           self.rebin_view(self.get_view('WZJetsTo3LNu*'), rebin),
+            self.rebin_view(self.get_view('WZJetsTo3LNu*'), rebin),
             'ss/p1f2p3_enhance_wz/w2'
         )
         zz_in_fakes_view = views.SubdirectoryView(
-           self.rebin_view(self.get_view('ZZJetsTo4L*'), rebin),
+            self.rebin_view(self.get_view('ZZJetsTo4L*'), rebin),
             'ss/p1f2p3_enhance_wz/w2'
         )
 
@@ -354,26 +377,28 @@ class WHPlotterBase(Plotter):
         fakes_view = views.TitleView(fakes_view, 'Non-prompt')
 
         output = {
-            'wz' : wz_view,
-            'zz' : zz_view,
-            'data' : data_view,
-            'fakes' : fakes_view
+            'wz': wz_view,
+            'zz': zz_view,
+            'data': data_view,
+            'fakes': fakes_view
         }
 
         # Add signal
         for mass in [110, 120, 130, 140]:
             vh_view = views.SubdirectoryView(
-               self.rebin_view(self.get_view('VH_*%i' % mass), rebin),
+                self.rebin_view(self.get_view('VH_*%i' % mass), rebin),
                 'ss/p1p2p3/'
             )
             output['vh%i' % mass] = vh_view
 
         return output
 
-    def write_shapes(self, variable, rebin, outdir, unblinded=False, qcd_fraction=0):
-        ''' Write final shape histos for [variable] into a TDirectory [outputdir] '''
+    def write_shapes(self, variable, rebin, outdir, unblinded=False,
+                     qcd_fraction=0):
+        ''' Write final shapes for [variable] into a TDirectory [outputdir] '''
         unblinded = False
-        sig_view = self.make_signal_views(rebin, unblinded=unblinded, qcd_weight_fraction=qcd_fraction)
+        sig_view = self.make_signal_views(rebin, unblinded=unblinded,
+                                          qcd_weight_fraction=qcd_fraction)
         outdir.cd()
         wz = sig_view['wz'].Get(variable)
         zz = sig_view['zz'].Get(variable)
@@ -407,10 +432,12 @@ class WHPlotterBase(Plotter):
         nbins = sig_view['wz'].Get(variable).GetNbinsX()
         return self.write_shapes(variable, nbins, outdir, unblinded)
 
-    def plot_final(self, variable, rebin=1, xaxis='', maxy=15, show_error=False,
-                   qcd_correction=False, qcd_weight_fraction=0, **kwargs):
+    def plot_final(self, variable, rebin=1, xaxis='', maxy=15,
+                   show_error=False, qcd_correction=False,
+                   qcd_weight_fraction=0, **kwargs):
         ''' Plot the final output - with bkg. estimation '''
-        sig_view = self.make_signal_views(rebin, qcd_weight_fraction=qcd_weight_fraction)
+        sig_view = self.make_signal_views(
+            rebin, qcd_weight_fraction=qcd_weight_fraction)
         vh_10x = views.TitleView(
             views.StyleView(
                 views.ScaleView(sig_view['signal120'], 5),
@@ -477,7 +504,7 @@ class WHPlotterBase(Plotter):
         if maxy is not None:
             histo.SetMaximum(float(maxy))
         else:
-            histo.SetMaximum(1.2*max(histo.GetMaximum(), data.GetMaximum()))
+            histo.SetMaximum(1.2 * max(histo.GetMaximum(), data.GetMaximum()))
         self.keep.append(data)
         self.keep.append(histo)
 
@@ -488,7 +515,8 @@ class WHPlotterBase(Plotter):
                       show_error=False, qcd_correction=False,
                       qcd_weight_fraction=0, **kwargs):
         ''' Plot the final F3 control region - with bkg. estimation '''
-        sig_view = self.make_obj3_fail_cr_views(rebin, qcd_correction, qcd_weight_fraction)
+        sig_view = self.make_obj3_fail_cr_views(
+            rebin, qcd_correction, qcd_weight_fraction)
 
         stack = views.StackView(
             sig_view['zz'],
@@ -522,7 +550,7 @@ class WHPlotterBase(Plotter):
         else:
             #histo.SetMaximum(
                 #1.2*max(histo.GetHistogram().GetMaximum(), data.GetMaximum()))
-            histo.SetMaximum(2*data.GetMaximum())
+            histo.SetMaximum(2 * data.GetMaximum())
         self.keep.append(data)
         self.keep.append(histo)
 
@@ -554,7 +582,8 @@ class WHPlotterBase(Plotter):
             histo.SetMaximum(maxy)
         else:
             histo.SetMaximum(
-                1.2*max(histo.GetHistogram().GetMaximum(), data.GetMaximum()))
+                1.2 * max(
+                    histo.GetHistogram().GetMaximum(), data.GetMaximum()))
         self.keep.append(data)
         self.keep.append(histo)
 
