@@ -144,7 +144,7 @@ class WHPlotterBase(Plotter):
             'ss/p1p2p3/'
         )
         all_data_view = self.rebin_view(self.get_view('data'), rebin)
-        if False and unblinded:
+        if unblinded:
             all_data_view = self.rebin_view(
                 self.get_view('data', 'unblinded_view'), rebin)
 
@@ -396,7 +396,6 @@ class WHPlotterBase(Plotter):
     def write_shapes(self, variable, rebin, outdir, unblinded=False,
                      qcd_fraction=0):
         ''' Write final shapes for [variable] into a TDirectory [outputdir] '''
-        unblinded = False
         sig_view = self.make_signal_views(rebin, unblinded=unblinded,
                                           qcd_weight_fraction=qcd_fraction)
         outdir.cd()
@@ -437,7 +436,7 @@ class WHPlotterBase(Plotter):
                    qcd_weight_fraction=0, **kwargs):
         ''' Plot the final output - with bkg. estimation '''
         sig_view = self.make_signal_views(
-            rebin, qcd_weight_fraction=qcd_weight_fraction)
+            rebin, unblinded=False, qcd_weight_fraction=qcd_weight_fraction)
         vh_10x = views.TitleView(
             views.StyleView(
                 views.ScaleView(sig_view['signal120'], 5),
