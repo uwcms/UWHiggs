@@ -521,6 +521,7 @@ pivot_masses = "120,130,140"
 # Now do the horizontal morphing
 file "#{$carddir}/shapes.root" => ["#{$carddir}/shapes_unmorphed.root"] do |t|
   puts "Doing horizontal morphing"
+  sh "mkdir -p #{$carddir}"
   sh "cp #{t.prerequisites[0]} #{t.name}"
   sh "horizontal-morphing.py --categories='emt,mmt' --samples='WH{MASS},WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=1 -i #{t.name}"
 end
@@ -532,6 +533,7 @@ stat_shapes = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.root")
 # We need to build the unc.conf and unc.vals with our stat shapes
 file "#{$carddir}/unc.conf" => ["card_config/unc.conf.base.#{$period}"] + stat_shapes do |t|
   # Copy the basic template
+  sh "mkdir -p #{$carddir}"
   sh "cp #{t.prerequisites[0]} #{t.name}"
   # Append all the stat shape types
   sh "echo '' >> #{t.name}"
@@ -543,6 +545,7 @@ end
 
 file "#{$carddir}/unc.vals" => ["card_config/unc.vals.base.#{$period}"] + stat_shape_lists do |t|
   # Copy the basic template
+  sh "mkdir -p #{$carddir}"
   puts t.investigation
   sh "cp #{t.prerequisites[0]} #{t.name}"
   # Append all the stat shape types
@@ -555,12 +558,14 @@ file "#{$carddir}/unc.vals" => ["card_config/unc.vals.base.#{$period}"] + stat_s
 end
 
 file "#{$carddir}/cgs.conf" => ["card_config/cgs.conf.#{$period}"] do |t|
+  sh "mkdir -p #{$carddir}"
   sh "cp #{t.prerequisites[0]} #{t.name}"
 end
 
 def make_datacard_task(mass, channel, categories)
   card = "#{$carddir}/#{mass}/vhtt_#{channel}.txt"  
   file card => ["#{$carddir}/shapes.root", "#{$carddir}/unc.conf", "#{$carddir}/unc.vals", "#{$carddir}/cgs.conf"] do |t|
+    sh "mkdir -p #{$carddir}"
     chdir($carddir) do
       sh "mkdir -p #{channel}/#{mass}"
       # Link the shape file in the card directory so combine can run from anywhere
