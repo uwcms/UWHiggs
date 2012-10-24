@@ -38,6 +38,10 @@ plotter.plot_mc_vs_data('zmm', 'm1m2Mass', rebin=2, xaxis='m_{#mu#mu} (GeV)')
 plotter.add_cms_blurb(sqrts)
 plotter.save('mass')
 
+plotter.plot_mc_vs_data('zmm', 'm1m2Mass', rebin=6, xaxis='m_{#mu#mu} (GeV)')
+plotter.add_cms_blurb(sqrts)
+plotter.save('mass_rebin')
+
 plotter.plot_mc_vs_data('zmm', 'm1Pt')
 plotter.save('m1Pt')
 plotter.plot_mc_vs_data('zmm', 'm2Pt')
@@ -47,6 +51,11 @@ plotter.plot_mc_vs_data('zmm', 'm1AbsEta')
 plotter.save('m1AbsEta')
 plotter.plot_mc_vs_data('zmm', 'm2AbsEta')
 plotter.save('m2AbsEta')
+
+plotter.plot_mc_vs_data('zmm', 'm1AbsEta', 5)
+plotter.save('m1AbsEta_rebin')
+plotter.plot_mc_vs_data('zmm', 'm2AbsEta', 5)
+plotter.save('m2AbsEta_rebin')
 
 plotter.plot_mc_vs_data('zmm', 'nvtx')
 plotter.save('nvtx')
