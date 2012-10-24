@@ -6,12 +6,12 @@ source jobid.sh
 export datasrc=/scratch/efriis/data/
 export jobid=$jobid7
 
-./make_proxies.sh
 
 rake "meta:getinputs[$jobid, $datasrc]"
 rake "meta:getmeta[inputs/$jobid, mm/metaInfo, 7]"
 
 export jobid=$jobid8
+./make_proxies.sh
 rake "meta:getinputs[$jobid, $datasrc]"
 # Use the 7TeV WH samples for 8TeV
 pushd inputs/$jobid/
