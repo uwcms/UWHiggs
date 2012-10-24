@@ -206,6 +206,7 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         self.book(folder, "m2Iso", "m2Iso", 100, 0, 0.3)
         self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
         self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
+        self.book(folder, "tDecayMode", "Tau AbsEta", 15, -0.5, 14.5)
         self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
 
     def fill_histos(self, histos, folder, row, weight):
@@ -228,6 +229,7 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         fill('subMass', row.m2_t_Mass)
         fill('leadMass', row.m1_t_Mass)
         fill('m2Iso', row.m2RelPFIsoDB)
+        fill('tDecayMode', row.tDecayMode)
         fill('tPt', row.tPt)
         fill('tAbsEta', row.tAbsEta)
         if row.m1MtToMET > row.m2MtToMET:
