@@ -135,6 +135,16 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
+  "e_wjets_pt10_h2taucuts_ePt" => Hash[
+    "samples" => Array["diboson", "data_em"],
+    "analyzer" => "FakeRatesEM",
+    #"function" => landau,
+    #"variables" => landau_vars,
+    "function" => exponential,
+    "variables" => exponential_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
   "e_qcd_pt10_h2taucuts_eJetPt" => Hash[
     "samples" => Array["diboson", "data_em"],
     "analyzer" => "FakeRatesEM",
