@@ -44,8 +44,12 @@ plotter.save('mass_rebin')
 
 plotter.plot_mc_vs_data('zmm', 'm1Pt')
 plotter.save('m1Pt')
+plotter.plot_mc_vs_data('zmm', 'm1Pt', 5)
+plotter.save('m1Pt_rebin')
 plotter.plot_mc_vs_data('zmm', 'm2Pt')
 plotter.save('m2Pt')
+plotter.plot_mc_vs_data('zmm', 'm2Pt', 5)
+plotter.save('m2Pt_rebin')
 
 plotter.plot_mc_vs_data('zmm', 'm1AbsEta')
 plotter.save('m1AbsEta')
