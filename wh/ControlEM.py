@@ -13,28 +13,34 @@ import os
 import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
 import FinalStateAnalysis.TagAndProbe.H2TauCorrections as H2TauCorrections
 import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
-import ROOT
 
-################################################################################
-#### MC-DATA and PU corrections ################################################
-################################################################################
+###############################################################################
+#### MC-DATA and PU corrections ###############################################
+###############################################################################
 
 # Determine MC-DATA corrections
 is7TeV = bool('7TeV' in os.environ['jobid'])
 print "Is 7TeV:", is7TeV
+use_iso_trigger = not is7TeV
+
+mc_pu_tag = 'S6' if is7TeV else 'S10'
+if 'HWW3l' in os.environ['megatarget'] and not is7TeV:
+    print "Using S6_600bins PU weights for HWW3l"
+    mc_pu_tag = 'S6_600bins'
+    use_iso_trigger = False
 
 # Make PU corrector from expected data PU distribution
 # PU corrections .root files from pileupCalc.py
 pu_distributions = glob.glob(os.path.join(
     'inputs', os.environ['jobid'], 'data_MuEG*pu.root'))
-pu_corrector = PileupWeight.PileupWeight(
-    'S6' if is7TeV else 'S10', *pu_distributions)
+pu_corrector = PileupWeight.PileupWeight(mc_pu_tag, *pu_distributions)
 
 muon_pog_PFTight_2011 = MuonPOGCorrections.make_muon_pog_PFTight_2011()
 muon_pog_PFTight_2012 = MuonPOGCorrections.make_muon_pog_PFTight_2012()
 
 muon_pog_PFRelIsoDB02_2011 = MuonPOGCorrections.make_muon_pog_PFRelIsoDB02_2011()
 muon_pog_PFRelIsoDB02_2012 = MuonPOGCorrections.make_muon_pog_PFRelIsoDB02_2012()
+
 
 # Get object ID and trigger corrector functions
 def mc_corrector_2011(row):
@@ -48,6 +54,7 @@ def mc_corrector_2011(row):
     m_trg = H2TauCorrections.correct_mueg_mu_2011(row.mPt, row.mAbsEta)
     e_trg = H2TauCorrections.correct_mueg_e_2011(row.ePt, row.eAbsEta)
     return pu*m1id*m1iso*e2idiso*m_trg*e_trg
+
 
 def mc_corrector_2012(row):
     if row.run > 2:
@@ -63,6 +70,7 @@ def mc_corrector_2012(row):
 mc_corrector = mc_corrector_2011
 if not is7TeV:
     mc_corrector = mc_corrector_2012
+
 
 class ControlEM(MegaBase):
     tree = 'em/final/Ntuple'
@@ -83,6 +91,7 @@ class ControlEM(MegaBase):
             self.book('em' + folder, "rho", "Fastjet #rho", 100, 0, 25)
             self.book('em' + folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
             self.book('em' + folder, "prescale", "HLT prescale", 21, -0.5, 20.5)
+            self.book('em' + folder, "group", "HLT group", 21, -0.5, 20.5)
 
             self.book('em' + folder, "mPt", "Muon 1 Pt", 100, 0, 100)
             self.book('em' + folder, "ePt", "Muon 2 Pt", 100, 0, 100)
@@ -113,7 +122,8 @@ class ControlEM(MegaBase):
             histos[x + '/weight_nopu'].Fill(self.correction(row))
             histos[x + '/rho'].Fill(row.rho, weight)
             histos[x + '/nvtx'].Fill(row.nvtx, weight)
-            histos[x + '/prescale'].Fill(row.doubleMuPrescale, weight)
+            histos[x + '/prescale'].Fill(row.mu17ele8Prescale, weight)
+            histos[x + '/group'].Fill(row.mu17ele8Group, weight)
             histos[x + '/ePt'].Fill(row.ePt, weight)
             histos[x + '/mPt'].Fill(row.mPt, weight)
             histos[x + '/eAbsEta'].Fill(row.eAbsEta, weight)
@@ -139,8 +149,12 @@ class ControlEM(MegaBase):
 
         Excludes FR object IDs and sign cut.
         '''
-        if not row.mu17ele8Pass:
+        if not use_iso_trigger:
+            if not row.mu17ele8Pass:
+                return False
+        elif not row.mu17ele8isoPass:
             return False
+
         if row.mPt < 20:
             return False
         if row.ePt < 10:

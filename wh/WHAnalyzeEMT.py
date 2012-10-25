@@ -12,7 +12,6 @@ import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
 import FinalStateAnalysis.TagAndProbe.H2TauCorrections as H2TauCorrections
 import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
 from FinalStateAnalysis.StatTools.RooFunctorFromWS import build_roofunctor
-import ROOT
 
 ################################################################################
 #### Fitted fake rate functions ################################################
@@ -54,13 +53,14 @@ tau_qcd_fr = build_roofunctor(
     'efficiency'
 )
 
-################################################################################
-#### MC-DATA and PU corrections ################################################
-################################################################################
+###############################################################################
+#### MC-DATA and PU corrections ###############################################
+###############################################################################
 
 # Determine MC-DATA corrections
 is7TeV = bool('7TeV' in os.environ['jobid'])
 print "Is 7TeV:", is7TeV
+use_iso_trigger = not is7TeV
 
 # Make PU corrector from expected data PU distribution
 # PU corrections .root files from pileupCalc.py
@@ -72,6 +72,7 @@ mc_pu_tag = 'S6' if is7TeV else 'S10'
 if 'HWW3l' in os.environ['megatarget'] and not is7TeV:
     print "Using S6_600bins PU weights for HWW3l"
     mc_pu_tag = 'S6_600bins'
+    use_iso_trigger = False
 
 pu_corrector = PileupWeight.PileupWeight(mc_pu_tag, *pu_distributions)
 
@@ -164,7 +165,10 @@ class WHAnalyzeEMT(WHAnalyzerBase.WHAnalyzerBase):
 
         Excludes FR object IDs and sign cut.
         '''
-        if not row.mu17ele8Pass:
+        if not use_iso_trigger:
+            if not row.mu17ele8Pass:
+                return False
+        elif not row.mu17ele8isoPass:
             return False
         if row.mPt < 20:
             return False
