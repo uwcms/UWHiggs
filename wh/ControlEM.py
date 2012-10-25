@@ -38,8 +38,10 @@ pu_corrector = PileupWeight.PileupWeight(mc_pu_tag, *pu_distributions)
 muon_pog_PFTight_2011 = MuonPOGCorrections.make_muon_pog_PFTight_2011()
 muon_pog_PFTight_2012 = MuonPOGCorrections.make_muon_pog_PFTight_2012()
 
-muon_pog_PFRelIsoDB02_2011 = MuonPOGCorrections.make_muon_pog_PFRelIsoDB02_2011()
-muon_pog_PFRelIsoDB02_2012 = MuonPOGCorrections.make_muon_pog_PFRelIsoDB02_2012()
+muon_pog_PFRelIsoDB02_2011 = MuonPOGCorrections.\
+    make_muon_pog_PFRelIsoDB02_2011()
+muon_pog_PFRelIsoDB02_2012 = MuonPOGCorrections.\
+    make_muon_pog_PFRelIsoDB02_2012()
 
 
 # Get object ID and trigger corrector functions
@@ -53,7 +55,7 @@ def mc_corrector_2011(row):
     e2idiso = H2TauCorrections.correct_e_idiso_2011(row.ePt, row.eAbsEta)
     m_trg = H2TauCorrections.correct_mueg_mu_2011(row.mPt, row.mAbsEta)
     e_trg = H2TauCorrections.correct_mueg_e_2011(row.ePt, row.eAbsEta)
-    return pu*m1id*m1iso*e2idiso*m_trg*e_trg
+    return pu * m1id * m1iso * e2idiso * m_trg * e_trg
 
 
 def mc_corrector_2012(row):
@@ -64,7 +66,7 @@ def mc_corrector_2012(row):
     e2idiso = H2TauCorrections.correct_e_idiso_2012(row.ePt, row.eAbsEta)
     m_trg = H2TauCorrections.correct_mueg_mu_2012(row.mPt, row.mAbsEta)
     e_trg = H2TauCorrections.correct_mueg_e_2012(row.ePt, row.eAbsEta)
-    return pu*m1idiso*e2idiso*m_trg*e_trg
+    return pu * m1idiso * e2idiso * m_trg * e_trg
 
 # Determine which set of corrections to use
 mc_corrector = mc_corrector_2011
@@ -74,6 +76,7 @@ if not is7TeV:
 
 class ControlEM(MegaBase):
     tree = 'em/final/Ntuple'
+
     def __init__(self, tree, outfile, **kwargs):
         super(ControlEM, self).__init__(tree, outfile, **kwargs)
         # Use the cython wrapper
@@ -86,11 +89,14 @@ class ControlEM(MegaBase):
     def begin(self):
         for folder in ['', '/ss']:
             self.book('em' + folder, "weight", "Event weight", 100, 0, 5)
-            self.book('em' + folder, "weight_nopu", "Event weight without PU", 100, 0, 5)
+            self.book('em' + folder, "weight_nopu", "Event weight without PU",
+                      100, 0, 5)
 
             self.book('em' + folder, "rho", "Fastjet #rho", 100, 0, 25)
-            self.book('em' + folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
-            self.book('em' + folder, "prescale", "HLT prescale", 21, -0.5, 20.5)
+            self.book('em' + folder, "nvtx", "Number of vertices",
+                      31, -0.5, 30.5)
+            self.book('em' + folder, "prescale", "HLT prescale",
+                      21, -0.5, 20.5)
             self.book('em' + folder, "group", "HLT group", 21, -0.5, 20.5)
 
             self.book('em' + folder, "mPt", "Muon 1 Pt", 100, 0, 100)
@@ -99,17 +105,25 @@ class ControlEM(MegaBase):
             self.book('em' + folder, "eAbsEta", "Muon 2 eta", 100, -2.5, 2.5)
             self.book('em' + folder, "emMass", "m_{e#mu} (GeV)", 240, 0, 240)
 
-            self.book('em' + folder, 'mPixHits', 'Mu 1 pix hits', 10, -0.5, 9.5)
+            self.book('em' + folder, 'mPixHits', 'Mu 1 pix hits',
+                      10, -0.5, 9.5)
 
-            self.book('em' + folder,'mJetBtag', 'Mu 1 JetBtag', 100, -5.5, 9.5)
-            self.book('em' + folder,'eJetBtag', 'Mu 2 JetBtag', 100, -5.5, 9.5)
+            self.book('em' + folder, 'mJetBtag', 'Mu 1 JetBtag',
+                      100, -5.5, 9.5)
+            self.book('em' + folder, 'eJetBtag', 'Mu 2 JetBtag',
+                      100, -5.5, 9.5)
 
             # Vetoes
-            self.book('em' + folder,'bjetVeto', 'Number of b-jets', 5, -0.5, 4.5)
-            self.book('em' + folder,'bjetCSVVeto', 'Number of b-jets', 5, -0.5, 4.5)
-            self.book('em' + folder,'muVetoPt5', 'Number of extra muons', 5, -0.5, 4.5)
-            self.book('em' + folder,'tauVetoPt20', 'Number of extra taus', 5, -0.5, 4.5)
-            self.book('em' + folder,'eVetoCicTightIso', 'Number of extra CiC tight electrons', 5, -0.5, 4.5)
+            self.book('em' + folder, 'bjetVeto', 'Number of b-jets',
+                      5, -0.5, 4.5)
+            self.book('em' + folder, 'bjetCSVVeto', 'Number of b-jets',
+                      5, -0.5, 4.5)
+            self.book('em' + folder, 'muVetoPt5', 'Number of extra muons',
+                      5, -0.5, 4.5)
+            self.book('em' + folder, 'tauVetoPt20', 'Number of extra taus',
+                      5, -0.5, 4.5)
+            self.book('em' + folder, 'eVetoCicTightIso',
+                      'Number of extra CiC tight electrons', 5, -0.5, 4.5)
 
     def correction(self, row):
         return mc_corrector(row)
@@ -117,6 +131,7 @@ class ControlEM(MegaBase):
     def fill_histos(self, row):
         histos = self.histograms
         weight = self.correction(row)
+
         def fill_folder(x):
             histos[x + '/weight'].Fill(weight)
             histos[x + '/weight_nopu'].Fill(self.correction(row))
