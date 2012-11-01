@@ -46,10 +46,10 @@ class ZHAnalyzeEEEM(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_H_histos(folder)
 
     def probe1_id(self, row):
-        return bool(row.e3RelPFIsoDB < 0.25)
+        return bool(row.e3MVAIDH2TauWP) and bool(row.e3RelPFIsoDB < 0.25)
 
     def probe2_id(self, row):
-        return bool(row.mRelPFIsoDB < 0.25)
+        return bool(row.mPFIDTight) and bool(row.mRelPFIsoDB < 0.25)
 
     def preselection(self, row):
         ''' Preselection applied to events.
@@ -74,9 +74,7 @@ class ZHAnalyzeEEEM(ZHAnalyzerBase.ZHAnalyzerBase):
             mcCorrectors.get_electron_corrections(row, 'e1','e2')
 
     def obj1_weight(self, row):
-        return fr_fcn.e_fr(max(row.e3JetPt, row.e3Pt))
-        #return highpt_mu_fr(row.m1Pt)
+        return fr_fcn.e_loose_fr( row.e3Pt )
 
     def obj2_weight(self, row):
-        return fr_fcn.mu_fr(max(row.mJetPt, row.mPt))
-        #return lowpt_mu_fr(row.m2Pt)
+        return fr_fcn.mu_loose_fr( row.mPt)

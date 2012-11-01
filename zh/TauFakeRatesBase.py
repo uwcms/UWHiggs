@@ -14,7 +14,7 @@ class TauFakeRatesBase(MegaBase):
         # Histograms for each category
         self.histograms = {}
         self.is7TeV = '7TeV' in os.environ['jobid']
-        self.numerators = ['LooseMVAIso', 'LooseIso', 'MediumMVAIso', 'MediumIso']
+        self.numerators = ['LooseMVAIso', 'LooseIso', 'MediumMVAIso', 'MediumIso', 'TightIso', 'TightMVAIso']
 
     def begin(self):
         # Book histograms

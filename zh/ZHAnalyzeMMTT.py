@@ -42,14 +42,16 @@ class ZHAnalyzeMMTT(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_kin_histos(folder, 't1')
         self.book_kin_histos(folder, 't2')
         self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
+        self.book(folder, "leadingTauPt", "Leading #tau_{h} p_{T};p_{T} (GeV);Counts", 100, 0, 100)
+        self.hfunc['leadingTauPt'] = lambda row, weight: max( row.t1Pt, row.t2Pt ) #Will NOT be weighted!!
         self.book_Z_histos(folder)
         self.book_H_histos(folder)
 
     def probe1_id(self, row):
-        return bool(row.t1MediumIso) ##THIS SEEMS too low
+        return bool(row.t1TightIso) ##THIS SEEMS too low
 
     def probe2_id(self, row):
-        return bool(row.t2MediumIso) ##SHOULD BE TIGHT!!!
+        return bool(row.t2TightIso) ##SHOULD BE TIGHT!!!
 
     def preselection(self, row):
         ''' Preselection applied to events.
@@ -64,6 +66,7 @@ class ZHAnalyzeMMTT(ZHAnalyzerBase.ZHAnalyzerBase):
         if not bool(row.t1AntiElectronMedium): return False
         if not bool(row.t2AntiMuonTight): return False
         if not bool(row.t2AntiElectronMedium): return False
+        if row.t1Pt < row.t2Pt: return False #Avoid double counting
         return True
 
     def sign_cut(self, row):
@@ -78,9 +81,7 @@ class ZHAnalyzeMMTT(ZHAnalyzerBase.ZHAnalyzerBase):
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row):
-        return fr_fcn.tau_fr(max(row.t1JetPt, row.t1Pt))
-        #return highpt_mu_fr(row.m1Pt)
+        return fr_fcn.tau_tight_fr( row.t1Pt )
 
     def obj2_weight(self, row):
-        return fr_fcn.tau_fr(max(row.t2JetPt, row.t2Pt))
-        #return lowpt_mu_fr(row.m2Pt)
+        return fr_fcn.tau_tight_fr( row.t2Pt )

@@ -15,7 +15,7 @@ print "Is 7TeV:", is7TeV
 # Make PU corrector from expected data PU distribution
 # PU corrections .root files from pileupCalc.py
 pu_distributions           = glob.glob(os.path.join( 'inputs', os.environ['jobid'], 'data_DoubleMu*pu.root'))
-pu_corrector               = PileupWeight.PileupWeight( 'S6' if is7TeV else 'S7', *pu_distributions)
+pu_corrector               = PileupWeight.PileupWeight( 'S6' if is7TeV else 'S10', *pu_distributions)
 muon_pog_PFTight           = MuonPOGCorrections.make_muon_pog_PFTight_2011() if is7TeV else MuonPOGCorrections.make_muon_pog_PFTight_2012()
 muon_pog_PFRelIsoDB02      = MuonPOGCorrections.make_muon_pog_PFRelIsoDB02_2011() if is7TeV else MuonPOGCorrections.make_muon_pog_PFRelIsoDB02_2012()
 electron_corrections       = H2TauCorrections.correct_e_idiso_2011 if is7TeV else H2TauCorrections.correct_e_idiso_2012
@@ -52,9 +52,7 @@ def get_electron_corrections(row,*args):
     return ret
 
 
-# Make PU corrector from expected data PU distribution
-# PU corrections .root files from pileupCalc.py
-pu_distributions = glob.glob(os.path.join(
-    'inputs', os.environ['jobid'], 'data_DoubleMu*pu.root'))
-pu_corrector = PileupWeight.PileupWeight(
-    'S6' if is7TeV else 'S7', *pu_distributions)
+## # Make PU corrector from expected data PU distribution
+## # PU corrections .root files from pileupCalc.py
+## pu_distributions = glob.glob(os.path.join( 'inputs', os.environ['jobid'], 'data_DoubleMu*pu.root'))
+## pu_corrector = PileupWeight.PileupWeight( 'S6' if is7TeV else 'S10', *pu_distributions)

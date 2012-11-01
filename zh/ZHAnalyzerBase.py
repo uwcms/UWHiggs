@@ -34,6 +34,12 @@ class ZHAnalyzerBase(MegaBase):
         self.out = outfile
         self.histograms = {}
         self.channel = channel
+        #Special histograms, data member so child classes can add to this keeping
+        #light the filling part and still be flaxible using any weird variable you can build from the NTuple
+        self.hfunc   = { 
+            'nTruePU' : lambda row, weight: row.nTruePU,
+            'weight'  : lambda row, weight: weight,
+            }
         #print '__init__->self.channel %s' % self.channel
         
     ## def get_channel(self):
@@ -113,8 +119,8 @@ class ZHAnalyzerBase(MegaBase):
                     fill_histos(histos, folder, row, event_weight)
                     wToApply = [ (w, w(row) )  for w in region_info['weights'] ]
                     for w_fcn, w_val in wToApply:
-                        if w_val > 1. :
-                            print 'obj1_weight: %s' % w_val
+                        #if w_val > 1. :
+                            #print 'obj1_weight: %s' % w_val
                         fill_histos(histos, folder+(w_fcn.__name__,), row, event_weight*w_val)
                     if len(wToApply) > 1:
                         w_prod = reduce(lambda x, y: x*y, [x for y,x in wToApply])
@@ -152,8 +158,8 @@ class ZHAnalyzerBase(MegaBase):
         self.book(folder, "%s_%s_Pt"     % products, "%s candidate Pt"              % name, 100, 0, 100)
         #self.book(folder, "%s_%s_AbsEta" % products, "%s candidate AbsEta"          % name, 100, 0, 2.4)
         self.book(folder, "%s_%s_Mass"   % products, "%s candidate Mass"            % name, 150, 0, 150)
-        self.book(folder, "%s_%s_DR"     % products, "%s decay products #DeltaR"    % name, 100, 0, 100)
-        self.book(folder, "%s_%s_DPhi"   % products, "%s decay products #Delta#phi" % name, 100, 0, 100)
+        self.book(folder, "%s_%s_DR"     % products, "%s decay products #DeltaR"    % name, 100, 0, 10)
+        self.book(folder, "%s_%s_DPhi"   % products, "%s decay products #Delta#phi" % name, 180, 0, 180)
 
     def book_Z_histos(self, folder):
         self.book_resonance_histos(folder, self.Z_decay_products(), 'Z')
@@ -170,10 +176,14 @@ class ZHAnalyzerBase(MegaBase):
             if folder_str != location:
                 continue
             attr = key[ key.rfind('/') + 1 :]
-            if attr == 'nTruePU':
-                value.Fill(row.nTruePU)
-            elif attr == 'weight':
-                value.Fill(weight)
+            if attr in self.hfunc:
+                value.Fill(
+                    self.hfunc[attr](row, weight)
+                    )
+            ## if attr == 'nTruePU':
+            ##     value.Fill(row.nTruePU)
+            ## elif attr == 'weight':
+            ##     value.Fill(weight)
             else:
                 value.Fill( getattr(row,attr), weight )
         return None

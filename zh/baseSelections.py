@@ -69,7 +69,7 @@ def signalMuonSelection(row,muId):
     if getattr(row, '%sPt' % muId) < 10:              return False
     if getattr(row, '%sAbsEta' % muId) > 2.4:         return False
     if abs(getattr(row, '%sDZ' % muId)) > 0.1:        return False
-    if not bool(getattr(row, '%sPFIDTight' % muId) ): return False
+        #if not bool(getattr(row, '%sPFIDTight' % muId) ): return False
     return True
 
 def signalTauSelection(row, tauId, ptThr = 20):
@@ -90,6 +90,6 @@ def signalElectronSelection(row, elId):
     if getattr(row, '%sPt' % elId) < 10:                 return False
     if getattr(row, '%sAbsEta' % elId) > 2.5:            return False
     if abs(getattr(row, '%sDZ' % elId)) > 0.1:           return False
-    if not bool(getattr(row, '%sMVAIDH2TauWP' % elId) ): return False
+        #if not bool(getattr(row, '%sMVAIDH2TauWP' % elId) ): return False
     return True
     

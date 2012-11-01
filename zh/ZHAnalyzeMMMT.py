@@ -51,7 +51,7 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
 
     def probe1_id(self, row):
-        return bool(row.m3RelPFIsoDB < 0.15) ##THIS SEEMS too low
+        return bool(row.m3PFIDTight) and bool(row.m3RelPFIsoDB < 0.15) ##THIS SEEMS too low
 
     def probe2_id(self, row):
         return bool(row.tMediumIso) ##Why not tMediumMVAIso
@@ -80,12 +80,11 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row):
-        return fr_fcn.mu_fr( row.m3Pt)
-        #return highpt_mu_fr(row.m1Pt)
+        #return fr_fcn.mu_tight_jetpt_fr( row.m3JetPt)
+        return fr_fcn.mu_tight_fr( row.m3Pt)
 
     def obj2_weight(self, row):
-        return fr_fcn.tau_fr(row.tPt)
-        #return lowpt_mu_fr(row.m2Pt)
+        return fr_fcn.tau_medium_fr(row.tPt)
 
 
 if __name__ == "__main__":

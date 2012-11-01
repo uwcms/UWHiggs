@@ -47,7 +47,7 @@ class ZHAnalyzeMMET(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_H_histos(folder)
 
     def probe1_id(self, row):
-        return bool(row.eRelPFIsoDB < 0.10) ##THIS SEEMS too low
+        return bool(row.eMVAIDH2TauWP) and bool(row.eRelPFIsoDB < 0.10) ##THIS SEEMS too low
 
     def probe2_id(self, row):
         return bool(row.tMediumIso) ##Why not tMediumMVAIso
@@ -78,9 +78,8 @@ class ZHAnalyzeMMET(ZHAnalyzerBase.ZHAnalyzerBase):
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row):
-        return fr_fcn.e_fr(max(row.eJetPt, row.ePt))
-        #return highpt_mu_fr(row.m1Pt)
+        return fr_fcn.e_tight_jetpt_fr( row.eJetPt )
+    #return fr_fcn.e_tight_fr( row.ePt )
 
     def obj2_weight(self, row):
-        return fr_fcn.tau_fr(max(row.tJetPt, row.tPt))
-        #return lowpt_mu_fr(row.m2Pt)
+        return fr_fcn.tau_medium_fr( row.tPt )

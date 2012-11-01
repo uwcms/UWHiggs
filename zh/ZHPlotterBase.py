@@ -22,6 +22,7 @@ import sys
 import os
 import glob
 from THBin import zipBins
+import pprint
 import ROOT
 
 import math
@@ -45,8 +46,25 @@ def HistToTGRaphErrors(h):
     gr.SetTitle( h.GetTitle() )
     gr.SetMarkerColor( h.GetMarkerColor() )
     gr.SetMarkerStyle( h.GetMarkerStyle() )
-    gr.SetFillColor( h.GetFillColor() )
+    #gr.SetFillColor( h.GetFillColor() )
     return gr
+
+class InflateErrorView(views._FolderView):
+    ''' Rebin a histogram.
+
+    The original histogram is unmodified, a rebinned clone is returned.
+
+    '''
+    def __init__(self, dir, inflation):
+        self.inflation = 1+inflation
+        super(InflateErrorView, self).__init__(dir)
+
+    def apply_view(self, object):
+        object = object.Clone()
+        for hbin in zipBins(object):
+            hbin.error *= self.inflation 
+        return object
+
 
 class BackgroundErrorView(object):
     ''' Compute the total background error in each bin. '''
@@ -129,7 +147,7 @@ var_map = {
 
 class ZHPlotterBase(Plotter):
     def __init__(self, channel, blind=False):
-        self.samples = [ 'Zjets_M50', 'WplusJets_madgraph', 'WZJetsTo3LNu*', 'ZZ*', 'WW*', 'VH*', 'WH*', 'TTplusJets_madgraph']
+        self.samples = [ 'Zjets_M50', 'WplusJets_madgraph', 'WZ*', 'ZZ*', 'WW*', 'VH*', 'TTplusJets_madgraph']#'WH*',
         self.samples += ['data_DoubleMu*'] if channel[:2] == 'MM' else ['data_DoubleElectron*']
         self.jobid = os.environ['jobid']
         self.channel = channel
@@ -142,6 +160,7 @@ class ZHPlotterBase(Plotter):
             files += glob.glob('results/%s/ZHAnalyze%s/%s.root' % (jobid, channel, x))
             lumifiles += glob.glob('inputs/%s/%s.lumicalc.sum' % (jobid, x))
         self.outputdir = 'results/%s/plots/%s' % (jobid, channel.lower() )
+        pprint.pprint(files)
         blinder = None
         if blind:
             # Don't look at the SS all pass region
@@ -151,6 +170,7 @@ class ZHPlotterBase(Plotter):
         self.general_histos += ['doubleMuPrescale'] if channel[:2] == 'MM' else []
         self.kin_histos     = ["%sPt", "%sJetPt", "%sAbsEta"]
         self.mass_histos    = [h for h in get_mass_histos(channel)]
+        #pprint.pprint(self.views)
 
     def plot_mc_vs_data(self, folder, variable, rebin=1, xaxis='', leftside=True, xrange=None):
         super(ZHPlotterBase, self).plot_mc_vs_data(folder, variable, rebin, xaxis, leftside, xrange)
@@ -161,11 +181,11 @@ class ZHPlotterBase(Plotter):
         ''' Make signal views with FR background estimation '''
 
         wz_view = views.SubdirectoryView(
-            self.rebin_view(self.get_view('WZJetsTo3LNu*'), rebin),
+            self.rebin_view(self.get_view('WZ*'), rebin),
             'os/All_Passed/'
         )
         zz_view = views.SubdirectoryView(
-            self.rebin_view(self.get_view('ZZJetsTo4L*'), rebin),
+            self.rebin_view(self.get_view('ZZ*'), rebin),
             'os/All_Passed/'
         )
         all_data_view =self.rebin_view(self.get_view('data'), rebin)
@@ -193,10 +213,10 @@ class ZHPlotterBase(Plotter):
         fakes_view = views.TitleView(
             views.StyleView(fakes_view, **data_styles['Zjets*']), 'Non-prompt')
 
-        ## charge_fakes = views.TitleView(
-        ##     views.StyleView(
-        ##         views.SubdirectoryView(all_data_view, 'os/p1p2p3/c1'),
-        ##         **data_styles['TT*']), 'Charge mis-id')
+        charge_fakes = views.TitleView(
+            views.StyleView(
+                views.SubdirectoryView(all_data_view, 'os/p1p2p3/c1'),
+                **data_styles['TT*']), 'Charge mis-id')
 
         output = {
             'wz' : wz_view,
@@ -205,7 +225,7 @@ class ZHPlotterBase(Plotter):
             'cat1' : cat1_view,
             'cat2' : cat2_view,
             'fakes' : fakes_view,
-            ## 'charge_fakes' : charge_fakes,
+            'charge_fakes' : charge_fakes,
         }
 
         # Add signal
@@ -215,12 +235,12 @@ class ZHPlotterBase(Plotter):
                 'os/All_Passed/'
             )
             output['vh%i' % mass] = vh_view
-            ww_view = views.SubdirectoryView(
-               self.rebin_view(self.get_view('WH_%i*' % mass), rebin),
-                'os/All_Passed/'
-            )
-            output['vh%i_hww' % mass] = ww_view
-            output['signal%i' % mass] = views.SumView(ww_view, vh_view)
+            ## ww_view = views.SubdirectoryView(
+            ##    self.rebin_view(self.get_view('WH_%i*' % mass), rebin),
+            ##     'os/All_Passed/'
+            ## )
+            ## output['vh%i_hww' % mass] = ww_view
+            ## output['signal%i' % mass] = views.SumView(ww_view, vh_view)
 
         return output
 
@@ -239,12 +259,12 @@ class ZHPlotterBase(Plotter):
         fakes.SetName('fakes')
 
         for mass in [110, 120, 130, 140]:
-            vh = sig_view['vh%i' % mass].Get(variable)
+            vh = sig_view['VH_H2Tau_M-%i' % mass].Get(variable)
             vh.SetName('VH%i' % mass)
             vh.Write()
-            ww = sig_view['vh%i_hww' % mass].Get(variable)
-            ww.SetName('VH_hww%i' % mass)
-            ww.Write()
+            ## ww = sig_view['vh%i_hww' % mass].Get(variable)
+            ## ww.SetName('VH_hww%i' % mass)
+            ## ww.Write()
 
         wz.Write()
         zz.Write()
@@ -260,41 +280,57 @@ class ZHPlotterBase(Plotter):
         nbins = sig_view['wz'].Get(variable).GetNbinsX()
         return self.write_shapes(variable, nbins, outdir, unblinded)
 
+    def simple_draw(self, path, rebin=1, xaxis=''):
+        data_view = self.rebin_view(self.data, rebin)
+        histo = data_view.Get(path)
+        histo.format = "ep"
+        histo.Draw()
+        self.add_cms_blurb(self.sqrts)
+
     def make_closure_plots(self, var, testDir, refDir, rebin=1, xaxis=''):
         '''helper function to make comparison between data and data (closure test for fakerates etc.)'''
         self.canvas.cd()
         data_view = self.rebin_view(self.data, rebin)
-        testData = data_view.Get('/'.join([testDir,var]) )
-        refData  = data_view.Get('/'.join([refDir, var]) )
-        #refData.format = 
-        testData.format = "ep same"
+        test_view = views.StyleView( views.TitleView( views.SubdirectoryView( data_view, testDir), 'Weighted data' ), fillcolor=ROOT.EColor.kRed, format='hist' )#.Get(var)
+        refData   = views.SubdirectoryView( data_view, refDir).Get(var)
 
         testSampleName = '_'.join(testDir.split('/')[1:]).replace('IsoFailed','fail').replace('_weight','w')
         refSampleName  = refDir.split('/')[1].replace('IsoFailed','fail').replace('_weight','w')
-        testData.SetTitle(testSampleName)
+        #testData.SetTitle(testSampleName)
         refData.SetTitle(refSampleName)
-        
-        testData.SetFillColor( 7 ) #Fill color matches the canvas
-        tgTest = HistToTGRaphErrors( testData )
+
+        diboson_views   = [ InflateErrorView( views.SubdirectoryView(self.rebin_view(self.get_view(pattern), rebin), refDir), 0.16 ) for pattern in ['WZ*'] ] #, 'ZZ*', 'WW*'] ]
+        to_stack_views  = diboson_views + [test_view] #+ 
+        stack_hist      = views.StackView( *to_stack_views ).Get(var)
+        refData.format  = "ep"
+        stack_hist.format = "HIST same" # same" #"HISTe same "
+         
+        hmax = max( [max([(b.content+b.error) for b in zipBins(refData)]),stack_hist.GetMaximum()] )
+        refData.GetYaxis().SetRangeUser(0,hmax*1.3)
         refData.GetXaxis().SetTitle(xaxis)
+
+        tgTest = HistToTGRaphErrors( views.SumView( *to_stack_views ).Get(var) )
+        tgTest.SetFillStyle(3013)
         tgTest.GetXaxis().SetTitle(xaxis)
+        tgTest.GetYaxis().SetRangeUser(0,hmax*1.3)
+        self.keep.append(tgTest)
+
         refData.SetMarkerStyle(20)
         refData.SetMarkerSize(1)
-        hmax = max( [max([b.content for b in zipBins(refData)]),max([b.content for b in zipBins(testData)] ) ] )
-        tgTest.GetYaxis().SetRangeUser(0,hmax*1.2)
         self.keep.append(refData)
-        self.keep.append(tgTest)
-        tgTest.Draw('a2')
+        self.keep.append(stack_hist)
+        refData.Draw()
+        stack_hist.Draw('same')
+        stack_hist.GetXaxis().SetTitle(xaxis)
+        stack_hist.GetYaxis().SetRangeUser(0,hmax*1.3)
         refData.Draw('same')
+        tgTest.Draw('2 same')
+        #stack_hist.Draw()
+        #self.canvas.SetLogy()
         
-        legend = plotting.Legend(2, rightmargin=0.06, topmargin=0.05, leftmargin=0.45)
-        legend.AddEntry(refData, 'ep')
-        legend.AddEntry(testData, 'f')
-        legend.SetEntrySeparation(0.0)
-        legend.SetMargin(0.35)
+        legend = self.add_legend([refData], leftside=False, entries=len(to_stack_views) +1)
+        legend.AddEntry(stack_hist,'f')
         legend.Draw()
-        #self.canvas.SetLogY(True)
-        self.keep.append(legend)
         self.add_cms_blurb(self.sqrts)
 
     def draw_closure_frobj1(self, var, rebin=1, xaxis=''):
@@ -371,44 +407,60 @@ for channel in channels:
     ##  Z control plots #####################################################
     ###########################################################################
     plotter.plot_mc_vs_data('os/All_Passed', '%s_%s_Pt' % Zprod, rebin=10, xaxis='p_{T%s%s} (GeV)' % texZprod, leftside=False)
-    plotter.save('mcdata-os-all_passed_ZPt')
+    plotter.save('%s_mcdata-os-all_passed_ZPt' % channel.lower() )
 
     plotter.plot_mc_vs_data('os/All_Passed', '%s_%s_Mass' % Zprod, rebin=10, xaxis='M_{%s%s} (GeV)' % texZprod, leftside=False)
-    plotter.save('mcdata-os-all_passed_ZMass')
+    plotter.save('%s_mcdata-os-all_passed_ZMass' % channel.lower() )
 
     plotter.plot_mc_vs_data('os/%sIsoFailed_%sIsoFailed' % Hprod, '%s_%s_Mass' % Zprod, rebin=10, xaxis='M_{%s%s} (GeV)' % texZprod, leftside=False)
-    plotter.save('mcdata-os-all_failed_ZMass')
+    plotter.save('%s_mcdata-os-all_failed_ZMass' % channel.lower() )
 
     ###########################################################################
-    ##  Fake rates control plots #####################################################
+    ##  Objects Control plots                                                ##
+    ###########################################################################
+
+    plotter.simple_draw('os/%sIsoFailed_%sIsoFailed/%sPt' % (Hprod[0], Hprod[1], Hprod[0],), rebin=10, xaxis='p_{T %s} (GeV)' % texHprod[0])
+    plotter.save('%s_os-all_failed-%s_Pt' % (channel.lower(),Hprod[0]) )
+
+    plotter.simple_draw('os/%sIsoFailed_%sIsoFailed/%sPt' % (Hprod[0], Hprod[1], Hprod[1],), rebin=10, xaxis='p_{T %s} (GeV)' % texHprod[1])
+    plotter.save('%s_os-all_failed-%s_Pt' % (channel.lower(),Hprod[1]) )
+
+    plotter.simple_draw('os/%sIsoFailed/%sPt' % (Hprod[0],Hprod[0]), rebin=10, xaxis='p_{T %s} (GeV)' % texHprod[0])
+    plotter.save('%s_os-%s_failed-%s_Pt' % (channel.lower(), Hprod[0], Hprod[0]) )
+
+    plotter.simple_draw('os/%sIsoFailed/%sPt' % (Hprod[1],Hprod[1]), rebin=10, xaxis='p_{T %s} (GeV)' % texHprod[1])
+    plotter.save('%s_os-%s_failed-%s_Pt' % (channel.lower(), Hprod[1], Hprod[1]) )
+
+    ###########################################################################
+    ##  Fake rates control plots                                             ##
     ###########################################################################
 
     plotter.draw_closure_frobj1('%s_%s_Pt' % Hprod, rebin=25, xaxis='p_{T%s%s} (GeV)' % texHprod)
-    plotter.save('frclosureobj1-os-failed2-HPt')
+    plotter.save('%s_frclosureobj1-os-failed2-HPt' % channel.lower() )
 
     plotter.draw_closure_frobj1('%s_%s_Mass' % Hprod, rebin=25, xaxis='M_{%s%s} (GeV)' % texHprod)
-    plotter.save('frclosureobj1-os-failed2-HMass')
+    plotter.save('%s_frclosureobj1-os-failed2-HMass' % channel.lower() )
 
     plotter.draw_closure_frobj1('%sPt' % Hprod[0], rebin=25, xaxis='p_{T%s} (GeV)' % texHprod[0])
-    plotter.save('frclosureobj1-os-failed2-obj1Pt')
+    plotter.save('%s_frclosureobj1-os-failed2-obj1Pt' % channel.lower() )
 
     plotter.draw_closure_frobj2('%s_%s_Pt' % Hprod, rebin=25, xaxis='p_{T%s%s} (GeV)' % texHprod)
-    plotter.save('frclosureobj2-os-failed1-HPt')
+    plotter.save('%s_frclosureobj2-os-failed1-HPt' % channel.lower() )
 
     plotter.draw_closure_frobj2('%s_%s_Mass' % Hprod, rebin=25, xaxis='M_{%s%s} (GeV)' % texHprod)
-    plotter.save('frclosureobj2-os-failed1-HMass')
+    plotter.save('%s_frclosureobj2-os-failed1-HMass' % channel.lower() )
 
     plotter.draw_closure_frobj2('%sPt' % Hprod[1], rebin=25, xaxis='p_{T%s} (GeV)' % texHprod[1])
-    plotter.save('frclosureobj2-os-failed1-obj2Pt')
+    plotter.save('%s_frclosureobj2-os-failed1-obj2Pt' % channel.lower() )
 
     ###########################################################################
     ##  H control plots #####################################################
     ###########################################################################
     plotter.plot_mc_vs_data('os/All_Passed', '%s_%s_Pt' % Hprod, rebin=10, xaxis='p_{T%s%s} (GeV)' % texHprod, leftside=False)
-    plotter.save('mcdata-os-all_passed_HPt')
+    plotter.save('%s_mcdata-os-all_passed_HPt' % channel.lower() )
 
     plotter.plot_mc_vs_data('os/All_Passed', '%s_%s_Mass' % Hprod, rebin=10, xaxis='M_{%s%s} (GeV)' % texHprod, leftside=False)
-    plotter.save('mcdata-os-all_passed_HMass')
+    plotter.save('%s_mcdata-os-all_passed_HMass' % channel.lower() )
 
 
 

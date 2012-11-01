@@ -48,23 +48,22 @@ class EMUFakeRatesBase(MegaBase):
         def fill(the_histos, row):
             weight = 1.0
             the_histos[self.lepton+'Pt'].Fill(    getattr( row, self.branchId+'Pt'    ), weight)
-            the_histos[self.lepton+'JetPt'].Fill( getattr( row, self.branchId+'JetPt' ), weight)
+            the_histos[self.lepton+'JetPt'].Fill( getattr( row, max(self.branchId+'JetPt',self.branchId+'Pt') ), weight)
             the_histos[self.lepton+'AbsEta'].Fill(getattr( row, self.branchId+'AbsEta'), weight)
 
         def preselection(self, row):
             if not self.zSelection(row):    return False
-
             if row.metEt > 20:                            return False
-            if getattr(row,self.branchId+'MtToMET') > 30: return False
-            if not getattr(row,self.branchId+'_t_SS'):    return False
+            if getattr(row,self.branchId+'MtToMET') > 30: return False #AN --> 30
+            ## if not getattr(row,self.branchId+'_t_SS'):    return False
         
-            if row.tAbsEta  > 2.3:                return False
-            if abs(row.tDZ) > 0.1:                return False    
-            if not bool(row.tDecayFinding):       return False
-            if not bool(row.tAntiElectronLoose):  return False #in the AN is not specified but seems reasonable
-            if not bool(row.tAntiMuonLoose):      return False #in the AN is not specified but seems reasonable
+            ## if row.tAbsEta  > 2.3:                return False
+            ## if abs(row.tDZ) > 0.1:                return False    
+            ## if not bool(row.tDecayFinding):       return False
+            ## if not bool(row.tAntiElectronLoose):  return False #in the AN is not specified but seems reasonable
+            ## if not bool(row.tAntiMuonLoose):      return False #in the AN is not specified but seems reasonable
             #BTag on the jet associated to the tau. Not exactly as Abdollah but close enough
-            if row.tJetCSVBtag > 0.679:     return False
+            ## if row.tJetCSVBtag > 0.679:     return False
             return True
 
         histos = self.histograms

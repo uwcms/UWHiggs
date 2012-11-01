@@ -76,9 +76,7 @@ class ZHAnalyzeEEMT(ZHAnalyzerBase.ZHAnalyzerBase):
             mcCorrectors.get_electron_corrections(row, 'e1', 'e2')
 
     def obj1_weight(self, row):
-        return fr_fcn.mu_fr(max(row.mJetPt, row.mPt))
-        #return highpt_mu_fr(row.m1Pt)
+        return fr_fcn.mu_tight_fr( row.mPt )
 
     def obj2_weight(self, row):
-        return fr_fcn.tau_fr(max(row.tJetPt, row.tPt))
-        #return lowpt_mu_fr(row.m2Pt)
+        return fr_fcn.tau_medium_fr( row.tPt )
