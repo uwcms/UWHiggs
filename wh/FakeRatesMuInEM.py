@@ -1,11 +1,10 @@
 '''
 
-Measure fake rates in dimuon events.
+Measure *muon* fake rates in the E+Mu channel
 
-We measure in QCD (anti-iso mu) and W+jet (iso mu) control regions.
+We measure in QCD (anti-iso e) and W+jet (iso e + MT) control regions.
 
 The layout of output is:
-
     region/denom_tag/var1
     region/denom_tag/var2
     region/denom_tag/num_tag/var1
@@ -16,41 +15,40 @@ Author: Evan K. Friis, UW
 '''
 
 from array import array
-import MuMuTree
+import EMuTree
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 import os
 import ROOT
 
 def control_region(row):
     # Figure out what control region we are in.
-    if row.m1RelPFIsoDB < 0.15 and row.m1MtToMET > 35 and row.m2MtToMET < 35:
-        return 'wjets'
-    elif row.m1RelPFIsoDB > 0.3 and row.metEt < 25:
+    if row.eRelPFIsoDB < 0.15 and row.eMtToMET > 40 and row.mMtToMET < 30:
+        return 'wejets'
+    elif row.eRelPFIsoDB > 0.3 and row.metEt < 25:
         return 'qcd'
     else:
         return None
 
-
-class FakeRatesMM(MegaBase):
-    tree = 'mm/final/Ntuple'
+class FakeRatesMuInEM(MegaBase):
+    tree = 'em/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
-        super(FakeRatesMM, self).__init__(tree, outfile, **kwargs)
+        super(FakeRatesMuInEM, self).__init__(tree, outfile, **kwargs)
         # Use the cython wrapper
-        self.tree = MuMuTree.MuMuTree(tree)
+        self.tree = EMuTree.EMuTree(tree)
         self.out = outfile
         # Histograms for each category
         self.histograms = {}
         self.is7TeV = '7TeV' in os.environ['jobid']
 
     def begin(self):
-        for region in ['wjets', 'qcd']:
+        for region in ['wejets', 'qcd']:
             for denom in ['pt10', 'pt20', 'pt10b', 'pt10t', 'pt10f']:
                 denom_key = (region, denom)
                 denom_histos = {}
                 self.histograms[denom_key] = denom_histos
 
                 for numerator in ['pfid', 'iso03', 'pfidiso03',
-                                  'pfidiso02', 'pfidiso01', 'h2taucuts']:
+                                  'pfidiso02', 'pfidiso01']:
                     num_key = (region, denom, numerator)
                     num_histos = {}
                     self.histograms[num_key] = num_histos
@@ -89,34 +87,32 @@ class FakeRatesMM(MegaBase):
     def process(self):
 
         def preselection(row):
-            if not row.m1_m2_SS: return False
-            if not row.doubleMuPass: return False
-            if row.m2Pt > row.m1Pt: return False
-            if not row.m1Pt > 20: return False
-            if not row.m1PFIDTight: return False
-            if not row.m2Pt > 10: return False
-            if not row.m1AbsEta < 2.4: return False
-            if not row.m2AbsEta < 2.4: return False
-            if not row.m2JetBtag < 3.3: return False
-            if not row.m2PixHits: return False
+            if not row.e_m_SS: return False
+            #if not row.mu8ele17Pass: return False
+            if not row.mPt > 10: return False
+            if not row.ePt > 20: return False
+            if not row.eMVAIDH2TauWP: return False
+            if not row.mAbsEta < 2.4: return False
+            if not row.eAbsEta < 2.5: return False
+            if not row.mJetBtag < 3.3: return False
+            if not row.mPixHits: return False
             if row.eVetoCicTightIso: return False
             if row.muVetoPt5: return False
             if row.bjetCSVVeto: return False
             if row.tauVetoPt20: return False
-            if not abs(row.m1DZ) < 0.2: return False
-            if not abs(row.m2DZ) < 0.2: return False
+            if not abs(row.mDZ) < 0.2: return False
+            if not abs(row.eDZ) < 0.2: return False
             return True
 
         def fill(the_histos, row):
             # Get PU weight - fix me
             weight = 1
-            the_histos['muonPt'].Fill(row.m2Pt, weight)
-            the_histos['muonJetPt'].Fill(max(row.m2JetPt, row.m2Pt), weight)
-            the_histos['muonJetVsLeptonPt'].Fill(max(row.m2JetPt, row.m2Pt), row.m2Pt, weight)
-            the_histos['muonJetVsEta'].Fill(max(row.m2JetPt, row.m2Pt), row.m2AbsEta, weight)
-            the_histos['muonAbsEta'].Fill(row.m2AbsEta, weight)
+            the_histos['muonPt'].Fill(row.mPt, weight)
+            the_histos['muonJetPt'].Fill(max(row.mJetPt, row.mPt), weight)
+            the_histos['muonJetVsLeptonPt'].Fill(max(row.mJetPt, row.mPt), row.mPt, weight)
+            the_histos['muonJetVsEta'].Fill(max(row.mJetPt, row.mPt), row.mAbsEta, weight)
+            the_histos['muonAbsEta'].Fill(row.mAbsEta, weight)
             the_histos['metSignificance'].Fill(row.metSignificance, weight)
-            the_histos['m1MtToMET'].Fill(row.m1MtToMET, weight)
 
         histos = self.histograms
         for row in self.tree:
@@ -127,38 +123,35 @@ class FakeRatesMM(MegaBase):
                 continue
 
             def fill_denominator(denominator_tag):
-                # This is a QCD or Wjets
+                # This is a QCD or wejets
                 fill(histos[(region, denominator_tag)], row)
 
-                if row.m2RelPFIsoDB < 0.3:
-                    fill(histos[(region, denominator_tag, 'iso03')], row)
-
-                if row.m2PFIDTight:
+                if row.mPFIDTight:
                     fill(histos[(region, denominator_tag, 'pfid')], row)
 
-                    if row.m2RelPFIsoDB < 0.3:
-                        fill(histos[(region, denominator_tag, 'pfidiso03')], row)
+                if row.mRelPFIsoDB < 0.3:
+                    fill(histos[(region, denominator_tag, 'iso03')], row)
 
-                    if row.m2RelPFIsoDB < 0.2:
-                        fill(histos[(region, denominator_tag, 'pfidiso02')], row)
+                if row.mPFIDTight and row.mRelPFIsoDB < 0.3:
+                    fill(histos[(region, denominator_tag, 'pfidiso03')], row)
 
-                    if row.m2RelPFIsoDB < 0.1:
-                        fill(histos[(region, denominator_tag, 'pfidiso01')], row)
+                if row.mPFIDTight and row.mRelPFIsoDB < 0.2:
+                    fill(histos[(region, denominator_tag, 'pfidiso02')], row)
 
-                    if (row.m2RelPFIsoDB < 0.15 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.1:
-                        fill(histos[(region, denominator_tag, 'h2taucuts')], row)
+                if row.mPFIDTight and row.mRelPFIsoDB < 0.1:
+                    fill(histos[(region, denominator_tag, 'pfidiso01')], row)
 
             fill_denominator('pt10')
 
             # Barrel/forward
-            if row.m2AbsEta < 0.8:
+            if row.mAbsEta < 0.8:
                 fill_denominator('pt10b')
-            elif row.m2AbsEta < 1.3:
+            elif row.mAbsEta < 1.3:
                 fill_denominator('pt10t')
             else:
                 fill_denominator('pt10f')
 
-            if row.m2Pt > 20:
+            if row.mPt > 20:
                 fill_denominator('pt20')
 
     def finish(self):

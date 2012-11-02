@@ -228,9 +228,22 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass')
 
+    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', qcd_weight_fraction=1)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-qweight-subMass')
+
+    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-qweight05-subMass')
+
     plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', show_error=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass-werror')
+
+    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)',
+                       show_error=True, fake_error=0, wz_error=0, zz_error=0)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-subMass-wshapeerror')
 
     plotter.plot_final('m2Iso', 10)
     plotter.add_cms_blurb(sqrts)
@@ -256,9 +269,30 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass')
 
+    plotter.plot_final_f3('m2JetBtag', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-m2JetBtag')
+
     plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3q-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=1)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-qweight-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-qweight05-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5, show_error=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-qweight05-werror-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5,
+                          show_error=True, fake_error=0, wz_error=0, zz_error=0)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-qweight05-wshapeerror-subMass')
 
     plotter.plot_final_f3_split('subMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
@@ -311,6 +345,6 @@ if __name__ == "__main__":
     shape_file = ROOT.TFile(
         os.path.join(outputdir, 'mmt_shapes_%s.root' % period), 'RECREATE')
     shape_dir = shape_file.mkdir('mmt')
-    plotter.write_shapes('subMass', 20, shape_dir, unblinded=False)
+    plotter.write_shapes('subMass', 20, shape_dir, unblinded=False, qcd_fraction=0.5)
     #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
     shape_file.Close()

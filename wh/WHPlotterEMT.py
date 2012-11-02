@@ -179,13 +179,19 @@ if __name__ == "__main__":
     plotter.plot_final('tAbsEta', 10)
     plotter.save('final-tAbsEta')
 
-    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)')
+    plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass')
 
-    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', show_error=True)
+    plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', show_error=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass-werror')
+
+    # Shape only
+    plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', show_error=True,
+                       fake_error=0, wz_error=0, zz_error=0)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-subMass-wshapeerror')
 
     plotter.plot_final('metSig', 5)
     plotter.save('final-metSig')
@@ -209,9 +215,18 @@ if __name__ == "__main__":
     #plotter.add_cms_blurb(sqrts)
     #plotter.save('final-wz-mJetPt')
 
-    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', show_error=True,
+                       fake_error=0, wz_error=0, zz_error=0)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-wshaperror-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', show_error=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-werror-subMass')
 
     plotter.plot_final_f3('etMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
@@ -225,7 +240,7 @@ if __name__ == "__main__":
     #plotter.add_cms_blurb(sqrts)
     #plotter.save('final-f3q-subMass')
 
-    plotter.plot_final_f3('subMass', 10, xaxis='m_{#l_{1}#tau_{#mu}} (GeV)', show_error=True)
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{#l_{1}#tau_{#mu}} (GeV)', show_error=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass-werror')
 

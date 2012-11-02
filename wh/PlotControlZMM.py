@@ -14,11 +14,11 @@ output_dir = os.path.join('results', jobid, 'plots', 'zmm')
 
 samples = [
     'Zjets_M50',
-    'WZ*',
-    'ZZ*',
-    'WW*',
+    #'WZ*',
+    #'ZZ*',
+    #'WW*',
     'TT*',
-    'WplusJets*',
+    #'WplusJets*',
     "data_DoubleMu*",
 ]
 
@@ -30,8 +30,12 @@ for x in samples:
     lumifiles.extend(glob.glob('inputs/%s/%s.lumicalc.sum' % (jobid, x)))
 
 plotter = Plotter(files, lumifiles, output_dir)
+plotter.mc_samples = ['Zjets_M50']
 
-plotter.plot_mc_vs_data('zmm', 'm1m2Mass', rebin=4)
+sqrts = 7 if '7TeV' in jobid else 8
+
+plotter.plot_mc_vs_data('zmm', 'm1m2Mass', rebin=2, xaxis='m_{#mu#mu} (GeV)')
+plotter.add_cms_blurb(sqrts)
 plotter.save('mass')
 
 plotter.plot_mc_vs_data('zmm', 'm1Pt')
