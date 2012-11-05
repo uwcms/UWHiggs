@@ -1,3 +1,3 @@
 [submodule "dependencies/FinalStateAnalysis"]
 	path = dependencies/FinalStateAnalysis
-	url = https://github.com/lgray/FinalStateAnalysis.git
+	url = git@github.com:lgray/FinalStateAnalysis.git
