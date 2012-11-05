@@ -9,7 +9,7 @@ Installation
 Start from a CMSSW 5_3_3 or greater working area.
 Clone the code from the remote repository::
 
-   git clone --recursive https://github.com/ekfriis/UWHiggs.git
+   git clone --recursive https://github.com/lgray/UWHiggs.git
 
 The --recursive option is necessary for the dependencies, which are stored as
 git submodules, to be downloaded correctly.  Now check out/install all the
