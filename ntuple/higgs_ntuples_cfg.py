@@ -84,6 +84,8 @@ if options.rerunFSA:
                          'puTagDoesntMatter', buildFSAEvent=True,
                          noTracks=True)
     process.buildFSAPath = cms.Path(process.buildFSASeq)
+    # Don't crash if some products are missing (like tracks)
+    process.patFinalStateEventProducer.forbidMissing = cms.bool(False)
     process.schedule.append(process.buildFSAPath)
     # Drop the old stuff.
     process.source.inputCommands=cms.untracked.vstring(
