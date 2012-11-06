@@ -25,11 +25,14 @@ options = TauVarParsing.TauVarParsing(
     puScenario='S4',
     saveSkim=0,
     reportEvery=100,
-    makeH2Tau=1,
-    makeTNP=1,
-    makeTrilepton=1,
-    makeQuad=1,
-    make4L=1,
+    makeH2Tau=0,
+    makeTNP=0,
+    makeTrilepton=0,
+    makeQuad=0,
+    make4L=0,
+    makeQuartic=0,
+    makeTGC=0,
+    makeHZG=0,
     dump=0, # If one, dump process python to stdout
     rerunFSA=0, # If one, rebuild the PAT FSA events
     verbose=0, # If one print out the TimeReport
@@ -125,7 +128,6 @@ if options.makeHZG:
 if options.makeTGC:
     add_leptonphoton_ntuples(process, process.schedule)
     add_trilepton_ntuples(process, process.schedule, do_trileptons=False, do_photons = True)
-    
 
 if options.makeQuartic:
     add_trilepton_ntuples(process, process.schedule, do_trileptons=True, do_photons = True)
