@@ -19,7 +19,7 @@ fi
 
 echo "Checking out FSA dependencies"
 pushd FinalStateAnalysis/recipe
-LUMI=1 LIMITS=1 PATPROD=0 ./recipe.sh
+LUMI=1 LIMITS=1 PATPROD=1 ./recipe.sh
 
 echo "Manually creating FinalStateAnalysis python symlinks"
 ./symlink_python.sh

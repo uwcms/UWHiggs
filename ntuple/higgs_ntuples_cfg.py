@@ -9,6 +9,8 @@ You can turn off different ntuples by passing option=0 using one of:
     makeTrilepton (emt, mmt, eet, emm, mmm)
     makeQuad (a bunch for 2l2tau)
     make4L (eeee, eemm, mmmm)
+    makeHZG (eeg, mmg)
+    makeQuartic ( permutations of e mu tau pho... )
 
 '''
 
@@ -75,6 +77,7 @@ if options.rerunFSA:
         'electrons' : 'cleanPatElectrons',
         'muons' : 'cleanPatMuons',
         'taus' : 'cleanPatTaus',
+        'photons' : 'cleanPatPhotons',
         'jets' : 'selectedPatJets',
         'met' : 'systematicsMET',
     }
@@ -113,6 +116,14 @@ if options.makeQuad:
 
 if options.make4L:
     add_quad_ntuples(process, process.schedule, do_zh=False, do_zz=True)
+
+if options.makeHZG:
+    add_trilepton_ntuples(process, process.schedule, do_trileptons=False, do_photons = True)
+
+if options.makeQuartic:
+    add_trilepton_ntuples(process, process.schedule, do_trileptons=False, do_photons = True)
+    add_quad_ntuples(process, process.schedule, do_zh=False, do_zz=False, do_zgg=True)
+
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = options.reportEvery
