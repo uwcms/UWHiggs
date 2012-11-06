@@ -38,7 +38,7 @@ options = TauVarParsing.TauVarParsing(
     verbose=0, # If one print out the TimeReport
 )
 
-options.outputFile="higgs.root"
+options.outputFile="ntuplize.root"
 options.parseArguments()
 
 process.source = cms.Source(
@@ -104,7 +104,7 @@ if options.rerunFSA:
 from FinalStateAnalysis.NtupleTools.tnp_ntuples_cfi import add_tnp_ntuples
 from FinalStateAnalysis.NtupleTools.h2tau_ntuples_cfi import add_h2tau_ntuples
 from FinalStateAnalysis.NtupleTools.trilepton_ntuples_cfi import add_trilepton_ntuples
-from FinalStateAnalysis.NtupleTools.leptonphoton_ntuples_cfi import add_leptonphoton_ntuples
+from FinalStateAnalysis.NtupleTools.lepton_photon_ntuples_cfi import add_leptonphoton_ntuples
 from FinalStateAnalysis.NtupleTools.quad_ntuples_cfi import add_quad_ntuples
 
 if options.makeH2Tau:
