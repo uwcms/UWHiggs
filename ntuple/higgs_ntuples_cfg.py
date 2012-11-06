@@ -10,6 +10,7 @@ You can turn off different ntuples by passing option=0 using one of:
     makeQuad (a bunch for 2l2tau)
     make4L (eeee, eemm, mmmm)
     makeHZG (eeg, mmg)
+    makeTGC (eeg, mmg, eg, mg)
     makeQuartic ( permutations of e mu tau pho... )
 
 '''
@@ -100,6 +101,7 @@ if options.rerunFSA:
 from FinalStateAnalysis.NtupleTools.tnp_ntuples_cfi import add_tnp_ntuples
 from FinalStateAnalysis.NtupleTools.h2tau_ntuples_cfi import add_h2tau_ntuples
 from FinalStateAnalysis.NtupleTools.trilepton_ntuples_cfi import add_trilepton_ntuples
+from FinalStateAnalysis.NtupleTools.leptonphoton_ntuples_cfi import add_leptonphoton_ntuples
 from FinalStateAnalysis.NtupleTools.quad_ntuples_cfi import add_quad_ntuples
 
 if options.makeH2Tau:
@@ -120,8 +122,13 @@ if options.make4L:
 if options.makeHZG:
     add_trilepton_ntuples(process, process.schedule, do_trileptons=False, do_photons = True)
 
-if options.makeQuartic:
+if options.makeTGC:
+    add_leptonphoton_ntuples(process, process.schedule)
     add_trilepton_ntuples(process, process.schedule, do_trileptons=False, do_photons = True)
+    
+
+if options.makeQuartic:
+    add_trilepton_ntuples(process, process.schedule, do_trileptons=True, do_photons = True)
     add_quad_ntuples(process, process.schedule, do_zh=False, do_zz=False, do_zgg=True)
 
 
