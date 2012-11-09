@@ -16,6 +16,7 @@ You can turn on different ntuples by passing option=1 using one of:
 '''
 
 import FWCore.ParameterSet.Config as cms
+from hzg_sync_mod import set_passthru
 
 process = cms.Process("TrileptonNtuple")
 
@@ -139,6 +140,8 @@ process.MessageLogger.cerr.FwkReport.reportEvery = options.reportEvery
 
 if options.verbose:
     process.options = cms.untracked.PSet(wantSummary = cms.untracked.bool(True))
+if options.passThru:
+    set_passtrue(process)
 
 if options.dump:
     print process.dumpPython()
