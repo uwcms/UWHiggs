@@ -2,7 +2,7 @@
 
 CFG file to make all Higgs ntuples
 
-You can turn off different ntuples by passing option=0 using one of:
+You can turn on different ntuples by passing option=1 using one of:
 
     makeH2Tau (em, et, and mt)
     makeTNP (ee & mm)

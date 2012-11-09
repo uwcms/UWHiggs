@@ -3,6 +3,7 @@
 # Setup the cython proxies, find input ntuple files, and compute luminosity.
 
 source jobid.sh
+export localdatasrc=
 export datasrc=/scratch/efriis/data/
 export jobid=$jobid7
 export afile=`find $datasrc/$jobid | grep root | head -n 1`
