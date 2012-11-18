@@ -26,13 +26,13 @@ dataMuon=`lcg-ls -b -Dsrmv2 ${srmPrefix}=${remoteDataDir}${syncPostfix}/52X/ | g
 
 theCfg=$CMSSW_BASE/src/UWHiggs/ntuple/make_ntuples_cfg.py
 
-cmsRun  $theCfg inputFiles="$mcSignalEle" outputFile="MCSignalEle_52X_ntuples.root" makeHZG=1 makeTNP=1 passThru=1 reportEvery=100 >& MCSignalEle_ntuples.log &
+cmsRun  $theCfg inputFiles="$mcSignalEle" outputFile="MCSignalEle_52X_ntuples.root" makeHZG=1 makeTNP=1 passThru=1 eventView=1 reportEvery=100 >& MCSignalEle_ntuples.log &
 
-cmsRun  $theCfg inputFiles="$mcBkgEle" outputFile="MCBkgEle_52X_ntuples.root" makeHZG=1 makeTNP=1 passThru=1 reportEvery=100 >& MCBkgEle_ntuples.log &
+cmsRun  $theCfg inputFiles="$mcBkgEle" outputFile="MCBkgEle_52X_ntuples.root" makeHZG=1 makeTNP=1 passThru=1 eventView=1 reportEvery=100 >& MCBkgEle_ntuples.log &
 
-cmsRun  $theCfg inputFiles="$dataElectron" outputFile="DataElectron_52X_ntuples.root" makeHZG=1 makeTNP=1 passThru=1 reportEvery=100 >& DataElectron_ntuples.log &
+cmsRun  $theCfg inputFiles="$dataElectron" outputFile="DataElectron_52X_ntuples.root" makeHZG=1 makeTNP=1 passThru=1 eventView=1 reportEvery=100 >& DataElectron_ntuples.log &
 
-cmsRun  $theCfg inputFiles="$dataMuon" outputFile="DataMuon_52X_ntuples.root" makeHZG=1 makeTNP=1 passThru=1 reportEvery=100 >& DataMuon_ntuples.log &
+cmsRun  $theCfg inputFiles="$dataMuon" outputFile="DataMuon_52X_ntuples.root" makeHZG=1 makeTNP=1 passThru=1 eventView=1 reportEvery=100 >& DataMuon_ntuples.log &
 
 echo "Waiting for ntuplizing jobs to finish..."
 wait
