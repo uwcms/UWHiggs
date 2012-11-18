@@ -34,6 +34,7 @@ options = TauVarParsing.TauVarParsing(
     makeQuartic=0,
     makeTGC=0,
     makeHZG=0,
+    event_view=0,
     dump=0, # If one, dump process python to stdout
     rerunFSA=0, # If one, rebuild the PAT FSA events
     verbose=0, # If one print out the TimeReport
@@ -109,30 +110,45 @@ from FinalStateAnalysis.NtupleTools.lepton_photon_ntuples_cfi import add_leptonp
 from FinalStateAnalysis.NtupleTools.quad_ntuples_cfi import add_quad_ntuples
 
 if options.makeH2Tau:
-    add_h2tau_ntuples(process, process.schedule)
+    add_h2tau_ntuples(process, process.schedule,
+                      options.event_view)
 
 if options.makeTNP:
-    add_tnp_ntuples(process, process.schedule)
+    add_tnp_ntuples(process, process.schedule,
+                    options.event_view)
 
 if options.makeTrilepton:
-    add_trilepton_ntuples(process, process.schedule)
+    add_trilepton_ntuples(process, process.schedule,
+                          options.event_view)
 
 if options.makeQuad:
-    add_quad_ntuples(process, process.schedule, do_zz=False, do_zh=True)
+    add_quad_ntuples(process, process.schedule,
+                     do_zz=False, do_zh=True,
+                     options.event_view)
 
 if options.make4L:
-    add_quad_ntuples(process, process.schedule, do_zh=False, do_zz=True)
+    add_quad_ntuples(process, process.schedule,
+                     do_zh=False, do_zz=True,
+                     options.event_view)
 
 if options.makeHZG:
-    add_trilepton_ntuples(process, process.schedule, do_trileptons=False, do_photons = True)
+    add_trilepton_ntuples(process, process.schedule,
+                          do_trileptons=False, do_photons = True,
+                          options.event_view)
 
 if options.makeTGC:
-    add_leptonphoton_ntuples(process, process.schedule)
-    add_trilepton_ntuples(process, process.schedule, do_trileptons=False, do_photons = True)
-
+    add_leptonphoton_ntuples(process, process.schedule,
+                             options.event_view)
+    add_trilepton_ntuples(process, process.schedule,
+                          do_trileptons=False, do_photons = True,
+                          options.event_view)
 if options.makeQuartic:
-    add_trilepton_ntuples(process, process.schedule, do_trileptons=True, do_photons = True)
-    add_quad_ntuples(process, process.schedule, do_zh=False, do_zz=False, do_zgg=True)
+    add_trilepton_ntuples(process, process.schedule,
+                          do_trileptons=True, do_photons = True,
+                          options.event_view)
+    add_quad_ntuples(process, process.schedule,
+                     do_zh=False, do_zz=False, do_zgg=True,
+                     options.event_view)
 
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
@@ -141,7 +157,7 @@ process.MessageLogger.cerr.FwkReport.reportEvery = options.reportEvery
 if options.verbose:
     process.options = cms.untracked.PSet(wantSummary = cms.untracked.bool(True))
 if options.passThru:
-    set_passtrue(process)
+    set_passthru(process)
 
 if options.dump:
     print process.dumpPython()
