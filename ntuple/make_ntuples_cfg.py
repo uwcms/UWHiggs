@@ -16,7 +16,7 @@ You can turn on different ntuples by passing option=1 using one of:
 '''
 
 import FWCore.ParameterSet.Config as cms
-from hzg_sync_mod import set_passthru
+from UWHiggs.ntuple.hzg_sync_mod import set_passthru
 
 process = cms.Process("TrileptonNtuple")
 
@@ -34,7 +34,8 @@ options = TauVarParsing.TauVarParsing(
     makeQuartic=0,
     makeTGC=0,
     makeHZG=0,
-    event_view=0,
+    eventView=0,
+    passThru=0,
     dump=0, # If one, dump process python to stdout
     rerunFSA=0, # If one, rebuild the PAT FSA events
     verbose=0, # If one print out the TimeReport
@@ -111,15 +112,15 @@ from FinalStateAnalysis.NtupleTools.quad_ntuples_cfi import add_quad_ntuples
 
 if options.makeH2Tau:
     add_h2tau_ntuples(process, process.schedule,
-                      event_view = options.event_view)
+                      event_view = options.eventView)
 
 if options.makeTNP:
     add_tnp_ntuples(process, process.schedule,
-                    event_view = options.event_view)
+                    event_view = options.eventView)
 
 if options.makeTrilepton:
     add_trilepton_ntuples(process, process.schedule,
-                          event_view = options.event_view)
+                          event_view = options.eventView)
 
 if options.makeQuad:
     add_quad_ntuples(process, process.schedule,
@@ -129,26 +130,26 @@ if options.makeQuad:
 if options.make4L:
     add_quad_ntuples(process, process.schedule,
                      do_zh=False, do_zz=True,
-                     event_view = options.event_view)
+                     event_view = options.eventView)
 
 if options.makeHZG:
     add_trilepton_ntuples(process, process.schedule,
                           do_trileptons=False, do_photons = True,
-                          event_view = options.event_view)
+                          event_view = options.eventView)
 
 if options.makeTGC:
     add_leptonphoton_ntuples(process, process.schedule,
-                             options.event_view)
+                             options.eventView)
     add_trilepton_ntuples(process, process.schedule,
                           do_trileptons=False, do_photons = True,
-                          event_view = options.event_view)
+                          event_view = options.eventView)
 if options.makeQuartic:
     add_trilepton_ntuples(process, process.schedule,
                           do_trileptons=True, do_photons = True,
-                          event_view = options.event_view)
+                          event_view = options.eventView)
     add_quad_ntuples(process, process.schedule,
                      do_zh=False, do_zz=False, do_zgg=True,
-                     event_view = options.event_view)
+                     event_view = options.eventView)
 
 
 process.load("FWCore.MessageLogger.MessageLogger_cfi")

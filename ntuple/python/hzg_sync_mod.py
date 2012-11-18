@@ -1,5 +1,4 @@
 import FWCore.ParameterSet.Config as cms
-import deepcopy
 
 def set_passthru(process):
     #remove all preselection cuts
