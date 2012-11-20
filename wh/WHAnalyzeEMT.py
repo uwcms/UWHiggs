@@ -77,8 +77,8 @@ if 'HWW3l' in os.environ['megatarget'] and not is7TeV:
 pu_corrector = PileupWeight.PileupWeight(mc_pu_tag, *pu_distributions)
 
 muon_pog_PFTight_2011 = MuonPOGCorrections.make_muon_pog_PFTight_2011()
-muon_pog_PFRelIsoDB02_2011 = MuonPOGCorrections.\
-    make_muon_pog_PFRelIsoDB02_2011()
+muon_pog_PFRelIsoDB_2011 = MuonPOGCorrections.\
+    make_muon_pog_PFRelIsoDB012_2011()
 
 
 def mc_corrector_2011(row):
@@ -86,13 +86,12 @@ def mc_corrector_2011(row):
     if row.run > 2:
         return 1
     pu = pu_corrector(row.nTruePU)
-    #pu = 1
-    m1id = muon_pog_PFTight_2011(row.mPt, row.mEta)
-    m1iso = muon_pog_PFRelIsoDB02_2011(row.mPt, row.mEta)
+    m1idiso = muon_pog_PFRelIsoDB_2011(row.mPt, row.mAbsEta) * \
+        muon_pog_PFTight_2011(row.mPt, row.mAbsEta)
     e2idiso = H2TauCorrections.correct_e_idiso_2011(row.ePt, row.eAbsEta)
     m_trg = H2TauCorrections.correct_mueg_mu_2011(row.mPt, row.mAbsEta)
     e_trg = H2TauCorrections.correct_mueg_e_2011(row.ePt, row.eAbsEta)
-    return pu * m1id * m1iso * e2idiso * m_trg * e_trg
+    return pu * m1idiso * e2idiso * m_trg * e_trg
 
 
 def mc_corrector_2012(row):

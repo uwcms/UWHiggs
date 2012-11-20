@@ -11,11 +11,6 @@ if $jobid.include? '8TeV'
 end
 
 ################################################################################
-## Refreshing cython proxies ###################################################
-################################################################################
-
-
-################################################################################
 ## Sample names ################################################################
 ################################################################################
 #
@@ -492,7 +487,7 @@ def add_fake_errors(input_file, prefix)
   output_file = input_file.sub('.root', '_statshapes.root')
   output_sys_list = input_file.sub('.root', '_statshapes.txt')
   file output_file => [input_file] do |t|
-    sh "$CMSSW_BASE/src/HiggsAnalysis/HiggsToTauTau/scripts/add_stat_shapes.py #{input_file} #{output_file} --filter '*fakes' --prefix CMS_vhtt_#{$period}_#{prefix}_fakeshape > #{output_sys_list}"
+    sh "add_stat_shapes.py #{input_file} #{output_file} --filter '#{prefix}/fakes' --prefix CMS_vhtt_#{$period}_#{prefix}_fakeshape > #{output_sys_list}"
   end
 end
 
@@ -553,7 +548,8 @@ file "#{$carddir}/unc.conf" => ["card_config/unc.conf.base.#{$period}"] + stat_s
   end
 end
 
-file "#{$carddir}/unc.vals" => ["card_config/unc.vals.base.#{$period}"] + stat_shape_lists do |t|
+file "#{$carddir}/unc.vals" => ["card_config/unc.vals.base.#{$period}", 
+  "#{$carddir}/shapes.root"] + stat_shapes do |t|
   # Copy the basic template
   sh "mkdir -p #{$carddir}"
   puts t.investigation
@@ -561,10 +557,16 @@ file "#{$carddir}/unc.vals" => ["card_config/unc.vals.base.#{$period}"] + stat_s
   # Append all the stat shape types
   sh "echo '' >> #{t.name}"
   sh "echo '# Stat shape uncertainties' >> #{t.name}"
+  puts stat_shape_lists.join(", ")
   stat_shape_lists.each do |list|
     sh "cat #{list} | grep mmt | xargs -n 1 -I {} echo 'mmt fakes {} 1.0' >> #{t.name}"
     sh "cat #{list} | grep emt | xargs -n 1 -I {} echo 'emt fakes {} 1.0' >> #{t.name}"
   end
+  sh "python get_fake_systematic.py #{$carddir}/shapes.root mmt CMS_vhtt_mmt_fakes_#{$period} >> #{t.name}"
+  sh "python get_fake_systematic.py #{$carddir}/shapes.root emt CMS_vhtt_emt_fakes_#{$period} >> #{t.name}"
+  # For testing a full correlated error.
+  #sh "echo 'emt fakes CMS_vhtt_llt_fakes 1.3' >> #{t.name}"
+  #sh "echo 'mmt fakes CMS_vhtt_llt_fakes 1.3' >> #{t.name}"
 end
 
 file "#{$carddir}/cgs.conf" => ["card_config/cgs.conf.#{$period}"] do |t|
@@ -607,7 +609,8 @@ end
 ### Copying card configuration to official place ###############################
 ################################################################################
 
-$httcombodir="/afs/hep.wisc.edu/cms/efriis/HIG-12-051/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
+#$httcombodir="/afs/hep.wisc.edu/cms/efriis/HIG-12-051/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
+$httcombodir="/afs/cern.ch/work/f/friis/HttLimits/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
 
 file "#{$httcombodir}/cgs-sm-#{$period}-00.conf" => ["#{$carddir}/cgs.conf"] do |t|
     puts t.investigation

@@ -207,18 +207,20 @@ class WHPlotterBase(Plotter):
         }
 
         # Add signal
+        #for mass in [110, 115, 120, 125, 130, 135, 140]:
         for mass in [110, 120, 130, 140]:
             vh_view = views.SubdirectoryView(
                 self.rebin_view(self.get_view('VH_*%i' % mass), rebin),
                 'ss/p1p2p3/'
             )
             output['vh%i' % mass] = vh_view
-            ww_view = views.SubdirectoryView(
-                self.rebin_view(self.get_view('WH_%i*' % mass), rebin),
-                'ss/p1p2p3/'
-            )
-            output['vh%i_hww' % mass] = ww_view
-            output['signal%i' % mass] = views.SumView(ww_view, vh_view)
+            if mass % 10 == 0:
+                ww_view = views.SubdirectoryView(
+                    self.rebin_view(self.get_view('WH_%i*' % mass), rebin),
+                    'ss/p1p2p3/'
+                )
+                output['vh%i_hww' % mass] = ww_view
+                output['signal%i' % mass] = views.SumView(ww_view, vh_view)
 
         return output
 
@@ -409,13 +411,16 @@ class WHPlotterBase(Plotter):
         obs.SetName('data_obs')
         fakes.SetName('fakes')
 
+        #for mass in [110, 115, 120, 125, 130, 135, 140]:
         for mass in [110, 120, 130, 140]:
             vh = sig_view['vh%i' % mass].Get(variable)
             vh.SetName('WH%i' % mass)
             vh.Write()
-            ww = sig_view['vh%i_hww' % mass].Get(variable)
-            ww.SetName('WH_hww%i' % mass)
-            ww.Write()
+            if mass % 10 == 0:
+                # Only have 10 GeV steps for WW
+                ww = sig_view['vh%i_hww' % mass].Get(variable)
+                ww.SetName('WH_hww%i' % mass)
+                ww.Write()
 
         wz.Write()
         zz.Write()
@@ -436,7 +441,7 @@ class WHPlotterBase(Plotter):
                    qcd_weight_fraction=0, **kwargs):
         ''' Plot the final output - with bkg. estimation '''
         sig_view = self.make_signal_views(
-            rebin, unblinded=False, qcd_weight_fraction=qcd_weight_fraction)
+            rebin, unblinded=True, qcd_weight_fraction=qcd_weight_fraction)
         vh_10x = views.TitleView(
             views.StyleView(
                 views.ScaleView(sig_view['signal120'], 5),
@@ -479,7 +484,7 @@ class WHPlotterBase(Plotter):
         sig_view['data'] = PoissonView(sig_view['data'], x_err=False)
 
         data = sig_view['data'].Get(variable)
-        if not self.blind:
+        if True or not self.blind:
             data.Draw('pe,same')
         self.keep.append(data)
 

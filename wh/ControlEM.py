@@ -37,12 +37,8 @@ pu_distributions = glob.glob(os.path.join(
 pu_corrector = PileupWeight.PileupWeight(mc_pu_tag, *pu_distributions)
 
 muon_pog_PFTight_2011 = MuonPOGCorrections.make_muon_pog_PFTight_2011()
-muon_pog_PFTight_2012 = MuonPOGCorrections.make_muon_pog_PFTight_2012()
-
 muon_pog_PFRelIsoDB_2011 = MuonPOGCorrections.\
     make_muon_pog_PFRelIsoDB012_2011()
-muon_pog_PFRelIsoDB02_2012 = MuonPOGCorrections.\
-    make_muon_pog_PFRelIsoDB012_2012()
 
 frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
 lowpt_e_fr = build_roofunctor(
@@ -58,8 +54,6 @@ def mc_corrector_2011(row):
     if row.run > 2:
         return 1
     pu = pu_corrector(row.nTruePU)
-    #pu = 1
-    #m1idiso = H2TauCorrections.correct_mu_idiso_2011(row.mPt, row.mAbsEta)
     m1idiso = muon_pog_PFRelIsoDB_2011(row.mPt, row.mAbsEta) * \
         muon_pog_PFTight_2011(row.mPt, row.mAbsEta)
     e2idiso = H2TauCorrections.correct_e_idiso_2011(row.ePt, row.eAbsEta)
