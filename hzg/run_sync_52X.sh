@@ -24,7 +24,7 @@ mcBkgEle=`lcg-ls -b -Dsrmv2 ${srmPrefix}=${remoteDataDir}${syncPostfix}/52X/ | g
 dataElectron=`lcg-ls -b -Dsrmv2 ${srmPrefix}=${remoteDataDir}${syncPostfix}/52X/ | grep DataElectron | sed 's/\/hdfs\/store/root\:\/\/cmsxrootd\.hep\.wisc\.edu\/\/store/' | tr '\n' '\,' | head -c -1`
 dataMuon=`lcg-ls -b -Dsrmv2 ${srmPrefix}=${remoteDataDir}${syncPostfix}/52X/ | grep DataMuon | sed 's/\/hdfs\/store/root\:\/\/cmsxrootd\.hep\.wisc\.edu\/\/store/' | tr '\n' '\,' | head -c -1`
 
-theCfg=$CMSSW_BASE/src/UWHiggs/ntuple/make_ntuples_cfg.py
+theCfg=$CMSSW_BASE/src/FinalStateAnalysis/NtupleTools/test/make_ntuples_cfg.py
 
 cmsRun  $theCfg inputFiles="$mcSignalEle" outputFile="MCSignalEle_52X_ntuples.root" makeHZG=1 makeTNP=1 passThru=1 eventView=1 reportEvery=100 >& MCSignalEle_ntuples.log &
 
