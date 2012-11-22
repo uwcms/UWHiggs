@@ -61,8 +61,8 @@ def mc_corrector_2012(row):
     pu = pu_corrector(row.nTruePU)
     m1idiso = H2TauCorrections.correct_mu_idiso_2012(row.m1Pt, row.m1AbsEta)
     m2idiso = H2TauCorrections.correct_mu_idiso_2012(row.m2Pt, row.m2AbsEta)
-    m1Trig = muon_pog_Mu17Mu8_Mu17_2012(row.m1Pt, row.m1Eta)
-    m2Trig = muon_pog_Mu17Mu8_Mu8_2012(row.m2Pt, row.m2Eta)
+    m1Trig = H2TauCorrections.correct_mu_trg_2012(row.m1Pt, row.m1AbsEta)
+    m2Trig = H2TauCorrections.correct_mu_trg_2012(row.m2Pt, row.m2AbsEta)
     return pu*m1idiso*m2idiso*m1Trig*m2Trig
 
 # Determine which set of corrections to use

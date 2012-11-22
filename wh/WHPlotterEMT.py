@@ -183,6 +183,10 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass')
 
+    plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-subMass-qweight05')
+
     plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', show_error=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass-werror')
@@ -218,6 +222,14 @@ if __name__ == "__main__":
     plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-qweight05-subMass')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('final-f3-qweight05-werror-subMass')
 
     plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', show_error=True,
                        fake_error=0, wz_error=0, zz_error=0)
@@ -271,6 +283,10 @@ if __name__ == "__main__":
     shape_file = ROOT.TFile(
         os.path.join(outputdir, 'emt_shapes_%s.root' % period), 'RECREATE')
     shape_dir = shape_file.mkdir('emt')
-    plotter.write_shapes('subMass', 20, shape_dir, unblinded=False)
+    plotter.write_shapes('subMass', 20, shape_dir, unblinded=True, qcd_fraction=0.5)
+    shape_dir = shape_file.mkdir('emt_w')
+    plotter.write_shapes('subMass', 20, shape_dir, unblinded=True, qcd_fraction=0.0)
+    shape_dir = shape_file.mkdir('emt_q')
+    plotter.write_shapes('subMass', 20, shape_dir, unblinded=True, qcd_fraction=1.0)
     #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
     shape_file.Close()

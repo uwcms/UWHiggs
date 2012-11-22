@@ -12,55 +12,55 @@ import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
 import FinalStateAnalysis.TagAndProbe.H2TauCorrections as H2TauCorrections
 import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
 from FinalStateAnalysis.StatTools.RooFunctorFromWS import build_roofunctor
-import ROOT
 
-################################################################################
-#### Fitted fake rate functions ################################################
-################################################################################
+###############################################################################
+#### Fitted fake rate functions ###############################################
+###############################################################################
 
 frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
 highpt_mu_fr = build_roofunctor(
     #frfit_dir + '/m_wjets_pt20_pfidiso02_muonJetPt.root',
     frfit_dir + '/m_wjets_pt20_h2taucuts_muonJetPt.root',
-    'fit_efficiency', # workspace name
+    'fit_efficiency',  # workspace name
     'efficiency'
 )
 lowpt_e_fr = build_roofunctor(
     #frfit_dir + '/e_wjets_pt10_mvaidiso03_eJetPt.root',
     frfit_dir + '/e_wjets_pt10_h2taucuts_eJetPt.root',
-    'fit_efficiency', # workspace name
+    'fit_efficiency',  # workspace name
     'efficiency'
 )
 tau_fr = build_roofunctor(
     frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
-    'fit_efficiency', # workspace name
+    'fit_efficiency',  # workspace name
     'efficiency'
 )
 highpt_mu_qcd_fr = build_roofunctor(
     #frfit_dir + '/m_qcd_pt20_pfidiso02_muonJetPt.root',
     frfit_dir + '/m_qcd_pt20_h2taucuts_muonJetPt.root',
-    'fit_efficiency', # workspace name
+    'fit_efficiency',  # workspace name
     'efficiency'
 )
 lowpt_e_qcd_fr = build_roofunctor(
     #frfit_dir + '/e_qcd_pt10_mvaidiso03_eJetPt.root',
     frfit_dir + '/e_qcd_pt10_h2taucuts_eJetPt.root',
-    'fit_efficiency', # workspace name
+    'fit_efficiency',  # workspace name
     'efficiency'
 )
 tau_qcd_fr = build_roofunctor(
     frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
-    'fit_efficiency', # workspace name
+    'fit_efficiency',  # workspace name
     'efficiency'
 )
 
-################################################################################
-#### MC-DATA and PU corrections ################################################
-################################################################################
+###############################################################################
+#### MC-DATA and PU corrections ###############################################
+###############################################################################
 
 # Determine MC-DATA corrections
 is7TeV = bool('7TeV' in os.environ['jobid'])
 print "Is 7TeV:", is7TeV
+use_iso_trigger = not is7TeV
 
 # Make PU corrector from expected data PU distribution
 # PU corrections .root files from pileupCalc.py
@@ -72,24 +72,27 @@ mc_pu_tag = 'S6' if is7TeV else 'S10'
 if 'HWW3l' in os.environ['megatarget'] and not is7TeV:
     print "Using S6_600bins PU weights for HWW3l"
     mc_pu_tag = 'S6_600bins'
+    use_iso_trigger = False
 
 pu_corrector = PileupWeight.PileupWeight(mc_pu_tag, *pu_distributions)
 
 muon_pog_PFTight_2011 = MuonPOGCorrections.make_muon_pog_PFTight_2011()
-muon_pog_PFRelIsoDB02_2011 = MuonPOGCorrections.make_muon_pog_PFRelIsoDB02_2011()
+muon_pog_PFRelIsoDB_2011 = MuonPOGCorrections.\
+    make_muon_pog_PFRelIsoDB012_2011()
 
-# Get object ID and trigger corrector functions
+
 def mc_corrector_2011(row):
+    # Get object ID and trigger corrector functions
     if row.run > 2:
         return 1
     pu = pu_corrector(row.nTruePU)
-    #pu = 1
-    m1id = muon_pog_PFTight_2011(row.mPt, row.mEta)
-    m1iso = muon_pog_PFRelIsoDB02_2011(row.mPt, row.mEta)
+    m1idiso = muon_pog_PFRelIsoDB_2011(row.mPt, row.mAbsEta) * \
+        muon_pog_PFTight_2011(row.mPt, row.mAbsEta)
     e2idiso = H2TauCorrections.correct_e_idiso_2011(row.ePt, row.eAbsEta)
     m_trg = H2TauCorrections.correct_mueg_mu_2011(row.mPt, row.mAbsEta)
     e_trg = H2TauCorrections.correct_mueg_e_2011(row.ePt, row.eAbsEta)
-    return pu*m1id*m1iso*e2idiso*m_trg*e_trg
+    return pu * m1idiso * e2idiso * m_trg * e_trg
+
 
 def mc_corrector_2012(row):
     if row.run > 2:
@@ -99,15 +102,17 @@ def mc_corrector_2012(row):
     e2idiso = H2TauCorrections.correct_e_idiso_2012(row.ePt, row.eAbsEta)
     m_trg = H2TauCorrections.correct_mueg_mu_2012(row.mPt, row.mAbsEta)
     e_trg = H2TauCorrections.correct_mueg_e_2012(row.ePt, row.eAbsEta)
-    return pu*m1idiso*e2idiso*m_trg*e_trg
+    return pu * m1idiso * e2idiso * m_trg * e_trg
 
 # Determine which set of corrections to use
 mc_corrector = mc_corrector_2011
 if not is7TeV:
     mc_corrector = mc_corrector_2012
 
+
 class WHAnalyzeEMT(WHAnalyzerBase.WHAnalyzerBase):
     tree = 'emt/final/Ntuple'
+
     def __init__(self, tree, outfile, **kwargs):
         super(WHAnalyzeEMT, self).__init__(tree, outfile, EMuTauTree, **kwargs)
 
@@ -121,8 +126,10 @@ class WHAnalyzeEMT(WHAnalyzerBase.WHAnalyzerBase):
 
         self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
         self.book(folder, "emMass", "Electron-Muon Mass", 200, 0, 200)
-        self.book(folder, "eChargeIdTight", "Elec charge ID tight", 2, -0.5, 1.5)
-        self.book(folder, "eChargeIdMedium", "Elec charge ID medium", 2, -0.5, 1.5)
+        self.book(folder, "eChargeIdTight", "Elec charge ID tight",
+                  2, -0.5, 1.5)
+        self.book(folder, "eChargeIdMedium", "Elec charge ID medium",
+                  2, -0.5, 1.5)
         self.book(folder, "etMass", "Electron-Tau Mass", 200, 0, 200)
         self.book(folder, "subMass", "Subleading Mass", 200, 0, 200)
         self.book(folder, "bCSVVeto", "BjetCSV", 10, -0.5, 9.5)
@@ -134,8 +141,10 @@ class WHAnalyzeEMT(WHAnalyzerBase.WHAnalyzerBase):
 
     def fill_histos(self, histos, folder, row, weight):
         histos['/'.join(folder + ('nTruePU',))].Fill(row.nTruePU)
+
         def fill(name, value):
             histos['/'.join(folder + (name,))].Fill(value, weight)
+
         fill('mPt', row.mPt)
         fill('ePt', row.ePt)
         fill('tPt', row.tPt)
@@ -164,7 +173,10 @@ class WHAnalyzeEMT(WHAnalyzerBase.WHAnalyzerBase):
 
         Excludes FR object IDs and sign cut.
         '''
-        if not row.mu17ele8Pass:
+        if not use_iso_trigger:
+            if not row.mu17ele8Pass:
+                return False
+        elif not row.mu17ele8isoPass:
             return False
         if row.mPt < 20:
             return False

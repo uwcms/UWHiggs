@@ -165,8 +165,10 @@ def mc_corrector_2012(row):
     pu = pu_corrector(row.nTruePU)
     m1idiso = H2TauCorrections.correct_mu_idiso_2012(row.m1Pt, row.m1AbsEta)
     m2idiso = H2TauCorrections.correct_mu_idiso_2012(row.m2Pt, row.m2AbsEta)
-    m1Trig = muon_pog_Mu17Mu8_Mu17_2012(row.m1Pt, row.m1Eta)
-    m2Trig = muon_pog_Mu17Mu8_Mu8_2012(row.m2Pt, row.m2Eta)
+    #m1Trig = muon_pog_Mu17Mu8_Mu17_2012(row.m1Pt, row.m1Eta)
+    #m2Trig = muon_pog_Mu17Mu8_Mu8_2012(row.m2Pt, row.m2Eta)
+    m1Trig = H2TauCorrections.correct_mu_trg_2012(row.m1Pt, row.m1AbsEta)
+    m2Trig = H2TauCorrections.correct_mu_trg_2012(row.m2Pt, row.m2AbsEta)
     return pu*m1idiso*m2idiso*m1Trig*m2Trig
 
 # Determine which set of corrections to use
@@ -204,6 +206,7 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         self.book(folder, "m2Iso", "m2Iso", 100, 0, 0.3)
         self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
         self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
+        self.book(folder, "tDecayMode", "Tau AbsEta", 15, -0.5, 14.5)
         self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
 
     def fill_histos(self, histos, folder, row, weight):
@@ -226,6 +229,7 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         fill('subMass', row.m2_t_Mass)
         fill('leadMass', row.m1_t_Mass)
         fill('m2Iso', row.m2RelPFIsoDB)
+        fill('tDecayMode', row.tDecayMode)
         fill('tPt', row.tPt)
         fill('tAbsEta', row.tAbsEta)
         if row.m1MtToMET > row.m2MtToMET:
