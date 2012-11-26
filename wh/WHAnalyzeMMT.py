@@ -9,9 +9,6 @@ import fnmatch
 import glob
 from MuMuTauTree import MuMuTauTree
 import os
-import FinalStateAnalysis.TagAndProbe.H2TauCorrections as H2TauCorrections
-import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
-import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
 import FinalStateAnalysis.MetaData.data_views as data_views
 import logging
 data_views.log.setLevel(logging.INFO)
@@ -20,6 +17,8 @@ data_views.log.setLevel(logging.INFO)
 import WHAnalyzerBase
 import ROOT
 from TwoDimFakeRate import TwoDimFakeRate
+import mcCorrectors
+import baseSelections as selections
 
 ################################################################################
 #### Fitted fake rate functions ################################################
@@ -116,65 +115,6 @@ if __name__ == "__main__":
     mu_fr_ewk_2d_t.plot("ewk_2dt_frs.png")
     mu_fr_qcd_2d_t.plot("qcd_2dt_frs.png")
 
-################################################################################
-#### MC-DATA and PU corrections ################################################
-################################################################################
-
-# Determine MC-DATA corrections
-is7TeV = bool('7TeV' in os.environ['jobid'])
-print "Is 7TeV:", is7TeV
-
-# Make PU corrector from expected data PU distribution
-# PU corrections .root files from pileupCalc.py
-pu_distributions = glob.glob(os.path.join(
-    'inputs', os.environ['jobid'], 'data_DoubleMu*pu.root'))
-
-mc_pu_tag = 'S6' if is7TeV else 'S10'
-# Hack to use S6 weights for the HWW 7TeV sample we use in 8TeV
-if 'HWW3l' in os.environ.get('megatarget', 'NOTSET') and not is7TeV:
-    print "Using S6_600bins PU weights for HWW3l"
-    mc_pu_tag = 'S6_600bins'
-
-pu_corrector = PileupWeight.PileupWeight(mc_pu_tag, *pu_distributions)
-
-muon_pog_PFTight_2011 = MuonPOGCorrections.make_muon_pog_PFTight_2011()
-muon_pog_PFRelIsoDB02_2011 = MuonPOGCorrections.make_muon_pog_PFRelIsoDB02_2011()
-
-muon_pog_Mu17Mu8_Mu17_2012 = MuonPOGCorrections.make_muon_pog_Mu17Mu8_Mu17_2012()
-muon_pog_Mu17Mu8_Mu8_2012 = MuonPOGCorrections.make_muon_pog_Mu17Mu8_Mu8_2012()
-
-# takes etas of muons
-muon_pog_Mu17Mu8_2011 = MuonPOGCorrections.muon_pog_Mu17Mu8_eta_eta_2011
-
-# Get object ID and trigger corrector functions
-def mc_corrector_2011(row):
-    if row.run > 2:
-        return 1
-    pu = pu_corrector(row.nTruePU)
-    #pu = 1
-    m1id = muon_pog_PFTight_2011(row.m1Pt, row.m1Eta)
-    m2id = muon_pog_PFTight_2011(row.m2Pt, row.m2Eta)
-    m1iso = muon_pog_PFRelIsoDB02_2011(row.m1Pt, row.m1Eta)
-    m2iso = muon_pog_PFRelIsoDB02_2011(row.m2Pt, row.m2Eta)
-    trigger = muon_pog_Mu17Mu8_2011(row.m1Eta, row.m2Eta)
-    return pu*m1id*m2id*m1iso*m2iso*trigger
-
-def mc_corrector_2012(row):
-    if row.run > 2:
-        return 1
-    pu = pu_corrector(row.nTruePU)
-    m1idiso = H2TauCorrections.correct_mu_idiso_2012(row.m1Pt, row.m1AbsEta)
-    m2idiso = H2TauCorrections.correct_mu_idiso_2012(row.m2Pt, row.m2AbsEta)
-    #m1Trig = muon_pog_Mu17Mu8_Mu17_2012(row.m1Pt, row.m1Eta)
-    #m2Trig = muon_pog_Mu17Mu8_Mu8_2012(row.m2Pt, row.m2Eta)
-    m1Trig = H2TauCorrections.correct_mu_trg_2012(row.m1Pt, row.m1AbsEta)
-    m2Trig = H2TauCorrections.correct_mu_trg_2012(row.m2Pt, row.m2AbsEta)
-    return pu*m1idiso*m2idiso*m1Trig*m2Trig
-
-# Determine which set of corrections to use
-mc_corrector = mc_corrector_2011
-if not is7TeV:
-    mc_corrector = mc_corrector_2012
 
 ################################################################################
 #### Analysis logic ############################################################
@@ -184,13 +124,15 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
     tree = 'mmt/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         super(WHAnalyzeMMT, self).__init__(tree, outfile, MuMuTauTree, **kwargs)
+        self.hfunc['subMTMass'] = lambda row, weight: (row.m2_t_Mass, weight) if row.m1MtToMET > row.m2MtToMET else (row.m1_t_Mass, weight) #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
+        self.pucorrector = mcCorrectors.make_puCorrector('doublemu')
 
     def book_histos(self, folder):
         self.book(folder, "weight", "Event weight", 100, 0, 5)
-        self.book(folder, "weight_nopu", "Event weight without PU", 100, 0, 5)
+        #self.book(folder, "weight_nopu", "Event weight without PU", 100, 0, 5) #Booked but not filled??
         self.book(folder, "rho", "Fastjet #rho", 100, 0, 25)
         self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
-        self.book(folder, "prescale", "HLT prescale", 26, -5.5, 20.5)
+        self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
         self.book(folder, "m1Pt", "Muon 1 Pt", 100, 0, 100)
         self.book(folder, "m1JetPt", "Muon 1 Jet Pt", 100, 0, 200)
         self.book(folder, "m2Pt", "Muon 2 Pt", 100, 0, 100)
@@ -198,108 +140,39 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         self.book(folder, "m2JetPt", "Muon 2 Jet Pt", 100, 0, 200)
         self.book(folder, "m1AbsEta", "Muon 1 AbsEta", 100, 0, 2.4)
         self.book(folder, "m2AbsEta", "Muon 2 AbsEta", 100, 0, 2.4)
-        self.book(folder, "m1m2Mass", "Muon 1-2 Mass", 120, 0, 120)
-        self.book(folder, "subMass", "subleadingMass", 200, 0, 200)
-        self.book(folder, "leadMass", "leadingMass", 200, 0, 200)
+        self.book(folder, "m1_m2_Mass", "Muon 1-2 Mass", 120, 0, 120)
+        self.book(folder, "m2_t_Mass", "subleadingMass", 200, 0, 200)
+        self.book(folder, "m1_t_Mass", "leadingMass", 200, 0, 200)
         # Rank muons by less MT to MET, for WZ control region
         self.book(folder, "subMTMass", "subMTMass", 200, 0, 200)
-        self.book(folder, "m2Iso", "m2Iso", 100, 0, 0.3)
+        self.book(folder, "m2RelPFIsoDB", "m2Iso", 100, 0, 0.3)
         self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
         self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
         self.book(folder, "tDecayMode", "Tau AbsEta", 15, -0.5, 14.5)
         self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
-
-    def fill_histos(self, histos, folder, row, weight):
-        histos['/'.join(folder + ('nTruePU',))].Fill(row.nTruePU)
-        def fill(name, value):
-            histos['/'.join(folder + (name,))].Fill(value, weight)
-        histos['/'.join(folder + ('weight',))].Fill(weight)
-
-        fill('prescale', row.doubleMuPrescale)
-        fill('rho', row.rho)
-        fill('nvtx', row.nvtx)
-        fill('m1Pt', row.m1Pt)
-        fill('m2Pt', row.m2Pt)
-        fill('m1JetPt', row.m1JetPt)
-        fill('m2JetPt', row.m2JetPt)
-        fill('m2JetBtag', row.m2JetBtag)
-        fill('m1AbsEta', row.m1AbsEta)
-        fill('m2AbsEta', row.m2AbsEta)
-        fill('m1m2Mass', row.m1_m2_Mass)
-        fill('subMass', row.m2_t_Mass)
-        fill('leadMass', row.m1_t_Mass)
-        fill('m2Iso', row.m2RelPFIsoDB)
-        fill('tDecayMode', row.tDecayMode)
-        fill('tPt', row.tPt)
-        fill('tAbsEta', row.tAbsEta)
-        if row.m1MtToMET > row.m2MtToMET:
-            fill('subMTMass', row.m2_t_Mass)
-        else:
-            fill('subMTMass', row.m1_t_Mass)
 
     def preselection(self, row):
         ''' Preselection applied to events.
 
         Excludes FR object IDs and sign cut.
         '''
-        if not row.doubleMuPass:
-            return False
-        if row.m1Pt < row.m2Pt:
-            return False
-        if row.m1Pt < 20:
-            return False
-        if row.m2Pt < 10:
-            return False
-        if row.tPt < 20:
-            return False
-        if row.m1AbsEta > 2.4:
-            return False
-        if row.m2AbsEta > 2.4:
-            return False
-        if row.tAbsEta > 2.3:
-            return False
+        if not row.doubleMuPass:                  return False
+        if row.m1Pt < row.m2Pt:                   return False
+        if row.m1Pt < 20:                         return False
+        if not selections.muSelection(row, 'm1'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
+        if not selections.muSelection(row, 'm2'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
+        if not selections.tauSelection(row, 't'): return False #applies basic selection (eta, pt > 20, DZ)
 
-        if abs(row.m1DZ) > 0.2:
-            return False
-        if abs(row.m2DZ) > 0.2:
-            return False
-        if abs(row.tDZ) > 0.2:
-            return False
+        if row.m1_m2_Mass < 20:    return False
+        if row.LT < 80:            return False
 
-        if row.m1_m2_Mass < 20:
-            return False
-        if row.LT < 80:
-            return False
+        if not selections.vetos(row): return False #applies mu bjet e additional tau vetoes
 
-        if row.muVetoPt5:
-            return False
-        if row.bjetCSVVeto:
-            return False
-        if row.tauVetoPt20:
-            return False
-        if row.eVetoCicTightIso:
-            return False
+        if not row.tAntiElectronLoose: return False
+        if row.tCiCTightElecOverlap:   return False
 
-        if not row.m1PixHits:
-            return False
-        if not row.m2PixHits:
-            return False
-
-        ## Fixme use CSV
-        if row.m1JetBtag > 3.3:
-            return False
-        if row.m2JetBtag > 3.3:
-            return False
-
-        if not row.tAntiElectronLoose:
-            return False
-        if row.tCiCTightElecOverlap:
-            return False
-
-        if not self.trigger_match_m1(row):
-            return False
-        if not self.trigger_match_m2(row):
-            return False
+        if not self.trigger_match_m1(row): return False
+        if not self.trigger_match_m2(row): return False
 
         return True
 
@@ -358,7 +231,11 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         return not m2_good_Z
 
     def event_weight(self, row):
-        return mc_corrector(row)
+        if row.run > 2:
+            return 1.
+        return self.pucorrector(row.nTruePU) * \
+            mcCorrectors.get_muon_corrections(row,'m1','m2') * \
+            mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row):
         return highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
