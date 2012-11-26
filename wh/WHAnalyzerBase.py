@@ -61,6 +61,11 @@ class WHAnalyzerBase(MegaBase):
         self.tree = wrapper(tree)
         self.out = outfile
         self.histograms = {}
+        self.hfunc   = { #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in fill_histos later
+            'nTruePU' : lambda row, weight: (row.nTruePU,None),
+            'weight'  : lambda row, weight: (weight,None) if weight is not None else (1.,None),
+            'Event_ID': lambda row, weight: (array.array("f", [row.run,row.lumi,int(row.evt)/10**5,int(row.evt)%10**5] ), None),
+            }
 
     @staticmethod
     def build_wh_folder_structure():
@@ -130,6 +135,28 @@ class WHAnalyzerBase(MegaBase):
                 #folders.extend(folders_to_add)
 
         return flag_map
+
+    def fill_histos(self, histos, folder, row, weight):
+        '''fills histograms'''
+        #find all keys matching
+        folder_str = '/'.join(folder + ('',))
+        for key, value in histos.iteritems():
+            location = key[ : key.rfind('/')]+'/'
+            if folder_str != location:
+                continue
+            attr = key[ key.rfind('/') + 1 :]
+            ## print 'attr: ', attr
+            ## print 'value: ', getattr(row,attr)
+            ## print 'weight: ', weight
+            if attr in self.hfunc:
+                result, weight = self.hfunc[attr](row, weight)
+                if weight is None:
+                    value.Fill( result ) #saves you when filling NTuples!
+                else:
+                    value.Fill( result, weight )
+            else:
+                value.Fill( getattr(row,attr), weight ) if weight is not None else value.Fill( getattr(row,attr) )
+        return None
 
     def begin(self):
         # Loop over regions, book histograms
