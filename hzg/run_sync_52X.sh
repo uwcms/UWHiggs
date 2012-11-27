@@ -42,7 +42,7 @@ do
 
   jobName=hZg_sync_52X_ntuples.${syncPostfix}.${parts[0]}
   fajOpts="--input-files-per-job=100 --infer-cmssw-path --express-queue --job-generates-output-name --output-dir=${hdfsOutDir} --input-dir=${hdfsInDir} --input-file-list=${jobName}.input.txt"
-  patTupleOpts="makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 maxEvents=-1 outputFile=${jobName}.root passThru=1"
+  patTupleOpts="makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 maxEvents=-1 outputFile=${jobName}.root"
 
   rm -rf ${jobName}.input.txt
   for file in `echo ${parts[1]} | tr ',' '\n'`
