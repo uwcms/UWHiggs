@@ -48,6 +48,5 @@ do
     echo ${file##*/} | tr ',' '\n' >> ${jobName}.input.txt
   done
 
-  echo farmoutAnalysisJobs $fajOpts $jobName $theCfg inputFiles='$inputFileNames' $patTupleOpts $dataOpts  
-  fi  
+  echo farmoutAnalysisJobs $fajOpts $jobName $theCfg inputFiles='$inputFileNames' $patTupleOpts $dataOpts 
 done
