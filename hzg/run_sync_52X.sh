@@ -26,13 +26,28 @@ dataMuon=`lcg-ls -b -Dsrmv2 ${srmPrefix}=${remoteDataDir}${syncPostfix}/52X/ | g
 
 theCfg=$CMSSW_BASE/src/FinalStateAnalysis/NtupleTools/test/make_ntuples_cfg.py
 
-cmsRun  $theCfg inputFiles="$mcSignalEle" outputFile="MCSignalEle_52X_ntuples.root" makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 >& MCSignalEle_ntuples.log &
+sync_52X=()
+sync_52X+=("DataMuon;${dataMuon}")
+sync_52X+=("DataElectron;${dataElectron}")
+sync_52X+=("MCSignalEle;${mcSignalEle}")
+sync_52X+=("MCBkgEle;${mcBkgEle}")
 
-cmsRun  $theCfg inputFiles="$mcBkgEle" outputFile="MCBkgEle_52X_ntuples.root" makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 >& MCBkgEle_ntuples.log &
+for sync_test in ${sync_52X[@]}
+do
+  parts=(`echo $sync_test | tr ';' ' '`)
+  echo
+  echo ${parts[0]} ${parts[1]}
 
-cmsRun  $theCfg inputFiles="$dataElectron" outputFile="DataElectron_52X_ntuples.root" makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 >& DataElectron_ntuples.log &
+  jobName=hZg_sync_52X_ntuples.${syncPostfix}.${parts[0]}
+  fajOpts="--infer-cmssw-path --express-queue --job-generates-output-name --output-dir=${hdfsOutDir} --input-dir=${parts[1]%/*}/ --input-file-list=${jobName}.input.txt"
+  patTupleOpts="makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 maxEvents=-1 outputFile=${jobName}.root passThru=1"
 
-cmsRun  $theCfg inputFiles="$dataMuon" outputFile="DataMuon_52X_ntuples.root" makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 >& DataMuon_ntuples.log &
+  rm -rf ${jobName}.input.txt
+  for file in `echo ${parts[1]} | tr ',' '\n'`
+  do
+    echo ${file##*/} | tr ',' '\n' >> ${jobName}.input.txt
+  done
 
-echo "Waiting for ntuplizing jobs to finish..."
-wait
+  echo farmoutAnalysisJobs $fajOpts $jobName $theCfg inputFiles='$inputFileNames' $patTupleOpts $dataOpts  
+  fi  
+done
