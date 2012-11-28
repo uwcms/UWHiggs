@@ -19,102 +19,7 @@ import ROOT
 from TwoDimFakeRate import TwoDimFakeRate
 import mcCorrectors
 import baseSelections as selections
-
-################################################################################
-#### Fitted fake rate functions ################################################
-################################################################################
-
-# Get fitted fake rate functions
-frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
-highpt_mu_fr = build_roofunctor(
-    #frfit_dir + '/m_wjets_pt20_pfidiso02_muonJetPt.root',
-    frfit_dir + '/m_wjets_pt20_h2taucuts_muonJetPt.root',
-    'fit_efficiency', # workspace name
-    'efficiency'
-)
-lowpt_mu_fr = build_roofunctor(
-    #frfit_dir + '/m_wjets_pt10_pfidiso02_muonJetPt.root',
-    frfit_dir + '/m_wjets_pt10_h2taucuts_muonJetPt.root',
-    'fit_efficiency', # workspace name
-    'efficiency'
-)
-tau_fr = build_roofunctor(
-    frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
-    'fit_efficiency', # workspace name
-    'efficiency'
-)
-
-highpt_mu_qcd_fr = build_roofunctor(
-    frfit_dir + '/m_qcd_pt20_h2taucuts_muonJetPt.root',
-    'fit_efficiency', # workspace name
-    'efficiency'
-)
-lowpt_mu_qcd_fr = build_roofunctor(
-    frfit_dir + '/m_qcd_pt10_h2taucuts_muonJetPt.root',
-    'fit_efficiency', # workspace name
-    'efficiency'
-)
-tau_qcd_fr = build_roofunctor(
-    frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
-    'fit_efficiency', # workspace name
-    'efficiency'
-)
-
-# Get 2D fake rates
-
-fr_data_views = data_views.data_views(
-    glob.glob(os.path.join('results', os.environ['jobid'], 'FakeRatesMM', '*.root')),
-    glob.glob(os.path.join('inputs', os.environ['jobid'], '*.sum')),
-)
-
-def get_view(sample_pattern):
-    for sample, sample_info in fr_data_views.iteritems():
-        if fnmatch.fnmatch(sample, sample_pattern):
-            return sample_info['view']
-    raise KeyError("I can't find a view that matches %s, I have: %s" % (
-        sample_pattern, " ".join(fr_data_views.keys())))
-
-# FR data, subtracting WZ and ZZ.
-mu_fr_ewk_2d = TwoDimFakeRate(
-    'wjets/pt10/h2taucuts/muonJetVsLeptonPt', 'wjets/pt10/muonJetVsLeptonPt',
-    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
-
-mu_fr_qcd_2d = TwoDimFakeRate(
-    'qcd/pt10/h2taucuts/muonJetVsLeptonPt', 'qcd/pt10/muonJetVsLeptonPt',
-    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
-
-# eta dependent jet-pt vs pt
-mu_fr_ewk_2d_f = TwoDimFakeRate(
-    'wjets/pt10f/h2taucuts/muonJetVsLeptonPt', 'wjets/pt10f/muonJetVsLeptonPt',
-    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
-mu_fr_qcd_2d_f = TwoDimFakeRate(
-    'qcd/pt10f/h2taucuts/muonJetVsLeptonPt', 'qcd/pt10f/muonJetVsLeptonPt',
-    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
-
-mu_fr_ewk_2d_t = TwoDimFakeRate(
-    'wjets/pt10t/h2taucuts/muonJetVsLeptonPt', 'wjets/pt10t/muonJetVsLeptonPt',
-    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
-mu_fr_qcd_2d_t = TwoDimFakeRate(
-    'qcd/pt10t/h2taucuts/muonJetVsLeptonPt', 'qcd/pt10t/muonJetVsLeptonPt',
-    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
-
-mu_fr_ewk_2d_b = TwoDimFakeRate(
-    'wjets/pt10b/h2taucuts/muonJetVsLeptonPt', 'wjets/pt10b/muonJetVsLeptonPt',
-    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
-mu_fr_qcd_2d_b = TwoDimFakeRate(
-    'qcd/pt10b/h2taucuts/muonJetVsLeptonPt', 'qcd/pt10b/muonJetVsLeptonPt',
-    get_view('data'), get_view('WZ*'), get_view('ZZ*'))
-
-if __name__ == "__main__":
-    mu_fr_ewk_2d.plot("ewk_2d_frs.png")
-    mu_fr_qcd_2d.plot("qcd_2d_frs.png")
-    mu_fr_ewk_2d_f.plot("ewk_2df_frs.png")
-    mu_fr_qcd_2d_f.plot("qcd_2df_frs.png")
-    mu_fr_ewk_2d_b.plot("ewk_2db_frs.png")
-    mu_fr_qcd_2d_b.plot("qcd_2db_frs.png")
-    mu_fr_ewk_2d_t.plot("ewk_2dt_frs.png")
-    mu_fr_qcd_2d_t.plot("qcd_2dt_frs.png")
-
+import fakerate_functions as frfits
 
 ################################################################################
 #### Analysis logic ############################################################
@@ -150,6 +55,10 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
         self.book(folder, "tDecayMode", "Tau AbsEta", 15, -0.5, 14.5)
         self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
+        self.book(folder, "m1DZ",  "m1DZ", 100, 0., 1)
+        self.book(folder, "m2DZ",  "m2DZ", 100, 0., 1)
+        self.book(folder, "tDZ" ,  "tDZ" , 100, 0., 1)
+        self.book(folder, "LT" ,  "LT" , 100, 0., 500)
 
     def preselection(self, row):
         ''' Preselection applied to events.
@@ -238,50 +147,22 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row):
-        return highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
-        #return mu_fr_ewk_2d(max(row.m1JetPt, row.m1Pt), row.m1Pt)
-        if row.m1AbsEta < 0.8:
-            return mu_fr_ewk_2d_b(max(row.m1JetPt, row.m1Pt), row.m1Pt)
-        elif row.m1AbsEta < 1.3:
-            return mu_fr_ewk_2d_t(max(row.m1JetPt, row.m1Pt), row.m1Pt)
-        else:
-            return mu_fr_ewk_2d_f(max(row.m1JetPt, row.m1Pt), row.m1Pt)
+        return frfits.highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
 
     def obj2_weight(self, row):
-        return lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
-        #return mu_fr_ewk_2d(max(row.m2JetPt, row.m2Pt), row.m2Pt)
-        if row.m2AbsEta < 0.8:
-            return mu_fr_ewk_2d_b(max(row.m2JetPt, row.m2Pt), row.m2Pt)
-        elif row.m2AbsEta < 1.3:
-            return mu_fr_ewk_2d_t(max(row.m2JetPt, row.m2Pt), row.m2Pt)
-        else:
-            return mu_fr_ewk_2d_f(max(row.m2JetPt, row.m2Pt), row.m2Pt)
+        return frfits.lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
 
     def obj3_weight(self, row):
-        return tau_fr(row.tPt)
+        return frfits.tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row):
-        return highpt_mu_qcd_fr(max(row.m1JetPt, row.m1Pt))
-        #return mu_fr_qcd_2d(max(row.m1JetPt, row.m1Pt), row.m1Pt)
-        if row.m1AbsEta < 0.8:
-            return mu_fr_qcd_2d_b(max(row.m1JetPt, row.m1Pt), row.m1Pt)
-        elif row.m1AbsEta < 1.3:
-            return mu_fr_qcd_2d_t(max(row.m1JetPt, row.m1Pt), row.m1Pt)
-        else:
-            return mu_fr_qcd_2d_f(max(row.m1JetPt, row.m1Pt), row.m1Pt)
+        return frfits.highpt_mu_qcd_fr(max(row.m1JetPt, row.m1Pt))
 
     def obj2_qcd_weight(self, row):
-        return lowpt_mu_qcd_fr(max(row.m2JetPt, row.m2Pt))
-        #return mu_fr_qcd_2d(max(row.m2JetPt, row.m2Pt), row.m2Pt)
-        if row.m2AbsEta < 0.8:
-            return mu_fr_qcd_2d_b(max(row.m2JetPt, row.m2Pt), row.m2Pt)
-        elif row.m2AbsEta < 1.3:
-            return mu_fr_qcd_2d_t(max(row.m2JetPt, row.m2Pt), row.m2Pt)
-        else:
-            return mu_fr_qcd_2d_f(max(row.m2JetPt, row.m2Pt), row.m2Pt)
+        return frfits.lowpt_mu_qcd_fr(max(row.m2JetPt, row.m2Pt))
 
     def obj3_qcd_weight(self, row):
-        return tau_qcd_fr(row.tPt)
+        return frfits.tau_qcd_fr(row.tPt)
 
     # For measuring charge flip probability
     # Not really used in this channel
