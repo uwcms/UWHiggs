@@ -26,9 +26,10 @@ class ZHAnalyzeEEEM(ZHAnalyzerBase.ZHAnalyzerBase):
         super(ZHAnalyzeEEEM, self).__init__(tree, outfile, EEEMuTree, 'EM', **kwargs)
         # Hack to use S6 weights for the one 7TeV sample we use in 8TeV
         target = os.environ['megatarget']
-        if 'HWW3l' in target:
-            print "HACK using S6 PU weights for HWW3l"
-            mcCorrectors.force_pu_distribution('S6')
+        self.pucorrector = mcCorrectors.make_puCorrector('doublee')
+        ## if 'HWW3l' in target:
+        ##     print "HACK using S6 PU weights for HWW3l"
+        ##     mcCorrectors.force_pu_distribution('S6')
 
     def Z_decay_products(self):
         return ('e1','e2')
@@ -46,7 +47,7 @@ class ZHAnalyzeEEEM(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_H_histos(folder)
 
     def probe1_id(self, row):
-        return bool(row.e3MVAIDH2TauWP) and bool(row.e3RelPFIsoDB < 0.25)
+        return selections.eleID(row, 'e3') and bool(row.e3RelPFIsoDB < 0.25)
 
     def probe2_id(self, row):
         return bool(row.mPFIDTight) and bool(row.mRelPFIsoDB < 0.25)
@@ -69,7 +70,7 @@ class ZHAnalyzeEEEM(ZHAnalyzerBase.ZHAnalyzerBase):
     def event_weight(self, row):
         if row.run > 2:
             return 1.
-        return mcCorrectors.pu_corrector(row.nTruePU) * \
+        return self.pucorrector(row.nTruePU) * \
             mcCorrectors.get_muon_corrections(row,'m') * \
             mcCorrectors.get_electron_corrections(row, 'e1','e2')
 

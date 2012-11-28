@@ -26,9 +26,10 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
         super(ZHAnalyzeMMMT, self).__init__(tree, outfile, MuMuMuTauTree, "MT", **kwargs)
         # Hack to use S6 weights for the one 7TeV sample we use in 8TeV
         target = os.environ['megatarget']
-        if 'HWW3l' in target:
-            print "HACK using S6 PU weights for HWW3l"
-            mcCorrectors.force_pu_distribution('S6')
+        self.pucorrector = mcCorrectors.make_puCorrector('doublemu')
+        ## if 'HWW3l' in target:
+        ##     print "HACK using S6 PU weights for HWW3l"
+        ##     mcCorrectors.force_pu_distribution('S10')
 
 ##     def get_channel(self):
 ##         return 'MT'
@@ -75,7 +76,7 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
     def event_weight(self, row):
         if row.run > 2:
             return 1.
-        return mcCorrectors.pu_corrector(row.nTruePU) * \
+        return self.pucorrector(row.nTruePU) * \
             mcCorrectors.get_muon_corrections(row,'m1','m2','m3') * \
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 

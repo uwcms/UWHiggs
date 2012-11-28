@@ -26,9 +26,10 @@ class ZHAnalyzeEETT(ZHAnalyzerBase.ZHAnalyzerBase):
         super(ZHAnalyzeEETT, self).__init__(tree, outfile, EETauTauTree, 'TT', **kwargs)
         # Hack to use S6 weights for the one 7TeV sample we use in 8TeV
         target = os.environ['megatarget']
-        if 'HWW3l' in target:
-            print "HACK using S6 PU weights for HWW3l"
-            mcCorrectors.force_pu_distribution('S6')
+        self.pucorrector = mcCorrectors.make_puCorrector('doublee')
+        ## if 'HWW3l' in target:
+        ##     print "HACK using S6 PU weights for HWW3l"
+        ##     mcCorrectors.force_pu_distribution('S6')
 
     def Z_decay_products(self):
         return ('e1','e2')
@@ -74,7 +75,7 @@ class ZHAnalyzeEETT(ZHAnalyzerBase.ZHAnalyzerBase):
     def event_weight(self, row):
         if row.run > 2:
             return 1.
-        return mcCorrectors.pu_corrector(row.nTruePU) * \
+        return self.pucorrector(row.nTruePU) * \
             mcCorrectors.get_electron_corrections(row, 'e1','e2')
 
     def obj1_weight(self, row):
