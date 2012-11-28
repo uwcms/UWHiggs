@@ -23,10 +23,11 @@ class ZHAnalyzeMMEM(ZHAnalyzerBase.ZHAnalyzerBase):
     def __init__(self, tree, outfile, **kwargs):
         super(ZHAnalyzeMMEM, self).__init__(tree, outfile, EMuMuMuTree, 'EM', **kwargs)
         # Hack to use S6 weights for the one 7TeV sample we use in 8TeV
+        self.pucorrector = mcCorrectors.make_puCorrector('doublemu')
         target = os.environ['megatarget']
-        if 'HWW3l' in target:
-            print "HACK using S6 PU weights for HWW3l"
-            mcCorrectors.force_pu_distribution('S6')
+        ## if 'HWW3l' in target:
+        ##     print "HACK using S6 PU weights for HWW3l"
+        ##     mcCorrectors.force_pu_distribution('S6')
 
     def Z_decay_products(self):
         return ('m1','m2')
@@ -45,10 +46,10 @@ class ZHAnalyzeMMEM(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_H_histos(folder)
 
     def probe1_id(self, row):
-        return bool(row.eRelPFIsoDB < 0.25)
+        return selections.eleID(row, 'e') and bool(row.eRelPFIsoDB < 0.25)
 
     def probe2_id(self, row):
-        return bool(row.m3RelPFIsoDB < 0.25)
+        return bool(row.m3PFIDTight) and bool(row.m3RelPFIsoDB < 0.25)
 
     def preselection(self, row):
         ''' Preselection applied to events.
@@ -56,7 +57,7 @@ class ZHAnalyzeMMEM(ZHAnalyzerBase.ZHAnalyzerBase):
         Excludes FR object IDs and sign cut.
         '''
         if not selections.ZMuMuSelection(row): return False
-        if not selections.overlap(row, 'm1','m2','e','m3') : return False
+        if selections.overlap(row, 'm1','m2','e','m3') : return False
         if not selections.signalMuonSelection(row,'m3'): return False
         if not selections.signalElectronSelection(row,'e'): return False
         return True
@@ -68,14 +69,12 @@ class ZHAnalyzeMMEM(ZHAnalyzerBase.ZHAnalyzerBase):
     def event_weight(self, row):
         if row.run > 2:
             return 1.
-        return meCorrectors.pu_corrector(row.nTruePU) * \
-            meCorrectors.get_muon_corrections(row,'m1','m2', 'm3') * \
-            double_muon_trigger(row,'m1','m2')
+        return self.pucorrector(row.nTruePU) * \
+            mcCorrectors.get_muon_corrections(row,'m1','m2', 'm3') * \
+            mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row):
-        return fr_fcn.e_fr(max(row.eJetPt, row.ePt))
-        #return highpt_mu_fr(row.m1Pt)
+        return fr_fcn.e_loose_fr( row.ePt )
 
     def obj2_weight(self, row):
-        return fr_fcn.mu_fr(max(row.m3JetPt, row.m3Pt))
-        #return lowpt_mu_fr(row.m2Pt)
+        return fr_fcn.mu_loose_fr( row.m3Pt)

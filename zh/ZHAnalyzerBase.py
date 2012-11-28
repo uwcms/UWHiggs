@@ -23,17 +23,53 @@ control.  The subclasses must define the following functions:
 '''
 
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
-#import pprint
+import ROOT
+import array
+import abdollah
+import os
+import pprint
+
+class debugRow(object):
+    'helper class for speed up debugging'
+    def __init__(self,row):
+        self._row = row
+        self._usedAttrs = {}
+        self._lastCalledAttr = (None,None)
+    def __getattribute__(self,name):
+        #memoize for speed acces
+        if name[0] == '_':
+            return object.__getattribute__(self, name)
+        elif name not in object.__getattribute__(self, '_usedAttrs'):
+            object.__getattribute__(self, '_usedAttrs')[name] = getattr(object.__getattribute__(self, '_row'), name)
+        self._lastCalledAttr = (name, object.__getattribute__(self, '_usedAttrs')[name])
+        return object.__getattribute__(self, '_usedAttrs')[name]
 
 class ZHAnalyzerBase(MegaBase):
     def __init__(self, tree, outfile, wrapper, channel, **kwargs):
         #print '__init__ called'
         super(ZHAnalyzerBase, self).__init__(tree, outfile, **kwargs)
+        #print '\n\n',os.environ['megatarget'],'\n\n'
         # Cython wrapper class must be passed
         self.tree = wrapper(tree)
         self.out = outfile
+        jobid = os.environ['jobid']
+        zdec  = self.Z_decay_products()
+        ch    = (zdec[0][0]+zdec[1][0]).upper()+channel
+        fname = '/'.join(['results',jobid,'ZHAnalyze'+ch,'abdollah_events.txt'])
+        #print fname
+        ## if os.path.isfile(fname):
+        ##     self.fileLog = open(fname,'a')
+        ## else:
+        ##     self.fileLog = open(fname,'w')
         self.histograms = {}
         self.channel = channel
+        #Special histograms, data member so child classes can add to this keeping
+        #light the filling part and still be flaxible using any weird variable you can build from the NTuple
+        self.hfunc   = { #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in fill_histos later
+            'nTruePU' : lambda row, weight: row.nTruePU,
+            'weight'  : lambda row, weight: weight,
+            'Event_ID': lambda row, weight: array.array("f", [row.run,row.lumi,int(row.evt)/10**5,int(row.evt)%10**5] ),
+            }
         #print '__init__->self.channel %s' % self.channel
         
     ## def get_channel(self):
@@ -69,6 +105,8 @@ class ZHAnalyzerBase(MegaBase):
         for folders, regionInfo in self.build_zh_folder_structure().iteritems():
             folder = "/".join(folders)
             self.book_histos(folder) # in subclass
+            if 'All_Passed' in folder: #if we are in the all passed region ONLY
+                self.book(folder, "Event_ID", "Event ID", 'run:lumi:evt1:evt2', type=ROOT.TNtuple)
             # Each of the weight subfolders
             wToApply = regionInfo['weights']
             for w in wToApply:
@@ -92,6 +130,58 @@ class ZHAnalyzerBase(MegaBase):
 
         counter = 0
         for row in self.tree:
+            ######################################################
+            ##  SYNC W/ ABDOLLAH DEBUG PART
+            ######################################################
+            ## dbgRow = debugRow(row)
+            ## zdec = self.Z_decay_products()
+            ## hdec = self.H_decay_products()
+            ## if (int(dbgRow.run),int(dbgRow.lumi),int(dbgRow.evt)) in abdollah.results[zdec[0][0]+zdec[1][0]+hdec[0][0]+hdec[1][0]]:
+            ##     toprint = {
+            ##         'channel'      : zdec[0][0]+zdec[1][0]+hdec[0][0]+hdec[1][0],
+            ##         'ID'           : (int(dbgRow.run),int(dbgRow.lumi),int(dbgRow.evt)),
+            ##         }
+            
+            ##     preval = preselection(dbgRow)
+            ##     last   = dbgRow._lastCalledAttr
+            ##     toprint['preselection'] = {
+            ##         'status'    : preval,
+            ##         'last_call' : last,
+            ##         }
+            ##     ## self.fileLog.write( "# Channel: %s \nRun: %i Lumi: %i Evt: %i\n" % (zdec[0][0]+zdec[1][0]+hdec[0][0]+hdec[1][0],int(dbgRow.run),int(dbgRow.lumi),int(dbgRow.evt)) )
+            ##     ## self.fileLog.write( "# preselection: %s " %  ('PASSED' if preval else 'FAILED') )
+            ##     ## self.fileLog.write( "due to last call %s : %s\n" % dbgRow._lastCalledAttr )
+            ##     for func in cut_region_map[('os','All_Passed')]['selection']:
+            ##         fname = func.__name__
+            ##         fres  = func(dbgRow)
+            ##         ## self.fileLog.write( "# %s: %s " % (fname, 'PASSED' if fres else 'FAILED' ) )                
+            ##         ## self.fileLog.write( "due to last call %s : %s\n\n" % dbgRow._lastCalledAttr )
+            ##         toprint[fname] = {
+            ##             'status'    : fres,
+            ##             'last_call' : dbgRow._lastCalledAttr,
+            ##             }
+            ##     ## self.fileLog.write( 'used_attrs = ' )
+            ##     pprint.pprint( toprint, self.fileLog )
+            ##     self.fileLog.write( ',\n\n' )
+            ## else:
+            ##     continue
+            ######################################################
+            ##  END SYNC W/ ABDOLLAH DEBUG PART
+            ######################################################
+
+            ######################################################
+            ##  TRIG MATCH DEBUG
+            ######################################################
+            ## counter = 0
+            ## if hasattr(row, 'doubleEPass') and hasattr(row, 'e1MatchesDoubleEPath'):
+            ##     if row.doubleEPass and (not bool(row.e1MatchesDoubleEPath)) and counter < 10:
+            ##         print 'Event passes doubleE trigger selection, but no matching found! Match output %i' % row.e1MatchesDoubleEPath
+            ##         counter += 1
+                
+            ######################################################
+            ##  END TRIG MATCH DEBUG
+            ######################################################
+
             # Apply basic preselection
             if not preselection(row):
                 continue
@@ -113,6 +203,8 @@ class ZHAnalyzerBase(MegaBase):
                     fill_histos(histos, folder, row, event_weight)
                     wToApply = [ (w, w(row) )  for w in region_info['weights'] ]
                     for w_fcn, w_val in wToApply:
+                        #if w_val > 1. :
+                            #print 'obj1_weight: %s' % w_val
                         fill_histos(histos, folder+(w_fcn.__name__,), row, event_weight*w_val)
                     if len(wToApply) > 1:
                         w_prod = reduce(lambda x, y: x*y, [x for y,x in wToApply])
@@ -150,8 +242,8 @@ class ZHAnalyzerBase(MegaBase):
         self.book(folder, "%s_%s_Pt"     % products, "%s candidate Pt"              % name, 100, 0, 100)
         #self.book(folder, "%s_%s_AbsEta" % products, "%s candidate AbsEta"          % name, 100, 0, 2.4)
         self.book(folder, "%s_%s_Mass"   % products, "%s candidate Mass"            % name, 150, 0, 150)
-        self.book(folder, "%s_%s_DR"     % products, "%s decay products #DeltaR"    % name, 100, 0, 100)
-        self.book(folder, "%s_%s_DPhi"   % products, "%s decay products #Delta#phi" % name, 100, 0, 100)
+        self.book(folder, "%s_%s_DR"     % products, "%s decay products #DeltaR"    % name, 100, 0, 10)
+        self.book(folder, "%s_%s_DPhi"   % products, "%s decay products #Delta#phi" % name, 180, 0, 180)
 
     def book_Z_histos(self, folder):
         self.book_resonance_histos(folder, self.Z_decay_products(), 'Z')
@@ -164,13 +256,18 @@ class ZHAnalyzerBase(MegaBase):
         #find all keys mathing
         folder_str = '/'.join(folder + ('',))
         for key, value in histos.iteritems():
-            if folder_str not in key:
+            location = key[ : key.rfind('/')]+'/'
+            if folder_str != location:
                 continue
             attr = key[ key.rfind('/') + 1 :]
-            if attr == 'nTruePU':
-                value.Fill(row.nTruePU)
-            elif attr == 'weight':
-                value.Fill(weight)
+            if attr in self.hfunc:
+                value.Fill(
+                    self.hfunc[attr](row, weight)
+                    )
+            ## if attr == 'nTruePU':
+            ##     value.Fill(row.nTruePU)
+            ## elif attr == 'weight':
+            ##     value.Fill(weight)
             else:
                 value.Fill( getattr(row,attr), weight )
         return None

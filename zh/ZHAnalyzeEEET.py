@@ -26,9 +26,10 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
         super(ZHAnalyzeEEET, self).__init__(tree, outfile, EEETauTree, 'ET', **kwargs)
         # Hack to use S6 weights for the one 7TeV sample we use in 8TeV
         target = os.environ['megatarget']
-        if 'HWW3l' in target:
-            print "HACK using S6 PU weights for HWW3l"
-            mcCorrectors.force_pu_distribution('S6')
+        self.pucorrector = mcCorrectors.make_puCorrector('doublee')
+        ## if 'HWW3l' in target:
+        ##     print "HACK using S6 PU weights for HWW3l"
+        ##     mcCorrectors.force_pu_distribution('S6')
 
     def Z_decay_products(self):
         return ('e1','e2')
@@ -40,13 +41,13 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_general_histos(folder)
         self.book_kin_histos(folder, 'e1')
         self.book_kin_histos(folder, 'e2')
-        self.book_kin_histos(folder, 'm')
+        self.book_kin_histos(folder, 'e3')
         self.book_kin_histos(folder, 't')
         self.book_Z_histos(folder)
         self.book_H_histos(folder)
 
     def probe1_id(self, row):
-        return bool(row.eRelPFIsoDB < 0.10) ##THIS SEEMS too low
+        return selections.eleID(row, 'e3') and bool(row.e3RelPFIsoDB < 0.10) ##THIS SEEMS too low
 
     def probe2_id(self, row):
         return bool(row.tMediumIso) ##Why not tMediumMVAIso
@@ -58,12 +59,11 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
         '''
         #Z Selection
         if not selections.ZEESelection(row): return False
-        if not selections.overlap(row, 'e1','e2','e','t') : return False
+        if selections.overlap(row, 'e1','e2','e3','t') : return False
         if not selections.signalTauSelection(row,'t'): return False
-        if bool(row.tAntiMuonLoose): return False
-        if bool(row.tAntiElectronMVA): return False
-        if bool(row.e_t_SS): return False
-        return selections.signalElectronSelection(row,'e')
+        if not bool(row.tAntiMuonLoose): return False
+        if not bool(row.tAntiElectronMVA): return False
+        return selections.signalElectronSelection(row,'e3')
 
     def sign_cut(self, row):
         ''' Returns true if muons are SS '''
@@ -72,13 +72,11 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
     def event_weight(self, row):
         if row.run > 2:
             return 1.
-        return meCorrectors.pu_corrector(row.nTruePU) * \
-            get_electron_corrections(row, 'e1','e2','e3')
+        return self.pucorrector(row.nTruePU) * \
+            mcCorrectors.get_electron_corrections(row, 'e1','e2','e3')
 
     def obj1_weight(self, row):
-        return fr_fcn.e_fr(max(row.e3JetPt, row.e3Pt))
-        #return highpt_mu_fr(row.m1Pt)
+        return fr_fcn.e_tight_fr( row.e3Pt )
 
     def obj2_weight(self, row):
-        return fr_fcn.tau_fr(max(row.tJetPt, row.tPt))
-        #return lowpt_mu_fr(row.m2Pt)
+        return fr_fcn.tau_medium_fr( row.tPt )

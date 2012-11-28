@@ -53,7 +53,7 @@ The output histogram has the following structure:
 '''
 
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
-
+                        
 class WHAnalyzerBase(MegaBase):
     def __init__(self, tree, outfile, wrapper, **kwargs):
         super(WHAnalyzerBase, self).__init__(tree, outfile, **kwargs)
@@ -61,6 +61,12 @@ class WHAnalyzerBase(MegaBase):
         self.tree = wrapper(tree)
         self.out = outfile
         self.histograms = {}
+        self.histo_locations = {} #just a mapping of the histograms we have to avoid changing self.histograms indexing an screw other files
+        self.hfunc   = { #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in fill_histos later
+            'nTruePU' : lambda row, weight: (row.nTruePU,None),
+            'weight'  : lambda row, weight: (weight,None) if weight is not None else (1.,None),
+            'Event_ID': lambda row, weight: (array.array("f", [row.run,row.lumi,int(row.evt)/10**5,int(row.evt)%10**5] ), None),
+            }
 
     @staticmethod
     def build_wh_folder_structure():
@@ -131,6 +137,22 @@ class WHAnalyzerBase(MegaBase):
 
         return flag_map
 
+    def fill_histos(self, histos, folder, row, weight):
+        '''fills histograms'''
+        #find all keys matching
+        folder_str = '/'.join(folder + ('',))
+        for attr in self.histo_locations[folder_str]:
+            value = self.histograms[folder_str+attr]
+            if attr in self.hfunc:
+                result, weight = self.hfunc[attr](row, weight)
+                if weight is None:
+                    value.Fill( result ) #saves you when filling NTuples!
+                else:
+                    value.Fill( result, weight )
+            else:
+                value.Fill( getattr(row,attr), weight ) if weight is not None else value.Fill( getattr(row,attr) )
+        return None
+
     def begin(self):
         # Loop over regions, book histograms
         for _, folders in self.build_wh_folder_structure().iteritems():
@@ -151,6 +173,14 @@ class WHAnalyzerBase(MegaBase):
         # ss/p1p2p3
         self.book_histos('os/p1p2p3/c1')
         self.book_histos('os/p1p2f3/c1')
+        for key in self.histograms:
+            charpos  = key.rfind('/')
+            location = key[ : charpos]+'/'
+            name     = key[ charpos + 1 :]
+            if location in self.histo_locations:
+                self.histo_locations[location].append(name)
+            else:
+                self.histo_locations[location] = [name]
 
     def process(self):
         # For speed, map the result of the region cuts to a folder path

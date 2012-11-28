@@ -7,23 +7,80 @@ from FinalStateAnalysis.StatTools.RooFunctorFromWS import build_roofunctor
 
 # Get fitted fake rate functions
 frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
-mu_fr = lambda x: 0.01
-## build_roofunctor(
-##     frfit_dir + '/m_wjets_pt20_pfidiso02_muonJetPt.root',
+mu_tight_fr = build_roofunctor( #lambda x: 0.1
+    frfit_dir + '/m_zlt_pt10_tightId_muonPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+e_tight_fr =build_roofunctor( #lambda x: 0.2
+    frfit_dir + '/e_zlt_pt10_tightId_electronPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+mu_loose_fr = build_roofunctor( #lambda x: 0.1
+    frfit_dir + '/m_zlt_pt10_looseId_muonPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+e_loose_fr =build_roofunctor( #lambda x: 0.2
+    frfit_dir + '/e_zlt_pt10_looseId_electronPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+
+mu_tight_jetpt_fr = build_roofunctor( #lambda x: 0.1
+    frfit_dir + '/m_zlt_pt10_tightId_muonJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+e_tight_jetpt_fr =build_roofunctor( #lambda x: 0.2
+    frfit_dir + '/e_zlt_pt10_tightId_electronJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+## /e_zlt_pt10_looseId_electronJetPt.root
+## /m_zlt_pt10_looseId_muonJetPt.root
+
+## tau_loose_fr = build_roofunctor(
+##     frfit_dir + '/t_ztt_pt10_LooseIso_tauPt.root',
 ##     'fit_efficiency', # workspace name
 ##     'efficiency'
 ## )
-e_fr = lambda x: 0.01
-## build_roofunctor(
-##     frfit_dir + '/m_wjets_pt10_pfidiso02_muonJetPt.root',
+
+## tau_looseMVA_fr = build_roofunctor(
+##     frfit_dir + '/t_ztt_pt10_LooseMVAIso_tauPt.root',
+##     'fit_efficiency', # workspace name
+##     'efficiency'
+## )
+
+tau_medium_fr = build_roofunctor(
+    frfit_dir + '/t_ztt_pt10_MediumIso_tauPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+## tau_mediumMVA_fr = build_roofunctor(
+##     frfit_dir + '/t_ztt_pt10_MediumMVAIso_tauPt.root',
+##     'fit_efficiency', # workspace name
+##     'efficiency'
+## )
+
+tau_tight_fr = build_roofunctor(
+    frfit_dir + '/t_ztt_pt10_TightIso_tauPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+## tau_tightMVA_fr = build_roofunctor(
+##     frfit_dir + '/t_ztt_pt10_TightMVAIso_tauPt.root',
 ##     'fit_efficiency', # workspace name
 ##     'efficiency'
 ## )
 
 
-tau_fr = lambda x: 0.01
-## build_roofunctor(
-##     frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
-##     'fit_efficiency', # workspace name
-##     'efficiency'
-## )
