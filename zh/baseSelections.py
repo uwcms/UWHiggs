@@ -19,8 +19,6 @@ def ElTriggerMatching(row):
     '''
     Applies trigger matching
     '''
-    if row.e1MatchesDoubleEPath:
-        print 'e1MatchesDoubleEPath is working!'
     return row.e1MatchesDoubleEPath > 0 and row.e2MatchesDoubleEPath > 0
 
 def Vetos(row):
@@ -62,8 +60,8 @@ def ZMuMuSelectionNoVetos(row):
     if bool(row.m2RelPFIsoDB > 0.25):                  return False
     if bool(row.m1_m2_SS):                             return False
     if row.m1_m2_Mass < 60 or row.m1_m2_Mass > 120 :   return False
-        #return True
-    return MuTriggerMatching(row)
+    return True
+#return MuTriggerMatching(row)
 
 def ZMuMuSelection(row):
     return ZMuMuSelectionNoVetos(row) and Vetos(row)
@@ -86,8 +84,8 @@ def ZEESelectionNoVetos(row):
     if bool(row.e2RelPFIsoDB > 0.25):                return False
     if bool(row.e1_e2_SS):                           return False
     if row.e1_e2_Mass < 60 or row.e1_e2_Mass > 120 : return False
-        #return True
-    return ElTriggerMatching(row)
+    return True
+#return ElTriggerMatching(row)
 
 def ZEESelection(row):
     return ZEESelectionNoVetos(row) and Vetos(row)
