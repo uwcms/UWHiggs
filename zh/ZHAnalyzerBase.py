@@ -48,7 +48,7 @@ class ZHAnalyzerBase(MegaBase):
     def __init__(self, tree, outfile, wrapper, channel, **kwargs):
         #print '__init__ called'
         super(ZHAnalyzerBase, self).__init__(tree, outfile, **kwargs)
-        print '\n\n',os.environ['megatarget'],'\n\n'
+        #print '\n\n',os.environ['megatarget'],'\n\n'
         # Cython wrapper class must be passed
         self.tree = wrapper(tree)
         self.out = outfile
@@ -172,11 +172,11 @@ class ZHAnalyzerBase(MegaBase):
             ######################################################
             ##  TRIG MATCH DEBUG
             ######################################################
-            counter = 0
-            if hasattr(row, 'doubleEPass') and hasattr(row, 'e1MatchesDoubleEPath'):
-                if row.doubleEPass and (not bool(row.e1MatchesDoubleEPath)) and counter < 10:
-                    print 'Event passes doubleE trigger selection, but no matching found! Match output %i' % row.e1MatchesDoubleEPath
-                    counter += 1
+            ## counter = 0
+            ## if hasattr(row, 'doubleEPass') and hasattr(row, 'e1MatchesDoubleEPath'):
+            ##     if row.doubleEPass and (not bool(row.e1MatchesDoubleEPath)) and counter < 10:
+            ##         print 'Event passes doubleE trigger selection, but no matching found! Match output %i' % row.e1MatchesDoubleEPath
+            ##         counter += 1
                 
             ######################################################
             ##  END TRIG MATCH DEBUG
