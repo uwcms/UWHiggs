@@ -13,9 +13,13 @@ If [blind] is true, data in the p1p2p3 region will not be plotted.
 
 import rootpy.plotting.views as views
 import rootpy.plotting as plotting
+#from rootpy.tree import TreeChain
+import rootpy.io
 from FinalStateAnalysis.PlotTools.Plotter import Plotter
 from FinalStateAnalysis.PlotTools.BlindView import BlindView
 from FinalStateAnalysis.PlotTools.PoissonView import PoissonView
+from FinalStateAnalysis.PlotTools.HistToTGRaphErrors import HistToTGRaphErrors, HistStackToTGRaphErrors
+from FinalStateAnalysis.PlotTools.InflateErrorView import InflateErrorView
 from FinalStateAnalysis.MetaData.data_styles import data_styles
 #from RecoLuminosity.LumiDB import argparse''' 
 import sys
@@ -32,39 +36,6 @@ ROOT.gStyle.SetOptTitle(0)
 
 def quad(*xs):
     return math.sqrt(sum(x*x for x in xs))
-
-#To Be moved somewhere else
-def HistToTGRaphErrors(h):
-    import array
-    x, y, ex, ey = (array.array('d',[]), array.array('d',[]), array.array('d',[]), array.array('d',[]) )
-    for ibin in zipBins(h):
-        x.append( ibin.center )
-        y.append( ibin.content )
-        ex.append( ibin.width / 2. )
-        ey.append( ibin.error )
-    gr = ROOT.TGraphErrors(len(x),x,y,ex,ey)
-    gr.SetTitle( h.GetTitle() )
-    gr.SetMarkerColor( h.GetMarkerColor() )
-    gr.SetMarkerStyle( h.GetMarkerStyle() )
-    #gr.SetFillColor( h.GetFillColor() )
-    return gr
-
-class InflateErrorView(views._FolderView):
-    ''' Rebin a histogram.
-
-    The original histogram is unmodified, a rebinned clone is returned.
-
-    '''
-    def __init__(self, dir, inflation):
-        self.inflation = 1+inflation
-        super(InflateErrorView, self).__init__(dir)
-
-    def apply_view(self, object):
-        object = object.Clone()
-        for hbin in zipBins(object):
-            hbin.error *= self.inflation 
-        return object
-
 
 class BackgroundErrorView(object):
     ''' Compute the total background error in each bin. '''
@@ -176,7 +147,6 @@ class ZHPlotterBase(Plotter):
         super(ZHPlotterBase, self).plot_mc_vs_data(folder, variable, rebin, xaxis, leftside, xrange)
         self.add_cms_blurb(self.sqrts)
 
-
     def make_signal_views(self, rebin, unblinded=True):
         ''' Make signal views with FR background estimation '''
 
@@ -209,9 +179,9 @@ class ZHPlotterBase(Plotter):
 
         subtract_cat0_view = views.ScaleView(cat0_view, -1)
         # Corrected fake view
-        fakes_view = views.SumView(cat1_view, cat2_view, subtract_cat0_view)
-        fakes_view = views.TitleView(
-            views.StyleView(fakes_view, **data_styles['Zjets*']), 'Non-prompt')
+        Zjets_view = views.SumView(cat1_view, cat2_view, subtract_cat0_view)
+        Zjets_view = views.TitleView(
+            views.StyleView(Zjets_view, **data_styles['Zjets*']), 'Non-prompt')
 
         charge_fakes = views.TitleView(
             views.StyleView(
@@ -224,23 +194,23 @@ class ZHPlotterBase(Plotter):
             'data' : data_view,
             'cat1' : cat1_view,
             'cat2' : cat2_view,
-            'fakes' : fakes_view,
+            'Zjets' : Zjets_view,
             'charge_fakes' : charge_fakes,
         }
 
         # Add signal
         for mass in [110, 120, 130, 140]:
             vh_view = views.SubdirectoryView(
-               self.rebin_view(self.get_view('VH_*%i' % mass), rebin),
+               self.rebin_view(self.get_view('VH_H2Tau_M-%i' % mass), rebin),
                 'os/All_Passed/'
             )
             output['vh%i' % mass] = vh_view
-            ## ww_view = views.SubdirectoryView(
-            ##    self.rebin_view(self.get_view('WH_%i*' % mass), rebin),
-            ##     'os/All_Passed/'
-            ## )
-            ## output['vh%i_hww' % mass] = ww_view
-            ## output['signal%i' % mass] = views.SumView(ww_view, vh_view)
+            ww_view = views.SubdirectoryView(
+               self.rebin_view(self.get_view('VH_%i_HWW' % mass), rebin),
+                'os/All_Passed/'
+            )
+            output['vh%i_hww' % mass] = ww_view
+            output['signal%i' % mass] = views.SumView(ww_view, vh_view)
 
         return output
 
@@ -251,25 +221,26 @@ class ZHPlotterBase(Plotter):
         wz = sig_view['wz'].Get(variable)
         zz = sig_view['zz'].Get(variable)
         obs = sig_view['data'].Get(variable)
-        fakes = sig_view['fakes'].Get(variable)
+        Zjets = sig_view['Zjets'].Get(variable)
 
-        wz.SetName('wz')
-        zz.SetName('zz')
+        wz.SetName('WZ')
+        zz.SetName('ZZ')
         obs.SetName('data_obs')
-        fakes.SetName('fakes')
+        Zjets.SetName('Zjets')
 
+        #print sig_view.keys()
         for mass in [110, 120, 130, 140]:
-            vh = sig_view['VH_H2Tau_M-%i' % mass].Get(variable)
-            vh.SetName('VH%i' % mass)
+            vh = sig_view['vh%i' % mass].Get(variable)
+            vh.SetName('ZH_htt%i' % mass)
             vh.Write()
-            ## ww = sig_view['vh%i_hww' % mass].Get(variable)
-            ## ww.SetName('VH_hww%i' % mass)
-            ## ww.Write()
+            ww = sig_view['vh%i_hww' % mass].Get(variable)
+            ww.SetName('ZH_hww%i' % mass)
+            ww.Write()
 
         wz.Write()
         zz.Write()
         obs.Write()
-        fakes.Write()
+        Zjets.Write()
 
     def write_cut_and_count(self, variable, outdir, unblinded=False):
         ''' Version of write_shapes(...) with only one bin.
@@ -280,10 +251,56 @@ class ZHPlotterBase(Plotter):
         nbins = sig_view['wz'].Get(variable).GetNbinsX()
         return self.write_shapes(variable, nbins, outdir, unblinded)
 
+    def get_yield(self, variable, unblinded=False):
+        sig_view = self.make_signal_views(1, unblinded)
+        wz = sig_view['wz'].Get(variable)
+        zz = sig_view['zz'].Get(variable)
+        obs = sig_view['data'].Get(variable)
+        Zjets = sig_view['Zjets'].Get(variable)
+
+        return {
+            'wz'    : wz.Integral(),   
+            'zz'    : zz.Integral(),
+            'obs'   : obs.Integral(),
+            'Zjets' : Zjets.Integral(),
+            }
+
+    def passing_events(self):
+        all_data_view =self.get_view('data')
+        def _find_file(view):
+            if type(view) == rootpy.io.file.File:
+                return view
+            return _find_file(view.dir)
+        ## print '\n\n\n', _find_file(all_data_view.dirs[0]).GetName(), '\n\n\n'
+        data_files = [_find_file(view).GetName() for view in all_data_view.dirs]
+        chain = ROOT.TChain('os/All_Passed/Event_ID')
+        for f in data_files:
+            chain.Add(f)
+        retVal = []
+        for row in chain:
+            retVal.append( (int(row.run), int(row.lumi), int(row.evt1)*10**5+int(row.evt2) ) )
+        return retVal
+
+
+    def print_passing_events(self,outputfileName):
+        passing_evts = self.passing_events()
+        print 'saving passing events in: '+self.outputdir+'/'+outputfileName
+        with open(self.outputdir+'/'+outputfileName,'w') as out:
+            out.write('%10s %10s %14s\n' % ('run', 'lumi', 'evt') )
+            for row in passing_evts:
+                out.write('%10i %10i %14i\n' % row )
+        #printing in python format
+        pyfname = outputfileName.split('.')[0]+'.py'
+        print 'saving passing events in: '+self.outputdir+'/'+pyfname
+        with open(self.outputdir+'/'+pyfname,'w') as out:
+            out.write('#Printing events passing selections for channel ' + self.channel + ' (run, lumi, evt)\n')
+            out.write('passing = ' + passing_evts.__repr__() + '\n')
+        return
+
     def simple_draw(self, path, rebin=1, xaxis=''):
         data_view = self.rebin_view(self.data, rebin)
         histo = data_view.Get(path)
-        histo.format = "ep"
+        histo.drawstyle = "ep"
         histo.Draw()
         self.add_cms_blurb(self.sqrts)
 
@@ -291,7 +308,7 @@ class ZHPlotterBase(Plotter):
         '''helper function to make comparison between data and data (closure test for fakerates etc.)'''
         self.canvas.cd()
         data_view = self.rebin_view(self.data, rebin)
-        test_view = views.StyleView( views.TitleView( views.SubdirectoryView( data_view, testDir), 'Weighted data' ), fillcolor=ROOT.EColor.kRed, format='hist' )#.Get(var)
+        test_view = views.StyleView( views.TitleView( views.SubdirectoryView( data_view, testDir), 'Weighted data' ), fillcolor=ROOT.EColor.kRed, drawstyle='hist' )#.Get(var)
         refData   = views.SubdirectoryView( data_view, refDir).Get(var)
 
         testSampleName = '_'.join(testDir.split('/')[1:]).replace('IsoFailed','fail').replace('_weight','w')
@@ -302,14 +319,14 @@ class ZHPlotterBase(Plotter):
         diboson_views   = [ InflateErrorView( views.SubdirectoryView(self.rebin_view(self.get_view(pattern), rebin), refDir), 0.16 ) for pattern in ['WZ*'] ] #, 'ZZ*', 'WW*'] ]
         to_stack_views  = diboson_views + [test_view] #+ 
         stack_hist      = views.StackView( *to_stack_views ).Get(var)
-        refData.format  = "ep"
-        stack_hist.format = "HIST same" # same" #"HISTe same "
+        refData.drawstyle  = "ep"
+        stack_hist.drawstyle = "HIST same" # same" #"HISTe same "
          
         hmax = max( [max([(b.content+b.error) for b in zipBins(refData)]),stack_hist.GetMaximum()] )
         refData.GetYaxis().SetRangeUser(0,hmax*1.3)
         refData.GetXaxis().SetTitle(xaxis)
 
-        tgTest = HistToTGRaphErrors( views.SumView( *to_stack_views ).Get(var) )
+        tgTest = HistStackToTGRaphErrors( stack_hist )
         tgTest.SetFillStyle(3013)
         tgTest.GetXaxis().SetTitle(xaxis)
         tgTest.GetYaxis().SetRangeUser(0,hmax*1.3)
@@ -396,6 +413,7 @@ jobid = os.environ['jobid']
 
 channels = filter( lambda x: len(x) == 4 and x.upper() == x, sys.argv) #['MMMT']#[ Z+H for Z in ['EE','MM'] for H in ['MT', 'ET', 'TT', 'EM']] #
 print channels
+yields = {}
 for channel in channels:
     print "Plotting %s for %s" % (channel, jobid)
     Zprod, Hprod = products_map[channel]
@@ -462,113 +480,41 @@ for channel in channels:
     plotter.plot_mc_vs_data('os/All_Passed', '%s_%s_Mass' % Hprod, rebin=10, xaxis='M_{%s%s} (GeV)' % texHprod, leftside=False)
     plotter.save('%s_mcdata-os-all_passed_HMass' % channel.lower() )
 
+    ###########################################################################
+    ##  Yields                #################################################
+    ###########################################################################
 
+    yields[channel] = plotter.get_yield('%s_%s_Mass' % Hprod)
+    plotter.print_passing_events('passing_events.txt')
 
     ###########################################################################
     ##  Making shape file     #################################################
     ###########################################################################
 
     shape_file = ROOT.TFile( os.path.join(plotter.outputdir, '%s_shapes_%s.root' % (channel.lower(), plotter.period)), 'RECREATE')
-    shape_dir  = shape_file.mkdir( channel.lower() )
+    shape_dir  = shape_file.mkdir( channel.lower()+'_zh' )
     plotter.write_shapes('%s_%s_Mass' % Hprod, 15, shape_dir, unblinded=True)
     #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
     shape_file.Close()
 
-    ## plotter.plot_mc_vs_data('os/p1p2f3', 'nTruePU', rebin=1, xaxis='True PU')
-    ## plotter.add_cms_blurb(sqrts)
-    ## plotter.save('mcdata-os-p1p2f3-nTruePU')
 
-    ## plotter.plot('Zjets_M50', 'os/p1p2f3/nTruePU', 'nTruePU', rebin=1, xaxis='True PU')
-    ## plotter.save('zjets-os-p1p2f3-nTruePU')
+#Write yields
+filename = 'results/%s/plots/yields.txt' % jobid
+lines    = []
+if os.path.isfile(filename):
+    with open(filename) as yfile:
+        lines = [line for line in yfile.readlines()]
 
+#understand the file
+oldYields = dict( [ (line.split(' ')[0], line) for line in lines if line.split(' ')[0] in channels] )
+form      =  '%10s %8s %8s %8s %8s\n'
+output    = form % ( 'channel', 'obs', 'wz', 'zz', 'Zjets' )
+for channel in channels:
+    if channel in yields:
+        chyield = yields[channel]
+        output += form[::-1].replace('s','.3f'[::-1],4)[::-1] % (channel, chyield['obs'], chyield['wz'], chyield['zz'], chyield['Zjets'])
+    else:
+        output += oldYields[channel]
 
-    ## plotter.plot_mc_vs_data('os/p1p2f3', 'bCSVVeto', rebin=1, xaxis='bveto')
-    ## plotter.add_cms_blurb(sqrts)
-    ## plotter.save('mcdata-os-p1p2f3-bveto')
-
-    ## plotter.plot_mc_vs_data('os/p1p2f3/w3', 'emMass', 10)
-    ## plotter.save('mcdata-os-p1p2f3-w3-emMass')
-
-    ## plotter.plot_mc_vs_data('os/p1f2p3', 'emMass', 10)
-    ## plotter.save('mcdata-os-p1f2p3-emMass')
-
-    ## plotter.plot_mc_vs_data('os/f1p2p3', 'emMass', 10)
-    ## plotter.save('mcdata-os-p1f2p3-emMass')
-
-    ## # Check PU variables
-    ## #plotter.plot_mc_vs_data('os/p1p2f3', 'rho')
-    ## #plotter.save('mcdata-os-p1p2f3-rho')
-
-    ## #plotter.plot_mc_vs_data('os/p1p2f3', 'nvtx')
-    ## #plotter.save('mcdata-os-p1p2f3-nvtx')
-
-    ## # Lower stat but closer to signal region
-    ## #plotter.plot_mc_vs_data('os/p1p2p3', 'rho')
-    ## #plotter.save('mcdata-os-p1p2p3-rho')
-
-    ## #plotter.plot_mc_vs_data('os/p1p2p3', 'nvtx')
-    ## #plotter.save('mcdata-os-p1p2p3-nvtx')
-
-    ## # Make Z->mumu + tau jet control
-    ## def make_styler(color, format=None):
-    ##     def unsuck(x):
-    ##         x.SetFillStyle(0)
-    ##         x.SetLineColor(color)
-    ##         x.SetLineWidth(2)
-    ##         x.SetMaximum(1.5*x.GetMaximum())
-    ##         if format:
-    ##             x.format = format
-    ##     return unsuck
-
-    ## weighted = plotter.plot('data', 'os/p1p2f3/w3/emMass',  'hist', rebin=20, styler=make_styler(2, 'hist'), xaxis='m_{e#mu} (GeV)')
-    ## unweighted = plotter.plot('data', 'os/p1p2p3/emMass', 'same', rebin=20, styler=make_styler(1), xaxis='m_{e#mu} (GeV)')
-    ## weighted.SetTitle('e^{+}#mu^{-} + fake #tau_{h} est.')
-    ## weighted.legendstyle = 'l'
-    ## unweighted.SetTitle('e^{+}#mu^{-} + fake #tau_{h} obs.')
-    ## unweighted.legendstyle = 'pe'
-    ## plotter.add_legend([weighted, unweighted])
-    ## plotter.add_cms_blurb(sqrts)
-    ## plotter.save('ztt-os-fr-control')
-
-    ## #plotter.plot('data', 'os/p1p2p3/prescale', styler=make_styler(1))
-    ## #plotter.save('ztt-os-prescale-check')
-
-    ## #plotter.plot('Zjets_M50', 'os/p1p2f3/weight')
-    ## #plotter.save('ztt-mc-event-weights')
-    ## ## Check MC weights
-    ## #plotter.plot('Zjets_M50', 'os/p1p2f3/weight_nopu')
-    ## #plotter.save('ztt-mc-event-weight_nopu')
-
-
-    ## ###########################################################################
-    ## ##  FR sideband MC-vs-Data ################################################
-    ## ###########################################################################
-
-    ## plotter.plot_mc_vs_data('ss/p1f2p3', 'mPt', 5, '#mu_{1} p_{T}', leftside=False)
-    ## plotter.save('mcdata-ss-p1f2p3-mPt')
-
-    ## plotter.plot_mc_vs_data('ss/p1f2p3', 'subMass', 20, 'Subleading mass (GeV)', leftside=False)
-    ## plotter.save('mcdata-ss-p1f2p3-subMass')
-
-    ## plotter.plot_mc_vs_data('ss/p1p2f3', 'subMass', 20, 'Subleading mass (GeV)', leftside=False)
-    ## plotter.save('mcdata-ss-p1p2f3-subMass')
-
-    ## plotter.plot_mc_vs_data('ss/f1p2p3', 'subMass', 20, 'Subleading mass (GeV)', leftside=False)
-    ## plotter.save('mcdata-ss-f1p2p3-subMass')
-
-    ## plotter.plot_mc_vs_data('ss/p1f2p3/w2', 'mPt', 5, '#mu_{1} p_{T}', leftside=False)
-    ## plotter.save('mcdata-ss-p1f2p3-w2-mPt')
-
-    ## plotter.plot_mc_vs_data('ss/p1f2p3', 'ePt', 5, 'Electron p_{T}', leftside=False)
-    ## plotter.save('mcdata-ss-p1f2p3-ePt')
-
-    ## plotter.plot_mc_vs_data('ss/p1f2p3/w2', 'ePt', 5, 'Electron p_{T}', leftside=False)
-    ## plotter.save('mcdata-ss-p1f2p3-w2-ePt')
-
-    ## plotter.plot_mc_vs_data('ss/f1p2p3', 'ePt', 5, 'Electron p_{T}', leftside=False)
-    ## plotter.save('mcdata-ss-f1p2p3-ePt')
-
-    ## plotter.plot_mc_vs_data('ss/f1p2p3/w1', 'ePt', 5, 'Electron p_{T}', leftside=False)
-    ## plotter.save('mcdata-ss-f1p2p3-w2-ePt')
-
-
+with open(filename,'w') as yfile:
+    yfile.write(output)
