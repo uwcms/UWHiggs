@@ -104,7 +104,7 @@ def photon_id_debug(event,i):
         result.append(neutIso < 1.5)
         result.append(phoIso < 1.0)
 
-    if( True ):
+    if( False ):
         print "ALLPHOTON :: run %i  evt: %i  pt:%.4f  scEta: %0.6f  hoe: %f" \
               "  sieie: %f  pfCh: %.6f  pfNe: %.6f  pfGa: %.6f  rho: %f  EACh: %.3f   EANeut: %.3f   EAPho: %.3f" \
               %(event.run[i], event.evt[i], event.gPt[i], event.gSCEta[i],
@@ -205,6 +205,30 @@ def zg_mass_low(event,i):
 def zg_mass_high(event,i):
     return event.Mass[i] < 180.0
 
+
+def process_tuple(tuple,cut_list,counts):
+    for event in tuple:
+        one_passes = False
+        counts_evt = [0 for cut in cut_list]
+    
+        for i in range(event.N_PATFinalState):
+            
+            cut_bits = [cut(event,i) for cut in cut_list]
+            one_passes = one_passes or (cut_bits.count(True) == len(cut_list))
+            
+            passed_last = True
+            kbit = 0
+            
+            while passed_last and kbit < len(cut_bits):
+                counts_evt[kbit] += 1*cut_bits[kbit]            
+                passed_last = cut_bits[kbit]
+                kbit += 1
+
+        for i,count in enumerate(counts_evt):
+            counts[i] += 1*(count > 0)
+
+        counts[len(cut_list)] += int(one_passes)
+
 cut_list_mm = [trigger_req, #HLT
                vtx_req, #PV selection
                mu_id, #10 GeV && ID
@@ -225,29 +249,7 @@ cut_list_mmg += [pho_fiducial,
                  ]
 counts_mmg = [0 for cut in cut_list_mmg] + [0]
 
-for event in mmNtuple:
-    one_passes = False
-    counts_evt = [0 for cut in cut_list_mm]
-    
-    for i in range(event.N_PATFinalState):
-        
-        cut_bits = [cut(event,i) for cut in cut_list_mm]
-        one_passes = one_passes or (cut_bits.count(True) == len(cut_list_mm))
-
-        passed_last = True
-        kbit = 0
-        
-        while passed_last and kbit < len(cut_bits):
-            counts_evt[kbit] += 1*cut_bits[kbit]            
-            passed_last = cut_bits[kbit]
-            kbit += 1
-
-        
-
-    for i,count in enumerate(counts_evt):
-        counts_mm[i] += 1*(count > 0)
-        
-    counts_mm[len(cut_list_mm)] += int(one_passes)
+process_tuple(mmNtuple,cut_list_mm,counts_mm)
 
 print 'HLT     : %i'%(counts_mm[0])
 print 'VTX     : %i'%(counts_mm[1])
@@ -257,30 +259,7 @@ print 'Z Sel   : %i'%(counts_mm[4])
 print 'Total MM: %i'%(counts_mm[5])
 print
 
-
-for event in mmgNtuple:
-    one_passes = False
-    counts_evt = [0 for cut in cut_list_mmg]
-    
-    for i in range(event.N_PATFinalState):
-
-        photon_id_debug(event,i)
-        
-        cut_bits = [cut(event,i) for cut in cut_list_mmg]
-        one_passes = one_passes or (cut_bits.count(True) == len(cut_list_mmg))
-
-        passed_last = True
-        kbit = 0
-        
-        while passed_last and kbit < len(cut_bits):
-            counts_evt[kbit] += 1*cut_bits[kbit]            
-            passed_last = cut_bits[kbit]
-            kbit += 1
-
-    for i,count in enumerate(counts_evt):
-        counts_mmg[i] += 1*(count > 0)
-        
-    counts_mmg[len(cut_list_mmg)] += int(one_passes)
+process_tuple(mmgNtuple,cut_list_mmg,counts_mmg)
     
 print "Fiducial Cuts   : %i"%(counts_mmg[len(cut_list_mm)])
 print "Electron Veto   : %i"%(counts_mmg[len(cut_list_mm)+1])
