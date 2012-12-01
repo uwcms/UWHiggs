@@ -41,26 +41,160 @@ def mu_id(event,i):
 def mu_iso(event,i):
     m1Iso = ( (event.m1PFChargedIso[i] +
                max(event.m1PFNeutralIso[i] + event.m1PFPhotonIso[i]
-                   -event.m1EffectiveArea2012[i]*max(event.m1RhoHZG2012[i],0.0),
+                   -event.m1EffectiveArea2012[i]*
+                   max(event.m1RhoHZG2012[i],0.0),
                    0.0))/event.m1Pt[i] )
     m2Iso = ( (event.m2PFChargedIso[i] +
                max(event.m2PFNeutralIso[i] + event.m2PFPhotonIso[i]
-                   -event.m2EffectiveArea2012[i]*max(event.m2RhoHZG2012[i],0.0),
+                   -event.m2EffectiveArea2012[i]*
+                   max(event.m2RhoHZG2012[i],0.0),
                    0.0))/event.m2Pt[i] )
 
     return (m1Iso < 0.12 and m2Iso < 0.12)
 
 def z_id(event,i):
     return ( (event.m1Pt[i] > 20 or event.m2Pt[i] > 20) and
-             event.m1_m2_Mass[i] > 50 )
+             event.m1_m2_Mass[i] > 50 and
+             event.m1_m2_SS[i] == 0)
+
+def photon_id_debug(event,i):
+    #print 'Precalculated PhotonID Result = ', bool(event.gCBID_MEDIUM[i])
+
+    result = []
+
+    ascEta = abs(event.gSCEta[i])
+
+    eVeto = event.gConvSafeElectronVeto[i]
+    #print 'Conversion Safe Electron Veto :',eVeto
+
+    result.append(eVeto)
+
+    singleTowerHoE = event.gSingleTowerHadronicOverEm[i]
+    #print 'Single Tower H/E              :',singleTowerHoE,' < 0.05 == ', \
+    #      (singleTowerHoE<0.05)
+
+    result.append(singleTowerHoE<0.05)
+
+    sihih = event.gSigmaIEtaIEta[i]
+
+    rho = max(event.m1RhoHZG2011[i],0.0) ##HACK!
+    pfChgIso = event.gPFChargedIso[i]
+    pfChgEA  = event.gEffectiveAreaCHad[i]
+    
+    chgIso = max(pfChgIso - rho*pfChgEA,0.0)
+
+    pfNeutIso= event.gPFNeutralIso[i]
+    pfNeutEA = event.gEffectiveAreaNHad[i]    
+
+    neutIso = max(pfNeutIso - 0.04*event.gPt[i] - rho*pfNeutEA,0.0)
+
+    pfPhoIso = event.gPFPhotonIso[i]
+    pfPhoEA  = event.gEffectiveAreaPho[i]
+
+    phoIso = max(pfPhoIso - 0.005*event.gPt[i] - rho*pfPhoEA,0.0)
+
+    if( ascEta < 1.5 ):
+        result.append(sihih < 0.011)
+        result.append(chgIso < 1.5)
+        result.append(neutIso < 1.0)
+        result.append(phoIso < 0.7)
+    else:
+        result.append(sihih < 0.033)
+        result.append(chgIso < 1.2)
+        result.append(neutIso < 1.5)
+        result.append(phoIso < 1.0)
+
+    if( True ):
+        print "ALLPHOTON :: run %i  evt: %i  pt:%.4f  scEta: %0.6f  hoe: %f" \
+              "  sieie: %f  pfCh: %.6f  pfNe: %.6f  pfGa: %.6f  rho: %f  EACh: %.3f   EANeut: %.3f   EAPho: %.3f" \
+              %(event.run[i], event.evt[i], event.gPt[i], event.gSCEta[i],
+                event.gSingleTowerHadronicDepth1OverEm[i] +
+                event.gSingleTowerHadronicDepth2OverEm[i] ,
+                event.gSigmaIEtaIEta[i],
+                event.gPFChargedIso[i],
+                event.gPFNeutralIso[i],
+                event.gPFPhotonIso[i],
+                rho,
+                pfChgEA,pfNeutEA,pfPhoEA)
+        #print 'Conversion Safe Electron Veto :',eVeto,' == True == ', \
+        #      (eVeto==True)
+        #print 'Single Tower H/E              :',singleTowerHoE,' < 0.05 == ',\
+        #      (singleTowerHoE<0.05)
+        #if( ascEta < 1.560 ):
+        #    print 'sihih        :',sihih,'< 0.011 == ',(sihih < 0.011)
+        #    print 'pfChargedIso :',chgIso,' < 1.5 == ',(chgIso < 1.5)
+        #    print 'pfNeutralIso :',neutIso,' < 1.0 == ',(neutIso < 1.0)
+        #    print 'pfPhotonIso  :',phoIso,' < 0.7 == ',(phoIso < 0.7)
+        #else:
+        #    print 'sihih :',sihih,'< 0.033 == ',(sihih < 0.033)
+        #    print 'pfChargedIso :',chgIso,' < 1.2 == ',(chgIso < 1.2)
+        #    print 'pfNeutralIso :',neutIso,' < 1.5 == ',(neutIso < 1.5)
+        #    print 'pfPhotonIso  :',phoIso,' < 1.0 == ',(phoIso < 1.0)
+    return result
+
+def eleVeto(event,i):
+    eVeto = event.gConvSafeElectronVeto[i]
+
+    return eVeto == True
+
+def HoverE(event,i):
+    singleTowerHoE = event.gSingleTowerHadronicOverEm[i]
+    return singleTowerHoE<0.05
+
+def sihih(event,i):
+    sihih = event.gSigmaIEtaIEta[i]
+    ascEta = abs(event.gSCEta[i])
+
+    if( ascEta < 1.5 ):
+        return (sihih < 0.011)        
+    else:
+        return (sihih < 0.033)
+        
+def phoIso(event,i):
+    result = []
+    ascEta = abs(event.gSCEta[i])
+
+    rho = event.m1RhoHZG2011[i] ##HACK!
+    pfChgIso = event.gPFChargedIso[i]
+    pfChgEA  = event.gEffectiveAreaCHad[i]
+    
+    chgIso = max(pfChgIso - rho*pfChgEA,0.0)
+
+    pfNeutIso= event.gPFNeutralIso[i]
+    pfNeutEA = event.gEffectiveAreaNHad[i]    
+
+    neutIso = max(pfNeutIso - 0.04*event.gPt[i] - rho*pfNeutEA,0.0)
+
+    pfPhoIso = event.gPFPhotonIso[i]
+    pfPhoEA  = event.gEffectiveAreaPho[i]
+
+    phoIso = max(pfPhoIso - 0.005*event.gPt[i] - rho*pfPhoEA,0.0)
+
+    if( ascEta < 1.5 ):        
+        result.append(chgIso < 1.5)
+        result.append(neutIso < 1.0)
+        result.append(phoIso < 0.7)
+    else:       
+        result.append(chgIso < 1.2)
+        result.append(neutIso < 1.5)
+        result.append(phoIso < 1.0)
+        
+    return (result.count(True)==3)
 
 def good_photon(event,i):
     pt_over_m = event.gPt[i]/event.Mass[i]
-    scEta = event.gSCEta[i]
+    ascEta = abs(event.gSCEta[i])
     
     return ( pt_over_m > 15.0/110.0 and
-             (abs(scEta) < 1.4442 or (abs(scEta) > 1.560 and abs(scEta) < 2.5)) and
-             event.gCBID_MEDIUM[i] == 1 )
+             (ascEta < 1.4442 or (ascEta > 1.566 and ascEta < 2.5)) and
+             photon_id_debug(event,i) )
+
+def pho_fiducial(event,i):
+    pt_over_m = event.gPt[i]/event.Mass[i]
+    ascEta = abs(event.gSCEta[i])
+    
+    return ( pt_over_m > 15.0/110.0 and
+             (ascEta < 1.4442 or (ascEta > 1.566 and ascEta < 2.5)) )
 
 def photon_dr(event,i):
     return min(event.m1_g_DR[i],event.m2_g_DR[i]) > 0.4
@@ -80,7 +214,11 @@ cut_list_mm = [trigger_req, #HLT
 counts_mm = [0 for cut in cut_list_mm] + [0]
 
 cut_list_mmg = list(cut_list_mm)
-cut_list_mmg += [good_photon, #good photon
+cut_list_mmg += [pho_fiducial,                
+                 eleVeto,
+                 HoverE,
+                 sihih,
+                 phoIso,#good photon
                  photon_dr, #delta r lepton-photon
                  zg_mass_low,
                  zg_mass_high
@@ -104,6 +242,8 @@ for event in mmNtuple:
             passed_last = cut_bits[kbit]
             kbit += 1
 
+        
+
     for i,count in enumerate(counts_evt):
         counts_mm[i] += 1*(count > 0)
         
@@ -123,6 +263,8 @@ for event in mmgNtuple:
     counts_evt = [0 for cut in cut_list_mmg]
     
     for i in range(event.N_PATFinalState):
+
+        photon_id_debug(event,i)
         
         cut_bits = [cut(event,i) for cut in cut_list_mmg]
         one_passes = one_passes or (cut_bits.count(True) == len(cut_list_mmg))
@@ -139,11 +281,15 @@ for event in mmgNtuple:
         counts_mmg[i] += 1*(count > 0)
         
     counts_mmg[len(cut_list_mmg)] += int(one_passes)
-
-print ">=1 Good Photon : %i"%(counts_mmg[len(cut_list_mm)])
-print "DR(l,g) > 0.4   : %i"%(counts_mmg[len(cut_list_mm)+1])
-print "ZG Mass > 115   : %i"%(counts_mmg[len(cut_list_mm)+2])
-print "ZG Mass < 180   : %i"%(counts_mmg[len(cut_list_mm)+3])
+    
+print "Fiducial Cuts   : %i"%(counts_mmg[len(cut_list_mm)])
+print "Electron Veto   : %i"%(counts_mmg[len(cut_list_mm)+1])
+print "ST HoE          : %i"%(counts_mmg[len(cut_list_mm)+2])
+print "SIHIH           : %i"%(counts_mmg[len(cut_list_mm)+3])
+print "PF Iso          : %i"%(counts_mmg[len(cut_list_mm)+4])
+print "DR(l,g) > 0.4   : %i"%(counts_mmg[len(cut_list_mm)+5])
+print "ZG Mass > 115   : %i"%(counts_mmg[len(cut_list_mm)+6])
+print "ZG Mass < 180   : %i"%(counts_mmg[len(cut_list_mm)+7])
 print "Total mmg       : %i"%(counts_mmg[len(cut_list_mmg)]) 
 
 file.Close()
