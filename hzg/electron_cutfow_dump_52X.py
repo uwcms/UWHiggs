@@ -14,43 +14,50 @@ pwd = gDirectory.GetPath()
 file = TFile.Open(sys.argv[1])
 gDirectory.cd(pwd)
 
-eventCount = file.Get("mm").Get("eventCount")
-mmNtuple  = file.Get("mm").Get("final").Get("Ntuple")
-mmgNtuple = file.Get("mmg").Get("final").Get("Ntuple")
+eventCount = file.Get("ee").Get("eventCount")
+eeNtuple  = file.Get("ee").Get("final").Get("Ntuple")
+eegNtuple = file.Get("eeg").Get("final").Get("Ntuple")
 
 print "Initial: %i"%(eventCount.GetEntries())
 
+def ecal_fiducial(absEta):
+    return (absEta < 1.4442 or (absEta > 1.566 and absEta < 2.5))
+
 def trigger_req(event,i):
-    return (event.mu17mu8Pass[i] == 1 and event.mu17mu8Prescale[i] == 1)
+    return (event.doubleEPass[i] == 1 and event.doubleEPrescale[i] == 1)
 
 def vtx_req(event,i):
     return (event.pvIsValid[i] == 1 and event.pvIsFake[i] == 0)
 
-def mu_id(event,i):
-    return (event.m1Pt[i] > 10. and event.m2Pt[i] > 10. and
-            event.m1AbsEta[i] < 2.4 and event.m2AbsEta[i] < 2.4 and
-            event.m1IDHZG2012[i] == 1.0 and event.m2IDHZG2012[i] == 1.0)
+def e_id(event,i):
+    return (event.e1Pt[i] > 10. and event.e2Pt[i] > 10. and
+            ecal_fiducial(event.e1AbsEta[i]) and ecal_fiducial(event.e2AbsEta[i]) and
+            event.e1CBID_LOOSE[i] == 1.0 and event.e2CBID_LOOSE[i] == 1.0)
 
-def mu_iso(event,i):    
-    
-    
-    m1Iso = ( (event.m1PFChargedIso[i] +
-               max(event.m1PFNeutralIso[i] + event.m1PFPhotonIso[i]
-                   -event.m1EffectiveArea2012[i]*
-                   max(event.m1RhoHZG2012[i],0.0),
-                   0.0))/event.m1Pt[i] )
-    m2Iso = ( (event.m2PFChargedIso[i] +
-               max(event.m2PFNeutralIso[i] + event.m2PFPhotonIso[i]
-                   -event.m2EffectiveArea2012[i]*
-                   max(event.m2RhoHZG2012[i],0.0),
-                   0.0))/event.m2Pt[i] )
+def e_iso(event,i):    
 
-    return (m1Iso < 0.12 and m2Iso < 0.12)
+    e1Iso = event.e1RelPFIsoDB[i]
+    e2Iso = event.e2RelPFIsoDB[i]
+    
+    """
+    e1Iso = ( (event.e1PFChargedIso[i] +
+               max(event.e1PFNeutralIso[i] + event.e1PFPhotonIso[i]
+                   -event.e1EffectiveArea2012Data[i]*
+                   max(event.gRho[i],0.0), #hacky hack of hackiness
+                   0.0))/event.e1Pt[i] )
+    e2Iso = ( (event.e2PFChargedIso[i] +
+               max(event.e2PFNeutralIso[i] + event.e2PFPhotonIso[i]
+                   -event.e2EffectiveArea2012Data[i]*
+                   max(event.gRho[i],0.0), #hacky hack of hackiness
+                   0.0))/event.e2Pt[i] )
+    """
+
+    return (e1Iso < 0.4 and e2Iso < 0.4)
 
 def z_id(event,i):
-    return ( (event.m1Pt[i] > 20 or event.m2Pt[i] > 20) and
-             event.m1_m2_Mass[i] > 50 and
-             event.m1_m2_SS[i] == 0)
+    return ( (event.e1Pt[i] > 20 or event.e2Pt[i] > 20) and
+             event.e1_e2_Mass[i] > 50 and
+             event.e1_e2_SS[i] == 0)
 
 
 
@@ -108,7 +115,7 @@ def good_photon(event,i):
     ascEta = abs(event.gSCEta[i])
     
     return ( pt_over_m > 15.0/110.0 and
-             (ascEta < 1.4442 or (ascEta > 1.566 and ascEta < 2.5)) and
+             ecal_fiducial(ascEta) and
              event.gCBID_MEDIUM[i] == 1.0)
 
 def pho_fiducial(event,i):
@@ -116,10 +123,10 @@ def pho_fiducial(event,i):
     ascEta = abs(event.gSCEta[i])
     
     return ( pt_over_m > 15.0/110.0 and
-             (ascEta < 1.4442 or (ascEta > 1.566 and ascEta < 2.5)) )
+             ecal_fiducial(ascEta) )
 
 def photon_dr(event,i):
-    return min(event.m1_g_DR[i],event.m2_g_DR[i]) > 0.4
+    return min(event.e1_g_DR[i],event.e2_g_DR[i]) > 0.4
 
 def zg_mass_low(event,i):
     return event.Mass[i] > 115.0 
@@ -179,16 +186,16 @@ def process_tuple(tuple,cut_list,counts,printer=None):
 
         counts[len(cut_list)] += int(one_passes)
 
-cut_list_mm = [trigger_req, #HLT
+cut_list_ee = [trigger_req, #HLT
                vtx_req, #PV selection
-               mu_id, #10 GeV && ID
-               mu_iso, #ISO
+               e_id, #10 GeV && ID
+               e_iso, #ISO
                z_id #Z ID
                ]
-counts_mm = [0 for cut in cut_list_mm] + [0]
+counts_ee = [0 for cut in cut_list_ee] + [0]
 
-cut_list_mmg = list(cut_list_mm)
-cut_list_mmg += [pho_fiducial,
+cut_list_eeg = list(cut_list_ee)
+cut_list_eeg += [pho_fiducial,
                  eleVeto,
                  HoverE,
                  sihih,
@@ -197,31 +204,31 @@ cut_list_mmg += [pho_fiducial,
                  zg_mass_low,
                  zg_mass_high
                  ]
-counts_mmg = [0 for cut in cut_list_mmg] + [0]
+counts_eeg = [0 for cut in cut_list_eeg] + [0]
 
-process_tuple(mmNtuple,cut_list_mm,counts_mm)
+process_tuple(eeNtuple,cut_list_ee,counts_ee)
 
-print 'HLT     : %i'%(counts_mm[0])
-print 'VTX     : %i'%(counts_mm[1])
-print 'Muon ID : %i'%(counts_mm[2])
-print 'Muon Iso: %i'%(counts_mm[3])
-print 'Z Sel   : %i'%(counts_mm[4])
+print 'HLT     : %i'%(counts_ee[0])
+print 'VTX     : %i'%(counts_ee[1])
+print 'Elec ID : %i'%(counts_ee[2])
+print 'Elec Iso: %i'%(counts_ee[3])
+print 'Z Sel   : %i'%(counts_ee[4])
 print
-print 'Total MM: %i'%(counts_mm[5])
+print 'Total ee: %i'%(counts_ee[5])
 print
 
-process_tuple(mmgNtuple,cut_list_mmg,counts_mmg,printer=photon_id_debug)
+process_tuple(eegNtuple,cut_list_eeg,counts_eeg)#,printer=photon_id_debug)
     
-print "Fiducial Cuts   : %i"%(counts_mmg[len(cut_list_mm)])
-print "Electron Veto   : %i"%(counts_mmg[len(cut_list_mm)+1])
-print "ST HoE          : %i"%(counts_mmg[len(cut_list_mm)+2])
-print "SIHIH           : %i"%(counts_mmg[len(cut_list_mm)+3])
-print "PF Iso          : %i"%(counts_mmg[len(cut_list_mm)+4])
-print "DR(l,g) > 0.4    : %i"%(counts_mmg[len(cut_list_mm)+5])
-print "ZG Mass > 115    : %i"%(counts_mmg[len(cut_list_mm)+6])
-print "ZG Mass < 180    : %i"%(counts_mmg[len(cut_list_mm)+7])
+print "Fiducial Cuts   : %i"%(counts_eeg[len(cut_list_ee)])
+print "Electron Veto   : %i"%(counts_eeg[len(cut_list_ee)+1])
+print "ST HoE          : %i"%(counts_eeg[len(cut_list_ee)+2])
+print "SIHIH           : %i"%(counts_eeg[len(cut_list_ee)+3])
+print "PF Iso          : %i"%(counts_eeg[len(cut_list_ee)+4])
+print "DR(l,g) > 0.4    : %i"%(counts_eeg[len(cut_list_ee)+5])
+print "ZG Mass > 115    : %i"%(counts_eeg[len(cut_list_ee)+6])
+print "ZG Mass < 180    : %i"%(counts_eeg[len(cut_list_ee)+7])
 print
-print "Total mmg        : %i"%(counts_mmg[len(cut_list_mmg)])
+print "Total eeg        : %i"%(counts_eeg[len(cut_list_eeg)])
 print
 
 file.Close()
