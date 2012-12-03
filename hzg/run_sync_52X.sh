@@ -25,7 +25,7 @@ dataElectron=`lcg-ls -b -Dsrmv2 ${srmPrefix}=${remoteDataDir}${syncPostfix}/52X/
 dataMuon=`lcg-ls -b -Dsrmv2 ${srmPrefix}=${remoteDataDir}${syncPostfix}/52X/ | grep DataMuon | sed 's/\/hdfs\/store/root\:\/\/cmsxrootd\.hep\.wisc\.edu\/\/store/' | tr '\n' '\,' | head -c -1`
 
 theCfg=$CMSSW_BASE/src/FinalStateAnalysis/NtupleTools/test/make_ntuples_cfg.py
-hdfsOutDir=srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN=/hdfs/store/user/lgray/HZG_sync/${syncPostfix}/ntuples
+
 hdfsInDir=root://cmsxrootd.hep.wisc.edu//store/user/lgray/HZG_sync/${syncPostfix}/52X/
 
 sync_52X=()
@@ -41,8 +41,10 @@ do
   echo ${parts[0]} ${parts[1]}
 
   jobName=hZg_sync_52X_ntuples.${syncPostfix}.${parts[0]}
-  fajOpts="--input-files-per-job=100 --infer-cmssw-path --express-queue --job-generates-output-name --output-dir=${hdfsOutDir} --input-dir=${hdfsInDir} --input-file-list=${jobName}.input.txt"
-  patTupleOpts="makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 maxEvents=-1 outputFile=${jobName}.root"
+  hdfsOutDir=srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN=/hdfs/store/user/lgray/HZG_sync/${syncPostfix}/ntuples/${parts[0]}
+
+  fajOpts="--input-files-per-job=1 --infer-cmssw-path --express-queue --output-dir=${hdfsOutDir} --input-dir=${hdfsInDir} --input-file-list=${jobName}.input.txt"
+  patTupleOpts="makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 maxEvents=-1 outputFile=$outputFileName"
 
   rm -rf ${jobName}.input.txt
   for file in `echo ${parts[1]} | tr ',' '\n'`
