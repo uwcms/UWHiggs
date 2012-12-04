@@ -77,17 +77,17 @@ def phoIso(event,i):
     ascEta = abs(event.gSCEta[i])
 
     rho = event.gRho[i]
-    pfChgIso = event.gPFChargedIsov2[i]
+    pfChgIso = event.gPFChargedIso[i]
     pfChgEA  = event.gEffectiveAreaCHad[i]
     
     chgIso = max(pfChgIso - rho*pfChgEA,0.0)
 
-    pfNeutIso= event.gPFNeutralIsov2[i]
+    pfNeutIso= event.gPFNeutralIso[i]
     pfNeutEA = event.gEffectiveAreaNHad[i]    
 
     neutIso = max(pfNeutIso - 0.04*event.gPt[i] - rho*pfNeutEA,0.0)
 
-    pfPhoIso = event.gPFPhotonIsov2[i]
+    pfPhoIso = event.gPFPhotonIso[i]
     pfPhoEA  = event.gEffectiveAreaPho[i]
 
     phoIso = max(pfPhoIso - 0.005*event.gPt[i] - rho*pfPhoEA,0.0)
@@ -109,7 +109,8 @@ def good_photon(event,i):
     
     return ( pt_over_m > 15.0/110.0 and
              (ascEta < 1.4442 or (ascEta > 1.566 and ascEta < 2.5)) and
-             event.gCBID_MEDIUM[i] == 1.0)
+             event.gCBID_MEDIUM[i] == 1.0 
+             )
 
 def pho_fiducial(event,i):
     pt_over_m = event.gPt[i]/event.Mass[i]
@@ -129,7 +130,7 @@ def zg_mass_high(event,i):
 
 
 def photon_id_debug(event,i):
-    """if( trigger_req(event,i) and
+    if( trigger_req(event,i) and
         vtx_req(event,i) and
         mu_id(event,i) and
         mu_iso(event,i) and
@@ -137,12 +138,14 @@ def photon_id_debug(event,i):
         good_photon(event,i) and
         photon_dr(event,i) and
         zg_mass_low(event,i) and
-        zg_mass_high(event,i) ):
-        """
-    if (True):
-        print "ALLPHOTON :: run %i  evt: %i  pt:%.4f  scEta: %0.6f  hoe: %f" \
+        zg_mass_high(event,i)
+        ):
+        
+    #if (True):
+        print "ALLPHOTON :: entry: %i run %i  evt: %i  pt:%.4f  scEta: %0.6f  eVeto: %i  hoe: %f" \
               "  sieie: %f  pfCh: %.6f  pfNe: %.6f  pfGa: %.6f  rho: %f  EACh: %.3f   EANeut: %.3f   EAPho: %.3f" \
-              %(event.run[i], event.evt[i], event.gPt[i], event.gSCEta[i],
+              %(i, event.run[i], event.evt[i], event.gPt[i], event.gSCEta[i],
+                event.gConvSafeElectronVeto[i],
                 event.gSingleTowerHadronicDepth1OverEm[i] +
                 event.gSingleTowerHadronicDepth2OverEm[i] ,
                 event.gSigmaIEtaIEta[i],
@@ -188,7 +191,7 @@ cut_list_mm = [trigger_req, #HLT
 counts_mm = [0 for cut in cut_list_mm] + [0]
 
 cut_list_mmg = list(cut_list_mm)
-cut_list_mmg += [pho_fiducial,
+cut_list_mmg += [good_photon,
                  eleVeto,
                  HoverE,
                  sihih,
@@ -210,7 +213,7 @@ print
 print 'Total MM: %i'%(counts_mm[5])
 print
 
-process_tuple(mmgNtuple,cut_list_mmg,counts_mmg,printer=photon_id_debug)
+process_tuple(mmgNtuple,cut_list_mmg,counts_mmg)#,printer=photon_id_debug)
     
 print "Fiducial Cuts   : %i"%(counts_mmg[len(cut_list_mm)])
 print "Electron Veto   : %i"%(counts_mmg[len(cut_list_mm)+1])
