@@ -20,46 +20,69 @@ eegNtuple = file.Get("eeg").Get("final").Get("Ntuple")
 
 print "Initial: %i"%(eventCount.GetEntries())
 
-def ecal_fiducial(absEta):
+def ecal_fiducial(eta):
+    absEta = abs(eta)
     return (absEta < 1.4442 or (absEta > 1.566 and absEta < 2.5))
 
 def trigger_req(event,i):
-    return (event.doubleEPass[i] == 1 and event.doubleEPrescale[i] == 1)
+    return (event.doubleETightPass[i] == 1 and event.doubleETightPrescale[i] == 1)
 
 def vtx_req(event,i):
     return (event.pvIsValid[i] == 1 and event.pvIsFake[i] == 0)
 
+# [barrel, endcap], LOOSE WP
+dEtaCut  = [0.007,0.009]
+dPhiCut  = [0.15,0.10]
+sihihCut = [0.010,0.030]
+HoECut   = [0.12,0.10]
+d0Cut    = [0.02, 0.02]
+dZCut    = [0.2, 0.2]
+ooemoopCut  = [0.05,0.05]
+hasConvCut  = [False,False]
+missHitsCut = [1,1]
+
+def e_id_fun(event,i):    
+    idxe1 = int(abs(event.e1Eta[i]) > 1.566)
+    idxe2 = int(abs(event.e2Eta[i]) > 1.566)
+    
+    return \
+     (abs(event.e1deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCut[idxe1] and abs(event.e2deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCut[idxe2] and
+      abs(event.e1deltaPhiSuperClusterTrackAtVtx[i]) < dPhiCut[idxe1] and abs(event.e2deltaPhiSuperClusterTrackAtVtx[i]) < dPhiCut[idxe2] and
+      event.e1SigmaIEtaIEta[i] < sihihCut[idxe1] and event.e2SigmaIEtaIEta[i] < sihihCut[idxe2] and
+      event.e1HadronicOverEM[i] < HoECut[idxe1] and event.e2HadronicOverEM[i] < HoECut[idxe2] and
+      abs(event.e1PVDXY[i]) < d0Cut[idxe1] and abs(event.e2PVDXY[i]) < d0Cut[idxe2] and
+      abs(event.e1PVDZ[i]) < dZCut[idxe1] and abs(event.e2PVDZ[i]) < dZCut[idxe2] and
+      ( abs(1.0 - event.e1eSuperClusterOverP[i])/event.e1ecalEnergy[i] < ooemoopCut[idxe1] and
+        abs(1.0 - event.e2eSuperClusterOverP[i])/event.e2ecalEnergy[i] < ooemoopCut[idxe2]    ) and
+      event.e1HasMatchedConversion[i] == int(hasConvCut[idxe1]) and event.e2HasMatchedConversion[i] == int(hasConvCut[idxe2]) and
+      int(event.e1MissingHits[i]) <= missHitsCut[idxe1] and  int(event.e2MissingHits[i]) <= missHitsCut[idxe2])
+
 def e_id(event,i):
     return (event.e1Pt[i] > 10. and event.e2Pt[i] > 10. and
-            ecal_fiducial(event.e1AbsEta[i]) and ecal_fiducial(event.e2AbsEta[i]) and
-            event.e1CBID_LOOSE[i] == 1.0 and event.e2CBID_LOOSE[i] == 1.0)
+            #abs(event.e1Eta[i]) < 2.5 and abs(event.e2Eta[i]) < 2.5 and
+            ecal_fiducial(event.e1SCEta[i]) and ecal_fiducial(event.e2SCEta[i]) and
+            e_id_fun(event,i) and
+            event.e1NearMuonVeto[i] == 0.0 and event.e2NearMuonVeto[i] == 0.0)
 
 def e_iso(event,i):    
 
-    e1Iso = event.e1RelPFIsoDB[i]
-    e2Iso = event.e2RelPFIsoDB[i]
-    
-    """
     e1Iso = ( (event.e1PFChargedIso[i] +
                max(event.e1PFNeutralIso[i] + event.e1PFPhotonIso[i]
                    -event.e1EffectiveArea2012Data[i]*
-                   max(event.gRho[i],0.0), #hacky hack of hackiness
+                   max(event.e1RhoHZG2012[i],0.0), 
                    0.0))/event.e1Pt[i] )
     e2Iso = ( (event.e2PFChargedIso[i] +
                max(event.e2PFNeutralIso[i] + event.e2PFPhotonIso[i]
                    -event.e2EffectiveArea2012Data[i]*
-                   max(event.gRho[i],0.0), #hacky hack of hackiness
+                   max(event.e2RhoHZG2012[i],0.0), 
                    0.0))/event.e2Pt[i] )
-    """
 
     return (e1Iso < 0.4 and e2Iso < 0.4)
 
 def z_id(event,i):
     return ( (event.e1Pt[i] > 20 or event.e2Pt[i] > 20) and
              event.e1_e2_Mass[i] > 50 and
-             event.e1_e2_SS[i] == 0)
-
-
+             event.charge[i] == 0)
 
 def eleVeto(event,i):
     eVeto = event.gConvSafeElectronVeto[i]
@@ -134,6 +157,31 @@ def zg_mass_low(event,i):
 def zg_mass_high(event,i):
     return event.Mass[i] < 180.0
 
+def electron_id_debug(event,i):
+    if( trigger_req(event,i) and
+        vtx_req(event,i) and
+        e_id(event,i) ):
+        print "ELECTRON :: run: %i  evt: %i  pt: %.4f  scEta: %.6f hoe: %.4f" \
+              "  sieie: %.6f  dEtaIn: %.6f  dPhiIn: %.6f  d0: %f  dZ: %f  " \
+              " ooemoop: %.6f  mhits: %i" \
+              %(event.run[i], event.evt[i], event.e1Pt[i], event.e1SCEta[i],
+                event.e1HadronicOverEM[i], event.e1SigmaIEtaIEta[i],
+                event.e1deltaEtaSuperClusterTrackAtVtx[i],
+                event.e1deltaPhiSuperClusterTrackAtVtx[i],
+                event.e1PVDXY[i], event.e1PVDZ[i],
+                abs(1.0 - event.e1eSuperClusterOverP[i])/event.e1ecalEnergy[i],
+                event.e1MissingHits[i])
+        print "ELECTRON :: run: %i  evt: %i  pt: %.4f  scEta: %.6f hoe: %.4f" \
+              "  sieie: %.6f  dEtaIn: %.6f  dPhiIn: %.6f  d0: %f  dZ: %f  " \
+              " ooemoop: %.6f  mhits: %i" \
+              %(event.run[i], event.evt[i], event.e2Pt[i], event.e2SCEta[i],
+                event.e2HadronicOverEM[i], event.e2SigmaIEtaIEta[i],
+                event.e2deltaEtaSuperClusterTrackAtVtx[i],
+                event.e2deltaPhiSuperClusterTrackAtVtx[i],
+                event.e2PVDXY[i], event.e2PVDZ[i],
+                abs(1.0 - event.e2eSuperClusterOverP[i])/event.e2ecalEnergy[i],
+                event.e2MissingHits[i])
+          
 
 def photon_id_debug(event,i):
     """if( trigger_req(event,i) and
@@ -147,7 +195,7 @@ def photon_id_debug(event,i):
         zg_mass_high(event,i) ):
         """
     if (True):
-        print "ALLPHOTON :: run %i  evt: %i  pt:%.4f  scEta: %0.6f  hoe: %f" \
+        print "ALLPHOTON :: run %i  evt: %i  pt: %.4f  scEta: %0.6f  hoe: %f" \
               "  sieie: %f  pfCh: %.6f  pfNe: %.6f  pfGa: %.6f  rho: %f  EACh: %.3f   EANeut: %.3f   EAPho: %.3f" \
               %(event.run[i], event.evt[i], event.gPt[i], event.gSCEta[i],
                 event.gSingleTowerHadronicDepth1OverEm[i] +
