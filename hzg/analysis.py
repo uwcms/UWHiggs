@@ -15,7 +15,7 @@ from MOOSEY.trees import tree_manager
 #     photon_cuts_mc,photon_cuts_plj
 
 #correction layer
-import corrections
+from corrections import setup_corrections
 
 #python standard things
 from optparse import OptionParser
@@ -101,50 +101,58 @@ def run_analysis(options,input_file):
     
     tm = tree_manager()
     tree = None
-    nEvents_sample = in_file.Get('hEvents').GetBinContent(1)
-    total_events = tree.GetEntriesFast()    
-    tick_size = int(total_events//100.0)
-    selected_events = []
-    
+    nEvents_sample = 0    
     specific = None
     treeName = 'Ntuple'
     if not options.allBranches:    
         if leptonType == 'muon':
-            specific = muonBranches+commonBranches
-            tree = in_file.Get('mmg').Get('final').Get(treeName) #.Get('VgAnalyzerKit')            
+            #specific = muonBranches+commonBranches
+            mmg = in_file.Get('mmg')
+            tree = mmg.Get('final').Get(treeName)
+            nEvents_sample = mmg.Get('eventCount').GetBinContent(1)
         elif leptonType == 'electron':
-            specific = electronBranches+commonBranches
-            tree = in_file.Get('eeg').Get('final').Get(treeName)
+            #specific = electronBranches+commonBranches
+            mmg = in_file.Get('eeg')
+            tree = in_file.Get('mmg').Get('final').Get(treeName)
+            nEvents_sample = eeg.Get('eventCount').GetBinContent(1)
         else:
             raise Exception('invalid lepton type: %s'%options.leptonType)
-    
+
+    total_events = tree.GetEntriesFast()    
+    tick_size = int(total_events//100.0)
+    selected_events = []
 
     tm.importTree(treeName,tree,specific)    
 
     #tm.cloneTree(treeName,'EventTree_zs',specific)
     tm.cloneTree(treeName,'%s_zgs'%treeName,specific)
     tm.cloneTree(treeName,'%s_zgs_nosihih'%treeName,specific)
-    
-    exit(1)
 
     #setup process dependent stuff
-    cuts = setupCuts(options)
-    lepton_mass = lepton_masses[options.leptonType]
-    z_info = z_infos[options.leptonType]
-    lepton_info = lepton_infos[options.leptonType]
+    #cuts = setupCuts(options)
+    #lepton_mass = lepton_masses[options.leptonType]
+    #z_info = z_infos[options.leptonType]
+    #lepton_info = lepton_infos[options.leptonType]
 
     #setup pu-reweighing
-    pu_weight = pu_weight_nominal 
-    if options.isSummer11:
-        pu_weigt = pu_weight_summer11
+    #pu_weight = pu_weight_nominal 
+    #if options.isSummer11:
+    #    pu_weigt = pu_weight_summer11
 
     procWeight = 1.0
-    if options.runType != 'data':
-        procWeight = (run_lumi[options.leptonType][options.runType]*
+    if options.datType != 'data':
+        procWeight = (run_lumi[options.leptonType][options.datType]*
                       options.crossSection/nEvents_sample)
 
+    # setup the corrector (this links the appropriate four momenta
+    # into a common naming scheme
+    correct = setup_corrections(options.runYear   , options.runType,
+                                options.leptonType, options.datType,
+                                options.leptonCor , options.gamCor,
+                                options.vanilla                       )
+
     ievent = long(0)
-    for event in tm['EventTree']:
+    for event in tm[treeName]:
         ievent+=1
         #print ievent,total_events,fmod(ievent/total_events,0.01)
         if not (ievent+1)%tick_size or ievent+1 == total_events:  
@@ -155,14 +163,20 @@ def run_analysis(options,input_file):
                                                             total_events))
             sys.stdout.flush()
 
-        run_idx = getRunIndex(event.run,options.runType,options.leptonType)
+        # setup the common event momentum
+        # ell1 = lepton1, ell2 = lepton2
+        # gam = photon, Z = dilepton, Zg = Z+photon        
+        correct(event)
+    
+    """
+        run_idx = getRunIndex(event.run,options.datType,options.leptonType)
         setattr(event,'procWeight',procWeight)
         setattr(event,'puWeight',1.0)
-        if options.runType != 'data':            
+        if options.datType != 'data':            
             setattr(event,'eventFraction',float(ievent+1)/total_events)
             #event.event/nEvents_sample)
             event.puWeight = pu_weight(event.nPU,options.runType)
-        elif options.runType == 'data':
+        elif options.datType == 'data':
             # kill run 170722
             # kill the obvious pile up combinatorial event
             if ( event.run == 170722 or
@@ -175,19 +189,11 @@ def run_analysis(options,input_file):
         if ( options.exlProc and not cuts.getCutflow('trigger') ):
             continue        
         
-        #unfuck the trigger matching info arrays
-        fixTrigArrays(event)
-        if(options.runType != 'data'):
-            fixPhotonGenInfo(event)
-
         selected_z = []
         selected_pho_nosihih = []
         selected_pho = []        
         bad_leptons = []
 
-        #apply the phosphor corrections to photons before selection 
-        apply_phosphor(event,range(event.nPho),options.runType)
-        apply_pho_sihih_shift(event,range(event.nPho),options.runType)
         for i in range(event.nPho):            
             cuts.getCutflow('pho')(event,i)
             if ( cuts.getCutflow('trigger') ):
@@ -195,16 +201,7 @@ def run_analysis(options,input_file):
                     selected_pho.append(i)
                 if( cuts.getCutflow('pho') % ['phosihih'] ):
                     selected_pho_nosihih.append(i)                
-        
-        #apply energy scale corrections and shifts to leptons before selection
-        apply_lepton_scale(event,
-                           range(getattr(event,lepton_info['nEll'])),
-                           options.runType,
-                           options.leptonType)
-        #apply_lepton_shift(event,
-        #                   range(getattr(event,lepton_info['nEll'])),
-        #                   options.runType,
-        #                   options.leptonType)
+                
         for i in range(getattr(event,z_info['nZ'])):
             idx1 = getattr(event,z_info['ell1'])[i]
             idx2 = getattr(event,z_info['ell2'])[i]
@@ -380,7 +377,7 @@ def run_analysis(options,input_file):
                 setattr(event,'bestZG',thezg)
                 outTrees.bestZGTree(event,tm)
                 tm.fillTree('EventTree_zgs',{})
-    
+    """
 
     #make a nice file name
     nameparts = input_file[input_file.rfind('/')+1:]
@@ -482,7 +479,14 @@ parser = OptionParser(description='%prog : configurable v\gamma analysis',
 parser.add_option('--runYear',dest='runYear',
                   type='int',help='dataset year')
 parser.add_option('--runType',dest='runType',                 
+                  type='string',help='run era')
+parser.add_option('--datType',dest='datType',                 
                   type='string',help='mc or data run')
+parser.add_option('--leptonCor',dest='leptonCor',                 
+                  type='string',help='lepton correction name')
+parser.add_option('--photonCor',dest='gamCor',                 
+                  type='string',help='photon correction name',
+                  default='PHOSPHOR')
 parser.add_option('--leptonType',dest='leptonType',
                   type='string',help='lepton sel.')
 parser.add_option('--exclusiveProcessing',dest='exlProc',
@@ -494,6 +498,9 @@ parser.add_option('--crossSection',dest='crossSection',
                   type='float',help='MC process cross section, in pb.')
 parser.add_option('--calcCS',dest='calcCS',
                   action='store_true',default=False,help='calculate sigma')
+parser.add_option('--vanilla',dest='vanilla',
+                  action='store_true',default=False,
+                  help='true off corrections')
 parser.add_option('--dataInput',dest='cs_data_input',
                   type='string',help='the input real data for CS calc')
 parser.add_option('--signalMC',dest='cs_mc_input',
@@ -528,13 +535,30 @@ if options.leptonType is None:
     print 'need to specify lepton type: electron,muon'
     exit(1)
 
-if options.runType != 'data' and options.crossSection is None:
+if options.datType != 'data' and options.crossSection is None:
     print 'need to specify MC process cross section!'
     exit(1)
 
+#set correction types if none set
+if options.leptonCor is None:
+    if options.leptonType == 'electron':
+        options.leptonCor = 'CorrSmearedNoReg'
+    elif options.leptonType == 'muon':
+        options.leptonCor = 'RochCor'
+
 for input_file in args:
-    print 'Processing: %s runType=%s leptonType=%s'%(input_file,
-                                                     options.runType,
-                                                     options.leptonType)
+    print
+    print 'Processing: %s\n\tdatType=%s\n\trunType=%s\n\tleptonType=%s'\
+          %(input_file,
+            options.datType,
+            options.runType,
+            options.leptonType)
+    
+    if not options.vanilla:
+        print '\tActive corrections: lepton=%s photon=%s'%(options.leptonCor,
+                                                            options.gamCor)
+    else:
+        print '\tNo lepton or photon corrections in use.'
+    
     run_analysis(options,input_file)
 

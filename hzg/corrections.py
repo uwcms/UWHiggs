@@ -17,10 +17,10 @@ from ROOT import TTree, TLorentzVector, Math
 baseNames = {'electron'  : ['e1','e2','g'],
              'muon'      : ['m1','m2','g']}
 
-electronTargetNames = {(2011,'AB','MC'):'Fall11',
-                       (2011,'AB','DATA'):'Jan16ReReco',
-                       (2012,'ABCD','MC'):'Summer12_DR53X_HCP2012',
-                       (2012,'ABCD','DATA'):'2012Jul13ReReco'}
+electronTargetNames = {(2011,'mc'):'Fall11',
+                       (2011,'data'):'Jan16ReReco',
+                       (2012,'mc'):'Summer12_DR53X_HCP2012',
+                       (2012,'data'):'2012Jul13ReReco'}
 
 muonTargetNames = {(2011,'A'):'2011A',
                    (2011,'B'):'2011B',
@@ -106,7 +106,7 @@ class correction:
 
         corrPt_1 = getattr(event,corrPtName1)
         corrPt_2 = getattr(event,corrPtName2)
-        corrE_G = getattr(event,corrPtNameG)
+        corrE_G = getattr(event,corrENameG)
 
         corrEta_1 = getattr(event,corrEtaName1)
         corrEta_2 = getattr(event,corrEtaName2)        
@@ -114,28 +114,34 @@ class correction:
         corrPhi_1 = getattr(event,corrPhiName1)
         corrPhi_2 = getattr(event,corrPhiName2)
         
-        for i in event.N_PATFinalState:
+        for i in range(event.N_PATFinalState):
             #recalculate the photon vector from the PV
             corrgs.append(TLorentzVector())
-            pv    = math.XYZPoint(event.pvX, event.pvY, event.pvZ)
-            phoSC = math.XYZPoint(event.gSCPositionX[i],
+            pv    = Math.XYZPoint(event.pvX[i], event.pvY[i], event.pvZ[i])
+            phoSC = Math.XYZPoint(event.gSCPositionX[i],
                                   event.gSCPositionY[i],
                                   event.gSCPositionZ[i])
-            phoP3 = (phoSC - pv).unit()*corrE_G[i]
-            phoP4 = (phoP3.x(), phoP3.y(), phoP3.z(), corrE_G[i])
+            phoTemp = Math.XYZVector(phoSC.X() - pv.X(),
+                                     phoSC.Y() - pv.Y(),
+                                     phoSC.Z() - pv.Z())
+            phoP3 = phoTemp.unit()*corrE_G[i]
+            phoP4 = Math.XYZTVector(phoP3.x(),
+                                    phoP3.y(),
+                                    phoP3.z(),
+                                    corrE_G[i])
             corrgs[-1].SetPtEtaPhiM(phoP4.pt(),phoP4.eta(),phoP4.phi(),0.0)
             #create e1 corrected LorentzVector and error
             corre1s.append(TLorentzVector())
             pt1 = corrPt_1[i]
             eta1 = corrEta_1[i]
             phi1 = corrPhi_1[i]
-            corre1s[-1].setPtEtaPhiM(pt1,eta1,phi1,self._electronMass)
+            corre1s[-1].SetPtEtaPhiM(pt1,eta1,phi1,self._leptonMass)
             #create e2 corrected LorentzVector and error
             corre2s.append(TLorentzVector())
             pt2 = corrPt_2[i]
             eta2 = corrEta_2[i]
             phi2 = corrPhi_2[i]
-            corre2s[-1].setPtEtaPhiM(pt2,eta2,phi2,self._electronMass)
+            corre2s[-1].SetPtEtaPhiM(pt2,eta2,phi2,self._leptonMass)
             #make composite particles
             Zs.append(corre1s[-1]+corre2s[-1])
             Zgs.append(corre1s[-1]+corre2s[-1]+corrgs[-1])
@@ -147,17 +153,13 @@ class correction:
         setattr(event,'gam',corrgs)
         setattr(event,'Z',Zs)
         setattr(event,'Zg',Zgs)
-        
-        raise Exception('Base correction class does nothing!')
-
-
 
 class eChan_correction(correction):
     def __init__(self, year, run, channel, datType,
                  eleCorrName, gamCorrName):
         self._leptonMass = 0.000511 # in GeV
         self._lepCorrName = eleCorrName        
-        idx = (year, run, datType)
+        idx = (year, datType)
         self._targetName = electronTargetNames[idx]
         correction.__init__(self,year,run,channel,gamCorrName)
 
