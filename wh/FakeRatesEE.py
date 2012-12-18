@@ -20,7 +20,64 @@ Author: Evan K. Friis, UW
 
 import EETree
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
+import baseSelections as selections
+#import ROOT.TMath as math
 import os
+import ROOT
+import array
+
+math = ROOT.TMath
+def make_corrector_from_th2(filename, path):
+    import rootpy.io as io
+    import rootpy.plotting
+    tfile = io.open(filename)
+    hist  = tfile.Get(path).Clone()
+    #print hist
+    binsx = hist.GetNbinsX()
+    binsy = hist.GetNbinsY()
+    def refFun(xval,yval):
+        #print hist
+        xbin = hist.GetXaxis().FindBin(xval)
+        xbin = (xbin if xbin <= binsx else binsx ) if xbin >= 1 else 1 #Compute underflow and overflow as first and last bin
+        ybin = hist.GetYaxis().FindBin(yval)
+        ybin = (ybin if ybin <= binsy else binsy ) if ybin >= 1 else 1 #Compute underflow and overflow as first and last bin
+        prob = hist.GetBinContent(xbin,ybin)
+        try:
+            return prob / (1 - prob)
+        except ZeroDivisionError:
+            raise ZeroDivisionError(" catched trying to return weight for (%.3f,%.3f) ==> (%i,%i) bin out of (%i,%i). Prob: %.3f. Hist: %s : %s. " % (xval, yval, xbin, ybin, binsx, binsy , prob, filename, path))
+    return refFun
+
+frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
+
+identity         = lambda x,y: 1
+charge_flip      = make_corrector_from_th2(frfit_dir+"/chare_flip_prob_map.root", "efficiency_map")         
+charge_flip_up   = make_corrector_from_th2(frfit_dir+"/chare_flip_prob_map.root", "efficiency_map_statUp")  
+charge_flip_down = make_corrector_from_th2(frfit_dir+"/chare_flip_prob_map.root", "efficiency_map_statDown")
+
+eta_to_theta     = lambda eta: 2*math.ATan( math.Exp(- eta) ) if eta <> 0 else math.Pi() / 2.
+
+def get_lorentz_vector(phi, eta, energy):
+    theta = eta_to_theta(eta)
+    v1 = ROOT.TLorentzVector(energy*math.Cos(phi)*math.Cos(theta), energy*math.Sin(phi)*math.Cos(theta), energy*math.Sin(theta), energy)
+    return v1
+
+def cos_theta_electrons(row):
+    v1 = get_versor(row.e1SCPhi, row.e1SCEta)
+    v2 = get_versor(row.e2SCPhi, row.e2SCEta)
+    return v1.Dot(v2)
+
+def sc_inv_mass(row):
+    pt1 = row.e1SCEnergy / math.CosH(row.e1SCEta)
+    pt2 = row.e2SCEnergy / math.CosH(row.e2SCEta)
+    return math.Sqrt(2*pt1*pt2*( math.CosH(row.e1SCEta - row.e2SCEta) - math.Cos(row.e1SCPhi - row.e2SCPhi) ) )
+    ## v1 = get_lorentz_vector(row.e1SCPhi, row.e1SCEta, row.e1SCEnergy)
+    ## #print v1.M()
+    ## assert(v1.M() < 1e-5)
+    ## v2 = get_lorentz_vector(row.e2SCPhi, row.e2SCEta, row.e2SCEnergy)
+    ## assert(v2.M() < 1e-5)
+    ## return (v1+v2).M()
+    #sc_inv_mass      = lambda row: math.sqrt(2*row.e1SCEnergy*row.e2SCEnergy*(1 - cos_theta_electrons(row) ) )
 
 def control_region(row):
     # Figure out what control region we are in.
@@ -28,11 +85,15 @@ def control_region(row):
         return 'wjets'
     elif row.e1_e2_SS and row.e1RelPFIsoDB > 0.3 and row.metSignificance < 3:
         return 'qcd'
-    elif row.e1RelPFIsoDB < 0.3 and row.e2RelPFIsoDB < 0.3 and row.e2MVAIDH2TauWP:
+    elif row.e1RelPFIsoDB < 0.1 and row.e2RelPFIsoDB < 0.1 and row.e2MVAIDH2TauWP and row.e1MVAIDH2TauWP \
+        and not any([ row.muVetoPt5,
+                      row.tauVetoPt20,
+                      row.eVetoCicTightIso,
+                      ]):
         return 'zee'
     else:
         return None
-
+ 
 class FakeRatesEE(MegaBase):
     tree = 'ee/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
@@ -73,32 +134,28 @@ class FakeRatesEE(MegaBase):
                     book_histo('e1e2Mass', 'DiElectron Mass', 100, 0, 200)
                     book_histo('doubleEPrescale', 'prescale', 10, -0.5, 9.5)
         # Charge mis-ID measurements
-        self.book('charge', 'e1e2MassOS', 'DiEle mass OS', 60, 60, 120)
-        self.book('charge', 'e1e2MassSS', 'DiEle mass SS', 60, 60, 120)
+        # Charge mis-ID measurements
+        for app in ["","_weight","_weightSysUp","_weightSysDwn"]:
+            self.book('charge', "OS"+app+'_ePt', 'e Pt', 100, 0, 100)
+            self.book('charge', "OS"+app+'_eAbsEta', 'e Abs Eta', 80, 0, 2.5)
+            self.book('charge', "OS"+app+"_TrkMass", 'OS%s Dielectrons invariant mass; M_{ee} [GeV];counts' % app, 110, 40, 150)
+            self.book('charge', "OS"+app+"_SCMass" , 'OS%s Dielectrons Super Cluster invariant mass; M_{ee} [GeV];counts' % app, 110, 40, 150)
+        self.book('charge', "SS_SCMass", 'SS Dielectrons Super Cluster invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
+        self.book('charge', "SS_TrkMass", 'SS Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
+        self.book('charge', 'SS_ePt', 'e Pt', 100, 0, 100)
+        self.book('charge', 'SS_eAbsEta', 'e Abs Eta', 80, 0, 2.5)
+            
+        #print self.histograms.keys()
 
     def process(self):
 
         def preselection(row):
             if not row.doubleEPass: return False
             if not row.e1Pt > 20: return False
+            if not selections.eSelection(row, 'e1'): return False
             if not row.e1MVAIDH2TauWP: return False
-            if not row.e2Pt > 10: return False
-            if not row.e1AbsEta < 2.5: return False
-            if not row.e2AbsEta < 2.5: return False
-            if not row.e1JetBtag < 3.3: return False
-            if not row.e2JetBtag < 3.3: return False
-            if not row.e1ChargeIdTight: return False
-            if not row.e2ChargeIdTight: return False
-            if row.eVetoCicTightIso: return False
-            if row.muVetoPt5: return False
-            if row.bjetCSVVeto: return False
-            if row.tauVetoPt20: return False
-            if row.e2HasConversion: return False
-            if row.e2MissingHits: return False
-            if row.e1HasConversion: return False
-            if row.e1MissingHits: return False
-            if not abs(row.e1DZ) < 0.2: return False
-            if not abs(row.e2DZ) < 0.2: return False
+            if not selections.eSelection(row, 'e2'): return False
+            if not selections.vetos(row): return False
             return True
 
         def fill(the_histos, row):
@@ -120,12 +177,24 @@ class FakeRatesEE(MegaBase):
                 continue
 
             if region == 'zee':
+                scmass = sc_inv_mass(row)
                 if row.e1_e2_SS:
-                    histos['charge/e1e2MassSS'].Fill(row.e1_e2_Mass)
-                else:
-                    histos['charge/e1e2MassOS'].Fill(row.e1_e2_Mass)
+                    histos['charge/SS_ePt'].Fill(row.e2Pt)
+                    histos['charge/SS_eAbsEta'].Fill(row.e2AbsEta)
+                    histos['charge/SS_ePt'].Fill(row.e1Pt)
+                    histos['charge/SS_eAbsEta'].Fill(row.e1AbsEta)
+                    histos['charge/SS_TrkMass'].Fill(row.e1_e2_Mass)
+                    histos['charge/SS_SCMass'].Fill(scmass)
+                for app, fcn in zip(["","_weight","_weightSysUp","_weightSysDwn"],[identity, charge_flip, charge_flip_up, charge_flip_down]):
+                    weight = ( fcn(row.e1AbsEta,row.e1Pt) + fcn(row.e2AbsEta,row.e2Pt) )
+                    #weight = prob / (1 - prob)
+                    histos['charge/OS'+app+'_ePt'].Fill(row.e2Pt, fcn(row.e2AbsEta,row.e2Pt))
+                    histos['charge/OS'+app+'_eAbsEta'].Fill(row.e2AbsEta, fcn(row.e2AbsEta,row.e2Pt))
+                    histos['charge/OS'+app+'_ePt'].Fill(row.e1Pt, fcn(row.e1AbsEta,row.e1Pt))
+                    histos['charge/OS'+app+'_eAbsEta'].Fill(row.e1AbsEta, fcn(row.e1AbsEta,row.e1Pt))
+                    histos['charge/OS'+app+'_TrkMass'].Fill(row.e1_e2_Mass, weight)
+                    histos['charge/OS'+app+'_SCMass'].Fill(scmass, weight)
                 continue
-
             # This is a QCD or Wjets
             fill(histos[(region, 'pt10')], row)
 
@@ -157,3 +226,4 @@ class FakeRatesEE(MegaBase):
 
     def finish(self):
         self.write_histos()
+
