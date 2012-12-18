@@ -42,8 +42,8 @@ hasConvCut  = [False,False]
 missHitsCut = [1,1]
 
 def e_id_fun(event,i):    
-    idxe1 = int(abs(event.e1Eta[i]) > 1.566)
-    idxe2 = int(abs(event.e2Eta[i]) > 1.566)
+    idxe1 = int(abs(event.e1Eta[i]) >= 1.566)
+    idxe2 = int(abs(event.e2Eta[i]) >= 1.566)
     
     return \
      (abs(event.e1deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCut[idxe1] and abs(event.e2deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCut[idxe2] and
