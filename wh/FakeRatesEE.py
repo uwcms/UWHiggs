@@ -57,6 +57,14 @@ charge_flip_down = make_corrector_from_th2(frfit_dir+"/chare_flip_prob_map.root"
 
 eta_to_theta     = lambda eta: 2*math.ATan( math.Exp(- eta) ) if eta <> 0 else math.Pi() / 2.
 
+def delta_phi(phi1,phi2):
+    result = phi1 - phi2;
+    while result > math.Pi():
+        result -= float(2*math.Pi())
+    while result <= -math.Pi():
+        result += float(2*math.Pi())
+    return result    
+
 def get_lorentz_vector(phi, eta, energy):
     theta = eta_to_theta(eta)
     v1 = ROOT.TLorentzVector(energy*math.Cos(phi)*math.Cos(theta), energy*math.Sin(phi)*math.Cos(theta), energy*math.Sin(theta), energy)
@@ -71,13 +79,6 @@ def sc_inv_mass(row):
     pt1 = row.e1SCEnergy / math.CosH(row.e1SCEta)
     pt2 = row.e2SCEnergy / math.CosH(row.e2SCEta)
     return math.Sqrt(2*pt1*pt2*( math.CosH(row.e1SCEta - row.e2SCEta) - math.Cos(row.e1SCPhi - row.e2SCPhi) ) )
-    ## v1 = get_lorentz_vector(row.e1SCPhi, row.e1SCEta, row.e1SCEnergy)
-    ## #print v1.M()
-    ## assert(v1.M() < 1e-5)
-    ## v2 = get_lorentz_vector(row.e2SCPhi, row.e2SCEta, row.e2SCEnergy)
-    ## assert(v2.M() < 1e-5)
-    ## return (v1+v2).M()
-    #sc_inv_mass      = lambda row: math.sqrt(2*row.e1SCEnergy*row.e2SCEnergy*(1 - cos_theta_electrons(row) ) )
 
 def control_region(row):
     # Figure out what control region we are in.
@@ -113,7 +114,7 @@ class FakeRatesEE(MegaBase):
                 self.histograms[denom_key] = denom_histos
 
                 for numerator in ['mvaid', 'iso03', 'mvaidiso03',
-                                  'mvaidiso01']:
+                                  'mvaidiso01','h2taucuts']:
                     num_key = (region, denom, numerator)
                     num_histos = {}
                     self.histograms[num_key] = num_histos
@@ -138,10 +139,14 @@ class FakeRatesEE(MegaBase):
         for app in ["","_weight","_weightSysUp","_weightSysDwn"]:
             self.book('charge', "OS"+app+'_ePt', 'e Pt', 100, 0, 100)
             self.book('charge', "OS"+app+'_eAbsEta', 'e Abs Eta', 80, 0, 2.5)
+            self.book('charge', "OS"+app+'_SCEnergy', 'electron Super Cluster energy', 500, 0, 1000)
+            self.book('charge', "OS"+app+'_SCDPhi', 'electron Super Cluster DeltaPhi', 180, 0, math.Pi())
             self.book('charge', "OS"+app+"_TrkMass", 'OS%s Dielectrons invariant mass; M_{ee} [GeV];counts' % app, 110, 40, 150)
             self.book('charge', "OS"+app+"_SCMass" , 'OS%s Dielectrons Super Cluster invariant mass; M_{ee} [GeV];counts' % app, 110, 40, 150)
         self.book('charge', "SS_SCMass", 'SS Dielectrons Super Cluster invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
         self.book('charge', "SS_TrkMass", 'SS Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
+        self.book('charge', "SS"+'_SCEnergy', 'electron Super Cluster energy', 500, 0, 1000)
+        self.book('charge', "SS"+'_SCDPhi', 'electron Super Cluster Delta phi', 180, 0, math.Pi())
         self.book('charge', 'SS_ePt', 'e Pt', 100, 0, 100)
         self.book('charge', 'SS_eAbsEta', 'e Abs Eta', 80, 0, 2.5)
             
@@ -179,19 +184,25 @@ class FakeRatesEE(MegaBase):
             if region == 'zee':
                 scmass = sc_inv_mass(row)
                 if row.e1_e2_SS:
-                    histos['charge/SS_ePt'].Fill(row.e2Pt)
                     histos['charge/SS_eAbsEta'].Fill(row.e2AbsEta)
-                    histos['charge/SS_ePt'].Fill(row.e1Pt)
                     histos['charge/SS_eAbsEta'].Fill(row.e1AbsEta)
+                    histos['charge/SS_ePt'].Fill(row.e2Pt)
+                    histos['charge/SS_ePt'].Fill(row.e1Pt)
+                    histos['charge/SS_SCEnergy'].Fill(row.e1SCEnergy)
+                    histos['charge/SS_SCEnergy'].Fill(row.e2SCEnergy)
+                    histos['charge/SS_SCDPhi'].Fill(delta_phi(row.e1SCPhi, row.e2SCPhi) )
                     histos['charge/SS_TrkMass'].Fill(row.e1_e2_Mass)
                     histos['charge/SS_SCMass'].Fill(scmass)
                 for app, fcn in zip(["","_weight","_weightSysUp","_weightSysDwn"],[identity, charge_flip, charge_flip_up, charge_flip_down]):
                     weight = ( fcn(row.e1AbsEta,row.e1Pt) + fcn(row.e2AbsEta,row.e2Pt) )
                     #weight = prob / (1 - prob)
-                    histos['charge/OS'+app+'_ePt'].Fill(row.e2Pt, fcn(row.e2AbsEta,row.e2Pt))
-                    histos['charge/OS'+app+'_eAbsEta'].Fill(row.e2AbsEta, fcn(row.e2AbsEta,row.e2Pt))
-                    histos['charge/OS'+app+'_ePt'].Fill(row.e1Pt, fcn(row.e1AbsEta,row.e1Pt))
-                    histos['charge/OS'+app+'_eAbsEta'].Fill(row.e1AbsEta, fcn(row.e1AbsEta,row.e1Pt))
+                    histos['charge/OS'+app+'_ePt'].Fill(row.e2Pt,         weight ) ## fcn(row.e2AbsEta,row.e2Pt))
+                    histos['charge/OS'+app+'_ePt'].Fill(row.e1Pt,         weight ) ## fcn(row.e1AbsEta,row.e1Pt))
+                    histos['charge/OS'+app+'_eAbsEta'].Fill(row.e2AbsEta, weight ) ## fcn(row.e2AbsEta,row.e2Pt))
+                    histos['charge/OS'+app+'_eAbsEta'].Fill(row.e1AbsEta, weight ) ## fcn(row.e1AbsEta,row.e1Pt))
+                    histos['charge/OS'+app+'_SCEnergy'].Fill(row.e1SCEnergy, weight )
+                    histos['charge/OS'+app+'_SCEnergy'].Fill(row.e2SCEnergy, weight )
+                    histos['charge/OS'+app+'_SCDPhi'].Fill(delta_phi(row.e1SCPhi, row.e2SCPhi), weight )
                     histos['charge/OS'+app+'_TrkMass'].Fill(row.e1_e2_Mass, weight)
                     histos['charge/OS'+app+'_SCMass'].Fill(scmass, weight)
                 continue
@@ -210,6 +221,9 @@ class FakeRatesEE(MegaBase):
             if row.e2MVAIDH2TauWP and row.e2RelPFIsoDB < 0.1:
                 fill(histos[(region, 'pt10', 'mvaidiso01')], row)
 
+            if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1):
+                fill(histos[(region, 'pt10', 'h2taucuts')], row)
+
             if row.e2Pt > 20:
                 fill(histos[(region, 'pt20')], row)
                 if row.e2MVAIDH2TauWP:
@@ -223,6 +237,10 @@ class FakeRatesEE(MegaBase):
 
                 if row.e2MVAIDH2TauWP and row.e2RelPFIsoDB < 0.1:
                     fill(histos[(region, 'pt20', 'mvaidiso01')], row)
+
+                if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1):
+                    fill(histos[(region, 'pt10', 'h2taucuts')], row)
+                
 
     def finish(self):
         self.write_histos()
