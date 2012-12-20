@@ -1,5 +1,6 @@
 import ROOT
 from ROOT import TTree, TLorentzVector, Math
+import math
 
 # This is a thin configurable layer ontop of FSA TTrees that
 # gives us in a uniformly presented way the corrected versions
@@ -39,10 +40,11 @@ class correction:
 
         self._lep1CorrPt = self.lep1CorrPt()
         self._lep2CorrPt = self.lep2CorrPt()
-        self._gamCorrE = self.gamCorrE()
+        self._gamCorrPt = self.gamCorrPt()
 
         self._lep1CorrEta = self.lep1CorrEta()
         self._lep2CorrEta = self.lep2CorrEta()
+        self._gamCorrEta = self.gamCorrEta()
 
         self._lep1CorrPhi = self.lep1CorrPhi()
         self._lep2CorrPhi = self.lep2CorrPhi()
@@ -61,16 +63,20 @@ class correction:
         else:
             self._lep1CorrPt = self.lep1CorrPt()
             self._lep2CorrPt = self.lep2CorrPt()
-            self._gamCorrE = self.gamCorrE()
+            self._gamCorrPt = self.gamCorrPt()
             
             self._lep1CorrEta = self.lep1CorrEta()
             self._lep2CorrEta = self.lep2CorrEta()
+            self._gamCorrEta = self.gamCorrEta()
             
             self._lep1CorrPhi = self.lep1CorrPhi()
             self._lep2CorrPhi = self.lep2CorrPhi()
     
-    def gamCorrE(self):
-        return '%sSCEnergy'%(self._gName)
+    def gamCorrPt(self):
+        return '%sPt'%(self._gName)
+
+    def gamCorrEta(self):
+        return '%sEta'%(self._gName)
 
     def lep1CorrPt(self):
         raise Exception('not implemented in base')
@@ -96,20 +102,22 @@ class correction:
         
         corrPtName1 = self._lep1CorrPt
         corrPtName2 = self._lep2CorrPt
-        corrENameG = self._gamCorrE
+        corrPtNameG = self._gamCorrPt
 
         corrEtaName1 = self._lep1CorrEta
         corrEtaName2 = self._lep2CorrEta
+        corrEtaNameG = self._gamCorrEta
         
         corrPhiName1 = self._lep1CorrPhi
         corrPhiName2 = self._lep2CorrPhi
 
         corrPt_1 = getattr(event,corrPtName1)
         corrPt_2 = getattr(event,corrPtName2)
-        corrE_G = getattr(event,corrENameG)
+        corrPt_G = getattr(event,corrPtNameG)
 
         corrEta_1 = getattr(event,corrEtaName1)
-        corrEta_2 = getattr(event,corrEtaName2)        
+        corrEta_2 = getattr(event,corrEtaName2)
+        corrEta_G = getattr(event,corrEtaNameG)
 
         corrPhi_1 = getattr(event,corrPhiName1)
         corrPhi_2 = getattr(event,corrPhiName2)
@@ -118,17 +126,18 @@ class correction:
             #recalculate the photon vector from the PV
             corrgs.append(TLorentzVector())
             pv    = Math.XYZPoint(event.pvX[i], event.pvY[i], event.pvZ[i])
-            phoSC = Math.XYZPoint(event.gSCPositionX[i],
-                                  event.gSCPositionY[i],
-                                  event.gSCPositionZ[i])
+            phoSC = Math.XYZPoint(event.gPositionX[i],
+                                  event.gPositionY[i],
+                                  event.gPositionZ[i])
             phoTemp = Math.XYZVector(phoSC.X() - pv.X(),
                                      phoSC.Y() - pv.Y(),
-                                     phoSC.Z() - pv.Z())
-            phoP3 = phoTemp.unit()*corrE_G[i]
+                                     phoSC.Z() - pv.Z())            
+            corrE_G = corrPt_G[i]*math.cosh(corrEta_G[i])           
+            phoP3 = phoTemp.unit()*corrE_G
             phoP4 = Math.XYZTVector(phoP3.x(),
                                     phoP3.y(),
                                     phoP3.z(),
-                                    corrE_G[i])
+                                    corrE_G)            
             corrgs[-1].SetPtEtaPhiM(phoP4.pt(),phoP4.eta(),phoP4.phi(),0.0)
             #create e1 corrected LorentzVector and error
             corre1s.append(TLorentzVector())

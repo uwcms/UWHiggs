@@ -8,11 +8,11 @@ from MOOSEY.cuts import CompositeCutflow
 from MOOSEY.trees import tree_manager
 
 #general cutsets
-#from hzg_cuts import muon_triggers_data,muon_triggers_mc, \
-#     electron_triggers_data, electron_triggers_mc, \
-#     mu_cuts_data,mu_cuts_mc,e_cuts_data,e_cuts_mc, photon_cuts_data, \
-#     photon_cuts_noifsr, mumu_cuts,ee_cuts,ell_gamma_dr, event_has_ifsr, \
-#     photon_cuts_mc,photon_cuts_plj
+from hzg_cuts import muon_triggers_data,muon_triggers_mc, \
+     electron_triggers_data, electron_triggers_mc, \
+     mu_cuts_data,mu_cuts_mc,e_cuts_data,e_cuts_mc, photon_cuts_data, \
+     photon_cuts_noifsr, mumu_cuts,ee_cuts,ell_gamma_dr, event_has_ifsr, \
+     photon_cuts_mc,photon_cuts_plj
 
 #correction layer
 from corrections import setup_corrections
@@ -124,12 +124,12 @@ def run_analysis(options,input_file):
 
     tm.importTree(treeName,tree,specific)    
 
-    #tm.cloneTree(treeName,'EventTree_zs',specific)
+    tm.cloneTree(treeName,'%s_zs'%treeName,specific)
     tm.cloneTree(treeName,'%s_zgs'%treeName,specific)
     tm.cloneTree(treeName,'%s_zgs_nosihih'%treeName,specific)
 
     #setup process dependent stuff
-    #cuts = setupCuts(options)
+    cuts = setupCuts(options)
     #lepton_mass = lepton_masses[options.leptonType]
     #z_info = z_infos[options.leptonType]
     #lepton_info = lepton_infos[options.leptonType]
@@ -167,8 +167,7 @@ def run_analysis(options,input_file):
         # ell1 = lepton1, ell2 = lepton2
         # gam = photon, Z = dilepton, Zg = Z+photon        
         correct(event)
-    
-    """
+        
         run_idx = getRunIndex(event.run,options.datType,options.leptonType)
         setattr(event,'procWeight',procWeight)
         setattr(event,'puWeight',1.0)
@@ -176,209 +175,141 @@ def run_analysis(options,input_file):
             setattr(event,'eventFraction',float(ievent+1)/total_events)
             #event.event/nEvents_sample)
             event.puWeight = pu_weight(event.nPU,options.runType)
-        elif options.datType == 'data':
-            # kill run 170722
-            # kill the obvious pile up combinatorial event
-            if ( event.run == 170722 or
-                 (event.run   == 166512 and
-                  event.lumis == 1678 and
-                  event.event == 1822682238) ):
-                continue
-            
-        cuts.getCutflow('trigger')(event)
-        if ( options.exlProc and not cuts.getCutflow('trigger') ):
-            continue        
-        
+
         selected_z = []
-        selected_pho_nosihih = []
+        #selected_pho_nosihih = []
         selected_pho = []        
         bad_leptons = []
 
-        for i in range(event.nPho):            
-            cuts.getCutflow('pho')(event,i)
-            if ( cuts.getCutflow('trigger') ):
-                if( cuts.getCutflow('pho') ):
-                    selected_pho.append(i)
-                if( cuts.getCutflow('pho') % ['phosihih'] ):
-                    selected_pho_nosihih.append(i)                
-                
-        for i in range(getattr(event,z_info['nZ'])):
-            idx1 = getattr(event,z_info['ell1'])[i]
-            idx2 = getattr(event,z_info['ell2'])[i]
-            
-            if idx1 in bad_leptons or idx2 in bad_leptons: continue
-            
-            cuts.getCutflow('ell1')(event,idx1)
-            cuts.getCutflow('ell2')(event,idx2)
+        if options.datType == 'data':
+            # kill run 170722
+            # kill the obvious pile up combinatorial event
+            if ( event.run[0] == 170722 or
+                 (event.run[0]   == 166512 and
+                  event.lumi[0] == 1678 and
+                  event.evt[0] == 1822682238) ):
+                continue
 
-            if not cuts.getCutflow('ell1'):
-                bad_leptons.append(idx1)
-            if not cuts.getCutflow('ell2'):
-                bad_leptons.append(idx2)            
-            
-            #if leptons pass selection go on to z mass selection
-            if ( cuts.getCutflow('trigger') and
-                 cuts.getCutflow('ell1') and
-                 cuts.getCutflow('ell2') ):
-                ell1.SetPtEtaPhiM(getattr(event,lepton_info['corpt'])[idx1],
-                                  getattr(event,lepton_info['eta'])[idx1],
-                                  getattr(event,lepton_info['phi'])[idx1],
-                                  lepton_mass)
-                ell2.SetPtEtaPhiM(getattr(event,lepton_info['corpt'])[idx2],
-                                  getattr(event,lepton_info['eta'])[idx2],
-                                  getattr(event,lepton_info['phi'])[idx2],
-                                  lepton_mass)
-                thez = ell1+ell2
-                setattr(event,z_info['mass'],thez.M())
-                cuts.getCutflow('z')(event,getattr(event,z_info['mass']))
-                if( cuts.getCutflow('z') ): 
-                    selected_z.append(i)
-
-        
-
-        bestZ = None
+        bestLLG = None
         bestZdiff = -1
-        for idxz in selected_z:
-            idx1 = getattr(event,z_info['ell1'])[idxz]
-            idx2 = getattr(event,z_info['ell2'])[idxz]
-            ell1.SetPtEtaPhiM(getattr(event,lepton_info['corpt'])[idx1],
-                              getattr(event,lepton_info['eta'])[idx1],
-                              getattr(event,lepton_info['phi'])[idx1],
-                              lepton_mass)
-            ell2.SetPtEtaPhiM(getattr(event,lepton_info['corpt'])[idx2],
-                              getattr(event,lepton_info['eta'])[idx2],
-                              getattr(event,lepton_info['phi'])[idx2],
-                              lepton_mass)
-            thez = ell1+ell2
-            thisZdiff = fabs(Z_POLE-thez.M())
-            if bestZ is None or thisZdiff < bestZdiff:                
-                bestZ = idxz
-                bestZdiff = thisZdiff
+        for i in range(event.N_PATFinalState):            
 
-        if options.exlProc and bestZ is None :
+            cuts.getCutflow('trigger')(event,i)
+            if options.exlProc and not cuts.getCutflow('trigger') :
+                continue        
+            
+            cuts.getCutflow('pho')(event,i)            
+            cuts.getCutflow('leptons')(event,i) 
+            if ( options.exlProc and
+                 not cuts.getCutflow('leptons') and
+                 not cuts.getCutflow('pho') ):
+                continue
+
+            cuts.getCutflow('z')(event,i)
+            if options.exlProc and not cuts.getCutflow('z'):
+                continue
+
+            if ( cuts.getCutflow('trigger') and
+                 cuts.getCutflow('leptons') and
+                 cuts.getCutflow('pho') and
+                 cuts.getCutflow('z') ):
+                thisZdiff = abs(Z_POLE-event.Z[i].M())
+                if( cuts.getCut('mindr')[0](event.ell1[i],
+                                            event.ell2[i],
+                                            event.gam[i]) and
+                    (thisZdiff < bestZdiff or bestLLG is None) ):
+                    bestZdiff = thisZdiff
+                    bestLLG = i
+                    
+        
+        #event object selection done        
+        if options.exlProc and bestLLG is None:
             continue
-
-        if bestZ is not None:
-            idx1 = getattr(event,z_info['ell1'])[bestZ]
-            idx2 = getattr(event,z_info['ell2'])[bestZ]
-            ell1.SetPtEtaPhiM(getattr(event,lepton_info['corpt'])[idx1],
-                              getattr(event,lepton_info['eta'])[idx1],
-                              getattr(event,lepton_info['phi'])[idx1],
-                              lepton_mass)
-            ell2.SetPtEtaPhiM(getattr(event,lepton_info['corpt'])[idx2],
-                              getattr(event,lepton_info['eta'])[idx2],
-                              getattr(event,lepton_info['phi'])[idx2],
-                              lepton_mass)
-            thez = ell1+ell2
+        
+        bestZ = bestLLG
+        
+        if bestLLG is not None:
             setattr(event,'ell1SF',1.0)
             setattr(event,'ell2SF',1.0)
-            if run_idx != -1:
-                event.ell1SF = leptonSF_nominal(event.nGoodVtx,
-                                       getattr(event,lepton_info['pt'])[idx1],
-                                       getattr(event,lepton_info['eta'])[idx1],
-                                                run_idx,
-                                                options.leptonType)
-                event.ell2SF = leptonSF_nominal(event.nGoodVtx,
-                                       getattr(event,lepton_info['pt'])[idx2],
-                                       getattr(event,lepton_info['eta'])[idx2],
-                                                run_idx,
-                                                options.leptonType)
-            
-            setattr(event,'bestZLeg1Idx',idx1)
-            setattr(event,'bestZLeg2Idx',idx2)
-            setattr(event,'bestZLeg1',ell1)
-            setattr(event,'bestZLeg2',ell2)
-            setattr(event,'bestZ',thez)
+            #if run_idx != -1:
+            #    event.ell1SF = leptonSF_nominal(event.nGoodVtx,
+            #                          getattr(event,lepton_info['pt'])[idx1],
+            #                          getattr(event,lepton_info['eta'])[idx1],
+            #                                    run_idx,
+            #                                    options.leptonType)
+            #    event.ell2SF = leptonSF_nominal(event.nGoodVtx,
+            #                          getattr(event,lepton_info['pt'])[idx2],
+            #                          getattr(event,lepton_info['eta'])[idx2],
+            #                                    run_idx,
+            #                                    options.leptonType)
+            setattr(event,'bestZ',bestLLG)
             outTrees.bestZTree(event,tm)
-            tm.fillTree('EventTree_zs',{})
-
-        bestPhoNoSihih = None
-        bestPhoNoSihihPt = -1
-        for idxph in selected_pho_nosihih:
-            pho.SetPtEtaPhiM(event.phoCorEt[idxph],
-                             event.phoEta[idxph],
-                             event.phoPhi[idxph],
-                             0.0)
-            if bestPhoNoSihih is None or pho.Pt() > bestPhoNoSihihPt:
-                if ( bestZ is not None and
-                     cuts.getCut('mindr')[0](event.bestZLeg1,
-                                             event.bestZLeg2,
-                                             pho) ):
-                    bestPhoNoSihih = idxph
-                    bestPhoNoSihihPt = pho.Pt()
-                elif( bestZ is None ):
-                    bestPhoSihih = idxph
-                    bestPhoSihihPt = pho.Pt()
+            tm.fillTree('%s_zs'%treeName,{})
         
-        bestPho = None
-        bestPhoPt = -1
-        for idxph in selected_pho:
-            pho.SetPtEtaPhiM(event.phoCorEt[idxph],
-                             event.phoEta[idxph],
-                             event.phoPhi[idxph],
-                             0.0)
-            if bestPho is None or pho.Pt() > bestPhoPt:                
-                if ( bestZ is not None and
-                     cuts.getCut('mindr')[0](event.bestZLeg1,
-                                             event.bestZLeg2,
-                                             pho) ):
-                    bestPho = idxph
-                    bestPhoPt = pho.Pt()
-                elif( bestZ is None ):
-                    bestPho = idxph
-                    bestPhoPt = pho.Pt()
+        #bestPhoNoSihih = None
+        #bestPhoNoSihihPt = -1
+        #for idxph in selected_pho_nosihih:
+        #    pho.SetPtEtaPhiM(event.phoCorEt[idxph],
+        #                     event.phoEta[idxph],
+        #                     event.phoPhi[idxph],
+        #                     0.0)
+        #    if bestPhoNoSihih is None or pho.Pt() > bestPhoNoSihihPt:
+        #        if ( bestZ is not None and
+        #             cuts.getCut('mindr')[0](event.bestZLeg1,
+        #                                     event.bestZLeg2,
+        #                                     pho) ):
+        #            bestPhoNoSihih = idxph
+        #            bestPhoNoSihihPt = pho.Pt()
+        #        elif( bestZ is None ):
+        #            bestPhoSihih = idxph
+        #            bestPhoSihihPt = pho.Pt()
+        
+        bestPho = bestLLG
 
-        if  options.exlProc and bestPho is None and bestPhoNoSihih is None:
+        if  options.exlProc and bestPho is None: #and bestPhoNoSihih is None:
             continue
 
-        if bestPho is not None:
-            pho.SetPtEtaPhiM(event.phoCorEt[bestPho],
-                             event.phoEta[bestPho],
-                             event.phoPhi[bestPho],
-                             0.0)
+        if bestPho is not None:            
             setattr(event,'phoSF',1.0)
-            if run_idx != -1:
-                event.phoSF = phoSF_nominal(event.nGoodVtx,
-                                            event.phoEt[bestPho],
-                                            event.phoEta[bestPho],
-                                            run_idx)            
-            setattr(event,'bestPhoIdx',bestPho)
-            setattr(event,'bestPho',pho)
+            #if run_idx != -1:
+            #    event.phoSF = phoSF_nominal(event.nGoodVtx,
+            #                                event.phoEt[bestPho],
+            #                                event.phoEta[bestPho],
+            #                                run_idx)            
+            setattr(event,'bestPho',bestPho)
             
-            if bestPhoNoSihih is not None:            
-                setattr(event,'phoNoSihihSF',event.phoSF)                
-                setattr(event,'bestPhoNoSihihIdx',bestPho)
-                setattr(event,'bestPhoNoSihih',pho)
-        elif bestPhoNoSihih is not None:
-            pho.SetPtEtaPhiM(event.phoCorEt[bestPhoNoSihih],
-                             event.phoEta[bestPhoNoSihih],
-                             event.phoPhi[bestPhoNoSihih],
-                             0.0)
-            setattr(event,'phoNoSihihSF',1.0)
-            if run_idx != -1:
-                event.phoNoSihihSF = phoSF_nominal(event.nGoodVtx,
-                                                   event.phoEt[bestPhoNoSihih],
-                                                  event.phoEta[bestPhoNoSihih],
-                                                   run_idx)
-            setattr(event,'bestPhoNoSihihIdx',bestPhoNoSihih)
-            setattr(event,'bestPhoNoSihih',pho)
+            #if bestPhoNoSihih is not None:            
+            #    setattr(event,'phoNoSihihSF',event.phoSF)                
+            #    setattr(event,'bestPhoNoSihihIdx',bestPho)
+            #    setattr(event,'bestPhoNoSihih',pho)
+        #elif bestPhoNoSihih is not None:
+        #    pho.SetPtEtaPhiM(event.phoCorEt[bestPhoNoSihih],
+        #                     event.phoEta[bestPhoNoSihih],
+        #                     event.phoPhi[bestPhoNoSihih],
+        #                     0.0)
+        #    setattr(event,'phoNoSihihSF',1.0)
+        #    if run_idx != -1:
+        #        event.phoNoSihihSF = phoSF_nominal(event.nGoodVtx,
+        #                                         event.phoEt[bestPhoNoSihih],
+        #                                        event.phoEta[bestPhoNoSihih],
+        #                                           run_idx)
+        #    setattr(event,'bestPhoNoSihihIdx',bestPhoNoSihih)
+        #    setattr(event,'bestPhoNoSihih',pho)
                             
-        if bestZ is not None:
-            if bestPhoNoSihih is not None:
-                thezg = event.bestZ + event.bestPhoNoSihih
-                setattr(event,'bestZGNoSihih',thezg)
-                outTrees.bestZGTreeNoSihih(event,tm)
-                tm.fillTree('EventTree_zgs_nosihih',{})
-            if bestPho is not None:
-                thezg = event.bestZ + event.bestPho
-                selected_events.append((event.run,
-                                        event.lumis,
-                                        event.event))
-                setattr(event,'bestZG',thezg)
-                outTrees.bestZGTree(event,tm)
-                tm.fillTree('EventTree_zgs',{})
-    """
-
+        if bestLLG is not None:
+            #if bestPhoNoSihih is not None:
+            #    thezg = event.bestZ + event.bestPhoNoSihih
+            #    setattr(event,'bestZGNoSihih',thezg)
+            #    outTrees.bestZGTreeNoSihih(event,tm)
+            #    tm.fillTree('EventTree_zgs_nosihih',{})
+            thezg = event.Zg[bestLLG]            
+            selected_events.append((event.run[bestLLG],
+                                    event.lumi[bestLLG],
+                                    event.evt[bestLLG]))
+            setattr(event,'bestZG',thezg)
+            outTrees.bestZGTree(event,tm)
+            tm.fillTree('%s_zgs'%treeName,{})
+    
     #make a nice file name
     nameparts = input_file[input_file.rfind('/')+1:]
     nameparts = nameparts.split('.')
@@ -421,34 +352,30 @@ def run_analysis(options,input_file):
 
 #determine cutflow given input data type
 def setupCuts(options):
-    runType = options.runType
+    datType = options.datType
     leptonType = options.leptonType
     cuts = CompositeCutflow()
     cuts.addCut('mindr',ell_gamma_dr)
     if leptonType == 'muon':
-        if runType == 'data':
+        if datType == 'data':
             cuts.addCutflow('trigger',muon_triggers_data)
-            cuts.addCutflow('ell1',mu_cuts_data)
-            cuts.addCutflow('ell2',mu_cuts_data)
+            cuts.addCutflow('leptons',mu_cuts_data)
         else:
             cuts.addCutflow('trigger',muon_triggers_mc)
-            cuts.addCutflow('ell1',mu_cuts_mc)
-            cuts.addCutflow('ell2',mu_cuts_mc)                
+            cuts.addCutflow('leptons',mu_cuts_mc)
         cuts.addCutflow('z',mumu_cuts)
     elif leptonType == 'electron':
-        if runType == 'data':
+        if datType == 'data':
             cuts.addCutflow('trigger',electron_triggers_data)
-            cuts.addCutflow('ell1',e_cuts_data)
-            cuts.addCutflow('ell2',e_cuts_data)
+            cuts.addCutflow('leptons',e_cuts_data)
         else:
             cuts.addCutflow('trigger',electron_triggers_mc)
-            cuts.addCutflow('ell1',e_cuts_mc)
-            cuts.addCutflow('ell2',e_cuts_mc)              
+            cuts.addCutflow('leptons',e_cuts_mc)
         cuts.addCutflow('z',ee_cuts)
     else:
         raise Exception('Invalid lepton type! {muon,electron} are valid')
 
-    if runType == 'data':
+    if datType == 'data':
         cuts.addCutflow('pho',photon_cuts_data)    
     elif options.vetoIFSR:
         cuts.addCutflow('pho',photon_cuts_noifsr)

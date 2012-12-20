@@ -7,44 +7,18 @@ from math import fabs,pi
 
 
 #define the selection of a good event
-def passes_mumu_trigger_data(HLT_Fired,HLT_Prescale,HLT_Index,run):
-    trigger_fired = 0
-    prescale = 0
-    index = -1
-    if run >= 160431 and run <= 163869:
-        index = HLT_Index[72]
-        trigger_fired = HLT_Fired[HLT_Index[72]]
-        prescale = HLT_Prescale[HLT_Index[72]]
-    elif run >= 165088 and run <= 178380:
-        index = HLT_Index[73]
-        trigger_fired = HLT_Fired[HLT_Index[73]]
-        prescale = HLT_Prescale[HLT_Index[73]]
-    elif run >= 178420 and run <= 180252:
-        index = HLT_Index[74]
-        trigger_fired = HLT_Fired[HLT_Index[74]]
-        prescale = HLT_Prescale[HLT_Index[74]]
+def passes_mumu_trigger_data(HLT_Fired,HLT_Prescale,run):
+    trigger_fired = HLT_Fired
+    prescale = HLT_Prescale
 
-    return (trigger_fired == 1 and prescale == 1 and index > 0)
+    return (trigger_fired == 1 and prescale == 1)
 
 #define the selection of a good event
-def passes_mumu_trigger_mc(HLT_Fired,HLT_Prescale,HLT_Index,evt_frac):
-    trigger_fired = 0
-    prescale = 0
-    index = -1
-    if evt_frac < 0.046:
-        index = HLT_Index[72]
-        trigger_fired = HLT_Fired[HLT_Index[72]]
-        prescale = HLT_Prescale[HLT_Index[72]]
-    elif evt_frac < 0.83:
-        index = HLT_Index[73]
-        trigger_fired = HLT_Fired[HLT_Index[73]]
-        prescale = HLT_Prescale[HLT_Index[73]]
-    else:
-        index = HLT_Index[74]
-        trigger_fired = HLT_Fired[HLT_Index[74]]
-        prescale =  HLT_Prescale[HLT_Index[74]]
-
-    return (trigger_fired == 1 and prescale == 1 and index > 0)
+def passes_mumu_trigger_mc(HLT_Fired,HLT_Prescale,evt_frac):
+    trigger_fired = HLT_Fired
+    prescale = HLT_Prescale
+    
+    return (trigger_fired == 1 and prescale == 1)
 
 def passes_ee_trigger_data(HLT_Fired,HLT_Prescale,HLT_Index,run):
     trigger_fired = 0
@@ -75,8 +49,6 @@ def passes_ee_trigger_mc(HLT_Fired,HLT_Prescale,HLT_Index,evt_frac):
     prescale = HLT_Prescale[HLT_Index[86]]
 
     return (trigger_fired == 1 and prescale == 1 and index > 0)
-
-    
     
 def good_vtx(nGoodVtx):    
     return nGoodVtx != 0
@@ -86,28 +58,20 @@ def no_scraping(IsTracksGood):
 
 mumu_good_event_data_reqs = OrderedDict([['trigger',
                                           [passes_mumu_trigger_data,
-                                           ['HLT','HLTprescale','HLTIndex','run'],
+                                           ['mu17mu8Pass','mu17mu8Prescale','run'],
                                            0]],
                                          ['goodvtx',
                                           [good_vtx,
-                                           ['nGoodVtx'],
-                                           0]],
-                                         ['noscraping',
-                                          [no_scraping,
-                                           ['IsTracksGood'],
+                                           ['nvtx'],
                                            0]]])
 
 mumu_good_event_mc_reqs = OrderedDict([['trigger',
                                         [passes_mumu_trigger_mc,
-                                         ['HLT','HLTprescale','HLTIndex','eventFraction'],
+                                         ['mu17mu8Pass','mu17mu8Prescale','eventFraction'],
                                          0]],
                                        ['goodvtx',
                                         [good_vtx,
-                                         ['nGoodVtx'],
-                                         0]],
-                                       ['noscraping',
-                                        [no_scraping,
-                                         ['IsTracksGood'],
+                                         ['nvtx'],
                                          0]]])
 
 ee_good_event_data_reqs = OrderedDict([['trigger',
@@ -136,93 +100,89 @@ ee_good_event_mc_reqs = OrderedDict([['trigger',
                                        0]]])
 
 #single muon selection
-def mu_pt(mu_pt):
-    return (mu_pt > 20)
+def mu_pt(mu):
+    return (mu.Pt() > 10)
 
-def mu_eta(mu_eta):
-    return (fabs(mu_eta) < 2.4)
+def mu_eta(mu):
+    return (abs(mu.Eta()) < 2.4)
 
 #validated the use of IDHZG2011/2012
 #just needs simple converter
 def mu_id(the_id):
-    bit = bool(int(the_id))
+    bit = (the_id == 1.0)
     return bit
 
-def mu_iso(pt,pfchg,pfneut,pfpho,ea,rho):
+def mu_iso(mu,pfchg,pfneut,pfpho,ea,rho):    
     rhoprime = max(rho,0)
     eff_iso = max( pfneut + pfpho - ea*rhoprime, 0.0 )
-    iso = pfchg + eff_iso
+    iso = (pfchg + eff_iso)/mu.Pt()
     return (iso < 0.12)
 
 def mu_trg_match_data(trigMatches,run):
-    hasMatch = False    
-    if run >= 160431 and run <= 163869:
-        hasMatch = (trigMatches[13] > 0)
-    elif run >= 165088 and run <= 178380:
-        hasMatch = (trigMatches[14] > 0)
-    elif run >= 178420 and run <= 180252:
-        hasMatch = (trigMatches[15] > 0)
+    hasMatch = True    
+    #if run >= 160431 and run <= 163869:
+    #    hasMatch = (trigMatches[13] > 0)
+    #elif run >= 165088 and run <= 178380:
+    #    hasMatch = (trigMatches[14] > 0)
+    #elif run >= 178420 and run <= 180252:
+    #    hasMatch = (trigMatches[15] > 0)
     return hasMatch
 
 def mu_trg_match_mc(trigMatches,evt_frac):
-    hasMatch = False
-    if evt_frac < 0.046:
-        hasMatch = (trigMatches[13] > 0)
-    elif evt_frac < 0.83:
-        hasMatch = (trigMatches[14] > 0)
-    else:
-        hasMatch = (trigMatches[15] > 0)
+    hasMatch = True
+    #if evt_frac < 0.046:
+    #    hasMatch = (trigMatches[13] > 0)
+    #elif evt_frac < 0.83:
+    #    hasMatch = (trigMatches[14] > 0)
+    #else:
+    #    hasMatch = (trigMatches[15] > 0)
     return hasMatch
 
 muon_selection_mc_reqs = OrderedDict([['mupt1',
-                                       [mu_pt,['m1Pt'],0]],
+                                       [mu_pt,['ell1'],0]],
                                       ['mueta1',
-                                       [mu_eta,['m1Eta'],0]],
+                                       [mu_eta,['ell1'],0]],
                                       ['mupt2',
-                                       [mu_pt,['m2Pt'],0]],
+                                       [mu_pt,['ell2'],0]],
                                       ['mueta2',
-                                       [mu_eta,['m2Eta'],0]],
+                                       [mu_eta,['ell2'],0]],
                                       ['muid1',
                                        [mu_id,['m1IDHZG2012'],0]],
                                       ['muid2',
                                        [mu_id,['m2IDHZG2012'],0]],
                                       ['muiso1',
-                                       [mu_iso,['m1Pt','m1PFChargedIso','m1PFNeutralIso',
+                                       [mu_iso,['ell1','m1PFChargedIso','m1PFNeutralIso',
                                                 'm1PFPhotonIso','m1EffectiveArea2012','m1RhoHZG2012'],0]],
                                       ['muiso2',
-                                       [mu_iso,['m2Pt','m2PFChargedIso','m2PFNeutralIso',
+                                       [mu_iso,['ell2','m2PFChargedIso','m2PFNeutralIso',
                                                 'm2PFPhotonIso','m2EffectiveArea2012','m2RhoHZG2012'],0]],
                                       ['trigger_match',
                                        [mu_trg_match_mc,['muTrgFixed','eventFraction'],0]]])
 
-muon_selection_data_reqs = OrderedDict([['mupt',
-                                         [mu_pt,['muPt'],0]],
-                                        ['mueta',
-                                         [mu_eta,['muEta'],0]],
-                                        ['mutype',
-                                         [mu_tk_and_gbl,['muType'],0]],
-                                        ['muchamberhits',
-                                         [mu_muhits,['muNumberOfValidMuonHits'],0]],
-                                        ['mutkhits',
-                                         [mu_tkhits,['muNumberOfValidTrkHits'],0]],
-                                        ['mupixhits',
-                                         [mu_pixhits,['muNumberOfValidPixelHits'],0]],
-                                        ['mustationmatch',
-                                         [mu_matchedstations,['muStations'],0]],
-                                        ['muchi2',
-                                         [mu_chi2,['muChi2NDF'],0]],
-                                        ['mud0',
-                                         [d0_pv,['muPVD0'],0]],
-                                        ['mudz',
-                                         [dz_pv,['muPVDz'],0]],
-                                        ['muiso',
-                                         [mu_iso,['muPt','muIsoTrk','muIsoEcal','muIsoHcal','rho'],0]],
+muon_selection_data_reqs = OrderedDict([['mupt1',
+                                         [mu_pt,['ell1'],0]],
+                                        ['mueta1',
+                                         [mu_eta,['ell1'],0]],
+                                        ['mupt2',
+                                         [mu_pt,['ell2'],0]],
+                                        ['mueta2',
+                                         [mu_eta,['ell2'],0]],
+                                        ['muid1',
+                                         [mu_id,['m1IDHZG2012'],0]],
+                                        ['muid2',
+                                         [mu_id,['m2IDHZG2012'],0]],
+                                        ['muiso1',
+                                         [mu_iso,['ell1','m1PFChargedIso','m1PFNeutralIso',
+                                                  'm1PFPhotonIso','m1EffectiveArea2012','m1RhoHZG2012'],0]],
+                                        ['muiso2',
+                                         [mu_iso,['ell2','m2PFChargedIso','m2PFNeutralIso',
+                                                  'm2PFPhotonIso','m2EffectiveArea2012','m2RhoHZG2012'],0]],
                                         ['trigger_match',
-                                         [mu_trg_match_data,['muTrgFixed','run'],0]]])
+                                         [mu_trg_match_data,['metEt','run'],0]]])
 
 
 def ele_pt(thept):    
-    return thept > 20
+    return thept > 10
 
 def ele_eta(eleEta):
     return ((fabs(eleEta) < 1.4442 or (fabs(eleEta) > 1.566 and fabs(eleEta) < 2.5)))
@@ -278,6 +238,12 @@ def ele_trg_match_mc(trigMatch,evt_frac):
     hasMatch = (trigMatch[21] > 0)
     return hasMatch
 
+def d0_pv(d0):
+    return abs(d0) < 0.02
+
+def dz_pv(dz):
+    return abs(dz) < 0.05
+
 electron_selection_data_reqs = OrderedDict([['ept',
                                              [ele_pt,['eleCorPt'],0]],
                                             ['eeta',
@@ -314,39 +280,42 @@ electron_selection_mc_reqs = OrderedDict([['ept',
                                           ['trigger_match',
                                            [ele_trg_match_mc,['eleTrgFixed','eventFraction'],0]]])
 
-def z_oneleg20(ell1pt, ell2pt):
-    return (ell1Pt > 20 or ell2Pt > 20)
+def z_oneleg20(ell1, ell2):
+    return (ell1.Pt() > 20 or ell2.Pt() > 20)
 
 def z_ss(z_ss):
     return z_ss == 0
 
-def z_mass(zmass):
-    return zmass > 50
+def z_mass(z):
+    return z.M() > 50
 
 mumu_selection_reqs = OrderedDict([['z_mass',
-                                    [z_mass,['m1_m2_Mass'],0]],
+                                    [z_mass,['Z'],0]],
                                    ['z_ss',
                                     [z_ss,['m1_m2_SS'],0]],
-                                   ['z_ss',
-                                    [z_ss,['m1Pt','m2Pt'],0]]
+                                   ['z_oneleg20',
+                                    [z_oneleg20,['ell1','ell2'],0]]
                                    ])
 ee_selection_reqs = OrderedDict([['z_mass',
-                                  [z_mass,['e1_e2_Mass'],0]],
+                                  [z_mass,['Z'],0]],
                                  ['z_ss',
                                   [z_ss,['e1_e2_SS'],0]],
-                                 ['z_ss',
-                                  [z_ss,['e1Pt','e2Pt'],0]]
+                                 ['z_oneleg20',
+                                  [z_oneleg20,['ell1','ell2'],0]]
                                  ])
 
 #photon kinematic selection
-def photon_et(theet):    
-    return (theet > 15)
+def photon_et(pho,Zg):    
+    return (pho.Pt() > 15 and pho.Pt()/Zg.M() > 15.0/110.0)
 
 def photon_eta(sc_eta):
-    return (fabs(sc_eta) < 2.5 and (fabs(sc_eta) > 1.566 or fabs(sc_eta) < 1.4442))
+    return (abs(sc_eta) < 1.4442 or (abs(sc_eta) > 1.566  and abs(sc_eta) < 2.5 ))
 
-photon_kine_reqs = OrderedDict([['phoet',[photon_et,['phoCorEt'],0]],
-                                ['phoeta',[photon_eta,['phoSCEta'],0]]])
+photon_kine_reqs = OrderedDict([['phoet',[photon_et,['gam','Zg'],0]],
+                                ['phoeta',[photon_eta,['gSCEta'],0]]])
+
+def photon_CBID_MEDIUM(bit):
+    return bit == 1.0
 
 def photon_HoE(hoe):
     return (hoe < 0.05)
@@ -394,7 +363,7 @@ def photon_like_jet(phEt,sc_eta,rho,hasPixelSeed,hoe,sihih,sipip,
     return (result and not( photon_sihih(sihih,sipip,sc_eta)        and
                             photon_trkiso(trkIso,phEt,sc_eta,rho)   and
                             photon_ecaliso(ecalIso,phEt,sc_eta,rho) and
-                            photon_hcaliso(ecalIso,phEt,sc_eta,rho)     )
+                            photon_hcaliso(ecalIso,phEt,sc_eta,rho)     )) 
                            
     
     
@@ -424,11 +393,11 @@ photon_not_ifsr = OrderedDict([['ifsr_veto',[isnotgenmatchifsr,['phoGenMomPID','
 event_has_ifsr = OrderedDict([['has_ifsr',[event_has_ifsr,['mcPID','mcGMomPID'],0]]])
 
 
-photon_idiso_reqs_nosihih = OrderedDict([['phoHoE',[photon_HoE,['phoHoverE'],0]],
-                                         ['phohasPixelSeed',[photon_pixveto,['phohasPixelSeed'],0]],
-                                         ['phoTrkIso',[photon_trkiso,['phoTrkIsoHollowDR04','phoEt','phoSCEta','rho'],0]],
-                                         ['phoEcalIso',[photon_ecaliso,['phoEcalIsoDR04','phoEt','phoSCEta','rho'],0]],
-                                         ['phoHcalIso',[photon_hcaliso,['phoHcalIsoDR04','phoEt','phoSCEta','rho'],0]]])
+photon_idiso_reqs = OrderedDict([['phoCBID_MEDIUM',[photon_CBID_MEDIUM,['gCBID_MEDIUM'],0]]])
+#                                         ['phohasPixelSeed',[photon_pixveto,['phohasPixelSeed'],0]],
+#                                         ['phoTrkIso',[photon_trkiso,['phoTrkIsoHollowDR04','phoEt','phoSCEta','rho'],0]],
+#                                         ['phoEcalIso',[photon_ecaliso,['phoEcalIsoDR04','phoEt','phoSCEta','rho'],0]],
+#                                         ['phoHcalIso',[photon_hcaliso,['phoHcalIsoDR04','phoEt','phoSCEta','rho'],0]]])
 
 photon_like_jet_idiso = OrderedDict([['photonLikeJet',[photon_like_jet,['phoCorEt','phoSCEta','rho','phohasPixelSeed',
                                                                         'phoHoverE','phoSigmaIEtaIEta','phoSigmaIPhiIPhi',
@@ -438,10 +407,10 @@ photon_like_jet_idiso = OrderedDict([['photonLikeJet',[photon_like_jet,['phoCorE
 photon_sihih_req = OrderedDict([['phosihih',[photon_sihih,['phoSigmaIEtaIEta','phoSigmaIPhiIPhi','phoSCEta'],0]]])
 photon_mc_sihih_req = OrderedDict([['phosihih',[photon_sihih,['phoCorSigmaIEtaIEta','phoSigmaIPhiIPhi','phoSCEta'],0]]])
 
-photon_idiso_reqs = OrderedDict( photon_idiso_reqs_nosihih.items() +
-                                 photon_sihih_req.items() )
-photon_mc_idiso_reqs = OrderedDict( photon_idiso_reqs_nosihih.items() +
-                                    photon_mc_sihih_req.items() )
+photon_idiso_reqs = OrderedDict( photon_idiso_reqs.items() ) #+
+#photon_sihih_req.items() )
+photon_mc_idiso_reqs = OrderedDict( photon_idiso_reqs.items() )# +
+#                                    photon_mc_sihih_req.items() )
 
 def ell_gamma_dr(ell1,ell2,pho):
     mindr = min(pho.DeltaR(ell1),
