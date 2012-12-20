@@ -20,35 +20,17 @@ def passes_mumu_trigger_mc(HLT_Fired,HLT_Prescale,evt_frac):
     
     return (trigger_fired == 1 and prescale == 1)
 
-def passes_ee_trigger_data(HLT_Fired,HLT_Prescale,HLT_Index,run):
-    trigger_fired = 0
-    trigger_prescale = 0
-    index = -1
-    if run >= 160431 and run <= 167913:
-        index = HLT_Index[83]
-        trigger_fired = HLT_Fired[HLT_Index[83]]
-        prescale = HLT_Prescale[HLT_Index[83]]
-    elif run >= 170249 and run <= 180252:
-        index = HLT_Index[86]
-        trigger_fired = HLT_Fired[HLT_Index[86]]
-        prescale = HLT_Prescale[HLT_Index[86]]
+def passes_ee_trigger_data(HLT_Fired,HLT_Prescale,run):
+    trigger_fired = HLT_Fired
+    prescale = HLT_Prescale
+    
+    return (trigger_fired == 1 and prescale == 1)
 
-    return (trigger_fired == 1 and prescale == 1 and index > 0)
-
-def passes_ee_trigger_mc(HLT_Fired,HLT_Prescale,HLT_Index,evt_frac):
-    trigger_fired = 0
-    trigger_prescale = 0
-    index = -1
-    #if evt_frac < 0.236:
-    #    index = HLT_Index[83]
-    #    trigger_fired = HLT_Fired[HLT_Index[83]]
-    #    prescale = HLT_Prescale[HLT_Index[83]]
-    #else:
-    index = HLT_Index[86]
-    trigger_fired = HLT_Fired[HLT_Index[86]]
-    prescale = HLT_Prescale[HLT_Index[86]]
-
-    return (trigger_fired == 1 and prescale == 1 and index > 0)
+def passes_ee_trigger_mc(HLT_Fired,HLT_Prescale,evt_frac):
+    trigger_fired = HLT_Fired
+    prescale = HLT_Prescale
+    
+    return (trigger_fired == 1 and prescale == 1)
     
 def good_vtx(nGoodVtx):    
     return nGoodVtx != 0
@@ -76,28 +58,22 @@ mumu_good_event_mc_reqs = OrderedDict([['trigger',
 
 ee_good_event_data_reqs = OrderedDict([['trigger',
                                         [passes_ee_trigger_data,
-                                         ['HLT','HLTprescale','HLTIndex','run'],
+                                         ['doubleETightPass','doubleETightPrescale','run'],
                                          0]],
                                        ['goodvtx',
                                         [good_vtx,
-                                         ['nGoodVtx'],
-                                         0]],
-                                       ['noscraping',
-                                        [no_scraping,
-                                         ['IsTracksGood'],
-                                         0]]])
+                                         ['nvtx'],
+                                         0]]
+                                       ])
 ee_good_event_mc_reqs = OrderedDict([['trigger',
                                       [passes_ee_trigger_mc,
-                                       ['HLT','HLTprescale','HLTIndex','eventFraction'],
+                                       ['doubleETightPass','doubleETightPrescale','eventFraction'],
                                        0]],
                                      ['goodvtx',
                                       [good_vtx,
-                                       ['nGoodVtx'],
-                                       0]],
-                                     ['noscraping',
-                                      [no_scraping,
-                                       ['IsTracksGood'],
-                                       0]]])
+                                       ['nvtx'],
+                                       0]]
+                                     ])
 
 #single muon selection
 def mu_pt(mu):
@@ -181,104 +157,133 @@ muon_selection_data_reqs = OrderedDict([['mupt1',
                                          [mu_trg_match_data,['metEt','run'],0]]])
 
 
-def ele_pt(thept):    
-    return thept > 10
+def ele_pt(ele):    
+    return ele.Pt() > 10
 
 def ele_eta(eleEta):
-    return ((fabs(eleEta) < 1.4442 or (fabs(eleEta) > 1.566 and fabs(eleEta) < 2.5)))
+    return ((fabs(eleEta) < 1.4442 or
+             (fabs(eleEta) > 1.566 and
+              fabs(eleEta) < 2.5)))
 
-#WP85 from 2011 simple cutbased
-eidcuts = {'misshits':[0,0],
-           'dist':[0.02,0.02],
-           'dcot':[0.02,0.02],
-           'sihih':[0.01,0.031],
-           'dphi':[0.039,0.028],
-           'deta':[0.005,0.007]}
+#2012 LOOSE electron ID
+dEtaCut  = [0.007,0.009]
+dPhiCut  = [0.15,0.10]
+sihihCut = [0.010,0.030]
+HoECut   = [0.12,0.10]
+d0Cut    = [0.02, 0.02]
+dZCut    = [0.2, 0.2]
+ooemoopCut  = [0.05,0.05]
+hasConvCut  = [False,False]
+missHitsCut = [1,1]
+nearMuons = [0,0]
 
-def ele_ID(eleSCEta,eleMissHits,eleDist,eleDcot,eleSihih,eleDphivtx,eleDetavtx):
-    etabin = int(fabs(eleSCEta) > 1.5)    
+def ele_ID(ele, dEtaVtx, dPhiVtx, sihih, HoverE,
+           d0, dZ, EoverP, ecalEnergy, hasMatchedConv,
+           missingHits, muonVeto):
+    idxe = int(abs(ele.Eta()) >= 1.566)
 
-    result1 = (eleMissHits == eidcuts['misshits'][etabin] and
-               ( fabs(eleDist) > eidcuts['dist'][etabin] or
-                 fabs(eleDcot) > eidcuts['dcot'][etabin] ) and
-               eleSihih < eidcuts['sihih'][etabin] and
-               fabs(eleDphivtx) < eidcuts['dphi'][etabin] and
-               fabs(eleDetavtx) < eidcuts['deta'][etabin])
+    result = ( abs(dEtaVtx) < dEtaCut[idxe] and
+               abs(dPhiVtx) < dPhiCut[idxe] and
+               sihih  < sihihCut[idxe] and
+               HoverE < HoECut[idxe] and
+               abs(d0)< d0Cut[idxe] and
+               abs(dZ)< dZCut[idxe] and
+               abs(1.0 - EoverP)/ecalEnergy < ooemoopCut[idxe] and
+               hasMatchedConv == int(hasConvCut[idxe]) and
+               missingHits <= missHitsCut and
+               muonVeto <= nearMuons[idxe] )
     
-    return (result1)
+    return (result)
 
-eisocuts = [0.053,0.042]
-def ele_iso(elePt,scEta,trk,ecal,hcal,rho):
+def ele_iso(ele,pfchg,pfneut,pfpho,ea,rho):
 
-    iso = -1
-    eta1 = -1
-    if(fabs(scEta) < 1.4442):
-        eta1 = 0
-        iso = (trk + max(ecal-1.0,0.0) + hcal - rho*pi*0.3*0.3)/elePt        
-    else:
-        eta1 = 1
-        iso = (trk + ecal + hcal - rho*pi*0.3*0.3)/elePt
+    rhoprime = max(rho,0)
+    eff_iso = max( pfneut + pfpho - ea*rhoprime, 0.0 )
+    iso = (pfchg + eff_iso)/ele.Pt()
+    return (iso < 0.4)
 
-    result1 = iso < eisocuts[eta1]    
-    return (result1)
 
 def ele_trg_match_data(trigMatch,run):
-    hasMatch = False
-    if run >= 160404 and run <= 167913:
-        hasMatch = (trigMatch[18] > 0)
-    elif run >= 170249 and run <= 180252:
-        hasMatch = (trigMatch[21] > 0)
+    hasMatch = True
+    #if run >= 160404 and run <= 167913:
+    #    hasMatch = (trigMatch[18] > 0)
+    #elif run >= 170249 and run <= 180252:
+    #    hasMatch = (trigMatch[21] > 0)
     return hasMatch
 
 def ele_trg_match_mc(trigMatch,evt_frac):
-    hasMatch = False
+    hasMatch = True
     #if evt_frac < 0.236:
     #    hasMatch = (trigMatch[18] > 0)
     #else:
-    hasMatch = (trigMatch[21] > 0)
+    #hasMatch = (trigMatch[21] > 0)
     return hasMatch
 
-def d0_pv(d0):
-    return abs(d0) < 0.02
-
-def dz_pv(dz):
-    return abs(dz) < 0.05
-
-electron_selection_data_reqs = OrderedDict([['ept',
-                                             [ele_pt,['eleCorPt'],0]],
-                                            ['eeta',
-                                             [ele_eta,['eleSCEta'],0]],
-                                            ['eID',
-                                             [ele_ID,['eleSCEta','eleConvMissinghit','eleConvDist',
-                                                      'eleConvDcot','eleSigmaIEtaIEta',
-                                                      'eledPhiAtVtx','eledEtaAtVtx'],0]],
-                                            ['ed0',
-                                             [d0_pv,['elePVD0'],0]],
-                                            ['edz',
-                                             [dz_pv,['elePVDz'],0]],
-                                            ['eiso',
-                                             [ele_iso,['eleCorPt','eleSCEta','eleIsoTrkDR03',
-                                                       'eleIsoEcalDR03','eleIsoHcalSolidDR03','rho'],0]],
+electron_selection_data_reqs = OrderedDict([['ept1',
+                                             [ele_pt,['ell1'],0]],
+                                            ['eeta1',
+                                             [ele_eta,['e1SCEta'],0]],
+                                            ['eID1',
+                                             [ele_ID,['ell1','e1deltaEtaSuperClusterTrackAtVtx',
+                                                      'e1deltaPhiSuperClusterTrackAtVtx','e1SigmaIEtaIEta',
+                                                      'e1HadronicOverEM','e1PVDXY','e1PVDZ',
+                                                      'e1eSuperClusterOverP','e1ecalEnergy',
+                                                      'e1HasMatchedConversion','e1MissingHits',
+                                                      'e1NearMuonVeto'],0]],
+                                            ['eiso1',
+                                             [ele_iso,['ell1','e1PFChargedIso',
+                                                       'e1PFNeutralIso','e1PFPhotonIso',
+                                                       'e1EffectiveArea2012Data','e1RhoHZG2012'],0]],
+                                            ['ept2',
+                                             [ele_pt,['ell2'],0]],
+                                            ['eeta2',
+                                             [ele_eta,['e2SCEta'],0]],
+                                            ['eID2',
+                                             [ele_ID,['ell2','e2deltaEtaSuperClusterTrackAtVtx',
+                                                      'e2deltaPhiSuperClusterTrackAtVtx','e2SigmaIEtaIEta',
+                                                      'e2HadronicOverEM','e2PVDXY','e2PVDZ',
+                                                      'e2eSuperClusterOverP','e2ecalEnergy',
+                                                      'e2HasMatchedConversion','e2MissingHits',
+                                                      'e2NearMuonVeto'],0]],
+                                            ['eiso2',
+                                             [ele_iso,['ell2','e2PFChargedIso',
+                                                       'e2PFNeutralIso','e2PFPhotonIso',
+                                                       'e2EffectiveArea2012Data','e2RhoHZG2012'],0]],
                                             ['trigger_match',
-                                             [ele_trg_match_data,['eleTrgFixed','run'],0]]])
+                                             [ele_trg_match_data,['metEt','run'],0]]])
 
-electron_selection_mc_reqs = OrderedDict([['ept',
-                                           [ele_pt,['eleCorPt'],0]],
-                                          ['eeta',
-                                           [ele_eta,['eleSCEta'],0]],
-                                          ['eID',
-                                           [ele_ID,['eleSCEta','eleConvMissinghit','eleConvDist',
-                                                    'eleConvDcot','eleSigmaIEtaIEta',
-                                                    'eledPhiAtVtx','eledEtaAtVtx'],0]],
-                                          ['ed0',
-                                           [d0_pv,['elePVD0'],0]],
-                                          ['edz',
-                                           [dz_pv,['elePVDz'],0]],
-                                          ['eiso',
-                                           [ele_iso,['eleCorPt','eleSCEta','eleIsoTrkDR03',
-                                                     'eleIsoEcalDR03','eleIsoHcalSolidDR03','rho'],0]],
+electron_selection_mc_reqs = OrderedDict([['ept1',
+                                           [ele_pt,['ell1'],0]],
+                                          ['eeta1',
+                                           [ele_eta,['e1SCEta'],0]],
+                                          ['eID1',
+                                           [ele_ID,['ell1','e1deltaEtaSuperClusterTrackAtVtx',
+                                                    'e1deltaPhiSuperClusterTrackAtVtx','e1SigmaIEtaIEta',
+                                                    'e1HadronicOverEM','e1PVDXY','e1PVDZ',
+                                                    'e1eSuperClusterOverP','e1ecalEnergy',
+                                                    'e1HasMatchedConversion','e1MissingHits',
+                                                    'e1NearMuonVeto'],0]],
+                                          ['eiso1',
+                                           [ele_iso,['ell1','e1PFChargedIso',
+                                                     'e1PFNeutralIso','e1PFPhotonIso',
+                                                     'e1EffectiveArea2012Data','e1RhoHZG2012'],0]],
+                                          ['ept2',
+                                           [ele_pt,['ell2'],0]],
+                                          ['eeta2',
+                                           [ele_eta,['e2SCEta'],0]],
+                                          ['eID2',
+                                           [ele_ID,['ell2','e2deltaEtaSuperClusterTrackAtVtx',
+                                                    'e2deltaPhiSuperClusterTrackAtVtx','e2SigmaIEtaIEta',
+                                                    'e2HadronicOverEM','e2PVDXY','e2PVDZ',
+                                                    'e2eSuperClusterOverP','e2ecalEnergy',
+                                                    'e2HasMatchedConversion','e2MissingHits',
+                                                    'e2NearMuonVeto'],0]],
+                                          ['eiso2',
+                                           [ele_iso,['ell2','e2PFChargedIso',
+                                                     'e2PFNeutralIso','e2PFPhotonIso',
+                                                     'e2EffectiveArea2012Data','e2RhoHZG2012'],0]],
                                           ['trigger_match',
-                                           [ele_trg_match_mc,['eleTrgFixed','eventFraction'],0]]])
+                                           [ele_trg_match_mc,['metEt','eventFraction'],0]]])
 
 def z_oneleg20(ell1, ell2):
     return (ell1.Pt() > 20 or ell2.Pt() > 20)

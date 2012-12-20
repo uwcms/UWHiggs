@@ -112,8 +112,8 @@ def run_analysis(options,input_file):
             nEvents_sample = mmg.Get('eventCount').GetBinContent(1)
         elif leptonType == 'electron':
             #specific = electronBranches+commonBranches
-            mmg = in_file.Get('eeg')
-            tree = in_file.Get('mmg').Get('final').Get(treeName)
+            eeg = in_file.Get('eeg')
+            tree = eeg.Get('final').Get(treeName)
             nEvents_sample = eeg.Get('eventCount').GetBinContent(1)
         else:
             raise Exception('invalid lepton type: %s'%options.leptonType)
