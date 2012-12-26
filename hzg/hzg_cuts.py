@@ -161,9 +161,7 @@ def ele_pt(ele):
     return ele.Pt() > 10
 
 def ele_eta(eleEta):
-    return ((fabs(eleEta) < 1.4442 or
-             (fabs(eleEta) > 1.566 and
-              fabs(eleEta) < 2.5)))
+    return (abs(eleEta) < 1.4442 or (abs(eleEta) > 1.566 and abs(eleEta) < 2.5))
 
 #2012 LOOSE electron ID
 dEtaCut  = [0.007,0.009]
@@ -190,7 +188,7 @@ def ele_ID(ele, dEtaVtx, dPhiVtx, sihih, HoverE,
                abs(dZ)< dZCut[idxe] and
                abs(1.0 - EoverP)/ecalEnergy < ooemoopCut[idxe] and
                hasMatchedConv == int(hasConvCut[idxe]) and
-               missingHits <= missHitsCut and
+               missingHits <= missHitsCut[idxe] and
                muonVeto <= nearMuons[idxe] )
     
     return (result)
@@ -436,11 +434,13 @@ mu_cuts_mc   = CutflowDecision(muon_selection_mc_reqs)
 e_cuts_data  = CutflowDecision(electron_selection_data_reqs)
 e_cuts_mc    = CutflowDecision(electron_selection_mc_reqs)
 photon_cuts_data  = CutflowDecision(photon_kine_reqs.items() +
-                                    photon_idiso_reqs.items())
+                                    photon_idiso_reqs.items()
+                                    )
 photon_cuts_plj   = CutflowDecision(photon_kine_reqs.items() +
                                     photon_like_jet_idiso.items())
 photon_cuts_mc  = CutflowDecision(photon_kine_reqs.items() +
-                                  photon_mc_idiso_reqs.items())
+                                  photon_mc_idiso_reqs.items()
+                                  )
 photon_cuts_noifsr = CutflowDecision(photon_kine_reqs.items() +
                                      photon_mc_idiso_reqs.items() +
                                      photon_not_ifsr.items())

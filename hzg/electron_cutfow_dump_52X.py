@@ -28,7 +28,7 @@ def trigger_req(event,i):
     return (event.doubleETightPass[i] == 1 and event.doubleETightPrescale[i] == 1)
 
 def vtx_req(event,i):
-    return (event.pvIsValid[i] == 1 and event.pvIsFake[i] == 0)
+    return (event.nvtx[i] > 0)
 
 # [barrel, endcap], LOOSE WP
 dEtaCut  = [0.007,0.009]
@@ -59,7 +59,6 @@ def e_id_fun(event,i):
 
 def e_id(event,i):
     return (event.e1Pt[i] > 10. and event.e2Pt[i] > 10. and
-            #abs(event.e1Eta[i]) < 2.5 and abs(event.e2Eta[i]) < 2.5 and
             ecal_fiducial(event.e1SCEta[i]) and ecal_fiducial(event.e2SCEta[i]) and
             e_id_fun(event,i) and
             event.e1NearMuonVeto[i] == 0.0 and event.e2NearMuonVeto[i] == 0.0)
@@ -107,17 +106,17 @@ def phoIso(event,i):
     ascEta = abs(event.gSCEta[i])
 
     rho = event.gRho[i]
-    pfChgIso = event.gPFChargedIsov2[i]
+    pfChgIso = event.gPFChargedIso[i]
     pfChgEA  = event.gEffectiveAreaCHad[i]
     
     chgIso = max(pfChgIso - rho*pfChgEA,0.0)
 
-    pfNeutIso= event.gPFNeutralIsov2[i]
+    pfNeutIso= event.gPFNeutralIso[i]
     pfNeutEA = event.gEffectiveAreaNHad[i]    
 
     neutIso = max(pfNeutIso - 0.04*event.gPt[i] - rho*pfNeutEA,0.0)
 
-    pfPhoIso = event.gPFPhotonIsov2[i]
+    pfPhoIso = event.gPFPhotonIso[i]
     pfPhoEA  = event.gEffectiveAreaPho[i]
 
     phoIso = max(pfPhoIso - 0.005*event.gPt[i] - rho*pfPhoEA,0.0)
@@ -146,7 +145,8 @@ def pho_fiducial(event,i):
     pt_over_m = event.gPt[i]/event.Mass[i]
     ascEta = abs(event.gSCEta[i])
     
-    return ( pt_over_m > 15.0/110.0 and
+    return ( event.gPt[i] > 15.0 and
+             pt_over_m > 15.0/110.0 and
              ecal_fiducial(ascEta) )
 
 def photon_dr(event,i):
@@ -196,7 +196,7 @@ def photon_id_debug(event,i):
         zg_mass_high(event,i) ):
         """
     if (True):
-        print "ALLPHOTON :: run %i  evt: %i  pt: %.4f  scEta: %0.6f  hoe: %f" \
+        print "PHOTON :: run %i  evt: %i  pt: %.4f  scEta: %0.6f  hoe: %f" \
               "  sieie: %f  pfCh: %.6f  pfNe: %.6f  pfGa: %.6f  rho: %f  EACh: %.3f   EANeut: %.3f   EAPho: %.3f" \
               %(event.run[i], event.evt[i], event.gPt[i], event.gSCEta[i],
                 event.gSingleTowerHadronicDepth1OverEm[i] +
