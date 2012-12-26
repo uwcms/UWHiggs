@@ -107,9 +107,10 @@ def good_photon(event,i):
     pt_over_m = event.gPt[i]/event.Mass[i]
     ascEta = abs(event.gSCEta[i])
     
-    return ( pt_over_m > 15.0/110.0 and
-             (ascEta < 1.4442 or (ascEta > 1.566 and ascEta < 2.5)) #and
-            # event.gCBID_MEDIUM[i] == 1.0 
+    return ( event.gPt[i] > 15.0 and
+             (ascEta < 1.4442 or (ascEta > 1.566 and ascEta < 2.5)) and
+             pt_over_m > 15.0/110.0 and             
+             event.gCBID_MEDIUM[i] == 1.0 
              )
 
 def pho_fiducial(event,i):
