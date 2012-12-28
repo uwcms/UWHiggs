@@ -3,7 +3,7 @@
 import ROOT
 from ROOT import TFile, TTree, gDirectory, TH1F
 
-import sys
+import sys,cPickle
 
 if len(sys.argv) != 2:
     sys.exit("this program accepts one argument (the file name!)")
@@ -36,13 +36,11 @@ def mu_iso(event,i):
     
     m1Iso = ( (event.m1PFChargedIso[i] +
                max(event.m1PFNeutralIso[i] + event.m1PFPhotonIso[i]
-                   -event.m1EffectiveArea2012[i]*
-                   max(event.m1RhoHZG2012[i],0.0),
+                   -0.5*event.m1PFPUChargedIso[i],                   
                    0.0))/event.m1Pt[i] )
     m2Iso = ( (event.m2PFChargedIso[i] +
                max(event.m2PFNeutralIso[i] + event.m2PFPhotonIso[i]
-                   -event.m2EffectiveArea2012[i]*
-                   max(event.m2RhoHZG2012[i],0.0),
+                   -0.5*event.m2PFPUChargedIso[i],
                    0.0))/event.m2Pt[i] )
 
     return (m1Iso < 0.12 and m2Iso < 0.12)
@@ -140,33 +138,78 @@ def photon_id_debug(event,i):
         photon_dr(event,i) and
         zg_mass_low(event,i) and
         zg_mass_high(event,i)
-        ):
-        
+        ):        
     #if (True):
-        print "ALLPHOTON :: entry: %i run %i  evt: %i  pt:%.4f  scEta: %0.6f  eVeto: %i  hoe: %f" \
+        print "PHOTON :: entry: %i run %i  evt: %i  pt:%.4f  scEta: %0.6f  eVeto: %i  hoe: %f" \
               "  sieie: %f  pfCh: %.6f  pfNe: %.6f  pfGa: %.6f  rho: %f  EACh: %.3f   EANeut: %.3f   EAPho: %.3f" \
               %(i, event.run[i], event.evt[i], event.gPt[i], event.gSCEta[i],
                 event.gConvSafeElectronVeto[i],
                 event.gSingleTowerHadronicDepth1OverEm[i] +
                 event.gSingleTowerHadronicDepth2OverEm[i] ,
                 event.gSigmaIEtaIEta[i],
-                event.gPFChargedIsov2[i],
-                event.gPFNeutralIsov2[i],
-                event.gPFPhotonIsov2[i],
+                event.gPFChargedIso[i],
+                event.gPFNeutralIso[i],
+                event.gPFPhotonIso[i],
                 event.gRho[i],
                 event.gEffectiveAreaCHad[i],
                 event.gEffectiveAreaNHad[i],
                 event.gEffectiveAreaPho[i])        
 
-def process_tuple(tuple,cut_list,counts,printer=None):    
+mm_events = {}
+def mm_dump(event):
+    key = (i,event.run[i],event.lumi[i],event.evt[i]) #index on entry,run,lumi,event
+    entry = {}
+
+mmg_events = {}
+def mmg_dump(event):
+    key = (event.run[0],event.lumi[0],event.evt[0])
+    entries = []
+
+    for i in range(event.N_PATFinalState):        
+        entry = {
+            #trigger, vertex
+            'trigger':event.mu17mu8Pass[i],'ngoodvtx':event.nvtx[i],
+            #rhos
+            'muonRho':event.m1RhoHZG2012[i],'photonRho':event.gRho[i],
+            # masses charge delta-r
+            'zgMass':event.Mass[i],'zMass':event.m1_m2_Mass[i],
+            'sameSign':event.m1_m2_SS[i],
+            'm1_g_DR':event.m1_g_DR[i],'m2_g_DR':event.m2_g_DR[i],
+            #muon1
+            'm1Pt':event.m1Pt[i],'m1Eta':event.m1Eta[i],'m1Phi':event.m1Phi[i],
+            'm1ID':event.m1IDHZG2012[i],
+            'm1PFChargedIso':event.m1PFChargedIso[i],'m1PFNeutralIso':event.m1PFNeutralIso[i],
+            'm1PFPhotonIso':event.m1PFPhotonIso[i],            
+            #muon 2
+            'm2Pt':event.m2Pt[i],'m2Eta':event.m2Eta[i],'m2Phi':event.m2Phi[i],
+            'm2ID':event.m2IDHZG2012[i],
+            'm2PFChargedIso':event.m2PFChargedIso[i],'m2PFNeutralIso':event.m2PFNeutralIso[i],
+            'm2PFPhotonIso':event.m2PFPhotonIso[i],
+            #photon
+            'gPt':event.gPt[i],'gEta':event.gEta[i],'gSCEta':event.gSCEta[i],
+            'gPhi':event.gPhi[i],'gConvSafeElectronVeto':event.gConvSafeElectronVeto[i],
+            'gSingleTowerHadronicOverEm':event.gSingleTowerHadronicOverEm[i],
+            'gSigmaIEtaIEta':event.gSigmaIEtaIEta[i],'gPFChargedIso':event.gPFChargedIso[i],
+            'gPFNeutralIso':event.gPFNeutralIso[i],
+            'gEffectiveAreaCHad':event.gEffectiveAreaCHad[i],
+            'gEffectiveAreaNHad':event.gEffectiveAreaNHad[i],
+            'gEffectiveAreaPho':event.gEffectiveAreaPho[i]            
+            }
+        entries.append(entry)
+    mmg_events[key] = entries
+        
+
+def process_tuple(tuple,cut_list,counts,dumper=None):    
     for event in tuple:
         one_passes = False
         counts_evt = [0 for cut in cut_list]
-    
-        for i in range(event.N_PATFinalState):
 
-            if printer is not None:
-                printer(event,i)
+        
+    
+        for i in range(event.N_PATFinalState):            
+
+            if dumper is not None:
+                dumper(event,i)
             
             cut_bits = [cut(event,i) for cut in cut_list]
             one_passes = one_passes or (cut_bits.count(True) == len(cut_list))
@@ -227,5 +270,7 @@ print "ZG Mass < 180    : %i"%(counts_mmg[len(cut_list_mm)+7])
 print
 print "Total mmg        : %i"%(counts_mmg[len(cut_list_mmg)])
 print
+
+cPickle.dump( mmg_events, open( "mmg_event_dump.pkl", "wb" ) )
 
 file.Close()

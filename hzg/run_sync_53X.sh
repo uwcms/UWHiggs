@@ -38,7 +38,7 @@ do
   hdfsOutDir=srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN=/hdfs/store/user/lgray/HZG_sync/${syncPostfix}/ntuples/${parts[0]}
 
   fajOpts="--input-files-per-job=1 --infer-cmssw-path --express-queue --output-dir=${hdfsOutDir} --input-dir=${hdfsInDir} --input-file-list=${jobName}.input.txt"
-  patTupleOpts="makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 maxEvents=-1 outputFile=$outputFileName"
+  patTupleOpts="makeHZG=1 makeDiObject=1 passThru=1 eventView=1 reportEvery=100 maxEvents=-1"
 
   rm -rf ${jobName}.input.txt
   for file in `echo ${parts[1]} | tr ',' '\n'`
@@ -46,5 +46,5 @@ do
     echo ${file##*/} | tr ',' '\n' >> ${jobName}.input.txt
   done
 
-  farmoutAnalysisJobs $fajOpts $jobName $theCfg inputFiles='$inputFileNames' $patTupleOpts $dataOpts 
+  farmoutAnalysisJobs $fajOpts $jobName $theCfg inputFiles='$inputFileNames' outputFile='$outputFileName' $patTupleOpts $dataOpts 
 done
