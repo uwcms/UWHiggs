@@ -125,7 +125,7 @@ for sample in sorted(allTuples.keys()):
                 
                 command.extend(farmout_options)
                 
-                command.append('-'.join([jobId, sample]))
+                command.append('-'.join([jobId, tupleName]))
                 command.append(cfg)
                 command.extend(options)
                 print ' '.join(command)
