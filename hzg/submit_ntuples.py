@@ -108,7 +108,7 @@ for sample in sorted(allTuples.keys()):
                 output_dir = '/hdfs/store/user/%s/%s/%s/%s'\
                              %(os.environ['LOGNAME'],
                                jobId,
-                               '-'.join(subsample,sample),
+                               '-'.join([subsample,sample]),
                                '.'.join(tuple[1:].split('/'))
                                )
                 
