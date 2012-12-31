@@ -24,7 +24,7 @@ parser.add_argument('--subsamples',nargs='+', type=str, required=False,
                     help='Filter subsamples using list of patterns')
 args = parser.parse_args()
 
-cfg = '%s/src/FinalStateAnalysis/NtuplesTools/test/make_ntuples_cfg.py'\
+cfg = '%s/src/FinalStateAnalysis/NtupleTools/test/make_ntuples_cfg.py'\
       %os.environ['CMSSW_BASE']
 jobId = args.jobid
 
