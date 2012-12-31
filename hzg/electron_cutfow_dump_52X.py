@@ -161,27 +161,29 @@ def zg_mass_high(event,i):
 def electron_id_debug(event,i):
     if( trigger_req(event,i) and
         vtx_req(event,i) and
-        e_id(event,i) ):
+        e_id(event,i) and
+        e_iso(event,i) and
+        z_id(event,i) ):
         print "ELECTRON :: run: %i  evt: %i  pt: %.4f  scEta: %.6f hoe: %.4f" \
               "  sieie: %.6f  dEtaIn: %.6f  dPhiIn: %.6f  d0: %f  dZ: %f  " \
-              " ooemoop: %.6f  mhits: %i" \
+              " ooemoop: %.6f  mhits: %i IDISOmva: %.4f" \
               %(event.run[i], event.evt[i], event.e1Pt[i], event.e1SCEta[i],
                 event.e1HadronicOverEM[i], event.e1SigmaIEtaIEta[i],
                 event.e1deltaEtaSuperClusterTrackAtVtx[i],
                 event.e1deltaPhiSuperClusterTrackAtVtx[i],
                 event.e1PVDXY[i], event.e1PVDZ[i],
                 abs(1.0 - event.e1eSuperClusterOverP[i])/event.e1ecalEnergy[i],
-                event.e1MissingHits[i])
+                event.e1MissingHits[i],event.e1MVATrigIDISO[i])
         print "ELECTRON :: run: %i  evt: %i  pt: %.4f  scEta: %.6f hoe: %.4f" \
               "  sieie: %.6f  dEtaIn: %.6f  dPhiIn: %.6f  d0: %f  dZ: %f  " \
-              " ooemoop: %.6f  mhits: %i" \
+              " ooemoop: %.6f  mhits: %i IDISOmva: %.4f" \
               %(event.run[i], event.evt[i], event.e2Pt[i], event.e2SCEta[i],
                 event.e2HadronicOverEM[i], event.e2SigmaIEtaIEta[i],
                 event.e2deltaEtaSuperClusterTrackAtVtx[i],
                 event.e2deltaPhiSuperClusterTrackAtVtx[i],
                 event.e2PVDXY[i], event.e2PVDZ[i],
                 abs(1.0 - event.e2eSuperClusterOverP[i])/event.e2ecalEnergy[i],
-                event.e2MissingHits[i])
+                event.e2MissingHits[i],event.e2MVATrigIDISO[i])
           
 
 def photon_id_debug(event,i):
@@ -255,7 +257,7 @@ cut_list_eeg += [pho_fiducial,
                  ]
 counts_eeg = [0 for cut in cut_list_eeg] + [0]
 
-process_tuple(eeNtuple,cut_list_ee,counts_ee)
+process_tuple(eeNtuple,cut_list_ee,counts_ee,electron_id_debug)
 
 print 'HLT     : %i'%(counts_ee[0])
 print 'VTX     : %i'%(counts_ee[1])
