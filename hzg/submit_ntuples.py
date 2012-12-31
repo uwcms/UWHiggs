@@ -117,7 +117,7 @@ for sample in sorted(allTuples.keys()):
                     #'--no-shared-fs', # Copy libs to submit dir so we don't kill AFS
                     '--infer-cmssw-path',
                     '--vsize-limit=30000',
-                    '--input-files-per-job=10',
+                    '--input-files-per-job=2',
                     '"--output-dir=srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN=%s"' % output_dir,
                     '--submit-dir=%s' % submit_dir,
                     '--output-dag-file=%s/dag.dag' % dag_directory,
