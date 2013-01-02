@@ -81,7 +81,7 @@ for sample in sorted(allTuples.keys()):
                     continue            
 
                 options = ["makeHZG=1"]
-                options.append("makeDiObject=1")
+                #options.append("makeDiObject=1")
                 options.append("eventView=1")
                 options.append("reportEvery=1000")
                 options.append("maxEvents=-1")

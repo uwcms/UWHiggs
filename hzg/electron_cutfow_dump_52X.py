@@ -78,6 +78,40 @@ def e_iso(event,i):
 
     return (e1Iso < 0.4 and e2Iso < 0.4)
 
+
+#the pieces of the electron MVA id
+dEtaCutMVA  = [0.007,0.009]
+dPhiCutMVA  = [0.15,0.10]
+sihihCutMVA = [0.010,0.030]
+HoECutMVA   = [0.12,0.10]
+def e_mva_preselection(event,i):
+    idxe1 = int(abs(event.e1Eta[i]) >= 1.566)
+    idxe2 = int(abs(event.e2Eta[i]) >= 1.566)
+    
+    return ( event.e1Pt[i] > 10. and event.e2Pt[i] > 10. and
+             ecal_fiducial(event.e1SCEta[i]) and
+             ecal_fiducial(event.e2SCEta[i]) and
+             abs(event.e1deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCutMVA[idxe1] and
+             abs(event.e2deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCutMVA[idxe2] and
+             abs(event.e1deltaPhiSuperClusterTrackAtVtx[i]) < dPhiCutMVA[idxe1] and
+             abs(event.e2deltaPhiSuperClusterTrackAtVtx[i]) < dPhiCutMVA[idxe2] and
+             event.e1SigmaIEtaIEta[i] < sihihCutMVA[idxe1] and
+             event.e2SigmaIEtaIEta[i] < sihihCutMVA[idxe2] and
+             event.e1HadronicOverEM[i] < HoECutMVA[idxe1] and
+             event.e2HadronicOverEM[i] < HoECutMVA[idxe2] and
+             event.e1RelIso[i] < 0.2 and
+             event.e2RelIso[i] < 0.2     )
+
+mvacuts = [-0.82,-0.98] # pt < 20, pt > 20 
+def e_mva_idiso(event,i):
+    e1idx = (event.e1Pt[i] > 20)
+    e2idx = (event.e2Pt[i] > 20)
+    e1mva = event.e1MVATrigIDISO[i]
+    e2mva = event.e2MVATrigIDISO[i]
+
+    return ( e1mva > mvacuts[e1idx] and
+             e2mva > mvacuts[e2idx]      )
+
 def z_id(event,i):
     return ( (event.e1Pt[i] > 20 or event.e2Pt[i] > 20) and
              event.e1_e2_Mass[i] > 50 and
@@ -239,8 +273,8 @@ def process_tuple(tuple,cut_list,counts,printer=None):
 
 cut_list_ee = [trigger_req, #HLT
                vtx_req, #PV selection
-               e_id, #10 GeV && ID
-               e_iso, #ISO
+               e_mva_preselection, #10 GeV && ID
+               e_mva_idiso, #ISO
                z_id #Z ID
                ]
 counts_ee = [0 for cut in cut_list_ee] + [0]
@@ -257,12 +291,12 @@ cut_list_eeg += [pho_fiducial,
                  ]
 counts_eeg = [0 for cut in cut_list_eeg] + [0]
 
-process_tuple(eeNtuple,cut_list_ee,counts_ee,electron_id_debug)
+process_tuple(eeNtuple,cut_list_ee,counts_ee)#,electron_id_debug)
 
 print 'HLT     : %i'%(counts_ee[0])
 print 'VTX     : %i'%(counts_ee[1])
-print 'Elec ID : %i'%(counts_ee[2])
-print 'Elec Iso: %i'%(counts_ee[3])
+print 'Elec preMVA : %i'%(counts_ee[2])
+print 'Elec MVA ID : %i'%(counts_ee[3])
 print 'Z Sel   : %i'%(counts_ee[4])
 print
 print 'Total ee: %i'%(counts_ee[5])
