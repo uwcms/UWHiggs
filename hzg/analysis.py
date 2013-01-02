@@ -93,224 +93,229 @@ rng = TRandom3(0)
 Z_POLE = 91.188
 ell1,ell2,pho = TLorentzVector(),TLorentzVector(),TLorentzVector()
 thez, thezg = TLorentzVector(),TLorentzVector()
-def run_analysis(options,input_file):
-    pwd = ROOT.gDirectory.GetPath()
-    in_file = TFile.Open(input_file)
-    ROOT.gDirectory.cd(pwd)
-    leptonType = options.leptonType
-    
+def run_analysis(options,input_file):        
     tm = tree_manager()
-    tree = None
-    nEvents_sample = 0    
-    specific = None
-    treeName = 'Ntuple'
-    if not options.allBranches:    
-        if leptonType == 'muon':
-            #specific = muonBranches+commonBranches
-            mmg = in_file.Get('mmg')
-            tree = mmg.Get('final').Get(treeName)
-            nEvents_sample = mmg.Get('eventCount').GetBinContent(1)
-        elif leptonType == 'electron':
-            #specific = electronBranches+commonBranches
-            eeg = in_file.Get('eeg')
-            tree = eeg.Get('final').Get(treeName)
-            nEvents_sample = eeg.Get('eventCount').GetBinContent(1)
-        else:
-            raise Exception('invalid lepton type: %s'%options.leptonType)
-
-    total_events = tree.GetEntriesFast()    
-    tick_size = int(total_events//100.0)
-    selected_events = []
-
-    tm.importTree(treeName,tree,specific)    
-
-    tm.cloneTree(treeName,'%s_zs'%treeName,specific)
-    tm.cloneTree(treeName,'%s_zgs'%treeName,specific)
-    tm.cloneTree(treeName,'%s_zgs_nosihih'%treeName,specific)
-
-    #setup process dependent stuff
-    cuts = setupCuts(options)
-    #lepton_mass = lepton_masses[options.leptonType]
-    #z_info = z_infos[options.leptonType]
-    #lepton_info = lepton_infos[options.leptonType]
-
-    #setup pu-reweighing
-    #pu_weight = pu_weight_nominal 
-    #if options.isSummer11:
-    #    pu_weigt = pu_weight_summer11
-
-    procWeight = 1.0
-    if options.datType != 'data':
-        procWeight = (run_lumi[options.leptonType][options.datType]*
-                      options.crossSection/nEvents_sample)
-
-    # setup the corrector (this links the appropriate four momenta
-    # into a common naming scheme
-    correct = setup_corrections(options.runYear   , options.runType,
-                                options.leptonType, options.datType,
-                                options.leptonCor , options.gamCor,
-                                options.vanilla                       )
-
-    ievent = long(0)
-    for event in tm[treeName]:
-        ievent+=1
-        #print ievent,total_events,fmod(ievent/total_events,0.01)
-        if not (ievent+1)%tick_size or ievent+1 == total_events:  
-            sys.stdout.write('\r%3.0f%s complete! (%i/%i)'%(((ievent+1)/
-                                                             tick_size),
-                                                            '%',
-                                                            ievent+1,
-                                                            total_events))
-            sys.stdout.flush()
-
-        # setup the common event momentum
-        # ell1 = lepton1, ell2 = lepton2
-        # gam = photon, Z = dilepton, Zg = Z+photon        
-        correct(event)
+    for input_file in args:
+        print
+        print 'processing input file: %s'%(input_file)
+        pwd = ROOT.gDirectory.GetPath()
+        in_file = TFile.Open(input_file)
+        ROOT.gDirectory.cd(pwd)
+        leptonType = options.leptonType    
         
-        run_idx = getRunIndex(event.run,options.datType,options.leptonType)
-        setattr(event,'procWeight',procWeight)
-        setattr(event,'puWeight',1.0)
-        if options.datType != 'data':            
-            setattr(event,'eventFraction',float(ievent+1)/total_events)
-            #event.event/nEvents_sample)
-            event.puWeight = pu_weight(event.nPU,options.runType)
+        tree = None
+        nEvents_sample = 0    
+        specific = None
+        treeName = 'Ntuple'
+        if not options.allBranches:    
+            if leptonType == 'muon':                
+                #specific = muonBranches+commonBranches
+                mmg = in_file.Get('mmg')
+                tree = mmg.Get('final').Get(treeName)
+                nEvents_sample = mmg.Get('eventCount').GetBinContent(1)
+            elif leptonType == 'electron':                 
+                #specific = electronBranches+commonBranches
+                eeg = in_file.Get('eeg')
+                tree = eeg.Get('final').Get(treeName)
+                nEvents_sample = eeg.Get('eventCount').GetBinContent(1)
+            else:             
+                raise Exception('invalid lepton type: %s'%options.leptonType)
 
-        selected_z = []
-        #selected_pho_nosihih = []
-        selected_pho = []        
-        bad_leptons = []
+        total_events = tree.GetEntriesFast()    
+        tick_size = int(total_events//100.0)
+        selected_events = []
+        
+        tm.importTree(treeName,tree,specific)    
+        
+        tm.cloneTree(treeName,'%s_zs'%treeName,specific)
+        tm.cloneTree(treeName,'%s_zgs'%treeName,specific)
+        tm.cloneTree(treeName,'%s_zgs_nosihih'%treeName,specific)
+        
+        #setup process dependent stuff
+        cuts = setupCuts(options)
+        #lepton_mass = lepton_masses[options.leptonType]
+        #z_info = z_infos[options.leptonType]
+        #lepton_info = lepton_infos[options.leptonType]
 
-        if options.datType == 'data':
-            # kill run 170722
-            # kill the obvious pile up combinatorial event
-            if ( event.run[0] == 170722 or
-                 (event.run[0]   == 166512 and
-                  event.lumi[0] == 1678 and
-                  event.evt[0] == 1822682238) ):
-                continue
+        #setup pu-reweighing
+        #pu_weight = pu_weight_nominal 
+        #if options.isSummer11:
+        #    pu_weigt = pu_weight_summer11
+        
+        procWeight = 1.0
+        if options.datType != 'data':
+            procWeight = (run_lumi[options.leptonType][options.datType]*
+                          options.crossSection/nEvents_sample)
 
-        bestLLG = None
-        bestZdiff = -1
-        for i in range(event.N_PATFinalState):            
+        # setup the corrector (this links the appropriate four momenta
+        # into a common naming scheme
+        correct = setup_corrections(options.runYear   , options.runType,
+                                    options.leptonType, options.datType,
+                                    options.leptonCor , options.gamCor,
+                                    options.vanilla                       )
 
-            cuts.getCutflow('trigger')(event,i)
-            if options.exlProc and not cuts.getCutflow('trigger') :
-                continue        
+        ievent = long(0)
+        for event in tm[treeName]:
+            ievent+=1
+            #print ievent,total_events,fmod(ievent/total_events,0.01)
+            if not (ievent+1)%tick_size or ievent+1 == total_events:  
+                sys.stdout.write('\r%3.0f%s complete! (%i/%i)'%(((ievent+1)/
+                                                                 tick_size),
+                                                                '%',
+                                                                ievent+1,
+                                                                total_events))
+                sys.stdout.flush()
             
-            cuts.getCutflow('pho')(event,i)            
-            cuts.getCutflow('leptons')(event,i) 
-            if ( options.exlProc and
-                 not cuts.getCutflow('leptons') and
-                 not cuts.getCutflow('pho') ):
-                continue
+            # setup the common event momentum
+            # ell1 = lepton1, ell2 = lepton2
+            # gam = photon, Z = dilepton, Zg = Z+photon        
+            correct(event)
+        
+            run_idx = getRunIndex(event.run,options.datType,options.leptonType)
+            setattr(event,'procWeight',procWeight)
+            setattr(event,'puWeight',1.0)
+            if options.datType != 'data':            
+                setattr(event,'eventFraction',float(ievent+1)/total_events)
+                #event.event/nEvents_sample)
+                event.puWeight = pu_weight(event.nPU,options.runType)
 
-            cuts.getCutflow('z')(event,i)
-            if options.exlProc and not cuts.getCutflow('z'):
-                continue
+            selected_z = []
+            #selected_pho_nosihih = []
+            selected_pho = []        
+            bad_leptons = []
+            
+            if options.datType == 'data':
+                # kill run 170722
+                # kill the obvious pile up combinatorial event
+                if ( event.run[0] == 170722 or
+                     (event.run[0]   == 166512 and
+                      event.lumi[0] == 1678 and
+                      event.evt[0] == 1822682238) ):
+                    continue
+        
+            bestLLG = None
+            bestZdiff = -1
+            for i in range(event.N_PATFinalState):            
 
-            if ( cuts.getCutflow('trigger') and
-                 cuts.getCutflow('leptons') and
-                 cuts.getCutflow('pho') and
-                 cuts.getCutflow('z') ):
-                thisZdiff = abs(Z_POLE-event.Z[i].M())
-                if( cuts.getCut('mindr')[0](event.ell1[i],
-                                            event.ell2[i],
-                                            event.gam[i]) and
-                    (thisZdiff < bestZdiff or bestLLG is None) ):
-                    bestZdiff = thisZdiff
-                    bestLLG = i
+                cuts.getCutflow('trigger')(event,i)
+                if options.exlProc and not cuts.getCutflow('trigger') :
+                    continue        
+            
+                cuts.getCutflow('pho')(event,i)            
+                cuts.getCutflow('leptons')(event,i) 
+                if ( options.exlProc and
+                     not cuts.getCutflow('leptons') and
+                     not cuts.getCutflow('pho') ):
+                    continue
+
+                cuts.getCutflow('z')(event,i)
+                if options.exlProc and not cuts.getCutflow('z'):
+                    continue
+
+                if ( cuts.getCutflow('trigger') and
+                     cuts.getCutflow('leptons') and
+                     cuts.getCutflow('pho') and
+                     cuts.getCutflow('z') ):
+                    thisZdiff = abs(Z_POLE-event.Z[i].M())
+                    if( cuts.getCut('mindr')[0](event.ell1[i],
+                                                event.ell2[i],
+                                                event.gam[i]) and
+                        (thisZdiff < bestZdiff or bestLLG is None) ):
+                        bestZdiff = thisZdiff
+                        bestLLG = i
                     
+            #event object selection done        
+            if options.exlProc and bestLLG is None:
+                continue
+             
+            bestZ = bestLLG
         
-        #event object selection done        
-        if options.exlProc and bestLLG is None:
-            continue
-        
-        bestZ = bestLLG
-        
-        if bestLLG is not None:
-            setattr(event,'ell1SF',1.0)
-            setattr(event,'ell2SF',1.0)
-            #if run_idx != -1:
-            #    event.ell1SF = leptonSF_nominal(event.nGoodVtx,
-            #                          getattr(event,lepton_info['pt'])[idx1],
-            #                          getattr(event,lepton_info['eta'])[idx1],
-            #                                    run_idx,
-            #                                    options.leptonType)
-            #    event.ell2SF = leptonSF_nominal(event.nGoodVtx,
-            #                          getattr(event,lepton_info['pt'])[idx2],
-            #                          getattr(event,lepton_info['eta'])[idx2],
-            #                                    run_idx,
-            #                                    options.leptonType)
-            setattr(event,'bestZ',bestLLG)
-            outTrees.bestZTree(event,tm)
-            tm.fillTree('%s_zs'%treeName,{})
-        
-        #bestPhoNoSihih = None
-        #bestPhoNoSihihPt = -1
-        #for idxph in selected_pho_nosihih:
-        #    pho.SetPtEtaPhiM(event.phoCorEt[idxph],
-        #                     event.phoEta[idxph],
-        #                     event.phoPhi[idxph],
-        #                     0.0)
-        #    if bestPhoNoSihih is None or pho.Pt() > bestPhoNoSihihPt:
-        #        if ( bestZ is not None and
-        #             cuts.getCut('mindr')[0](event.bestZLeg1,
-        #                                     event.bestZLeg2,
-        #                                     pho) ):
-        #            bestPhoNoSihih = idxph
-        #            bestPhoNoSihihPt = pho.Pt()
-        #        elif( bestZ is None ):
-        #            bestPhoSihih = idxph
-        #            bestPhoSihihPt = pho.Pt()
-        
-        bestPho = bestLLG
-
-        if  options.exlProc and bestPho is None: #and bestPhoNoSihih is None:
-            continue
-
-        if bestPho is not None:            
-            setattr(event,'phoSF',1.0)
-            #if run_idx != -1:
-            #    event.phoSF = phoSF_nominal(event.nGoodVtx,
-            #                                event.phoEt[bestPho],
-            #                                event.phoEta[bestPho],
-            #                                run_idx)            
-            setattr(event,'bestPho',bestPho)
+            if bestLLG is not None:
+                setattr(event,'ell1SF',1.0)
+                setattr(event,'ell2SF',1.0)
+                #if run_idx != -1:
+                #    event.ell1SF = leptonSF_nominal(event.nGoodVtx,
+                #                     getattr(event,lepton_info['pt'])[idx1],
+                #                    getattr(event,lepton_info['eta'])[idx1],
+                #                                    run_idx,
+                #                                    options.leptonType)
+                #    event.ell2SF = leptonSF_nominal(event.nGoodVtx,
+                #                      getattr(event,lepton_info['pt'])[idx2],
+                #                     getattr(event,lepton_info['eta'])[idx2],
+                #                                    run_idx,
+                #                                    options.leptonType)
+                setattr(event,'bestZ',bestLLG)
+                outTrees.bestZTree(event,tm)
+                tm.fillTree('%s_zs'%treeName,{})
             
-            #if bestPhoNoSihih is not None:            
-            #    setattr(event,'phoNoSihihSF',event.phoSF)                
-            #    setattr(event,'bestPhoNoSihihIdx',bestPho)
-            #    setattr(event,'bestPhoNoSihih',pho)
-        #elif bestPhoNoSihih is not None:
-        #    pho.SetPtEtaPhiM(event.phoCorEt[bestPhoNoSihih],
-        #                     event.phoEta[bestPhoNoSihih],
-        #                     event.phoPhi[bestPhoNoSihih],
-        #                     0.0)
-        #    setattr(event,'phoNoSihihSF',1.0)
-        #    if run_idx != -1:
-        #        event.phoNoSihihSF = phoSF_nominal(event.nGoodVtx,
-        #                                         event.phoEt[bestPhoNoSihih],
-        #                                        event.phoEta[bestPhoNoSihih],
-        #                                           run_idx)
-        #    setattr(event,'bestPhoNoSihihIdx',bestPhoNoSihih)
-        #    setattr(event,'bestPhoNoSihih',pho)
-                            
-        if bestLLG is not None:
-            #if bestPhoNoSihih is not None:
-            #    thezg = event.bestZ + event.bestPhoNoSihih
-            #    setattr(event,'bestZGNoSihih',thezg)
-            #    outTrees.bestZGTreeNoSihih(event,tm)
-            #    tm.fillTree('EventTree_zgs_nosihih',{})
-            thezg = event.Zg[bestLLG]            
-            selected_events.append((event.run[bestLLG],
-                                    event.lumi[bestLLG],
-                                    event.evt[bestLLG]))
-            setattr(event,'bestZG',thezg)
-            outTrees.bestZGTree(event,tm)
-            tm.fillTree('%s_zgs'%treeName,{})
+            #bestPhoNoSihih = None
+            #bestPhoNoSihihPt = -1
+            #for idxph in selected_pho_nosihih:
+            #    pho.SetPtEtaPhiM(event.phoCorEt[idxph],
+            #                     event.phoEta[idxph],
+            #                     event.phoPhi[idxph],
+            #                     0.0)
+            #    if bestPhoNoSihih is None or pho.Pt() > bestPhoNoSihihPt:
+            #        if ( bestZ is not None and
+            #             cuts.getCut('mindr')[0](event.bestZLeg1,
+            #                                     event.bestZLeg2,
+            #                                     pho) ):
+            #            bestPhoNoSihih = idxph
+            #            bestPhoNoSihihPt = pho.Pt()
+            #        elif( bestZ is None ):
+            #            bestPhoSihih = idxph
+            #            bestPhoSihihPt = pho.Pt()
+            
+            bestPho = bestLLG
+
+            if  options.exlProc and bestPho is None:#and bestPhoNoSihih is None:
+                continue
+
+            if bestPho is not None:            
+                setattr(event,'phoSF',1.0)
+                #if run_idx != -1:
+                #    event.phoSF = phoSF_nominal(event.nGoodVtx,
+                #                                event.phoEt[bestPho],
+                #                                event.phoEta[bestPho],
+                #                                run_idx)            
+                setattr(event,'bestPho',bestPho)
+            
+                #if bestPhoNoSihih is not None:            
+                #    setattr(event,'phoNoSihihSF',event.phoSF)                
+                #    setattr(event,'bestPhoNoSihihIdx',bestPho)
+                #    setattr(event,'bestPhoNoSihih',pho)
+                #elif bestPhoNoSihih is not None:
+                #    pho.SetPtEtaPhiM(event.phoCorEt[bestPhoNoSihih],
+                #                     event.phoEta[bestPhoNoSihih],
+                #                     event.phoPhi[bestPhoNoSihih],
+                #                     0.0)
+                #    setattr(event,'phoNoSihihSF',1.0)
+                #    if run_idx != -1:
+                #        event.phoNoSihihSF = phoSF_nominal(event.nGoodVtx,
+                #                                 event.phoEt[bestPhoNoSihih],
+                #                                 event.phoEta[bestPhoNoSihih],
+                #                                           run_idx)
+                #    setattr(event,'bestPhoNoSihihIdx',bestPhoNoSihih)
+                #    setattr(event,'bestPhoNoSihih',pho)
+        
+            if bestLLG is not None:
+                #if bestPhoNoSihih is not None:
+                #    thezg = event.bestZ + event.bestPhoNoSihih
+                #    setattr(event,'bestZGNoSihih',thezg)
+                #    outTrees.bestZGTreeNoSihih(event,tm)
+                #    tm.fillTree('EventTree_zgs_nosihih',{})
+                thezg = event.Zg[bestLLG]            
+                selected_events.append((event.run[bestLLG],
+                                        event.lumi[bestLLG],
+                                        event.evt[bestLLG]))
+                setattr(event,'bestZG',thezg)
+                outTrees.bestZGTree(event,tm)
+                tm.fillTree('%s_zgs'%treeName,{})
+        
+        in_file.Close()
     
     #make a nice file name
+    input_file = args[0]
     nameparts = input_file[input_file.rfind('/')+1:]
     nameparts = nameparts.split('.')
     
@@ -473,19 +478,17 @@ if options.leptonCor is None:
     elif options.leptonType == 'muon':
         options.leptonCor = 'RochCor'
 
-for input_file in args:
-    print
-    print 'Processing: %s\n\tdatType=%s\n\trunType=%s\n\tleptonType=%s'\
-          %(input_file,
-            options.datType,
-            options.runType,
-            options.leptonType)
+print 'Processing: \n\t%s\n\tdatType=%s\n\trunType=%s\n\tleptonType=%s'\
+      %('\n\t'.join(args),
+        options.datType,
+        options.runType,
+        options.leptonType)
     
-    if not options.vanilla:
-        print '\tActive corrections: lepton=%s photon=%s'%(options.leptonCor,
-                                                            options.gamCor)
-    else:
-        print '\tNo lepton or photon corrections in use.'
+if not options.vanilla:
+    print '\tActive corrections: lepton=%s photon=%s'%(options.leptonCor,
+                                                       options.gamCor)
+else:
+    print '\tNo lepton or photon corrections in use.'
     
-    run_analysis(options,input_file)
+run_analysis(options,args)
 

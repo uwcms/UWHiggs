@@ -2,6 +2,7 @@ import ROOT
 from ROOT import TTree, gROOT, AddressOf, gDirectory
 from math import pi
 from copy import deepcopy
+import ctypes as ct
 
 #for now only deals with flat trees with arrays
 #branched trees and objects are for the future
@@ -34,19 +35,23 @@ class tree_manager:
     #if no specifics are given we take the whole tree
     def importTree(self, name, tree, specific = None):
         "Takes ownership of the passed tree."
-        if name in self.myTrees.keys():
-            print 'Tree: %s already managed!'%(name)
-            return
+        if( name in self.importedTrees.keys() ):
+            print 'Replacing Tree: %s!'%(name)
+
         #first things first, reset this tree to it's initial state
         #this gives us a nice way to build up the tree's struct
         tree.ResetBranchAddresses()
         #build the struct
-        stct =  self._makeStruct(name,specific,tree)
-        if len(stct) > 0:
-            gROOT.ProcessLine('.L %s_vars.C'%(name))
+        if name not in self.importedTrees.keys():
+            stct =  self._makeStruct(name,specific,tree)
+            if len(stct) > 0:
+                gROOT.ProcessLine('.L %s_vars.C'%(name))
+            else:
+                gROOT.ProcessLine(stct)
+            self.myStructs[name] = getattr(ROOT,"%s_vars"%(name))()
         else:
-            gROOT.ProcessLine(stct)        
-        self.myStructs[name] = getattr(ROOT,"%s_vars"%(name))()
+            pass
+        
         self.importedTrees[name] = tree
         self._bindBranches(name,specific,tree)
         self.importedTrees[name].SetName(name)
@@ -55,6 +60,9 @@ class tree_manager:
     #this takes an existing imported tree, clones it and allows for filling
     #selected entries
     def cloneTree(self,name,name_clone,specific=None):
+        if name_clone in self.myTrees.keys():
+            print 'Tree: %s already cloned'%(name_clone)
+            return
         if name == name_clone:
             raise Exception('Cloning imported tree '
                             '%s to owned tree %s'%(name,
@@ -196,6 +204,7 @@ class tree_manager:
                      leafName in items ):
                     tree.SetBranchAddress(leafName,
                                           AddressOf(struct,leafName))
+                    
         else:
             print "Data store type %s is not supported!"%(str(type(datastore)))
             exit(1) 
