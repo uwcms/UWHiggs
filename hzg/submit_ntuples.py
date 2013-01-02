@@ -22,6 +22,8 @@ parser.add_argument('--samples', nargs='+', type=str, required=False,
                     help='Filter samples using list of patterns (shell style)')
 parser.add_argument('--subsamples',nargs='+', type=str, required=False,
                     help='Filter subsamples using list of patterns')
+parser.add_argument('--diobjects', type=int, default=0,
+                    help='run diobjects as well')
 args = parser.parse_args()
 
 cfg = '%s/src/FinalStateAnalysis/NtupleTools/test/make_ntuples_cfg.py'\
@@ -81,12 +83,18 @@ for sample in sorted(allTuples.keys()):
                     continue            
 
                 options = ["makeHZG=1"]
-                #options.append("makeDiObject=1")
+                if args.diobjects:
+                    options.append("makeDiObject=1")
                 options.append("eventView=1")
                 options.append("reportEvery=1000")
                 options.append("maxEvents=-1")
+                if 'data' not in subsample:
+                    options.append('rerunFSA=1')
+                    options.append('rerunMCMatch=1')
                 options.append("'inputFiles=$inputFileNames'")
                 options.append("'outputFile=$outputFileName'")
+
+                
 
                 farmout_options = []
                 farmout_options.append(
