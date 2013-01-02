@@ -88,6 +88,8 @@ for sample in sorted(allTuples.keys()):
                 options.append("eventView=1")
                 options.append("reportEvery=1000")
                 options.append("maxEvents=-1")
+                #so far data is fine, so we don't need to re-run
+                #the final state builder
                 if 'data' not in subsample:
                     options.append('rerunFSA=1')
                     options.append('rerunMCMatch=1')
