@@ -1,21 +1,30 @@
 #!/usr/bin/env python
 
 #ROOT and low level analysis objects
+
+
+#from rootpy.utils import asrootpy
+#from rootpy.tree import tree
+#from rootpy.io import open as ropen
+from UWHiggs.hzg.MOOSEY.trees import tree_manager
+from UWHiggs.hzg.MOOSEY.cuts import CompositeCutflow
+
 import ROOT
 from ROOT import TTree, TFile, TLorentzVector, TVector3, \
      TRandom3
-from MOOSEY.cuts import CompositeCutflow
-from MOOSEY.trees import tree_manager
 
 #general cutsets
-from hzg_cuts import muon_triggers_data,muon_triggers_mc, \
+from UWHiggs.hzg.hzg_cuts import muon_triggers_data,muon_triggers_mc, \
      electron_triggers_data, electron_triggers_mc, \
      mu_cuts_data,mu_cuts_mc,e_cuts_data,e_cuts_mc, photon_cuts_data, \
      photon_cuts_noifsr, mumu_cuts,ee_cuts,ell_gamma_dr, event_has_ifsr, \
      photon_cuts_mc,photon_cuts_plj
 
 #correction layer
-from corrections import setup_corrections
+from UWHiggs.hzg.corrections import setup_corrections
+
+#categorization
+from UWHiggs.hzg.categories import hzg_4cat_r9based, hzg_4cat_r9based_mod
 
 #python standard things
 from optparse import OptionParser
@@ -24,7 +33,7 @@ import os,sys
 import numpy as np
 
 #definitions of various tree types
-import result_trees as outTrees
+import UWHiggs.hzg.result_trees as outTrees
 
 #processes one input file
 #plans are to have concatenation
@@ -93,14 +102,16 @@ rng = TRandom3(0)
 Z_POLE = 91.188
 ell1,ell2,pho = TLorentzVector(),TLorentzVector(),TLorentzVector()
 thez, thezg = TLorentzVector(),TLorentzVector()
-def run_analysis(options,input_file):        
+def run_analysis(options,input_file):    
     tm = tree_manager()
+    selected_events = []
+    pwd = ROOT.gDirectory.GetPath()
     for input_file in args:
         print
         print 'processing input file: %s'%(input_file)
-        pwd = ROOT.gDirectory.GetPath()
-        in_file = TFile.Open(input_file)
+        in_file = TFile.Open(input_file,'read')
         ROOT.gDirectory.cd(pwd)
+        
         leptonType = options.leptonType    
         
         tree = None
@@ -113,23 +124,26 @@ def run_analysis(options,input_file):
                 mmg = in_file.Get('mmg')
                 tree = mmg.Get('final').Get(treeName)
                 nEvents_sample = mmg.Get('eventCount').GetBinContent(1)
+                mmg = None
             elif leptonType == 'electron':                 
                 #specific = electronBranches+commonBranches
                 eeg = in_file.Get('eeg')
                 tree = eeg.Get('final').Get(treeName)
                 nEvents_sample = eeg.Get('eventCount').GetBinContent(1)
+                eeg = None
             else:             
                 raise Exception('invalid lepton type: %s'%options.leptonType)
+        
 
         total_events = tree.GetEntriesFast()    
-        tick_size = int(total_events//100.0)
-        selected_events = []
+        tick_size = total_events/100.0
         
-        tm.importTree(treeName,tree,specific)    
+        #tm.importTree(treeName,tree,specific)
+
         
-        tm.cloneTree(treeName,'%s_zs'%treeName,specific)
-        tm.cloneTree(treeName,'%s_zgs'%treeName,specific)
-        tm.cloneTree(treeName,'%s_zgs_nosihih'%treeName,specific)
+        #tm.cloneTree(treeName,'%s_zs'%treeName,specific)
+        #tm.cloneTree(treeName,'%s_zgs'%treeName,specific)
+        #tm.cloneTree(treeName,'%s_zgs_nosihih'%treeName,specific)
         
         #setup process dependent stuff
         cuts = setupCuts(options)
@@ -153,12 +167,12 @@ def run_analysis(options,input_file):
                                     options.leptonType, options.datType,
                                     options.leptonCor , options.gamCor,
                                     options.vanilla                       )
-
+        
         ievent = long(0)
-        for event in tm[treeName]:
+        for event in tree:
             ievent+=1
             #print ievent,total_events,fmod(ievent/total_events,0.01)
-            if not (ievent+1)%tick_size or ievent+1 == total_events:  
+            if not (ievent+1)%int(tick_size) or ievent+1 == total_events:  
                 sys.stdout.write('\r%3.0f%s complete! (%i/%i)'%(((ievent+1)/
                                                                  tick_size),
                                                                 '%',
@@ -179,22 +193,23 @@ def run_analysis(options,input_file):
                 #event.event/nEvents_sample)
                 event.puWeight = pu_weight(event.nPU,options.runType)
 
-            selected_z = []
+            #selected_z = []
             #selected_pho_nosihih = []
-            selected_pho = []        
-            bad_leptons = []
+            #selected_pho = []        
+            #bad_leptons = []
             
-            if options.datType == 'data':
-                # kill run 170722
-                # kill the obvious pile up combinatorial event
-                if ( event.run[0] == 170722 or
-                     (event.run[0]   == 166512 and
-                      event.lumi[0] == 1678 and
-                      event.evt[0] == 1822682238) ):
-                    continue
+            #if options.datType == 'data':
+            #    # kill run 170722
+            #    # kill the obvious pile up combinatorial event
+            #    if ( event.run[0] == 170722 or
+            #         (event.run[0]   == 166512 and
+            #          event.lumi[0] == 1678 and
+            #          event.evt[0] == 1822682238) ):
+            #        continue
         
             bestLLG = None
             bestZdiff = -1
+            
             for i in range(event.N_PATFinalState):            
 
                 cuts.getCutflow('trigger')(event,i)
@@ -246,7 +261,7 @@ def run_analysis(options,input_file):
                 #                                    options.leptonType)
                 setattr(event,'bestZ',bestLLG)
                 outTrees.bestZTree(event,tm)
-                tm.fillTree('%s_zs'%treeName,{})
+                #tm.fillTree('%s_zs'%treeName,{})
             
             #bestPhoNoSihih = None
             #bestPhoNoSihihPt = -1
@@ -266,20 +281,19 @@ def run_analysis(options,input_file):
             #            bestPhoSihih = idxph
             #            bestPhoSihihPt = pho.Pt()
             
-            bestPho = bestLLG
-
-            if  options.exlProc and bestPho is None:#and bestPhoNoSihih is None:
+            bestPho = bestLLG #and bestPhoNoSihih is None: (below)
+            if  options.exlProc and bestPho is None:
                 continue
 
             if bestPho is not None:            
                 setattr(event,'phoSF',1.0)
-                #if run_idx != -1:
-                #    event.phoSF = phoSF_nominal(event.nGoodVtx,
-                #                                event.phoEt[bestPho],
-                #                                event.phoEta[bestPho],
-                #                                run_idx)            
+                if run_idx != -1:
+                    event.phoSF = phoSF_nominal(event.nGoodVtx,
+                                                event.phoEt[bestPho],
+                                                event.phoEta[bestPho],
+                                                run_idx)            
                 setattr(event,'bestPho',bestPho)
-            
+                
                 #if bestPhoNoSihih is not None:            
                 #    setattr(event,'phoNoSihihSF',event.phoSF)                
                 #    setattr(event,'bestPhoNoSihihIdx',bestPho)
@@ -304,16 +318,22 @@ def run_analysis(options,input_file):
                 #    setattr(event,'bestZGNoSihih',thezg)
                 #    outTrees.bestZGTreeNoSihih(event,tm)
                 #    tm.fillTree('EventTree_zgs_nosihih',{})
+                hzg_r94cat = hzg_4cat_r9based[leptonType](event,bestLLG)
+                setattr(event,'bestZG_r94cat',hzg_r94cat)
+                hzg_r94cat_mod = \
+                               hzg_4cat_r9based_mod[leptonType](event,bestLLG)
+                setattr(event,'bestZG_r94cat_mod',hzg_r94cat_mod)
                 thezg = event.Zg[bestLLG]            
                 selected_events.append((event.run[bestLLG],
                                         event.lumi[bestLLG],
                                         event.evt[bestLLG]))
                 setattr(event,'bestZG',thezg)
                 outTrees.bestZGTree(event,tm)
-                tm.fillTree('%s_zgs'%treeName,{})
-        
+                #tm.fillTree('%s_zgs'%treeName,{})
+            tree = None
         in_file.Close()
-    
+        del in_file
+        
     #make a nice file name
     input_file = args[0]
     nameparts = input_file[input_file.rfind('/')+1:]
@@ -354,6 +374,7 @@ def run_analysis(options,input_file):
     outf.cd()
     tm.write()
     outf.Close()
+
 
 #determine cutflow given input data type
 def setupCuts(options):

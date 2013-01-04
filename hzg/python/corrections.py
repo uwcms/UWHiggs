@@ -13,8 +13,6 @@ import math
 # electrons: CorrReg, CorrSmearedNoReg, CorrSmearedReg
 # muons: RochCor
 
-
-
 baseNames = {'electron'  : ['e1','e2','g'],
              'muon'      : ['m1','m2','g']}
 
@@ -53,13 +51,15 @@ class correction:
         if doVanilla:
             self._lep1CorrPt = '%sPt'%(self._l1Name)
             self._lep2CorrPt = '%sPt'%(self._l2Name)
-            self._gamCorrE = '%sSCEnergy'%(self._gName)
+            self._gamCorrpt = '%sPt'%(self._gName)
             
             self._lep1CorrEta = '%sEta'%(self._l1Name)
             self._lep2CorrEta = '%sEta'%(self._l2Name)
+            self._gamCorrEta = '%sEta'%(self._gName)
             
             self._lep1CorrPhi = '%sPhi'%(self._l1Name)
-            self._lep2CorrPhi = '%sPhi'%(self._l2Name)
+            self._lep2CorrPhi = '%sPhi'%(self._l2Name)            
+            
         else:
             self._lep1CorrPt = self.lep1CorrPt()
             self._lep2CorrPt = self.lep2CorrPt()

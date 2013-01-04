@@ -1,8 +1,6 @@
-import ROOT
+from UWHiggs.hzg.MOOSEY.OrderedDict import OrderedDict
+from UWHiggs.hzg.MOOSEY.cuts import CutflowDecision
 from ROOT import TVector3 # for delta R
-
-from MOOSEY.OrderedDict import OrderedDict
-from MOOSEY.cuts import CutflowDecision
 from math import fabs,pi
 
 
@@ -88,9 +86,8 @@ def mu_id(the_id):
     bit = (the_id == 1.0)
     return bit
 
-def mu_iso(mu,pfchg,pfneut,pfpho,ea,rho):    
-    rhoprime = max(rho,0)
-    eff_iso = max( pfneut + pfpho - ea*rhoprime, 0.0 )
+def mu_iso(mu,pfchg,pfneut,pfpho,pfpuchg):        
+    eff_iso = max( pfneut + pfpho - 0.5*pfpuchg, 0.0 )
     iso = (pfchg + eff_iso)/mu.Pt()
     return (iso < 0.12)
 
@@ -128,10 +125,10 @@ muon_selection_mc_reqs = OrderedDict([['mupt1',
                                        [mu_id,['m2IDHZG2012'],0]],
                                       ['muiso1',
                                        [mu_iso,['ell1','m1PFChargedIso','m1PFNeutralIso',
-                                                'm1PFPhotonIso','m1EffectiveArea2012','m1RhoHZG2012'],0]],
+                                                'm1PFPhotonIso','m1PFPUChargedIso'],0]],
                                       ['muiso2',
                                        [mu_iso,['ell2','m2PFChargedIso','m2PFNeutralIso',
-                                                'm2PFPhotonIso','m2EffectiveArea2012','m2RhoHZG2012'],0]],
+                                                'm2PFPhotonIso','m2PFPUChargedIso'],0]],
                                       ['trigger_match',
                                        [mu_trg_match_mc,['muTrgFixed','eventFraction'],0]]])
 
@@ -149,10 +146,10 @@ muon_selection_data_reqs = OrderedDict([['mupt1',
                                          [mu_id,['m2IDHZG2012'],0]],
                                         ['muiso1',
                                          [mu_iso,['ell1','m1PFChargedIso','m1PFNeutralIso',
-                                                  'm1PFPhotonIso','m1EffectiveArea2012','m1RhoHZG2012'],0]],
+                                                  'm1PFPhotonIso','m1PFPUChargedIso'],0]],
                                         ['muiso2',
                                          [mu_iso,['ell2','m2PFChargedIso','m2PFNeutralIso',
-                                                  'm2PFPhotonIso','m2EffectiveArea2012','m2RhoHZG2012'],0]],
+                                                  'm2PFPhotonIso','m2PFPUChargedIso'],0]],
                                         ['trigger_match',
                                          [mu_trg_match_data,['metEt','run'],0]]])
 
@@ -174,6 +171,27 @@ ooemoopCut  = [0.05,0.05]
 hasConvCut  = [False,False]
 missHitsCut = [1,1]
 nearMuons = [0,0]
+
+def ele_mva_preID(pt, dEtaVtx, dPhiVtx, sihih, HoverE,
+                  tkIso, ecalIso, hcalIso):
+    idxe = int(abs(ele.Eta()) >= 1.566)
+    ecalIsoPrime = ecalIso
+    if idxe == 0:
+        ecalIsoPrime = max(ecalIsoPrime - 1.0,0.0)
+
+    result = ( abs(dEtaVtx) < dEtaCut[idxe] and
+               abs(dPhiVtx) < dPhiCut[idxe] and
+               sihih  < sihihCut[idxe] and
+               HoverE < HoECut[idxe] and
+               tkIso/pt < 0.2 and
+               ecalIso/pt < 0.2 and
+               hcalIso/pt < 0.2 
+               )
+
+mvacuts = [-0.82,-0.98] # pt < 20, pt > 20 
+def ele_mva_ID(pt, mva):
+    eidx = (pt > 20)
+    return (mva > mvacuts[eidx])
 
 def ele_ID(ele, dEtaVtx, dPhiVtx, sihih, HoverE,
            d0, dZ, EoverP, ecalEnergy, hasMatchedConv,
@@ -250,6 +268,31 @@ electron_selection_data_reqs = OrderedDict([['ept1',
                                             ['trigger_match',
                                              [ele_trg_match_data,['metEt','run'],0]]])
 
+electron_selection_data_reqs_2012 = OrderedDict([['ept1',
+                                             [ele_pt,['ell1'],0]],
+                                            ['eeta1',
+                                             [ele_eta,['e1SCEta'],0]],
+                                            ['epreID1',
+                                             [ele_mva_preID,['e1Pt','e1deltaEtaSuperClusterTrackAtVtx',
+                                                             'e1deltaPhiSuperClusterTrackAtVtx','e1SigmaIEtaIEta',
+                                                             'e1HadronicOverEM','e1TrkIsoDR03','e1EcalIsoDR03',
+                                                             'e1HcalIsoDR03'],0]],
+                                            ['e_mvaID1',
+                                             [ele_iso,['e1Pt','e1MVATrigIDISO'],0]],
+                                            ['ept2',
+                                             [ele_pt,['ell2'],0]],
+                                            ['eeta2',
+                                             [ele_eta,['e2SCEta'],0]],
+                                            ['epreID2',
+                                             [ele_ID,['e1Pt','e2deltaEtaSuperClusterTrackAtVtx',
+                                                             'e2deltaPhiSuperClusterTrackAtVtx','e2SigmaIEtaIEta',
+                                                             'e2HadronicOverEM','e2TrkIsoDR03','e2EcalIsoDR03',
+                                                             'e2HcalIsoDR03'],0]],
+                                            ['e_mvaID2',
+                                             [ele_iso,['e2Pt','e2MVATrigIDISO'],0]],
+                                            ['trigger_match',
+                                             [ele_trg_match_data,['metEt','run'],0]]])
+
 electron_selection_mc_reqs = OrderedDict([['ept1',
                                            [ele_pt,['ell1'],0]],
                                           ['eeta1',
@@ -282,6 +325,31 @@ electron_selection_mc_reqs = OrderedDict([['ept1',
                                                      'e2EffectiveArea2012Data','e2RhoHZG2012'],0]],
                                           ['trigger_match',
                                            [ele_trg_match_mc,['metEt','eventFraction'],0]]])
+
+electron_selection_mc_reqs_2012 = OrderedDict([['ept1',
+                                                [ele_pt,['ell1'],0]],
+                                               ['eeta1',
+                                                [ele_eta,['e1SCEta'],0]],
+                                               ['epreID1',
+                                                [ele_mva_preID,['e1Pt','e1deltaEtaSuperClusterTrackAtVtx',
+                                                                'e1deltaPhiSuperClusterTrackAtVtx','e1SigmaIEtaIEta',
+                                                                'e1HadronicOverEM','e1TrkIsoDR03','e1EcalIsoDR03',
+                                                                'e1HcalIsoDR03'],0]],
+                                               ['e_mvaID1',
+                                                [ele_iso,['e1Pt','e1MVATrigIDISO'],0]],
+                                               ['ept2',
+                                                [ele_pt,['ell2'],0]],
+                                               ['eeta2',
+                                                [ele_eta,['e2SCEta'],0]],
+                                               ['epreID2',
+                                                [ele_ID,['e1Pt','e2deltaEtaSuperClusterTrackAtVtx',
+                                                         'e2deltaPhiSuperClusterTrackAtVtx','e2SigmaIEtaIEta',
+                                                         'e2HadronicOverEM','e2TrkIsoDR03','e2EcalIsoDR03',
+                                                         'e2HcalIsoDR03'],0]],
+                                               ['e_mvaID2',
+                                                [ele_iso,['e2Pt','e2MVATrigIDISO'],0]],
+                                               ['trigger_match',
+                                                [ele_trg_match_mc,['metEt','run'],0]]])
 
 def z_oneleg20(ell1, ell2):
     return (ell1.Pt() > 20 or ell2.Pt() > 20)
@@ -433,6 +501,8 @@ mu_cuts_data = CutflowDecision(muon_selection_data_reqs)
 mu_cuts_mc   = CutflowDecision(muon_selection_mc_reqs)
 e_cuts_data  = CutflowDecision(electron_selection_data_reqs)
 e_cuts_mc    = CutflowDecision(electron_selection_mc_reqs)
+e_cuts_data_2012  = CutflowDecision(electron_selection_data_reqs_2012)
+e_cuts_mc_2012    = CutflowDecision(electron_selection_mc_reqs_2012)
 photon_cuts_data  = CutflowDecision(photon_kine_reqs.items() +
                                     photon_idiso_reqs.items()
                                     )

@@ -38,7 +38,7 @@ def do_cutflow_compare(events,compare):
         if event not in events:
             print event,'is not in raw sample, somehow you have selected an event with min(DR all objects) < 0.3'
         else:
-            
+            pass
 
 options = {'mmg':['mmg_event_dump.pkl.gz',mmg_cuts]}
 

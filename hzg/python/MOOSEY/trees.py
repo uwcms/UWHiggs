@@ -2,7 +2,7 @@ import ROOT
 from ROOT import TTree, gROOT, AddressOf, gDirectory
 from math import pi
 from copy import deepcopy
-import ctypes as ct
+from weakref import proxy as wrProxy
 
 #for now only deals with flat trees with arrays
 #branched trees and objects are for the future
@@ -34,13 +34,14 @@ class tree_manager:
     #attach to a tree and scan it for variables that we want to use
     #if no specifics are given we take the whole tree
     def importTree(self, name, tree, specific = None):
-        "Takes ownership of the passed tree."
+        "Does not takes ownership of the passed tree."
         if( name in self.importedTrees.keys() ):
             print 'Replacing Tree: %s!'%(name)
 
         #first things first, reset this tree to it's initial state
         #this gives us a nice way to build up the tree's struct
         tree.ResetBranchAddresses()
+        
         #build the struct
         if name not in self.importedTrees.keys():
             stct =  self._makeStruct(name,specific,tree)
@@ -48,14 +49,23 @@ class tree_manager:
                 gROOT.ProcessLine('.L %s_vars.C'%(name))
             else:
                 gROOT.ProcessLine(stct)
-            self.myStructs[name] = getattr(ROOT,"%s_vars"%(name))()
         else:
-            pass
-        
-        self.importedTrees[name] = tree
-        self._bindBranches(name,specific,tree)
+            blah = self.myStructs[name]
+            self.myStructs[name] = None
+            
+        print 'binding!'
+        self.myStructs[name] = getattr(ROOT,"%s_vars"%(name))()
+        print self.myStructs[name]
+        self.importedTrees[name] = wrProxy(tree)
+        print self.importedTrees[name]
         self.importedTrees[name].SetName(name)
-        self.importedTrees[name].SetCacheSize(long(1e6))
+        print 'Set name to %s'%name
+        #self.importedTrees[name].SetCacheSize(long(1e6))
+        self._bindBranches(name,specific,
+                           self.importedTrees[name])
+        print 'called _bindBranches'
+        
+        
 
     #this takes an existing imported tree, clones it and allows for filling
     #selected entries

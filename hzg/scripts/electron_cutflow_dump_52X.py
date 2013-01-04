@@ -85,8 +85,14 @@ dPhiCutMVA  = [0.15,0.10]
 sihihCutMVA = [0.010,0.030]
 HoECutMVA   = [0.12,0.10]
 def e_mva_preselection(event,i):
-    idxe1 = int(abs(event.e1Eta[i]) >= 1.566)
-    idxe2 = int(abs(event.e2Eta[i]) >= 1.566)
+    idxe1 = int(abs(event.e1SCEta[i]) >= 1.479)
+    idxe2 = int(abs(event.e2SCEta[i]) >= 1.479)
+
+    ecalIso1 = event.e1EcalIsoDR03[i]
+    ecalIso2 = event.e2EcalIsoDR03[i]
+
+    if idxe1 == 0: ecalIso1 = max(ecalIso1 - 1.0, 0.0)
+    if idxe2 == 0: ecalIso2 = max(ecalIso2 - 1.0, 0.0)
     
     return ( event.e1Pt[i] > 10. and event.e2Pt[i] > 10. and
              ecal_fiducial(event.e1SCEta[i]) and
@@ -99,13 +105,19 @@ def e_mva_preselection(event,i):
              event.e2SigmaIEtaIEta[i] < sihihCutMVA[idxe2] and
              event.e1HadronicOverEM[i] < HoECutMVA[idxe1] and
              event.e2HadronicOverEM[i] < HoECutMVA[idxe2] and
-             event.e1RelIso[i] < 0.2 and
-             event.e2RelIso[i] < 0.2     )
+             event.e1TrkIsoDR03[i]/event.e1Pt[i] < 0.2 and
+             event.e2TrkIsoDR03[i]/event.e2Pt[i] < 0.2 and
+             ecalIso1/event.e1Pt[i] < 0.2 and
+             ecalIso2/event.e2Pt[i] < 0.2 and
+             event.e1HcalIsoDR03[i]/event.e1Pt[i] < 0.2 and
+             event.e2HcalIsoDR03[i]/event.e2Pt[i] < 0.2 and
+             event.e1NearMuonVeto[i] == 0.0 and
+             event.e2NearMuonVeto[i] == 0.0) 
 
 mvacuts = [-0.82,-0.98] # pt < 20, pt > 20 
 def e_mva_idiso(event,i):
-    e1idx = (event.e1Pt[i] > 20)
-    e2idx = (event.e2Pt[i] > 20)
+    e1idx = int(event.e1Pt[i] > 20)
+    e2idx = int(event.e2Pt[i] > 20)
     e1mva = event.e1MVATrigIDISO[i]
     e2mva = event.e2MVATrigIDISO[i]
 
@@ -195,30 +207,32 @@ def zg_mass_high(event,i):
 def electron_id_debug(event,i):
     if( trigger_req(event,i) and
         vtx_req(event,i) and
-        e_id(event,i) and
-        e_iso(event,i) and
+        e_mva_preselection(event,i) and
+        e_mva_idiso(event,i) and
         z_id(event,i) ):
         print "ELECTRON :: run: %i  evt: %i  pt: %.4f  scEta: %.6f hoe: %.4f" \
-              "  sieie: %.6f  dEtaIn: %.6f  dPhiIn: %.6f  d0: %f  dZ: %f  " \
-              " ooemoop: %.6f  mhits: %i IDISOmva: %.4f" \
+              "  sieie: %.6f  dEtaIn: %.6f  dPhiIn: %.6f" \
+              "  muonVeto: %i trkIso: %.4f  ecalIso: %.4f  hcalIso: %.4f" \
+              "  IDISOmva: %.4f" \
               %(event.run[i], event.evt[i], event.e1Pt[i], event.e1SCEta[i],
                 event.e1HadronicOverEM[i], event.e1SigmaIEtaIEta[i],
                 event.e1deltaEtaSuperClusterTrackAtVtx[i],
                 event.e1deltaPhiSuperClusterTrackAtVtx[i],
-                event.e1PVDXY[i], event.e1PVDZ[i],
-                abs(1.0 - event.e1eSuperClusterOverP[i])/event.e1ecalEnergy[i],
-                event.e1MissingHits[i],event.e1MVATrigIDISO[i])
+                event.e1NearMuonVeto[i],event.e1TrkIsoDR03[i],
+                event.e1EcalIsoDR03[i],event.e1HcalIsoDR03[i],
+                event.e1MVATrigIDISO[i])
         print "ELECTRON :: run: %i  evt: %i  pt: %.4f  scEta: %.6f hoe: %.4f" \
-              "  sieie: %.6f  dEtaIn: %.6f  dPhiIn: %.6f  d0: %f  dZ: %f  " \
-              " ooemoop: %.6f  mhits: %i IDISOmva: %.4f" \
+              "  sieie: %.6f  dEtaIn: %.6f  dPhiIn: %.6f" \
+              "  muonVeto: %i trkIso: %.4f  ecalIso: %.4f  hcalIso: %.4f" \
+              "  IDISOmva: %.4f" \
               %(event.run[i], event.evt[i], event.e2Pt[i], event.e2SCEta[i],
                 event.e2HadronicOverEM[i], event.e2SigmaIEtaIEta[i],
                 event.e2deltaEtaSuperClusterTrackAtVtx[i],
                 event.e2deltaPhiSuperClusterTrackAtVtx[i],
-                event.e2PVDXY[i], event.e2PVDZ[i],
-                abs(1.0 - event.e2eSuperClusterOverP[i])/event.e2ecalEnergy[i],
-                event.e2MissingHits[i],event.e2MVATrigIDISO[i])
-          
+                event.e2NearMuonVeto[i],event.e2TrkIsoDR03[i],
+                event.e2EcalIsoDR03[i],event.e2HcalIsoDR03[i],
+                event.e2MVATrigIDISO[i])
+        
 
 def photon_id_debug(event,i):
     """if( trigger_req(event,i) and
@@ -291,7 +305,7 @@ cut_list_eeg += [pho_fiducial,
                  ]
 counts_eeg = [0 for cut in cut_list_eeg] + [0]
 
-process_tuple(eeNtuple,cut_list_ee,counts_ee)#,electron_id_debug)
+process_tuple(eeNtuple,cut_list_ee,counts_ee,electron_id_debug)
 
 print 'HLT     : %i'%(counts_ee[0])
 print 'VTX     : %i'%(counts_ee[1])

@@ -11,7 +11,7 @@ Description: submit UW pattuple jobs via condor.
 
 from RecoLuminosity.LumiDB import argparse
 import fnmatch
-from hzg_pattuples import allTuples
+from UWHiggz.hzg.hzg_pattuples import allTuples
 from FinalStateAnalysis.Utilities.version import fsa_version
 import os
 import sys

@@ -43,7 +43,7 @@ def mu_iso(event,i):
                    -0.5*event.m2PFPUChargedIso[i],
                    0.0))/event.m2Pt[i] )
 
-    return (m1Iso < 0.2 and m2Iso < 0.2)
+    return (m1Iso < 0.12 and m2Iso < 0.12)
 
 def z_id(event,i):
     return ( (event.m1Pt[i] > 20 or event.m2Pt[i] > 20) and

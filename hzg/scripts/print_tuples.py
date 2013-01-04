@@ -1,4 +1,4 @@
-from hzg_pattuples import allTuples
+from UWHiggs.hzg.hzg_pattuples import allTuples
 
 for tupleSet in allTuples.itervalues():
     for tupleName in tupleSet:
