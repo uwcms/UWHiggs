@@ -95,8 +95,8 @@ def e_mva_preselection(event,i):
     if idxe2 == 0: ecalIso2 = max(ecalIso2 - 1.0, 0.0)
     
     return ( event.e1Pt[i] > 10. and event.e2Pt[i] > 10. and
-             ecal_fiducial(event.e1SCEta[i]) and
-             ecal_fiducial(event.e2SCEta[i]) and
+             #ecal_fiducial(event.e1SCEta[i]) and
+             #ecal_fiducial(event.e2SCEta[i]) and
              abs(event.e1deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCutMVA[idxe1] and
              abs(event.e2deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCutMVA[idxe2] and
              abs(event.e1deltaPhiSuperClusterTrackAtVtx[i]) < dPhiCutMVA[idxe1] and
@@ -111,8 +111,12 @@ def e_mva_preselection(event,i):
              ecalIso2/event.e2Pt[i] < 0.2 and
              event.e1HcalIsoDR03[i]/event.e1Pt[i] < 0.2 and
              event.e2HcalIsoDR03[i]/event.e2Pt[i] < 0.2 and
-             event.e1NearMuonVeto[i] == 0.0 and
-             event.e2NearMuonVeto[i] == 0.0) 
+             int(event.e1MissingHits[i]) <= 1 and
+             int(event.e2MissingHits[i]) <= 1 and
+             abs(event.e1PVDZ[i]) < 0.1 and
+             abs(event.e2PVDZ[i]) < 0.1 ) #and
+             #event.e1NearMuonVeto[i] == 0.0 and
+             #event.e2NearMuonVeto[i] == 0.0) 
 
 mvacuts = [-0.82,-0.98] # pt < 20, pt > 20 
 def e_mva_idiso(event,i):
@@ -305,7 +309,7 @@ cut_list_eeg += [pho_fiducial,
                  ]
 counts_eeg = [0 for cut in cut_list_eeg] + [0]
 
-process_tuple(eeNtuple,cut_list_ee,counts_ee,electron_id_debug)
+process_tuple(eeNtuple,cut_list_ee,counts_ee)#,electron_id_debug)
 
 print 'HLT     : %i'%(counts_ee[0])
 print 'VTX     : %i'%(counts_ee[1])
