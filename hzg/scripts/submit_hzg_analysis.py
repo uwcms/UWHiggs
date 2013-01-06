@@ -71,7 +71,7 @@ for sample in sorted(analysis_list.keys()):
                 tuple_info = subsamples[subsample][tuple]
                 tupleName = tuple
             
-                submit_dir_base = "/scratch/{logname}/{jobid}"\
+                submit_dir_base = "/scratch/{logname}/HZG_analysis/{jobid}"\
                                   "/{sample}.{subsample}.{tupleName}".format(
                     logname = os.environ['LOGNAME'],
                     jobid = jobId,
