@@ -118,15 +118,22 @@ eightTeVTuples = {
     'data_DoubleElectron_2012C':"""
     /DoubleElectron/Run2012C-24Aug2012-v1/AOD
     /DoubleElectron/Run2012C-PromptReco-v2/AOD
+    /DoubleElectron/Run2012C-EcalRecover_11Dec2012-v1/AOD
     """.split(),
     'data_DoubleElectron_2012D':"""
     /DoubleElectron/Run2012D-PromptReco-v1/AOD
     """.split(),
     'data_DoubleMu_2012AB':"""
     /DoubleMu/Run2012A-13Jul2012-v1/AOD
+    /DoubleMu/Run2012B-13Jul2012-v4/AOD
     """.split(),
     'data_DoubleMu_2012C':"""
+    /DoubleMu/Run2012C-24Aug2012-v1/AOD
     /DoubleMu/Run2012C-PromptReco-v2/AOD
+    /DoubleMu/Run2012C-EcalRecover_11Dec2012-v1/AOD    
+    """.split(),
+    'data_DoubleMu_2012D':"""
+    /DoubleMu/Run2012D-PromptReco-v1/AOD
     """.split()
     }
 
