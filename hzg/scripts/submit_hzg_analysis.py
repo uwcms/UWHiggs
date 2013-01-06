@@ -148,7 +148,7 @@ for sample in sorted(analysis_list.keys()):
                     '--infer-cmssw-path',
                     '--vsize-limit=30000',
                     '--express-queue',
-                    '--input-files-per-job=500',
+                    '--input-files-per-job=100',
                     '"--output-dir=srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN=%s"' % output_dir,
                     '--submit-dir=%s' % submit_dir,
                     '--output-dag-file=%s/dag.dag' % dag_directory,
