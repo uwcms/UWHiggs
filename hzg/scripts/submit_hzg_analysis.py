@@ -91,31 +91,31 @@ for sample in sorted(analysis_list.keys()):
                                      ' directory for %s\n' % sample)
                     continue            
 
-                options = ['--leptonType=%s'%(args.leptonType)]
+                options = ['++leptonType=%s'%(args.leptonType)]
                 if '7TeV' in sample:
-                    options.append('--runYear=2011')
+                    options.append('++runYear=2011')
                     if 'data' in subsample:
-                        options.append('--runType=AB')
-                        options.append('--datType=data')
+                        options.append('++runType=AB')
+                        options.append('++datType=data')
                     else:
-                        options.append('--runType=AB')
-                        options.append('--datType=mc')
-                        options.append('--crossSection=%.5e'%tuple_info['x_sec'])
+                        options.append('++runType=AB')
+                        options.append('++datType=mc')
+                        options.append('++crossSection=%.5e'%tuple_info['x_sec'])
                 else:
-                    options.append('--runYear=2012')
+                    options.append('++runYear=2012')
                     if 'data' in subsample:
-                        options.append('--runType=ABCD')
-                        options.append('--datType=data')
+                        options.append('++runType=ABCD')
+                        options.append('++datType=data')
                     else:
-                        options.append('--runType=ABCD')
-                        options.append('--datType=mc')
-                        options.append('--crossSection=%.5e'%tuple_info['x_sec'])
+                        options.append('++runType=ABCD')
+                        options.append('++datType=mc')
+                        options.append('++crossSection=%.5e'%tuple_info['x_sec'])
                     
                 if args.vanilla:
-                    options.append('--vanilla')
+                    options.append('++vanilla')
                     
                 if tuple_info['vetoIFSR']:
-                    options.append('--vetoIFSR')
+                    options.append('++vetoIFSR')
                 options.append("'$inputFileNames'")
 
                 

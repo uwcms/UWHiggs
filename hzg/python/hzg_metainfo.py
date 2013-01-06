@@ -27,7 +27,7 @@ for tupleset in hzg.allTuples.keys():
         
         analysis_info = analysis_list[tupleset]
         analysis_info[tuple] = {}
-        print tupleset, tuple
+        #print tupleset, tuple
         #try to reconstruct original patTuple name
         if higgsKey in tuple:
             for mass in higgsMasses:

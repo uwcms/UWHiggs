@@ -27,7 +27,7 @@ from UWHiggs.hzg.corrections import setup_corrections
 from UWHiggs.hzg.categories import hzg_4cat_r9based, hzg_4cat_r9based_mod
 
 #python standard things
-from optparse import OptionParser
+from argparse import ArgumentParser
 from math import fabs, ceil
 import os,sys
 import numpy as np
@@ -448,48 +448,54 @@ def getRunIndex(run,runType,leptonType):
         return int(rng.Rndm() > run_prob[leptonType])
 
 
-parser = OptionParser(description='%prog : configurable v\gamma analysis',
-                      usage='%prog --runType={data,A,B,AB} --leptonType=muon')
+parser = ArgumentParser(description='%prog : configurable v\gamma analysis',
+                        usage='%prog ++runType={data,A,B,AB} ++leptonType=muon',
+                        prefix_chars='+')
 
-parser.add_option('--runYear',dest='runYear',
-                  type='int',help='dataset year')
-parser.add_option('--runType',dest='runType',                 
-                  type='string',help='run era')
-parser.add_option('--datType',dest='datType',                 
-                  type='string',help='mc or data run')
-parser.add_option('--leptonCor',dest='leptonCor',                 
-                  type='string',help='lepton correction name')
-parser.add_option('--photonCor',dest='gamCor',                 
-                  type='string',help='photon correction name',
+parser.add_argument('++runYear',dest='runYear',
+                    type=int,help='dataset year')
+parser.add_argument('++runType',#dest='runType',                 
+                  type=str,help='run era')
+parser.add_argument('++datType',#dest='datType',                 
+                  type=str,help='mc or data run')
+parser.add_argument('++leptonCor',dest='leptonCor',                 
+                  type=str,help='lepton correction name')
+parser.add_argument('++photonCor',dest='gamCor',                 
+                  type=str,help='photon correction name',
                   default='PHOSPHOR')
-parser.add_option('--leptonType',dest='leptonType',
-                  type='string',help='lepton sel.')
-parser.add_option('--exclusiveProcessing',dest='exlProc',
+parser.add_argument('++leptonType',dest='leptonType',
+                  type=str,help='lepton sel.')
+parser.add_argument('++exclusiveProcessing',dest='exlProc',
                   action='store_true',default=False,
                   help='stop processing if cut failed')
-parser.add_option('--allBranches',dest='allBranches',action='store_true',
-                  default=False,help='store all input branches.')
-parser.add_option('--crossSection',dest='crossSection',
-                  type='float',help='MC process cross section, in pb.')
-parser.add_option('--calcCS',dest='calcCS',
+parser.add_argument('++allBranches',dest='allBranches',
+                    action='store_true',
+                    default=False,help='store all input branches.')
+parser.add_argument('++crossSection',dest='crossSection',
+                  type=float,help='MC process cross section, in pb.')
+parser.add_argument('++calcCS',dest='calcCS',
                   action='store_true',default=False,help='calculate sigma')
-parser.add_option('--vanilla',dest='vanilla',
+parser.add_argument('++vanilla',dest='vanilla',
                   action='store_true',default=False,
                   help='true off corrections')
-parser.add_option('--dataInput',dest='cs_data_input',
-                  type='string',help='the input real data for CS calc')
-parser.add_option('--signalMC',dest='cs_mc_input',
-                  type='string',help='the input mc data for CS calc')
-parser.add_option('--vetoIFSR',dest='vetoIFSR',default=False,
+parser.add_argument('++dataInput',dest='cs_data_input',
+                  type=str,help='the input real data for CS calc')
+parser.add_argument('++signalMC',dest='cs_mc_input',
+                  type=str,help='the input mc data for CS calc')
+parser.add_argument('++vetoIFSR',dest='vetoIFSR',
+                    default=False,
                   action='store_true',help='activate I/FSR vetos.')
-parser.add_option('--dumpSelectedEvents',dest='dumpSelectedEvents',
+parser.add_argument('++dumpSelectedEvents',#dest='dumpSelectedEvents',
                   default=False,action='store_true',
                   help='write (run,event,lumi) of selected events to file.')
-parser.add_option('--prefix',dest='prefix',
+parser.add_argument('++prefix',dest='prefix',
                   default='./',help='The directory we write output to.')
+parser.add_argument('inputdata', nargs='*')
 
 
-(options,args) = parser.parse_args()
+options = parser.parse_args()
+
+
 
 if options.runYear is None:
     print 'need to specify run year: 2011, 2012'
@@ -522,7 +528,7 @@ if options.leptonCor is None:
         options.leptonCor = 'RochCor'
 
 print 'Processing: \n\t%s\n\tdatType=%s\n\trunType=%s\n\tleptonType=%s'\
-      %('\n\t'.join(args),
+      %('\n\t'.join(options.inputdata),
         options.datType,
         options.runType,
         options.leptonType)
@@ -533,5 +539,5 @@ if not options.vanilla:
 else:
     print '\tNo lepton or photon corrections in use.'
     
-run_analysis(options,args)
+run_analysis(options,options.inputdata)
 
