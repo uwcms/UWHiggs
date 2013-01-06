@@ -160,8 +160,7 @@ def run_analysis(options,args):
         
         procWeight = 1.0
         if options.datType != 'data':
-            procWeight = (run_lumi[options.leptonType][options.datType]*
-                          options.crossSection/nEvents_sample)
+            procWeight = (options.crossSection)
 
         # setup the corrector (this links the appropriate four momenta
         # into a common naming scheme
@@ -194,7 +193,7 @@ def run_analysis(options,args):
             if options.datType != 'data':            
                 setattr(event,'eventFraction',float(ievent+1)/total_events)
                 #event.event/nEvents_sample)
-                event.puWeight = pu_weight(event.nPU,options.runType)
+                #event.puWeight = pu_weight(event.nPU,options.runType)
 
             #selected_z = []
             #selected_pho_nosihih = []
@@ -290,11 +289,11 @@ def run_analysis(options,args):
 
             if bestPho is not None:            
                 setattr(event,'phoSF',1.0)
-                if run_idx != -1:
-                    event.phoSF = phoSF_nominal(event.nGoodVtx,
-                                                event.phoEt[bestPho],
-                                                event.phoEta[bestPho],
-                                                run_idx)            
+                #if run_idx != -1:
+                #    event.phoSF = phoSF_nominal(event.nGoodVtx,
+                #                                event.phoEt[bestPho],
+                #                                event.phoEta[bestPho],
+                #                                run_idx)            
                 setattr(event,'bestPho',bestPho)
                 
                 #if bestPhoNoSihih is not None:            
@@ -368,12 +367,26 @@ def run_analysis(options,args):
         evf.close()
         
     #push all of our output trees to a file
-    outf = TFile.Open(options.prefix +
-                      '%s_%s_%s_processed.%s'%('_'.join(nameparts[:-1]),
-                                               options.runType,
-                                               options.leptonType,
-                                               nameparts[-1]),
-                      'RECREATE')
+    outFileName = ''
+    if options.vanilla:
+        outFileName = '%s_%s_%s_%s_%s_processed.%s'\
+                      %('_'.join(nameparts[:-1]),
+                        options.runType,
+                        options.datType,
+                        options.leptonType,
+                        'vanilla',
+                        nameparts[-1])
+    else:
+        outFileName = '%s_%s_%s_%s_%s_%s_processed.%s'\
+                      %('_'.join(nameparts[:-1]),
+                        options.runType,
+                        options.datType,
+                        options.leptonType,
+                        options.leptonCor,
+                        options.photonCor,
+                        nameparts[-1])
+        
+    outf = TFile.Open(options.prefix + outFileName,'RECREATE')
     outf.cd()
     tm.write()
     outf.Close()

@@ -130,7 +130,7 @@ muon_selection_mc_reqs = OrderedDict([['mupt1',
                                        [mu_iso,['ell2','m2PFChargedIso','m2PFNeutralIso',
                                                 'm2PFPhotonIso','m2PFPUChargedIso'],0]],
                                       ['trigger_match',
-                                       [mu_trg_match_mc,['muTrgFixed','eventFraction'],0]]])
+                                       [mu_trg_match_mc,['metEt','eventFraction'],0]]])
 
 muon_selection_data_reqs = OrderedDict([['mupt1',
                                          [mu_pt,['ell1'],0]],
