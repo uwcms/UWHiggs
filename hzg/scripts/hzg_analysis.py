@@ -28,7 +28,7 @@ from UWHiggs.hzg.categories import hzg_4cat_r9based, hzg_4cat_r9based_mod
 
 #python standard things
 from optparse import OptionParser
-from math import fabs
+from math import fabs, ceil
 import os,sys
 import numpy as np
 
@@ -102,13 +102,15 @@ rng = TRandom3(0)
 Z_POLE = 91.188
 ell1,ell2,pho = TLorentzVector(),TLorentzVector(),TLorentzVector()
 thez, thezg = TLorentzVector(),TLorentzVector()
-def run_analysis(options,input_file):    
+def run_analysis(options,args):    
     tm = tree_manager()
     selected_events = []
     pwd = ROOT.gDirectory.GetPath()
-    for input_file in args:
+    for kFile,input_file in enumerate(args):
         print
-        print 'processing input file: %s'%(input_file)
+        print 'processing input file %i/%i: %s'%(kFile+1,
+                                                 len(args),
+                                                 input_file)
         in_file = TFile.Open(input_file,'read')
         ROOT.gDirectory.cd(pwd)
         
@@ -134,9 +136,9 @@ def run_analysis(options,input_file):
             else:             
                 raise Exception('invalid lepton type: %s'%options.leptonType)
         
-
         total_events = tree.GetEntriesFast()    
         tick_size = total_events/100.0
+        if tick_size < 1: tick_size = 1.0
         
         #tm.importTree(treeName,tree,specific)
 
@@ -168,11 +170,12 @@ def run_analysis(options,input_file):
                                     options.leptonCor , options.gamCor,
                                     options.vanilla                       )
         
-        ievent = long(0)
+        ievent = long(0)        
         for event in tree:
             ievent+=1
             #print ievent,total_events,fmod(ievent/total_events,0.01)
-            if not (ievent+1)%int(tick_size) or ievent+1 == total_events:  
+            if( not (ievent+1)%int(tick_size) or
+                ievent+1 == total_events ):  
                 sys.stdout.write('\r%3.0f%s complete! (%i/%i)'%(((ievent+1)/
                                                                  tick_size),
                                                                 '%',

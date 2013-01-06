@@ -445,7 +445,8 @@ quarks = [1,2,3,4,5,6]
 photon = 22
 gluon = 21
 proton = 2212
-def isnotgenmatchifsr(motherPID,gMotherPID):
+def isnotgenmatchifsr(PID,motherPID,gMotherPID):
+    if( abs(PID) != 22 ): return True
     if( abs(motherPID) < 22 ): return False
     if( abs(motherPID) == proton or abs(gMotherPID) == proton ): return False
     if( abs(motherPID) in charged_leptons and abs(gMotherPID) in charged_leptons ): return False #secondary radiation from lepton
@@ -460,7 +461,7 @@ def event_has_ifsr(PID, gMotherPID):
     if( abs(PID) == photon and (abs(gMotherPID) in quarks or abs(gMotherPID) == gluon) ): return True
     return False
 
-photon_not_ifsr = OrderedDict([['ifsr_veto',[isnotgenmatchifsr,['phoGenMomPID','phoGenGMomPID'],0]]])
+photon_not_ifsr = OrderedDict([['ifsr_veto',[isnotgenmatchifsr,['gPdgID','gGenMotherPdgId','gGenGrandMotherPdgId'],0]]])
 event_has_ifsr = OrderedDict([['has_ifsr',[event_has_ifsr,['mcPID','mcGMomPID'],0]]])
 
 
