@@ -72,12 +72,14 @@ for sample in sorted(analysis_list.keys()):
                 tupleName = tuple
             
                 submit_dir_base = "/scratch/{logname}/HZG_analysis/{jobid}"\
-                                  "/{sample}.{subsample}.{tupleName}".format(
+                                  "/{sample}.{subsample}.{tupleName}."\
+                                  "{leptonType}".format(
                     logname = os.environ['LOGNAME'],
                     jobid = jobId,
                     sample = sample,
                     subsample = subsample,
-                    tupleName = tupleName
+                    tupleName = tupleName,
+                    leptonType = args.leptonType
                 )            
                 
                 dag_directory = os.path.join(submit_dir_base, 'dags')
