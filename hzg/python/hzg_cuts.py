@@ -461,8 +461,8 @@ def event_has_ifsr(PID, gMotherPID):
     if( abs(PID) == photon and (abs(gMotherPID) in quarks or abs(gMotherPID) == gluon) ): return True
     return False
 
-photon_not_ifsr = OrderedDict([['ifsr_veto',[isnotgenmatchifsr,['gPdgID','gGenMotherPdgId','gGenGrandMotherPdgId'],0]]])
-event_has_ifsr = OrderedDict([['has_ifsr',[event_has_ifsr,['mcPID','mcGMomPID'],0]]])
+photon_not_ifsr = OrderedDict([['ifsr_veto',[isnotgenmatchifsr,['gPdgId','gGenMotherPdgId','gGenGrandMotherPdgId'],0]]])
+event_has_ifsr = OrderedDict([['has_ifsr',[event_has_ifsr,['gPdgId','gGenMotherPdgId'],0]]])
 
 
 photon_idiso_reqs = OrderedDict([['phoCBID_MEDIUM',[photon_CBID_MEDIUM,['gCBID_MEDIUM'],0]]])
