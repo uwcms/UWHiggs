@@ -527,6 +527,12 @@ if options.leptonCor is None:
     elif options.leptonType == 'muon':
         options.leptonCor = 'RochCor'
 
+for k,input in enumerate(options.inputdata):
+    if ',' in input:
+        temp = input.split(',')
+        options.inputdata[k] = temp[0]
+        options.inputdata.extend(temp[1:])
+
 print 'Processing: \n\t%s\n\tdatType=%s\n\trunType=%s\n\tleptonType=%s'\
       %('\n\t'.join(options.inputdata),
         options.datType,
