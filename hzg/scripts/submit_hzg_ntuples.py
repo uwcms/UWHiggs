@@ -61,7 +61,9 @@ for sample in sorted(allTuples.keys()):
 
             for tuple in subsamples[subsample]:
                 tupleName = tuple[1:].split('/')[0]
-            
+                if 'data' in subsample:
+                    tupleName = '.'.join(tuple[1:].split('/')[:2])
+                
                 submit_dir_base = "/scratch/{logname}/{jobid}"\
                                   "/{sample}.{subsample}.{tupleName}".format(
                     logname = os.environ['LOGNAME'],
