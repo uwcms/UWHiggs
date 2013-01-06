@@ -11,7 +11,7 @@ from UWHiggs.hzg.MOOSEY.cuts import CompositeCutflow
 
 import ROOT
 from ROOT import TTree, TFile, TLorentzVector, TVector3, \
-     TRandom3
+     TRandom3, TH1I
 
 #general cutsets
 from UWHiggs.hzg.hzg_cuts import muon_triggers_data,muon_triggers_mc, \
@@ -105,6 +105,7 @@ thez, thezg = TLorentzVector(),TLorentzVector()
 def run_analysis(options,args):    
     tm = tree_manager()
     selected_events = []
+    nEvents_total = int(0)
     pwd = ROOT.gDirectory.GetPath()
     for kFile,input_file in enumerate(args):
         print
@@ -126,16 +127,18 @@ def run_analysis(options,args):
                 mmg = in_file.Get('mmg')
                 tree = mmg.Get('final').Get(treeName)
                 nEvents_sample = mmg.Get('eventCount').GetBinContent(1)
+                nEvents_total += mmg.Get('skimCounter').GetBinContent(1)
                 mmg = None
             elif leptonType == 'electron':                 
                 #specific = electronBranches+commonBranches
                 eeg = in_file.Get('eeg')
                 tree = eeg.Get('final').Get(treeName)
                 nEvents_sample = eeg.Get('eventCount').GetBinContent(1)
+                nEvents_total += eeg.Get('skimCounter').GetBinContent(1)
                 eeg = None
             else:             
                 raise Exception('invalid lepton type: %s'%options.leptonType)
-        
+                
         total_events = tree.GetEntriesFast()    
         tick_size = total_events/100.0
         if tick_size < 1: tick_size = 1.0
@@ -388,6 +391,9 @@ def run_analysis(options,args):
         
     outf = TFile.Open(options.prefix + outFileName,'RECREATE')
     outf.cd()
+    hEventCount = TH1I('eventCount','Total Events Processed',1,0,1)
+    hEventCount.SetBinContent(1,nEvents_total)
+    hEventCount.Write()
     tm.write()
     outf.Close()
 
