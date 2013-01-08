@@ -29,28 +29,34 @@ elif cmssw_major_version() == 5 and cmssw_minor_version()==3:
          import mix as S10
     puS10 = S10.input.nbPileupEvents
 
-def do_truth_reweight(mcPUTruth,datahisto,mcprob):
-    data_histo_bin  = datahisto.FindBin(mcPUTruth)
-    data_histo_prob = ( datahisto.GetBinContent(data_histo_bin)/
-                        datahisto.Integral() )
-    return data_histo_prob/mcprob
+puS10_norm = sum(puS10.probValue)
+puS10_maxbin = len(puS10.probValue)
 
-histos = {}
+puhistos = {}
 
 CD_file = TFile.Open(os.environ['CMSSW_BASE']+
-                      '/src/UWHiggs/hzg/data/pu_truth_2012_CD.root')
+                     '/src/UWHiggs/hzg/data/pu_truth_2012_CD.root','READ')
 gDirectory.cd(pwd)
-CD_truth_histo = CD_file.Get('pileup').Clone()
-histos['CD_truth_histo'] = CD_truth_histo
+CD_truth_histo = CD_file.Get('pileup').Clone('CD2012_truth')
 CD_file.Close()
+gDirectory.cd(pwd)
+
+CD_truth_histo.Scale(1./CD_truth_histo.Integral())
+puhistos['CD_truth_histo'] = CD_truth_histo
+
 def pu_S10_CD_reweight(mcPUTruth):   
-    mc_histo_bin = int(floor(mcPUTruth))
-    bin_width = histos['CD_truth_histo'].GetBinWidth(mc_histo_bin)
+    mc_histo_bin = min(int(mcPUTruth),puS10_maxbin)
     
-    return do_truth_reweight(mcPUTruth,
-                             histos['CD_truth_histo'],
-                             ( puS10.probValue[mc_histo_bin]/
-                               sum(puS10.probValue) )*bin_width )
+    data_bin = min(puhistos['CD_truth_histo'].GetXaxis().FindBin(mcPUTruth),
+                   puhistos['CD_truth_histo'].GetNbinsX())
+
+    bin_width = puhistos['CD_truth_histo'].GetBinWidth(data_bin)
+    
+    dataProb = puhistos['CD_truth_histo'].GetBinContent(data_bin)
+    mcProb = puS10.probValue[mc_histo_bin]*bin_width/puS10_norm
+    
+    return dataProb/mcProb
+    
 
 
 

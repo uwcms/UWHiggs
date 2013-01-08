@@ -28,7 +28,7 @@ from UWHiggs.hzg.corrections import setup_corrections
 from UWHiggs.hzg.categories import hzg_4cat_r9based, hzg_4cat_r9based_mod
 
 #pileup reweighting
-from UWHiggs.hzg.pu_reweighting import pu_S10_CD_reweight
+from UWHiggs.hzg.pu_reweighting import pu_S10_CD_reweight, puhistos
 
 #python standard things
 from argparse import ArgumentParser
@@ -205,7 +205,8 @@ def run_analysis(options,args):
                 setattr(event,'eventFraction',float(ievent+1)/total_events)
                 #event.event/nEvents_sample)
                 event.puWeight = pu_S10_CD_reweight(event.nTruePU[0])
-            pu_weight_sum += event.puWeight
+                #print event.puWeight
+            
 
             #selected_z = []
             #selected_pho_nosihih = []
@@ -343,6 +344,7 @@ def run_analysis(options,args):
                                         event.evt[bestLLG]))
                 setattr(event,'bestZG',thezg)
                 outTrees.bestZGTree(event,tm)
+                pu_weight_sum += event.puWeight
                 #tm.fillTree('%s_zgs'%treeName,{})
             tree = None
         in_file.Close()
@@ -397,8 +399,8 @@ def run_analysis(options,args):
                         options.leptonType,
                         options.leptonCor,
                         options.gamCor,
-                        nameparts[-1])
-        
+                        nameparts[-1])    
+    
     hEventCount = TH1I('eventCount','Total Events Processed',1,0,1)
     hEventCount.SetBinContent(1,nEvents_total)
     metaTList = TList()
@@ -410,7 +412,8 @@ def run_analysis(options,args):
     metaTree.Write()    
     hEventCount.Write()
     tm.write()
-    outf.Close()    
+    outf.Close()
+    ROOT.gDirectory.cd(pwd)
 
 cuts_by_year = {2011:{'data':{'muon':{'trigger':muon_triggers_data,
                                       'leptons':mu_cuts_data,
@@ -578,4 +581,5 @@ else:
     print '\tNo lepton or photon corrections in use.'
     
 run_analysis(options,options.inputdata)
+
 
