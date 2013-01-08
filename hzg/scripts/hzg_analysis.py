@@ -108,6 +108,7 @@ ell1,ell2,pho = TLorentzVector(),TLorentzVector(),TLorentzVector()
 thez, thezg = TLorentzVector(),TLorentzVector()
 def run_analysis(options,args):    
     tm = tree_manager()
+    pu_weight_sum = 0.0
     selected_events = []
     metaInfoTrees = []
     nEvents_total = int(0)
@@ -204,6 +205,7 @@ def run_analysis(options,args):
                 setattr(event,'eventFraction',float(ievent+1)/total_events)
                 #event.event/nEvents_sample)
                 event.puWeight = pu_S10_CD_reweight(event.nTruePU[0])
+            pu_weight_sum += event.puWeight
 
             #selected_z = []
             #selected_pho_nosihih = []
@@ -353,7 +355,8 @@ def run_analysis(options,args):
     
     #output selected event numbers to file if needed
     print
-    print 'Selected %i events after processing!'%(len(selected_events))
+    print 'Selected %i %(.2f) events after processing!'%(len(selected_events),
+                                                         pu_weight_sum)
 
     try:
         os.makedirs(options.prefix)
