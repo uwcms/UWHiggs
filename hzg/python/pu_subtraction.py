@@ -33,7 +33,7 @@ def do_truth_reweight(dataPUTruth,datahisto,mcprob):
     data_histo_bin   = datahisto.FindBin(dataPUTruth)
     data_histo_prob = datahisto.GetBinContent(data_histo_bin)
 
-    return data_histo_prob/mcprob
+    return data_histo_prob/mcprob/datahisto.Integral()
     
 CD_file = TFile.Open(os.environ['CMSSW_BASE']+
                       '/src/UWHiggs/hzg/data/pu_truth_2012_CD.root')
@@ -44,6 +44,6 @@ def pu_S10_CD_reweight(dataPUTruth):
     mc_histo_bin = min(int(floor(dataPUTruth)),S10.probFunctionVariable[-1])
     return do_truth_reweight(dataPUTruth,
                              CD_truth_histo,
-                             S10.probValue[mc_histo_bin])
+                             S10.probValue[mc_histo_bin]/sum(S10.probValue))
 
     
