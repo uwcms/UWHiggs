@@ -355,7 +355,7 @@ def run_analysis(options,args):
     
     #output selected event numbers to file if needed
     print
-    print 'Selected %i %(.2f) events after processing!'%(len(selected_events),
+    print 'Selected %i (%.2f) events after processing!'%(len(selected_events),
                                                          pu_weight_sum)
 
     try:
