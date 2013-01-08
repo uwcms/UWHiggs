@@ -50,4 +50,5 @@ def pu_S10_CD_reweight(mcPUTruth):
                                sum(puS10.probValue) )*bin_width )
 
 
-    
+def clean_up_pu():
+    del CD_truth_histo
