@@ -45,6 +45,7 @@ def pu_S10_CD_reweight(dataPUTruth):
     mc_histo_bin = min(int(floor(dataPUTruth)),puS10.probFunctionVariable[-1])
     return do_truth_reweight(dataPUTruth,
                              CD_truth_histo,
-                             S10.probValue[mc_histo_bin]/sum(puS10.probValue))
+                             ( puS10.probValue[mc_histo_bin]/
+                               sum(puS10.probValue)) )
 
     
