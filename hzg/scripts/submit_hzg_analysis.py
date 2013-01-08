@@ -112,6 +112,11 @@ for sample in sorted(analysis_list.keys()):
                         options.append('++runType=ABCD')
                         options.append('++datType=mc')
                         options.append('++crossSection=%.5e'%tuple_info['x_sec'])
+                if args.leptonCor:
+                    options.append('++leptonCor=%s'%args.leptonCor)
+
+                if args.photonCor:
+                    options.append('++leptonCor=%s'%args.photonCor)
                     
                 if args.vanilla:
                     options.append('++vanilla')
