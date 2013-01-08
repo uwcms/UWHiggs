@@ -27,6 +27,9 @@ from UWHiggs.hzg.corrections import setup_corrections
 #categorization
 from UWHiggs.hzg.categories import hzg_4cat_r9based, hzg_4cat_r9based_mod
 
+#pileup reweighting
+from UWHiggs.hzg.pu_reweighting import pu_S10_CD_reweight
+
 #python standard things
 from argparse import ArgumentParser
 from math import fabs, ceil
@@ -200,7 +203,7 @@ def run_analysis(options,args):
             if options.datType != 'data':            
                 setattr(event,'eventFraction',float(ievent+1)/total_events)
                 #event.event/nEvents_sample)
-                #event.puWeight = pu_weight(event.nPU,options.runType)
+                event.puWeight = pu_S10_CD_reweight(event.nTruePU[0])
 
             #selected_z = []
             #selected_pho_nosihih = []

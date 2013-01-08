@@ -33,7 +33,6 @@ def do_truth_reweight(mcPUTruth,datahisto,mcprob):
     data_histo_bin  = datahisto.FindBin(mcPUTruth)
     data_histo_prob = ( datahisto.GetBinContent(data_histo_bin)/
                         datahisto.Integral() )
-    
     return data_histo_prob/mcprob
     
 CD_file = TFile.Open(os.environ['CMSSW_BASE']+
@@ -48,6 +47,7 @@ def pu_S10_CD_reweight(mcPUTruth):
     return do_truth_reweight(mcPUTruth,
                              CD_truth_histo,
                              ( puS10.probValue[mc_histo_bin]/
-                               sum(puS10.probValue))*bin_width )
+                               sum(puS10.probValue) )*bin_width )
+
 
     
