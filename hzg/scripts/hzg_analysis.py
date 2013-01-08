@@ -11,7 +11,7 @@ from UWHiggs.hzg.MOOSEY.cuts import CompositeCutflow
 
 import ROOT
 from ROOT import TTree, TFile, TLorentzVector, TVector3, \
-     TRandom3, TH1I
+     TRandom3, TH1I, TList
 
 #general cutsets
 from UWHiggs.hzg.hzg_cuts import muon_triggers_data,muon_triggers_mc, \
@@ -105,6 +105,7 @@ thez, thezg = TLorentzVector(),TLorentzVector()
 def run_analysis(options,args):    
     tm = tree_manager()
     selected_events = []
+    metaInfoTrees = []
     nEvents_total = int(0)
     pwd = ROOT.gDirectory.GetPath()
     for kFile,input_file in enumerate(args):
@@ -126,6 +127,7 @@ def run_analysis(options,args):
                 #specific = muonBranches+commonBranches
                 mmg = in_file.Get('mmg')
                 tree = mmg.Get('final').Get(treeName)
+                metaInfoTrees.append(mmg.Get('metaInfo').CloneTree())
                 nEvents_sample = mmg.Get('eventCount').GetBinContent(1)
                 nEvents_total += mmg.Get('skimCounter').GetBinContent(1)
                 mmg = None
@@ -133,6 +135,7 @@ def run_analysis(options,args):
                 #specific = electronBranches+commonBranches
                 eeg = in_file.Get('eeg')
                 tree = eeg.Get('final').Get(treeName)
+                metaInfoTrees.append(eeg.Get('metaInfo').CloneTree())
                 nEvents_sample = eeg.Get('eventCount').GetBinContent(1)
                 nEvents_total += eeg.Get('skimCounter').GetBinContent(1)
                 eeg = None
@@ -388,11 +391,16 @@ def run_analysis(options,args):
                         options.leptonCor,
                         options.photonCor,
                         nameparts[-1])
-        
-    outf = TFile.Open(options.prefix + outFileName,'RECREATE')
-    outf.cd()
+
     hEventCount = TH1I('eventCount','Total Events Processed',1,0,1)
     hEventCount.SetBinContent(1,nEvents_total)
+    metaTList = TList()
+    for tree in metaInfoTrees:
+        metaTList.Add(tree)
+    metaTree = TTree.MergeTrees(metaTList)    
+    outf = TFile.Open(options.prefix + outFileName,'RECREATE')
+    outf.cd()    
+    metaTree.Write()    
     hEventCount.Write()
     tm.write()
     outf.Close()
