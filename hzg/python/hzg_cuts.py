@@ -154,8 +154,8 @@ muon_selection_data_reqs = OrderedDict([['mupt1',
                                          [mu_trg_match_data,['metEt','run'],0]]])
 
 
-def ele_pt(ele):    
-    return ele.Pt() > 10
+def ele_pt(pt):    
+    return pt > 10
 
 def ele_eta(eleEta):
     return (abs(eleEta) < 1.4442 or (abs(eleEta) > 1.566 and abs(eleEta) < 2.5))
@@ -259,7 +259,7 @@ def ele_trg_match_mc(trigMatch,evt_frac):
     return hasMatch
 
 electron_selection_data_reqs = OrderedDict([['ept1',
-                                             [ele_pt,['ell1'],0]],
+                                             [ele_pt,['e1Pt'],0]],
                                             ['eeta1',
                                              [ele_eta,['e1SCEta'],0]],
                                             ['eID1',
@@ -270,11 +270,11 @@ electron_selection_data_reqs = OrderedDict([['ept1',
                                                       'e1HasMatchedConversion','e1MissingHits',
                                                       'e1NearMuonVeto'],0]],
                                             ['eiso1',
-                                             [ele_iso,['ell1','e1PFChargedIso',
+                                             [ele_iso,['e1Pt','e1PFChargedIso',
                                                        'e1PFNeutralIso','e1PFPhotonIso',
                                                        'e1EffectiveArea2012Data','e1RhoHZG2012'],0]],
                                             ['ept2',
-                                             [ele_pt,['ell2'],0]],
+                                             [ele_pt,['e2Pt'],0]],
                                             ['eeta2',
                                              [ele_eta,['e2SCEta'],0]],
                                             ['eID2',
@@ -285,7 +285,7 @@ electron_selection_data_reqs = OrderedDict([['ept1',
                                                       'e2HasMatchedConversion','e2MissingHits',
                                                       'e2NearMuonVeto'],0]],
                                             ['eiso2',
-                                             [ele_iso,['ell2','e2PFChargedIso',
+                                             [ele_iso,['e2Pt','e2PFChargedIso',
                                                        'e2PFNeutralIso','e2PFPhotonIso',
                                                        'e2EffectiveArea2012Data','e2RhoHZG2012'],0]],
                                             ['trigger_match',
@@ -315,7 +315,7 @@ electron_selection_data_reqs_2012 = OrderedDict([['epreID1',
                                                   [ele_trg_match_data,['metEt','run'],0]]])
 
 electron_selection_mc_reqs = OrderedDict([['ept1',
-                                           [ele_pt,['ell1'],0]],
+                                           [ele_pt,['e1Pt'],0]],
                                           ['eeta1',
                                            [ele_eta,['e1SCEta'],0]],
                                           ['eID1',
@@ -326,11 +326,11 @@ electron_selection_mc_reqs = OrderedDict([['ept1',
                                                     'e1HasMatchedConversion','e1MissingHits',
                                                     'e1NearMuonVeto'],0]],
                                           ['eiso1',
-                                           [ele_iso,['ell1','e1PFChargedIso',
+                                           [ele_iso,['e1Pt','e1PFChargedIso',
                                                      'e1PFNeutralIso','e1PFPhotonIso',
                                                      'e1EffectiveArea2012Data','e1RhoHZG2012'],0]],
                                           ['ept2',
-                                           [ele_pt,['ell2'],0]],
+                                           [ele_pt,['e2Pt'],0]],
                                           ['eeta2',
                                            [ele_eta,['e2SCEta'],0]],
                                           ['eID2',
@@ -341,7 +341,7 @@ electron_selection_mc_reqs = OrderedDict([['ept1',
                                                     'e2HasMatchedConversion','e2MissingHits',
                                                     'e2NearMuonVeto'],0]],
                                           ['eiso2',
-                                           [ele_iso,['ell2','e2PFChargedIso',
+                                           [ele_iso,['e2Pt','e2PFChargedIso',
                                                      'e2PFNeutralIso','e2PFPhotonIso',
                                                      'e2EffectiveArea2012Data','e2RhoHZG2012'],0]],
                                           ['trigger_match',
