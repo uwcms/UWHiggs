@@ -116,7 +116,7 @@ for sample in sorted(analysis_list.keys()):
                     options.append('++leptonCor=%s'%args.leptonCor)
 
                 if args.photonCor:
-                    options.append('++leptonCor=%s'%args.photonCor)
+                    options.append('++photonCor=%s'%args.photonCor)
                     
                 if args.vanilla:
                     options.append('++vanilla')
