@@ -19,8 +19,8 @@ baseNames = {'electron'  : ['e1','e2','g'],
 electronTargetNames = {(2011,'mc'):'Fall11',
                        (2011,'data'):'Jan16ReReco',
                        (2012,'mc'):'Summer12_DR53X_HCP2012',
-                       (2012,'data'):'Summer12_DR53X_HCP2012'}
-                       #(2012,'data'):'2012Jul13ReReco'}
+                       #(2012,'data'):'Summer12_DR53X_HCP2012'}
+                       (2012,'data'):'2012Jul13ReReco'}
 
 muonTargetNames = {(2011,'A'):'2011A',
                    (2011,'B'):'2011B',
