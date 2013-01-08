@@ -29,11 +29,11 @@ elif cmssw_major_version() == 5 and cmssw_minor_version()==3:
          import mix as S10
     puS10 = S10.input.nbPileupEvents
 
-def do_truth_reweight(dataPUTruth,datahisto,mcprob):
-    data_histo_bin  = datahisto.FindBin(dataPUTruth)
+def do_truth_reweight(mcPUTruth,datahisto,mcprob):
+    data_histo_bin  = datahisto.FindBin(mcPUTruth)
     data_histo_prob = ( datahisto.GetBinContent(data_histo_bin)/
                         datahisto.Integral() )
-
+    
     return data_histo_prob/mcprob
     
 CD_file = TFile.Open(os.environ['CMSSW_BASE']+
@@ -41,11 +41,13 @@ CD_file = TFile.Open(os.environ['CMSSW_BASE']+
 gDirectory.cd(pwd)
 CD_truth_histo = CD_file.Get('pileup').Clone()
 CD_file.Close()
-def pu_S10_CD_reweight(dataPUTruth):
-    mc_histo_bin = min(int(floor(dataPUTruth)),puS10.probFunctionVariable[-1])
-    return do_truth_reweight(dataPUTruth,
+def pu_S10_CD_reweight(mcPUTruth):
+    bin_width = CD_truth_histo.GetBinWidth(1)
+    mc_histo_bin = int(floor(mcPUTruth))
+    
+    return do_truth_reweight(mcPUTruth,
                              CD_truth_histo,
                              ( puS10.probValue[mc_histo_bin]/
-                               sum(puS10.probValue)) )
+                               sum(puS10.probValue))*bin_width )
 
     
