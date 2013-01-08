@@ -16,6 +16,7 @@ from ROOT import TTree, TFile, TLorentzVector, TVector3, \
 #general cutsets
 from UWHiggs.hzg.hzg_cuts import muon_triggers_data,muon_triggers_mc, \
      electron_triggers_data, electron_triggers_mc, \
+     e_cuts_data_2012,e_cuts_mc_2012, \
      mu_cuts_data,mu_cuts_mc,e_cuts_data,e_cuts_mc, photon_cuts_data, \
      photon_cuts_noifsr, mumu_cuts,ee_cuts,ell_gamma_dr, event_has_ifsr, \
      photon_cuts_mc,photon_cuts_plj
@@ -389,7 +390,7 @@ def run_analysis(options,args):
                         options.datType,
                         options.leptonType,
                         options.leptonCor,
-                        options.photonCor,
+                        options.gamCor,
                         nameparts[-1])
 
     hEventCount = TH1I('eventCount','Total Events Processed',1,0,1)
@@ -405,32 +406,49 @@ def run_analysis(options,args):
     tm.write()
     outf.Close()
 
-
+cuts_by_year = {2011:{'data':{'muon':{'trigger':muon_triggers_data,
+                                      'leptons':mu_cuts_data,
+                                      'z':mumu_cuts},
+                              'electron':{'trigger':electron_triggers_data,
+                                          'leptons':e_cuts_data,
+                                          'z':ee_cuts}},
+                      'mc':{'muon':{'trigger':muon_triggers_mc,
+                                    'leptons':mu_cuts_mc,
+                                    'z':mumu_cuts},
+                            'electron':{'trigger':electron_triggers_mc,
+                                        'leptons':e_cuts_mc,
+                                        'z':ee_cuts}},
+                      
+                      },
+                2012:{'data':{'muon':{'trigger':muon_triggers_data,
+                                      'leptons':mu_cuts_data,
+                                      'z':mumu_cuts},
+                              'electron':{'trigger':electron_triggers_data,
+                                          'leptons':e_cuts_data_2012,
+                                          'z':ee_cuts}},
+                      'mc':{'muon':{'trigger':muon_triggers_mc,
+                                    'leptons':mu_cuts_mc,
+                                    'z':mumu_cuts},
+                            'electron':{'trigger':electron_triggers_mc,
+                                        'leptons':e_cuts_mc_2012,
+                                        'z':ee_cuts}},
+                      
+                      }
+                }
 #determine cutflow given input data type
 def setupCuts(options):
     datType = options.datType
     leptonType = options.leptonType
+    year = options.runYear
     cuts = CompositeCutflow()
     cuts.addCut('mindr',ell_gamma_dr)
-    if leptonType == 'muon':
-        if datType == 'data':
-            cuts.addCutflow('trigger',muon_triggers_data)
-            cuts.addCutflow('leptons',mu_cuts_data)
-        else:
-            cuts.addCutflow('trigger',muon_triggers_mc)
-            cuts.addCutflow('leptons',mu_cuts_mc)
-        cuts.addCutflow('z',mumu_cuts)
-    elif leptonType == 'electron':
-        if datType == 'data':
-            cuts.addCutflow('trigger',electron_triggers_data)
-            cuts.addCutflow('leptons',e_cuts_data)
-        else:
-            cuts.addCutflow('trigger',electron_triggers_mc)
-            cuts.addCutflow('leptons',e_cuts_mc)
-        cuts.addCutflow('z',ee_cuts)
-    else:
-        raise Exception('Invalid lepton type! {muon,electron} are valid')
-
+    cuts.addCutflow('trigger',
+                    cuts_by_year[year][datType][leptonType]['trigger'])
+    cuts.addCutflow('leptons',
+                    cuts_by_year[year][datType][leptonType]['leptons'])
+    cuts.addCutflow('z',
+                    cuts_by_year[year][datType][leptonType]['z'])
+    
     if datType == 'data':
         cuts.addCutflow('pho',photon_cuts_data)    
     elif options.vetoIFSR:
