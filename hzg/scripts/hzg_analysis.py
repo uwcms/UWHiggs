@@ -28,7 +28,7 @@ from UWHiggs.hzg.corrections import setup_corrections
 from UWHiggs.hzg.categories import hzg_4cat_r9based, hzg_4cat_r9based_mod
 
 #pileup reweighting
-from UWHiggs.hzg.pu_reweighting import pu_S10_CD_reweight, clean_up_pu
+from UWHiggs.hzg.pu_reweighting import pu_S10_CD_reweight
 
 #python standard things
 from argparse import ArgumentParser
@@ -398,8 +398,6 @@ def run_analysis(options,args):
                         options.leptonCor,
                         options.gamCor,
                         nameparts[-1])
-
-    clean_up_pu()
         
     hEventCount = TH1I('eventCount','Total Events Processed',1,0,1)
     hEventCount.SetBinContent(1,nEvents_total)
