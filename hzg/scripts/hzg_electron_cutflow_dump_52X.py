@@ -80,27 +80,18 @@ def e_iso(event,i):
 
 
 #the pieces of the electron MVA id
-dEtaCutMVA  = [0.007,0.009]
-dPhiCutMVA  = [0.15,0.10]
-sihihCutMVA = [0.010,0.030]
-HoECutMVA   = [0.12,0.10]
+sihihCutMVA = [0.014,0.035]
+HoECutMVA   = [0.15,0.10]
+missHitsMVA = [0,0]
 def e_mva_preselection(event,i):
     idxe1 = int(abs(event.e1SCEta[i]) >= 1.479)
     idxe2 = int(abs(event.e2SCEta[i]) >= 1.479)
-
+    
     ecalIso1 = event.e1EcalIsoDR03[i]
     ecalIso2 = event.e2EcalIsoDR03[i]
 
-    if idxe1 == 0: ecalIso1 = max(ecalIso1 - 1.0, 0.0)
-    if idxe2 == 0: ecalIso2 = max(ecalIso2 - 1.0, 0.0)
-    
-    return ( event.e1Pt[i] > 10. and event.e2Pt[i] > 10. and
-             #ecal_fiducial(event.e1SCEta[i]) and
-             #ecal_fiducial(event.e2SCEta[i]) and
-             abs(event.e1deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCutMVA[idxe1] and
-             abs(event.e2deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCutMVA[idxe2] and
-             abs(event.e1deltaPhiSuperClusterTrackAtVtx[i]) < dPhiCutMVA[idxe1] and
-             abs(event.e2deltaPhiSuperClusterTrackAtVtx[i]) < dPhiCutMVA[idxe2] and
+    return ( event.e1Pt[i] > 10 and
+             event.e2Pt[i] > 10 and
              event.e1SigmaIEtaIEta[i] < sihihCutMVA[idxe1] and
              event.e2SigmaIEtaIEta[i] < sihihCutMVA[idxe2] and
              event.e1HadronicOverEM[i] < HoECutMVA[idxe1] and
@@ -111,26 +102,90 @@ def e_mva_preselection(event,i):
              ecalIso2/event.e2Pt[i] < 0.2 and
              event.e1HcalIsoDR03[i]/event.e1Pt[i] < 0.2 and
              event.e2HcalIsoDR03[i]/event.e2Pt[i] < 0.2 and
-             int(event.e1MissingHits[i]) <= 1 and
-             int(event.e2MissingHits[i]) <= 1 and
-             abs(event.e1PVDZ[i]) < 0.1 and
-             abs(event.e2PVDZ[i]) < 0.1 ) #and
+             int(event.e1MissingHits[i]) <= missHitsMVA[idxe1] and
+             int(event.e2MissingHits[i]) <= missHitsMVA[idxe2] )
+
+mvacuts = [0.5,0.12,0.6]
+def e_mva_idiso(event,i):    
+    e1idx = int(abs(event.e1SCEta[i]) > 0.8) + int(abs(event.e1SCEta[i]) > 1.479)
+    e2idx = int(abs(event.e2SCEta[i]) > 0.8) + int(abs(event.e2SCEta[i]) > 1.479)
+    e1mva = event.e1MVATrig[i]
+    e2mva = event.e2MVATrig[i]
+
+    return ( event.e1Pt > 10 and
+             event.e2Pt > 10 and
+             e1mva > mvacuts[e1idx] and
+             e2mva > mvacuts[e2idx] and
+             e_iso(event,i)             )
+
+## this is for the ISISO MVA
+#dEtaCutMVA  = [0.007,0.009]
+#dPhiCutMVA  = [0.15,0.10]
+#sihihCutMVA = [0.010,0.030]
+#HoECutMVA   = [0.12,0.10]
+#def e_mva_preselection(event,i):
+#    idxe1 = int(abs(event.e1SCEta[i]) >= 1.479)
+#    idxe2 = int(abs(event.e2SCEta[i]) >= 1.479)
+#
+#    ecalIso1 = event.e1EcalIsoDR03[i]
+#    ecalIso2 = event.e2EcalIsoDR03[i]
+#
+#    if idxe1 == 0: ecalIso1 = max(ecalIso1 - 1.0, 0.0)
+#    if idxe2 == 0: ecalIso2 = max(ecalIso2 - 1.0, 0.0)
+#    
+#    return ( event.e1Pt[i] > 10. and event.e2Pt[i] > 10. and
+#             #abs(event.e1SCEta[i]) < 2.5 and
+#             #abs(event.e2SCEta[i]) < 2.5 and
+#             abs(event.e1deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCutMVA[idxe1] and
+#             abs(event.e2deltaEtaSuperClusterTrackAtVtx[i]) < dEtaCutMVA[idxe2] and
+#             abs(event.e1deltaPhiSuperClusterTrackAtVtx[i]) < dPhiCutMVA[idxe1] and
+#             abs(event.e2deltaPhiSuperClusterTrackAtVtx[i]) < dPhiCutMVA[idxe2] and
+#             event.e1SigmaIEtaIEta[i] < sihihCutMVA[idxe1] and
+#             event.e2SigmaIEtaIEta[i] < sihihCutMVA[idxe2] and
+#             event.e1HadronicOverEM[i] < HoECutMVA[idxe1] and
+#             event.e2HadronicOverEM[i] < HoECutMVA[idxe2] and
+#             event.e1TrkIsoDR03[i]/event.e1Pt[i] < 0.2 and
+#             event.e2TrkIsoDR03[i]/event.e2Pt[i] < 0.2 and
+#             ecalIso1/event.e1Pt[i] < 0.2 and
+#             ecalIso2/event.e2Pt[i] < 0.2 and
+#             event.e1HcalIsoDR03[i]/event.e1Pt[i] < 0.2 and
+#             event.e2HcalIsoDR03[i]/event.e2Pt[i] < 0.2 and
+#             int(event.e1MissingHits[i]) <= 1 and
+#             int(event.e2MissingHits[i]) <= 1 and
+#             abs(event.e1PVDZ[i]) < 0.1 and
+#             abs(event.e2PVDZ[i]) < 0.1 ) #and
              #event.e1NearMuonVeto[i] == 0.0 and
              #event.e2NearMuonVeto[i] == 0.0) 
 
-mvacuts = [-0.82,-0.98] # pt < 20, pt > 20 
-def e_mva_idiso(event,i):
-    e1idx = int(event.e1Pt[i] > 20)
-    e2idx = int(event.e2Pt[i] > 20)
-    e1mva = event.e1MVATrigIDISO[i]
-    e2mva = event.e2MVATrigIDISO[i]
+## id iso mva
+#mvacuts = [-0.82,-0.98] # pt < 20, pt > 20 
+#def e_mva_idiso(event,i):
+#    e1idx = int(event.e1Pt[i] > 20)
+#    e2idx = int(event.e2Pt[i] > 20)
+#    e1mva = event.e1MVATrigIDISO[i]
+#    e2mva = event.e2MVATrigIDISO[i]
+#
+#    return ( e1mva > mvacuts[e1idx] and
+#             e2mva > mvacuts[e2idx]      )
 
-    return ( e1mva > mvacuts[e1idx] and
-             e2mva > mvacuts[e2idx]      )
+from ROOT import TLorentzVector
+
+lep1,lep2 = TLorentzVector(),TLorentzVector()
+pho = TLorentzVector()
 
 def z_id(event,i):
-    return ( (event.e1Pt[i] > 20 or event.e2Pt[i] > 20) and
-             event.e1_e2_Mass[i] > 50 and
+    lep1.SetPtEtaPhiM(event.e1PtCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e1EtaCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e1PhiCorrReg_Summer12_DR53X_HCP2012[i],
+                      0.000511)
+    lep2.SetPtEtaPhiM(event.e2PtCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e2EtaCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e2PhiCorrReg_Summer12_DR53X_HCP2012[i],
+                      0.000511)
+    
+    return ( (event.e1Pt[i] > 20 or
+              event.e2Pt[i] > 20) and
+             (lep1+lep2).M() > 50 and
              event.charge[i] == 0)
 
 def eleVeto(event,i):
@@ -182,8 +237,21 @@ def phoIso(event,i):
         
     return (result.count(True)==3)
 
+
 def good_photon(event,i):
-    pt_over_m = event.gPt[i]/event.Mass[i]
+    lep1.SetPtEtaPhiM(event.e1PtCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e1EtaCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e1PhiCorrReg_Summer12_DR53X_HCP2012[i],
+                      0.000511)
+    lep2.SetPtEtaPhiM(event.e2PtCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e2EtaCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e2PhiCorrReg_Summer12_DR53X_HCP2012[i],
+                      0.000511)
+    pho.SetPtEtaPhiM(event.gPt[i],
+                     event.gEta[i],
+                     event.gPhi[i],
+                     0.0)
+    pt_over_m = event.gPt[i]/(lep1+lep2+pho).M()
     ascEta = abs(event.gSCEta[i])
     
     return ( event.gPt[i] > 15.0 and
@@ -203,10 +271,34 @@ def photon_dr(event,i):
     return min(event.e1_g_DR[i],event.e2_g_DR[i]) > 0.4
 
 def zg_mass_low(event,i):
-    return event.Mass[i] > 115.0 
+    lep1.SetPtEtaPhiM(event.e1PtCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e1EtaCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e1PhiCorrReg_Summer12_DR53X_HCP2012[i],
+                      0.000511)
+    lep2.SetPtEtaPhiM(event.e2PtCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e2EtaCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e2PhiCorrReg_Summer12_DR53X_HCP2012[i],
+                      0.000511)
+    pho.SetPtEtaPhiM(event.gPt[i],
+                     event.gEta[i],
+                     event.gPhi[i],
+                     0.0)
+    return (lep1+lep2+pho).M() > 115.0 
 
 def zg_mass_high(event,i):
-    return event.Mass[i] < 180.0
+    lep1.SetPtEtaPhiM(event.e1PtCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e1EtaCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e1PhiCorrReg_Summer12_DR53X_HCP2012[i],
+                      0.000511)
+    lep2.SetPtEtaPhiM(event.e2PtCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e2EtaCorrReg_Summer12_DR53X_HCP2012[i],
+                      event.e2PhiCorrReg_Summer12_DR53X_HCP2012[i],
+                      0.000511)
+    pho.SetPtEtaPhiM(event.gPt[i],
+                     event.gEta[i],
+                     event.gPhi[i],
+                     0.0)
+    return (lep1+lep2+pho).M() < 180.0
 
 def electron_id_debug(event,i):
     if( trigger_req(event,i) and
@@ -214,55 +306,86 @@ def electron_id_debug(event,i):
         e_mva_preselection(event,i) and
         e_mva_idiso(event,i) and
         z_id(event,i) ):
-        print "ELECTRON :: run: %i  evt: %i  pt: %.4f  scEta: %.6f hoe: %.4f" \
+        print "ELECTRON :: run: %i  evt: %i  pt: %.4f  eReg: %.6f  scEta: %.6f hoe: %.4f" \
               "  sieie: %.6f  dEtaIn: %.6f  dPhiIn: %.6f" \
-              "  muonVeto: %i trkIso: %.4f  ecalIso: %.4f  hcalIso: %.4f" \
+              "  nhitsmiss: %i dZ: %.4f  trkIso: %.4f  ecalIso: %.4f  hcalIso: %.4f" \
+              "  pfChHad: %.6f  pfNeut: %.6f  pfPho: %.6f  ea: %.6f  rho: %.6f" \
               "  IDISOmva: %.4f" \
-              %(event.run[i], event.evt[i], event.e1Pt[i], event.e1SCEta[i],
+              %(event.run[i], event.evt[i], event.e1Pt[i],
+                event.e1ECorrReg_Summer12_DR53X_HCP2012[i],event.e1SCEta[i],
                 event.e1HadronicOverEM[i], event.e1SigmaIEtaIEta[i],
                 event.e1deltaEtaSuperClusterTrackAtVtx[i],
                 event.e1deltaPhiSuperClusterTrackAtVtx[i],
-                event.e1NearMuonVeto[i],event.e1TrkIsoDR03[i],
+                event.e1MissingHits[i],event.e1PVDZ[i], event.e1TrkIsoDR03[i],
                 event.e1EcalIsoDR03[i],event.e1HcalIsoDR03[i],
-                event.e1MVATrigIDISO[i])
-        print "ELECTRON :: run: %i  evt: %i  pt: %.4f  scEta: %.6f hoe: %.4f" \
+                event.e1PFChargedIso[i], 
+                event.e1PFNeutralIso[i],
+                event.e1PFPhotonIso[i],
+                event.e1EffectiveArea2012Data[i],
+                event.e1RhoHZG2012[i],        
+                event.e1MVATrig[i])
+        print "ELECTRON :: run: %i  evt: %i  pt: %.4f  eReg: %.6f  scEta: %.6f hoe: %.4f" \
               "  sieie: %.6f  dEtaIn: %.6f  dPhiIn: %.6f" \
-              "  muonVeto: %i trkIso: %.4f  ecalIso: %.4f  hcalIso: %.4f" \
+              "  nhitsmiss: %i dZ: %.4f  trkIso: %.4f  ecalIso: %.4f  hcalIso: %.4f" \
+              "  pfChHad: %.6f  pfNeut: %.6f  pfPho: %.6f  ea: %.6f  rho: %.6f" \
               "  IDISOmva: %.4f" \
-              %(event.run[i], event.evt[i], event.e2Pt[i], event.e2SCEta[i],
+              %(event.run[i], event.evt[i], event.e2Pt[i],
+                event.e2ECorrReg_Summer12_DR53X_HCP2012[i],event.e2SCEta[i],
                 event.e2HadronicOverEM[i], event.e2SigmaIEtaIEta[i],
                 event.e2deltaEtaSuperClusterTrackAtVtx[i],
                 event.e2deltaPhiSuperClusterTrackAtVtx[i],
-                event.e2NearMuonVeto[i],event.e2TrkIsoDR03[i],
+                event.e2MissingHits[i],event.e2PVDZ[i], event.e2TrkIsoDR03[i],
                 event.e2EcalIsoDR03[i],event.e2HcalIsoDR03[i],
-                event.e2MVATrigIDISO[i])
+                event.e2PFChargedIso[i],
+                event.e2PFNeutralIso[i],
+                event.e2PFPhotonIso[i],
+                event.e2EffectiveArea2012Data[i],
+                event.e2RhoHZG2012[i],
+                event.e2MVATrig[i])
         
 
 def photon_id_debug(event,i):
-    """if( trigger_req(event,i) and
+    if( trigger_req(event,i) and
         vtx_req(event,i) and
-        mu_id(event,i) and
-        mu_iso(event,i) and
+        e_mva_preselection(event,i) and
+        e_mva_idiso(event,i) and
         z_id(event,i) and
-        good_photon(event,i) and
-        photon_dr(event,i) and
-        zg_mass_low(event,i) and
-        zg_mass_high(event,i) ):
-        """
-    if (True):
+        #good_photon(event,i) and
+        #photon_dr(event,i) and
+        #zg_mass_low(event,i) and
+        #zg_mass_high(event,i) and # ):
+        event.evt[i] == 17380 ):
+        lep1.SetPtEtaPhiM(event.e1PtCorrReg_Summer12_DR53X_HCP2012[i],
+                          event.e1EtaCorrReg_Summer12_DR53X_HCP2012[i],
+                          event.e1PhiCorrReg_Summer12_DR53X_HCP2012[i],
+                          0.000511)
+        lep2.SetPtEtaPhiM(event.e2PtCorrReg_Summer12_DR53X_HCP2012[i],
+                          event.e2EtaCorrReg_Summer12_DR53X_HCP2012[i],
+                          event.e2PhiCorrReg_Summer12_DR53X_HCP2012[i],
+                          0.000511)
+        pho.SetPtEtaPhiM(event.gPt[i],
+                         event.gEta[i],
+                         event.gPhi[i],
+                         0.0)
         print "PHOTON :: run %i  evt: %i  pt: %.4f  scEta: %0.6f  hoe: %f" \
               "  sieie: %f  pfCh: %.6f  pfNe: %.6f  pfGa: %.6f  rho: %f  EACh: %.3f   EANeut: %.3f   EAPho: %.3f" \
+              "  dR1: %.6f  dR2: %.6f  M_Z: %.6f M_Zg: %.6f" \
               %(event.run[i], event.evt[i], event.gPt[i], event.gSCEta[i],
                 event.gSingleTowerHadronicDepth1OverEm[i] +
                 event.gSingleTowerHadronicDepth2OverEm[i] ,
                 event.gSigmaIEtaIEta[i],
-                event.gPFChargedIsov2[i],
-                event.gPFNeutralIsov2[i],
-                event.gPFPhotonIsov2[i],
+                event.gPFChargedIso[i],
+                event.gPFNeutralIso[i],
+                event.gPFPhotonIso[i],
                 event.gRho[i],
                 event.gEffectiveAreaCHad[i],
                 event.gEffectiveAreaNHad[i],
-                event.gEffectiveAreaPho[i])        
+                event.gEffectiveAreaPho[i],
+                event.e1_g_DR[i],
+                event.e2_g_DR[i],
+                (lep1+lep2).M(),
+                (lep1+lep2+pho).M(),
+                )        
 
 def process_tuple(tuple,cut_list,counts,printer=None):    
     for event in tuple:
@@ -298,11 +421,11 @@ cut_list_ee = [trigger_req, #HLT
 counts_ee = [0 for cut in cut_list_ee] + [0]
 
 cut_list_eeg = list(cut_list_ee)
-cut_list_eeg += [pho_fiducial,
-                 eleVeto,
-                 HoverE,
-                 sihih,
-                 phoIso, #good photon
+cut_list_eeg += [good_photon,
+                 good_photon,
+                 good_photon,
+                 good_photon,
+                 good_photon, #good photon
                  photon_dr, #delta r lepton-photon
                  zg_mass_low,
                  zg_mass_high
@@ -320,7 +443,7 @@ print
 print 'Total ee: %i'%(counts_ee[5])
 print
 
-process_tuple(eegNtuple,cut_list_eeg,counts_eeg)#,printer=photon_id_debug)
+process_tuple(eegNtuple,cut_list_eeg,counts_eeg,printer=photon_id_debug)
     
 print "Fiducial Cuts   : %i"%(counts_eeg[len(cut_list_ee)])
 print "Electron Veto   : %i"%(counts_eeg[len(cut_list_ee)+1])
