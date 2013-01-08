@@ -30,10 +30,11 @@ elif cmssw_major_version() == 5 and cmssw_minor_version()==3:
     puS10 = S10.input.nbPileupEvents
 
 def do_truth_reweight(dataPUTruth,datahisto,mcprob):
-    data_histo_bin   = datahisto.FindBin(dataPUTruth)
-    data_histo_prob = datahisto.GetBinContent(data_histo_bin)
+    data_histo_bin  = datahisto.FindBin(dataPUTruth)
+    data_histo_prob = ( datahisto.GetBinContent(data_histo_bin)/
+                        datahisto.Integral() )
 
-    return data_histo_prob/mcprob/datahisto.Integral()
+    return data_histo_prob/mcprob
     
 CD_file = TFile.Open(os.environ['CMSSW_BASE']+
                       '/src/UWHiggs/hzg/data/pu_truth_2012_CD.root')
@@ -41,9 +42,9 @@ gDirectory.cd(pwd)
 CD_truth_histo = CD_file.Get('pileup').Clone()
 CD_file.Close()
 def pu_S10_CD_reweight(dataPUTruth):
-    mc_histo_bin = min(int(floor(dataPUTruth)),S10.probFunctionVariable[-1])
+    mc_histo_bin = min(int(floor(dataPUTruth)),puS10.probFunctionVariable[-1])
     return do_truth_reweight(dataPUTruth,
                              CD_truth_histo,
-                             S10.probValue[mc_histo_bin]/sum(S10.probValue))
+                             S10.probValue[mc_histo_bin]/sum(puS10.probValue))
 
     
