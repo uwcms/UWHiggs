@@ -30,6 +30,9 @@ from UWHiggs.hzg.categories import hzg_4cat_r9based, hzg_4cat_r9based_mod
 #pileup reweighting
 from UWHiggs.hzg.pu_reweighting import pu_S10_CD_reweight, puhistos
 
+#luminosity
+from UWHiggs.hzg.hzg_intlumis import hzg_lumi, hzg_run_indices, hzg_run_probs
+
 #python standard things
 from argparse import ArgumentParser
 from math import fabs, ceil
@@ -95,12 +98,8 @@ lepton_infos = {'electron':{'nEll':'nEle',
                         'eta':'muEta',
                         'phi':'muPhi'}}
 
-run_lumi = {'electron':{'A':2252.0,
-                        'B':2709.0,
-                        'AB':2252.0+2709.0},
-            'muon':{'A':2289.9,
-                    'B':2709.0,
-                    'AB':2289.9+2709.0}}
+run_lumi = hzg_lumi
+
 rng = TRandom3(0)
              
 Z_POLE = 91.188
@@ -171,7 +170,9 @@ def run_analysis(options,args):
         
         procWeight = 1.0
         if options.datType != 'data':
-            procWeight = (options.crossSection)
+            procWeight = (options.crossSection *
+                          run_lumi[options.leptonType][options.runYear]\
+                                  [options.runType])
 
         # setup the corrector (this links the appropriate four momenta
         # into a common naming scheme
@@ -197,30 +198,29 @@ def run_analysis(options,args):
             # ell1 = lepton1, ell2 = lepton2
             # gam = photon, Z = dilepton, Zg = Z+photon        
             correct(event)
-        
-            run_idx = getRunIndex(event.run,options.datType,options.leptonType)
+            
+            run_idx = getRunIndex(event.run[0],options.runYear,
+                                  options.runType,options.datType,
+                                  options.leptonType)
             setattr(event,'procWeight',procWeight)
             setattr(event,'puWeight',1.0)
             if options.datType != 'data':            
                 setattr(event,'eventFraction',float(ievent+1)/total_events)
-                #event.event/nEvents_sample)
                 event.puWeight = pu_S10_CD_reweight(event.nTruePU[0])
-                #print event.puWeight
-            
-
+                
             #selected_z = []
             #selected_pho_nosihih = []
             #selected_pho = []        
             #bad_leptons = []
             
-            #if options.datType == 'data':
-            #    # kill run 170722
-            #    # kill the obvious pile up combinatorial event
-            #    if ( event.run[0] == 170722 or
-            #         (event.run[0]   == 166512 and
-            #          event.lumi[0] == 1678 and
-            #          event.evt[0] == 1822682238) ):
-            #        continue
+            if options.datType == 'data':
+                # kill run 170722
+                # kill the obvious pile up combinatorial event
+                if ( event.run[0] == 170722 or
+                     (event.run[0]   == 166512 and
+                      event.lumi[0] == 1678 and
+                      event.evt[0] == 1822682238) ):
+                    continue
         
             bestLLG = None
             bestZdiff = -1
@@ -468,20 +468,25 @@ def setupCuts(options):
     return cuts
 
 #this function returns a run period 
-run_prob = {'electron':run_lumi['electron']['A']/(run_lumi['electron']['A'] +
-                                                  run_lumi['electron']['B']),
-            'muon':run_lumi['muon']['A']/(run_lumi['muon']['A'] +
-                                          run_lumi['muon']['B'])}
-def getRunIndex(run,runType,leptonType):
-    if runType == 'data':
+run_prob = hzg_run_probs
+def getRunIndex(run,runYear,runType,datType,leptonType):
+    if datType == 'data':
         return -1
-    elif runType == 'A':
-        return 0
-    elif runType == 'B':
-        return 1
-    elif runType == 'AB':
-        return int(rng.Rndm() > run_prob[leptonType])
-
+    else:
+       if len(runType) == 1:
+           return hzg_run_indices[leptonType][runYear][runType]
+       else:
+           probs = []
+           for key in sorted(hzg_run_probs[leptonType][runYear].keys()):
+               probs.append(hzg_run_probs[leptonType][runYear][key])
+           max_idx = max(hzg_run_indices[leptonType][runYear].values()) 
+           this_idx = 0
+           tot_prob = probs[0]
+           this_prob = rng.Rndm()
+           while ( tot_prob < this_prob and this_idx <= max_idx):
+               tot_prob += probs[this_idx]
+               this_idx += 1
+           return this_idx
 
 parser = ArgumentParser(description='%prog : configurable v\gamma analysis',
                         usage='%prog ++runType={data,A,B,AB} ++leptonType=muon',
