@@ -1,9 +1,18 @@
 # Central definition of current job IDs
 
-export jobid7_sync='08NOV2012/42X'
-#export jobid8='2012-10-11-8TeV-v3-Higgs'
-export jobid8_sync='08NOV2012/52X'
+#pattuple information
+export hzgpattupleroot='/hdfs/store/user/tapas/'
+export hzgpattupledate='2012-12-29'
 
-export jobid7='2012-09-11-7TeV-HZG'
-#export jobid8='2012-10-11-8TeV-v3-Higgs'
-export jobid8='2012-09-11-7TeV-HZG'
+#ntuple information
+export hzgntupleroot='/hdfs/store/user/lgray/'
+export hzgntuplerevision='02JAN2013v2'
+
+#location of analysis dirs
+export hzganalysisroot='~/HZG_analysis'
+export hzganalysisname='10JAN2013_vanilla'
+
+#categorization scheme
+export hzgcategorytype='det_based_4cat'
+export hzgsignalmodel='CBplusGaus'
+export hzgbkgmodel='RooBernstein'

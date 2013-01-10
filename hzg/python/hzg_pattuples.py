@@ -1,7 +1,9 @@
 #! /usr/bin/env python
 
-patTupleRoot = '/hdfs/store/user/tapas'
-patTupleDate = '2012-12-29'
+import os
+
+patTupleRoot = os.environ['hzgpattupleroot']
+patTupleDate = os.environ['hzgpattupledate']
 
 sevenTeVTuples1 = {
     'tupleName':'7TeV-53X-PatTuple_Master',

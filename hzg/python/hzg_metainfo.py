@@ -5,9 +5,10 @@ import UWHiggs.hzg.hzg_pattuples as hzg
 import FinalStateAnalysis.MetaData.data8TeVNew as eightTeV
 import FinalStateAnalysis.MetaData.data7TeV as sevenTeV
 from copy import deepcopy
+import os
 
-ntupleRoot = '/hdfs/store/user/lgray/'
-ntupleRevision='02JAN2013v2'
+ntupleRoot = os.environ['hzgntupleroot']
+ntupleRevision= os.environ['hzgntuplerevision']
 
 higgsKey = 'HToZG'
 higgsMasses = [120,125,130,135,140,145,150]
