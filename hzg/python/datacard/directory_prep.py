@@ -1,19 +1,32 @@
 import os
 from os import path
 import subprocess
+from copy import deepcopy
 
 #this class expects to be given the directory which contains
 #the root of a directory structure containing all signal samples,
 #background samples, and real data samples
 #
-# like: /path/to/dirs/<sample dir name>/<channels>/<sample groups>/<samples>
+# ex: /path/to/dirs/<sample dir name>/<channels>/<sample groups>/<samples>.root
 #
 def get_leaf_dirs(arg,dirname,names):
+    namescopy = deepcopy(names)
     for i,name in enumerate(names):        
-        if not path.isdir(path.join(dirname,name)):
-            del names[i]
-    if len(names) == 0:
-        arg.append(dirname)           
+        if not path.isdir(path.join(dirname,name)):            
+            namescopy.remove(name)
+                
+    if len(namescopy) == 0:        
+        arg.append(dirname)
+
+def needs_update(arg,dirname,names):
+    last_built = path.getctime('%s.root'%dirname)
+
+    times = []
+    for name in names:
+        times.append(path.getctime(path.join(dirname,name)))
+    
+    arg[0] = (last_built < max(times))    
+    
 
 class directory_prep:
     def __init__(self, path_to_root, sample_name):
@@ -31,17 +44,30 @@ class directory_prep:
 
         for dir in sample_dirs:
             dirroot,name = path.split(dir)
-            dontcare,procname = path.split(dirroot)
+            chanroot,procname = path.split(dirroot)
+            dontcare,channame = path.split(chanroot)
 
-            if procname not in proc_groups:
-                proc_groups[procname] = []
+            if channame not in proc_groups:
+                proc_groups[channame] = {}
             
-            print 'Creating input file %s.root'%name
-            command = 'hadd -v 0 -f %s.root %s/*.root'%(dir,dir)            
-            subprocess.call(command,shell=True)
+            if procname not in proc_groups[channame]:
+                proc_groups[channame][procname] = []
 
-            proc_groups[procname].append('%s.root'%dir)
+            isMod = [True]
 
-        return proc_groups
+            if(path.exists('%s.root'%dir)):                
+                path.walk(dir,needs_update,isMod)
+                
+            if isMod[0]:
+                print 'Creating input file %s.root'%name
+                command = 'hadd -v 0 -f %s.root %s/*.root'%(dir,dir)
+                subprocess.call(command,shell=True)
+
+            proc_groups[channame][procname].append('%s.root'%dir)
+
+        self._proc_groups = proc_groups
+
+    def procgroups(self):
+        return self._proc_groups
 
             

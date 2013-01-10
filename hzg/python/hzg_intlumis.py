@@ -6,9 +6,9 @@ hzg_lumi = {'electron':{2011:{'A':2252.0,
                               'AB':2252.0+2709.0},
                         2012:{'A':0,
                               'B':0,
-                              'C':7011.0, #missing one corrupted file
-                              'D':7012.0, #missing batch of analysis
-                               'ABCD':0+0+7011.0+7012.0}
+                              'C':7011.0, #missing one corrupted pattuple
+                              'D':7269.0, 
+                               'ABCD':0+0+7011.0+7269.0}
                         },
             'muon':{2011:{'A':2289.9,
                           'B':2709.0,

@@ -34,6 +34,7 @@ for tupleset in hzg.allTuples.keys():
                 name = '%s_M-%i'%(tuple,mass)
                 analysis_info[tuple][name] = deepcopy(parent[name])
                 analysis_info[tuple][name]['vetoIFSR'] = False
+                analysis_info[tuple][name]['isRealData'] = False
         else:
             for dataset in hzg.allTuples[tupleset][tuple]:
                 for patTupleName in parent.keys():                    
@@ -43,10 +44,14 @@ for tupleset in hzg.allTuples.keys():
                                        deepcopy(parent[patTupleName])
                         if 'DY' in dataset:
                             analysis_info[tuple][patTupleName]['vetoIFSR'] =\
-                                                                           True
+                                                                          True
                         else:
                             analysis_info[tuple][patTupleName]['vetoIFSR'] =\
                                                                           False
+                        
+        
+        
+                        
 
         
 
