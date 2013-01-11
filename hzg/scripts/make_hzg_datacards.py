@@ -2,7 +2,8 @@
 
 from UWHiggs.hzg.datacard.directory_prep import directory_prep
 from UWHiggs.hzg.datacard.metadata_association import metadata_association
-from UWHiggs.hzg.datacard.categories_map import categories_map
+from UWHiggs.hzg.datacard.categories_map import categories_map,\
+     make_background_for_cat
 
 import os
 
@@ -80,13 +81,13 @@ def extract_bkg_data_in_categories(subproc,input_file,ws):
     
     fin.Close()    
     
-    data_in_ws = ws.data('background_shape_data')
+    data_in_ws = ws.data('mc_background_shape_data')
     if not not data_in_ws:
         getattr(ws,'import')(data_proper_weight)
         data_in_ws.append(data_proper_weight)        
     else:
         getattr(ws,'import')(data_proper_weight,
-                             RooFit.Rename('background_shape_data'))
+                             RooFit.Rename('mc_background_shape_data'))
         getattr(ws,'import')(data_proper_weight)
                              
 
@@ -154,14 +155,74 @@ def create_master_workspaces(meta_data):
     return ws_list
 
 def build_category_workspaces(ws_list,metadata):
+    pwd = gDirectory.GetPath()
     assoc = metadata.getAssociation()
+    category_type = os.environ['hzgcategorytype']
+    background_type = os.environ['hzgbkgmodel']
+    categories = categories_map[category_type]['categories']
+    catname = categories_map[category_type]['leafname']
     for (sample,chanlist) in ws_list.iteritems():
         for (channel,chaninfo) in chanlist.iteritems():
+            master_file = TFile.Open(chaninfo['filename'],'read')
+            gDirectory.cd(pwd)
+            
+            master_ws = master_file.Get('%s-%s'%(channel,sample))
             processes = chaninfo.keys()
             processes.remove('filename')
+
+            #make workspaces for each category
+            cat_workspaces = {}
+            if not len(processes): continue
+            
+            for category in categories:                        
+                cat_workspaces[category] =\
+                                         RooWorkspace('%s-%s-cat%i'%(channel,
+                                                                     sample,
+                                                                     category),
+                                                      '%s-%s-cat%i'%(channel,
+                                                                     sample,
+                                                                     category))
+                cat_ws = cat_workspaces[category]
+                
+                cat_data = master_ws.data('%s_data'%channel)\
+                           .reduce('%s == %i'%(catname,category))
+                getattr(cat_ws,'import')(cat_data)
+
+                cat_bkg = master_ws.data('mc_background_shape_data')\
+                          .reduce('%s == %i'%(catname,category))
+                getattr(cat_ws,'import')(cat_bkg)
+                #make background model
+                bkg_mdl = make_background_for_cat(category_type,
+                                                  category,
+                                                  background_type)
+                for line in bkg_mdl:
+                    cat_workspaces[category].factory(line)
+            #build background + data workspaces
+            for category in categories:                
+                #write out category information
+                mass_file = TFile.Open(
+                    '%s_%s_category_%i_workspace.root'\
+                    %(channel,sample,category),
+                    'recreate')
+                cat_workspaces[category].Write()
+                mass_file.Close()  
+
+            #generate signal workspaces for each mass point
+            #and category
             for process in processes:
                 subproc_list = chaninfo[process]
-                print sample, channel, process, subproc_list
+                print sample, channel, process
+                masses = {}
+                for subproc in subproc_list:
+                    masses[assoc[sample][channel][process]\
+                           [subproc]['mass']] = subproc
+                for mass in sorted(masses.keys()):
+                    subproc = masses[mass]
+                    
+                          
+
+            #close channel
+            master_file.Close()
 
 if __name__ == '__main__':
     analysis_root = os.environ['hzganalysisroot']
