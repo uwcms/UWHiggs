@@ -197,7 +197,8 @@ def build_category_workspaces(ws_list,metadata):
                                                   background_type)
                 for line in bkg_mdl:
                     cat_workspaces[category].factory(line)
-            #build background + data workspaces
+                    
+            #build background model + data workspaces
             for category in categories:                
                 #write out category information
                 mass_file = TFile.Open(
@@ -210,6 +211,8 @@ def build_category_workspaces(ws_list,metadata):
             #generate signal workspaces for each mass point
             #and category
             for process in processes:
+                proc_name_short = process.split('To')[0]
+                print proc_name_short
                 subproc_list = chaninfo[process]
                 print sample, channel, process
                 masses = {}

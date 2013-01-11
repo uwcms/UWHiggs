@@ -10,7 +10,7 @@ categories_map = {'det_based_4cat':
                                                  2:5,
                                                  3:5,
                                                  4:5}
-                                 }
+                                 },
                    'signal_models':{'CBplusGaus':{} #same for each cat
                                     }
                    }
@@ -23,7 +23,8 @@ def make_background_for_cat(cattype,cat,bkg_model):
     if cat in available_cats:
         if bkg_model in available_models:
             model_info = available_models[bkg_model]
-            factory_string = []            
+            factory_string = []
+            #RooBernstein Polynomial type background
             if bkg_model == 'RooBernstein':
                 specialize = ''
                 temp = '%s::background_model_cat_%i'\
@@ -33,7 +34,7 @@ def make_background_for_cat(cattype,cat,bkg_model):
                 pconsts = ['bkg_cat_%i_p%i[-10,10]'%(cat,i+1) \
                            for i in range(nconsts)]
                 specialize += 'Mzg,{1.0,%s}'%(','.join(pconsts))
-                factory_string.apped(temp%specialize)
+                factory_string.append(temp%specialize)
             return factory_string                
         else:
             raise Exception('model %s not in %s!'%(bkg_model,cattype))
@@ -47,7 +48,8 @@ def make_signal_for_cat(cattype,cat,sig_model,mass,sig_type):
     if cat in available_cats:
         if bkg_model in available_models:
             model_info = available_models[sig_model]
-            factory_string = []            
+            factory_string = []
+            #crystal ball plus gaussian
             if sig_model == 'CBplusGaus':
                 mname = str(mass).replace('.','p')
                 #crystal ball distribution
@@ -74,7 +76,7 @@ def make_signal_for_cat(cattype,cat,sig_model,mass,sig_type):
                                                                    0.5,
                                                                    50)]) )
                 cb_shape = cb_shape%pargs
-                factory_string.push_back(cb_shape)
+                factory_string.append(cb_shape)
                 #gaussian
                 gaus_name  = 'sig_gaus_m%s_%s'%(mname,sig_type)
                 gaus_shape = 'RooGaussian::%s'%gaus_name
@@ -86,8 +88,17 @@ def make_signal_for_cat(cattype,cat,sig_model,mass,sig_type):
                                                                     0.3,
                                                                     20)]) )
                 gaus_shape = gaus_shape%pargs
-                factory_string.push_back(gaus_shape)
-                #RooAddPdf -- stopped here for the night
+                factory_string.append(gaus_shape)
+                #RooAddPdf
+                sum_name  = 'sig_tot_m%s_%s'%(mname,sig_type)
+                sum_shape = 'SUM::%s'%sum_name
+                sum_shape += '(%s)'
+                pargs = ','.join([cb_name,
+                                  '*'.join(['fGaus_m%_%s[0.5,0,1]'%(mname,
+                                                                    sigtype),
+                                            gaus_name])])
+                sum_shape = sum_shape%pargs
+                factory_string.append(sum_shape)
             return factory_string                
         else:
             raise Exception('model %s not in %s!'%(bkg_model,cattype))
