@@ -3,13 +3,13 @@
 from UWHiggs.hzg.datacard.directory_prep import directory_prep
 from UWHiggs.hzg.datacard.metadata_association import metadata_association
 from UWHiggs.hzg.datacard.categories_map import categories_map,\
-     make_background_for_cat
+     make_background_for_cat,make_signal_for_cat
 
 import os
 
 import ROOT
 from ROOT import TFile,TH1F,TTree,RooWorkspace,gDirectory,RooDataSet,RooFit,\
-     RooArgSet, RooFormulaVar, RooArgList, RooConstVar
+     RooArgSet, RooFormulaVar, RooArgList, RooConstVar, TGraph
 
 def initialize_workspace(ws):
     #make the category definition
@@ -46,12 +46,19 @@ def make_weighted_dataset(subproc,ws,tree,mc_events):
                              )
     data.addColumn(weighter)
 
-    data_proper_weight = RooDataSet('%s_shape_data'%subproc,
-                                    'M_{ll#gamma} Shape Data for %s'%subproc,
-                                    data,
-                                    ws.set('vars_with_weights_final'),
-                                    '','weight')
-    return data_proper_weight
+    data_total_weight = RooDataSet('%s_shape_data'%subproc,
+                                   'M_{ll#gamma} Shape Data for %s'%subproc,
+                                   data,
+                                   ws.set('vars_with_weights_final'),
+                                   '','weight')
+
+    data_pu_weight = RooDataSet('%s_shape_data_puonly'%subproc,
+                                'M_{ll#gamma} Shape Data for %s'%subproc,
+                                data,
+                                ws.set('vars_with_weights_final'),
+                                '','puWeight')
+    
+    return data_total_weight, data_pu_weight
 
 def extract_higgs_data_in_categories(subproc,input_file,ws):
     pwd = gDirectory.GetPath()    
@@ -60,13 +67,20 @@ def extract_higgs_data_in_categories(subproc,input_file,ws):
 
     tree = fin.Get('selected_zg')    
 
-    mc_tot_events = float(fin.Get('eventCount').GetBinContent(1))
+    mc_tot_events = float(fin.Get('eventCount').GetBinContent(1))    
 
-    data_proper_weight = make_weighted_dataset(subproc,ws,tree,mc_tot_events)
+    data_total_weight,data_pu_weight = make_weighted_dataset(subproc,
+                                                             ws,tree,
+                                                             mc_tot_events)
+
+    ws.factory('%s_acceff[%f]'%(subproc,
+                                data_pu_weight.sumEntries()/mc_tot_events))
     
-    fin.Close()    
+    fin.Close()
     
-    getattr(ws,'import')(data_proper_weight)
+    #save with and without process cross section normalization
+    getattr(ws,'import')(data_total_weight)
+    getattr(ws,'import')(data_pu_weight)
 
 def extract_bkg_data_in_categories(subproc,input_file,ws):
     pwd = gDirectory.GetPath()    
@@ -77,7 +91,9 @@ def extract_bkg_data_in_categories(subproc,input_file,ws):
 
     mc_tot_events = float(fin.Get('eventCount').GetBinContent(1))
 
-    data_proper_weight = make_weighted_dataset(subproc,ws,tree,mc_tot_events)
+    data_proper_weight,data_pu_weight = make_weighted_dataset(subproc,
+                                                              ws,tree,
+                                                              mc_tot_events)
     
     fin.Close()    
     
@@ -158,6 +174,7 @@ def build_category_workspaces(ws_list,metadata):
     pwd = gDirectory.GetPath()
     assoc = metadata.getAssociation()
     category_type = os.environ['hzgcategorytype']
+    signal_type = os.environ['hzgsignalmodel']
     background_type = os.environ['hzgbkgmodel']
     categories = categories_map[category_type]['categories']
     catname = categories_map[category_type]['leafname']
@@ -186,7 +203,10 @@ def build_category_workspaces(ws_list,metadata):
                 
                 cat_data = master_ws.data('%s_data'%channel)\
                            .reduce('%s == %i'%(catname,category))
-                getattr(cat_ws,'import')(cat_data)
+                getattr(cat_ws,'import')(
+                    cat_data,
+                    RooFit.Rename('%s_data_cat%i'%(channel,category))
+                    )
 
                 cat_bkg = master_ws.data('mc_background_shape_data')\
                           .reduce('%s == %i'%(catname,category))
@@ -201,27 +221,93 @@ def build_category_workspaces(ws_list,metadata):
             #build background model + data workspaces
             for category in categories:                
                 #write out category information
-                mass_file = TFile.Open(
+                cat_file = TFile.Open(
                     '%s_%s_category_%i_workspace.root'\
                     %(channel,sample,category),
                     'recreate')
                 cat_workspaces[category].Write()
-                mass_file.Close()  
+                cat_file.Close()  
 
             #generate signal workspaces for each mass point
             #and category
+            acceptances = {}
+            proc_workspaces = {}
             for process in processes:
-                proc_name_short = process.split('To')[0]
-                print proc_name_short
+                acceptance = TGraph(0)
+                acceptance.SetName('g%s_acceff'%process)
+                proc_workspaces[process] = RooWorkspace('%s-%s-%s'%(channel,
+                                                                    sample,
+                                                                    process))
+                proc_name_short = process.split('To')[0]                
                 subproc_list = chaninfo[process]
                 print sample, channel, process
                 masses = {}
                 for subproc in subproc_list:
                     masses[assoc[sample][channel][process]\
                            [subproc]['mass']] = subproc
-                for mass in sorted(masses.keys()):
+                for k,mass in enumerate(sorted(masses.keys())):
                     subproc = masses[mass]
-                    
+                    #get acc*eff (calculated in master ws)
+                    acceptance.SetPoint(
+                        k,mass,
+                        master_ws.var('%s_acceff'%subproc).getVal()
+                        )
+                    for category in categories:
+                        #get and import signal dataset for this cat
+                        cat_sig_nopu = master_ws.data(
+                            '%s_shape_data_puonly'%subproc
+                            ).reduce('%s == %i'%(catname,category))
+                        cat_sig = master_ws.data(
+                            '%s_shape_data'%subproc
+                            ).reduce('%s == %i'%(catname,category))
+                        getattr(proc_workspaces[process],'import')(
+                            cat_sig_nopu,
+                            RooFit.Rename(
+                            '%s_shape_data_puonly_cat%i'%(subproc,category)
+                            )
+                            )
+                        getattr(proc_workspaces[process],'import')(
+                            cat_sig,
+                            RooFit.Rename('%s_shape_data_cat%i'%(subproc,
+                                                                 category))
+                            )
+                        #build signal model
+                        sig_model = make_signal_for_cat(category_type,
+                                                        category,
+                                                        signal_type,
+                                                        mass,
+                                                        proc_name_short)
+                        for line in sig_model:
+                            proc_workspaces[process].factory(line)
+
+                        #end dataset import and model defintions
+                #for each mass and category in this process
+                #fit the signal datasets
+                for k,mass in enumerate(sorted(masses.keys())):
+                    subproc = masses[mass]
+                    mname = str(mass).replace('.','p')
+                    for category in categories:
+                        #fit the signal model to pu-only weighted data
+                        sig_model = 'signal_model_m%s_%s_cat%i'%(mname,
+                                                                 sig_type,
+                                                                 cat)
+                        sig_data  = '%s_shape_data_puonly'%subproc
+                        sig_pdf   = proc_workspaces[process].pdf(sig_model)
+                        sig_pdf.fitTo(sig_data)
+                        
+                
+                #embed acceptance data in workspace
+                getattr(proc_workspaces[process],'import')(acceptance)
+
+            #build background model + data workspaces
+            for process in processes:                
+                #write out category information
+                proc_file = TFile.Open(
+                    '%s_%s_process_%s_workspace.root'\
+                    %(channel,sample,process),
+                    'recreate')
+                proc_workspaces[process].Write()
+                proc_file.Close()                      
                           
 
             #close channel

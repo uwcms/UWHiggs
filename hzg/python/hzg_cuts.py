@@ -465,13 +465,13 @@ photon = 22
 gluon = 21
 proton = 2212
 def isnotgenmatchifsr(PID,motherPID,gMotherPID):
-    if( abs(PID) != 22 ): return True
-    if( abs(motherPID) < 22 ): return False
-    if( abs(motherPID) == proton or abs(gMotherPID) == proton ): return False
-    if( abs(motherPID) in charged_leptons and abs(gMotherPID) in charged_leptons ): return False #secondary radiation from lepton
-    if( abs(motherPID) in charged_leptons and abs(gMotherPID) in weak_bosons ): return False #primary radiation from lepton
-    if( motherPID == photon and abs(gMotherPID) in charged_leptons ): return False #photon had some SMC interaction?
-    if( motherPID == gluon or abs(motherPID) in quarks ): return False #ISR photon or gluon fragmentation
+    #if( abs(PID) != 22 ): return True
+    if( abs(motherPID) < 22 and abs(PID) == 22): return False
+    #if( abs(motherPID) == proton or abs(gMotherPID) == proton ): return False
+    #if( abs(motherPID) in charged_leptons and abs(gMotherPID) in charged_leptons ): return False #secondary radiation from lepton
+    #if( abs(motherPID) in charged_leptons and abs(gMotherPID) in weak_bosons ): return False #primary radiation from lepton
+    #if( motherPID == photon and abs(gMotherPID) in charged_leptons ): return False #photon had some SMC interaction?
+    #if( motherPID == gluon or abs(motherPID) in quarks ): return False #ISR photon or gluon fragmentation
     return True
 
 #runs over MC particles
