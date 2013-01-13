@@ -4,6 +4,7 @@ from UWHiggs.hzg.datacard.directory_prep import directory_prep
 from UWHiggs.hzg.datacard.metadata_association import metadata_association
 from UWHiggs.hzg.datacard.categories_map import categories_map,\
      make_background_for_cat,make_signal_for_cat
+from UWHiggs.hzg.plotting.plotting_groups import make_plot_groups
 
 import os
 
@@ -246,12 +247,15 @@ def build_category_workspaces(ws_list,metadata):
                     masses[assoc[sample][channel][process]\
                            [subproc]['mass']] = subproc
                 for k,mass in enumerate(sorted(masses.keys())):
+                    friendly_mass_name = str(mass).replace('.','p')
+                    sig_fit_range = 'fit_%s'%friendly_mass_name
                     subproc = masses[mass]
                     #get acc*eff (calculated in master ws)
                     acceptance.SetPoint(
                         k,mass,
                         master_ws.var('%s_acceff'%subproc).getVal()
                         )
+                    
                     for category in categories:
                         #get and import signal dataset for this cat
                         cat_sig_nopu = master_ws.data(
@@ -279,8 +283,13 @@ def build_category_workspaces(ws_list,metadata):
                                                         proc_name_short)
                         for line in sig_model:
                             proc_workspaces[process].factory(line)
-
+                            
                         #end dataset import and model defintions
+                        #setup fitting range
+                    proc_workspaces[process].var("Mzg").setRange(
+                        sig_fit_range,
+                        mass-30,mass+30
+                        )
                 #for each mass and category in this process
                 #fit the signal datasets
                 for k,mass in enumerate(sorted(masses.keys())):
@@ -288,13 +297,28 @@ def build_category_workspaces(ws_list,metadata):
                     mname = str(mass).replace('.','p')
                     for category in categories:
                         #fit the signal model to pu-only weighted data
-                        sig_model = 'signal_model_m%s_%s_cat%i'%(mname,
-                                                                 sig_type,
-                                                                 cat)
-                        sig_data  = '%s_shape_data_puonly'%subproc
+                        sig_model = 'signal_model_m%s_%s_cat%i'%(
+                            mname,
+                            proc_name_short,
+                            category
+                            )
+                        sig_data  = proc_workspaces[process].data(
+                            '%s_shape_data_puonly_cat%i'%(subproc,category)
+                            )                        
                         sig_pdf   = proc_workspaces[process].pdf(sig_model)
-                        sig_pdf.fitTo(sig_data)
-                        
+                        # fit in range around peak to remove outliers that
+                        # cause pdf to be zero
+                        # get errors proportional to number of actual events
+                        #sig_pdf.fitTo(sig_data,
+                        #              RooFit.Range(sig_fit_range),
+                        #              RooFit.SumW2Error(True)
+                        #              )
+                        #set all fitted parameters constant
+                        params = sig_pdf.getParameters(sig_data)
+                        params_it = params.iterator()
+                        while ( not not params_it.Next() ):
+                            params_it.setConstant(True)
+                        del params
                 
                 #embed acceptance data in workspace
                 getattr(proc_workspaces[process],'import')(acceptance)
@@ -325,6 +349,13 @@ if __name__ == '__main__':
     master_ws_list = create_master_workspaces(mda)
 
     build_category_workspaces(master_ws_list,mda)
-                
-    
+
+    #make the associated plots
+    pgs = make_plot_groups(mda, higgs_masses = [125], higgs_prod = 'ggH')
+    for (sample,chanlist) in pgs.iteritems():
+        for (channel,pglist) in chanlist.iteritems():
+            for pg in pglist:
+                print pg
+                for file in pglist[pg]['filenames']:
+                    print '\t',file
 

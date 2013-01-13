@@ -12,7 +12,7 @@ export hzgntuplerevision='02JAN2013v2'
 export hzganalysisroot='~/HZG_analysis'
 export hzganalysisname='10JAN2013_vanilla'
 
-#categorization scheme
+#categorization and fitting scheme
 export hzgcategorytype='det_based_4cat'
 export hzgsignalmodel='CBplusGaus'
 export hzgbkgmodel='RooBernstein'
