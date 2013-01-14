@@ -62,7 +62,8 @@ zg_info = {'procWeight':0,'puWeight':0,'run':0,'lumis':0,'event':0,
            'ell1Pho':TLorentzVector(),'ell2Pho':TLorentzVector(),
            'minDeltaREllPho':0,'nGoodVtx':0,
            'Mzg':0,'Mz':0,'dMzg':0,'dMz':0,
-           'r94cat':0,'r94cat_mod':0#,
+           'r94cat':0,'r94cat_mod':0,
+           'phoPdgId','phoMomPdgId','phoFromHiggs'#,
            #'nPLJet':0,
            #'plJetFoE':array('d',[0 for i in range(15)]),
            #'plJetPt' :array('d',[0 for i in range(15)]),
@@ -114,6 +115,9 @@ def bestZGTree(event,tm):
     zg_info['phoSCEta'] = event.gSCEta[bestPho]
     zg_info['phoSihih'] = event.gSigmaIEtaIEta[bestPho]
     zg_info['phoR9'] = event.gR9[bestPho]
+    zg_info['phoPdgId'] = event.gPdgId[bestPho]
+    zg_info['phoMomPdgId'] = event.gGenMotherPdgId[bestPho]
+    zg_info['phoFromHiggs'] = event.gComesFromHiggs[bestPho]
 
     #zg_info['nPLJet'] = len(event.PLJets)
     #for i in range(15):
