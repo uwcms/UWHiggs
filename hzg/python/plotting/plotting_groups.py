@@ -25,6 +25,9 @@ def make_plot_groups(mda,
                                     dsc['filenames'] = \
                                           [subproclist[subproc]['input_file']]
                                     dsc['scale'] = 100.0 #scale higgs by 100
+                                    dsc['n_events'] = float(
+                                        subproclist[subproc]['num_mc_events']
+                                        )
                                     
                 else:
                     if 'data' in process:
@@ -34,6 +37,7 @@ def make_plot_groups(mda,
                                                    ['filenames'] = []
                             plot_groups[sample][channel]['data']\
                                                        ['scale'] = 1.0
+                            
                         data_group = plot_groups[sample][channel]['data']
                         for subp in subproclist:
                             data_group['filenames'].append(
@@ -46,6 +50,9 @@ def make_plot_groups(mda,
                             dsc['filenames'] = \
                                           [subproclist[subproc]['input_file']]
                             dsc['scale'] = 1.0
+                            dsc['n_events'] = float(
+                                subproclist[subproc]['num_mc_events']
+                                )
     return plot_groups
     
     

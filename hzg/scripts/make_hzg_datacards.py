@@ -5,8 +5,17 @@ from UWHiggs.hzg.datacard.metadata_association import metadata_association
 from UWHiggs.hzg.datacard.categories_map import categories_map,\
      make_background_for_cat,make_signal_for_cat
 from UWHiggs.hzg.plotting.plotting_groups import make_plot_groups
+from UWHiggs.hzg.plotting.hzg_plots import process_plot_groups
 
 import os
+
+from RecoLuminosity.LumiDB import argparse
+
+parser = argparse.ArgumentParser(description="build hzg datacards and plots")
+parser.add_argument('--unblind', default=False,action='store_true',
+                    help='run without blinding cuts')
+
+args = parser.parse_args()
 
 import ROOT
 from ROOT import TFile,TH1F,TTree,RooWorkspace,gDirectory,RooDataSet,RooFit,\
@@ -82,6 +91,7 @@ def extract_higgs_data_in_categories(subproc,input_file,ws):
     #save with and without process cross section normalization
     getattr(ws,'import')(data_total_weight)
     getattr(ws,'import')(data_pu_weight)
+    return mc_tot_events
 
 def extract_bkg_data_in_categories(subproc,input_file,ws):
     pwd = gDirectory.GetPath()    
@@ -106,6 +116,7 @@ def extract_bkg_data_in_categories(subproc,input_file,ws):
         getattr(ws,'import')(data_proper_weight,
                              RooFit.Rename('mc_background_shape_data'))
         getattr(ws,'import')(data_proper_weight)
+    return mc_tot_events
                              
 
 def extract_data_in_categories(channel,input_file,ws):
@@ -144,20 +155,23 @@ def create_master_workspaces(meta_data):
                 for (subproc,info) in subproclist.iteritems():
                     print '\tprocessing: %s'%subproc
                     input_file = info['input_file']
+                    info['num_mc_events'] = -1
                     if input_file == '':
                         print '\t no input file found! Skipping!'
                         continue
                     if 'data' not in process:                        
                         print '\t mc input = %s'%input_file.split('/')[-1]
-                        if 'HToZG' in subproc:
+                        if 'HToZG' in subproc:                            
+                            info['num_mc_events'] = \
+                                  extract_higgs_data_in_categories(subproc,
+                                                                   input_file,
+                                                                   this_ws)
                             ws_list[sample][channel][process].append(subproc)
-                            extract_higgs_data_in_categories(subproc,
-                                                             input_file,
-                                                             this_ws)
                         else:
-                            extract_bkg_data_in_categories(subproc,
-                                                           input_file,
-                                                           this_ws)
+                            info['num_mc_events'] = \
+                                  extract_bkg_data_in_categories(subproc,
+                                                                 input_file,
+                                                                 this_ws)
                     else:
                         print '\t data input = %s'%input_file.split('/')[-1]
                         extract_data_in_categories(channel,input_file,this_ws)
@@ -223,7 +237,7 @@ def build_category_workspaces(ws_list,metadata):
             for category in categories:                
                 #write out category information
                 cat_file = TFile.Open(
-                    '%s_%s_category_%i_workspace.root'\
+                    '%s_%s_data_category_%i_workspace.root'\
                     %(channel,sample,category),
                     'recreate')
                 cat_workspaces[category].Write()
@@ -322,8 +336,7 @@ def build_category_workspaces(ws_list,metadata):
                 
                 #embed acceptance data in workspace
                 getattr(proc_workspaces[process],'import')(acceptance)
-
-            #build background model + data workspaces
+            
             for process in processes:                
                 #write out category information
                 proc_file = TFile.Open(
@@ -331,8 +344,7 @@ def build_category_workspaces(ws_list,metadata):
                     %(channel,sample,process),
                     'recreate')
                 proc_workspaces[process].Write()
-                proc_file.Close()                      
-                          
+                proc_file.Close()                          
 
             #close channel
             master_file.Close()
@@ -340,6 +352,8 @@ def build_category_workspaces(ws_list,metadata):
 if __name__ == '__main__':
     analysis_root = os.environ['hzganalysisroot']
     analysis_name = os.environ['hzganalysisname']
+
+    unblind = args.unblind
     
     dp = directory_prep(analysis_root,analysis_name)
     dp.build_inputs()
@@ -352,10 +366,14 @@ if __name__ == '__main__':
 
     #make the associated plots
     pgs = make_plot_groups(mda, higgs_masses = [125], higgs_prod = 'ggH')
-    for (sample,chanlist) in pgs.iteritems():
-        for (channel,pglist) in chanlist.iteritems():
-            for pg in pglist:
-                print pg
-                for file in pglist[pg]['filenames']:
-                    print '\t',file
+
+    plot_path = os.path.join(analysis_root,analysis_name)
+    plot_path = os.path.join(plot_path,'plots')
+
+    if unblind:
+        process_plot_groups(pgs,'test',[])
+    else:
+        process_plot_groups(pgs,plot_path,
+                            ['(zg.M() > 150 || zg.M() < 120)']
+    
 
