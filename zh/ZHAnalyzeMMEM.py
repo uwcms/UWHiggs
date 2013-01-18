@@ -46,10 +46,10 @@ class ZHAnalyzeMMEM(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_H_histos(folder)
 
     def probe1_id(self, row):
-        return selections.eleID(row, 'e') and bool(row.eRelPFIsoDB < 0.25)
+        return selections.eleID(row, 'e') and selections.elIsoLoose(row, 'e')
 
     def probe2_id(self, row):
-        return bool(row.m3PFIDTight) and bool(row.m3RelPFIsoDB < 0.25)
+        return bool(row.m3PFIDTight) and selections.muIsoLoose(row, 'm3')
 
     def preselection(self, row):
         ''' Preselection applied to events.
