@@ -35,4 +35,19 @@ def vetos(row):
     if row.eVetoCicTightIso:  return False
     return True
 
+def control_region_ee(row):
+    '''Figure out what control region we are in. Shared among two codes, to avoid mismatching copied here'''
+    if  row.e1_e2_SS and row.e1RelPFIsoDB < 0.15 and row.e1MtToMET > 30 and row.e2MtToMET < 30:# and row.e2MtToMET < 30: #and row.metEt > 30: #row.metSignificance > 3:
+        return 'wjets'
+    elif row.e1_e2_SS and row.e1RelPFIsoDB > 0.3 and row.metEt < 25: #and row.metSignificance < 3: #
+        return 'qcd'
+    elif row.e1RelPFIsoDB < 0.1 and row.e2RelPFIsoDB < 0.1 and row.e2MVAIDH2TauWP and row.e1MVAIDH2TauWP \
+        and not any([ row.muVetoPt5,
+                      row.tauVetoPt20,
+                      row.eVetoCicTightIso,
+                      ]):
+        return 'zee'
+    else:
+        return None
+
 
