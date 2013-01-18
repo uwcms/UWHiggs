@@ -4,19 +4,10 @@ Analyze MMT events for the WH analysis
 
 '''
 
-from FinalStateAnalysis.StatTools.RooFunctorFromWS import build_roofunctor
-import fnmatch
-import glob
 from MuMuTauTree import MuMuTauTree
 import os
-import FinalStateAnalysis.MetaData.data_views as data_views
-import logging
-data_views.log.setLevel(logging.INFO)
-#import sys
-#logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 import WHAnalyzerBase
 import ROOT
-from TwoDimFakeRate import TwoDimFakeRate
 import mcCorrectors
 import baseSelections as selections
 import fakerate_functions as frfits
@@ -130,7 +121,7 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
     def enhance_wz(self, row):
         # Require the "tau" to be a muon, and require the third muon
         # to have M_Z +- 20
-        if row.tAntiMuonTight or not row.tMuOverlap:
+        if self.anti_wz(row):
             return False
         # Cut on m2 PT > 20
         #if row.m2Pt < 20:

@@ -47,7 +47,7 @@ class ZHAnalyzeEEMT(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_H_histos(folder)
 
     def probe1_id(self, row):
-        return bool(row.mPFIDTight) and bool(row.mRelPFIsoDB < 0.15) ##THIS SEEMS too low
+        return bool(row.mPFIDTight) and selections.muIsoTight(row, 'm') ##THIS SEEMS too low
 
     def probe2_id(self, row):
         return bool(row.tMediumIso) ##Why not tMediumMVAIso

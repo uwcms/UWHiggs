@@ -91,6 +91,9 @@ if __name__ == "__main__":
                 x.format = format
         return unsuck
 
+    #
+    # Makes Tau fr control plot
+    #
     zmm_weighted = plotter.plot('data', 'os/p1p2f3/w3/e1e2Mass',  'hist', styler=make_styler(2, 'hist'), xrange=(60, 120))
     zmm_weighted.SetTitle("Zee + fake #tau_{h} est.")
     zmm_weighted.legendstyle='l'
@@ -104,6 +107,23 @@ if __name__ == "__main__":
     plotter.add_legend([zmm_weighted, zmm_unweighted])
     plotter.add_cms_blurb(sqrts)
     plotter.save('zmm-os-fr-control')
+
+    #
+    # Makes charge fr control plot
+    #
+
+    zeet_os_weighted = plotter.plot('data', 'os/p1p2f3/c1/e1e2Mass',  'hist', styler=make_styler(2, 'hist'), xrange=(60, 120))
+    zeet_os_weighted.SetTitle("Ze^{#pm}e^{#mp} + fake #tau_{h} charge flip est.")
+    zeet_os_weighted.legendstyle='l'
+    zeet_os_weighted.GetXaxis().SetTitle("M_{ee} (GeV)")
+
+    zee_ss_unweighted = plotter.plot('data', 'ss/p1p2f3/e1e2Mass', 'same', styler=make_styler(1), xrange=(60, 120))
+    zee_ss_unweighted.SetTitle("Ze^{#pm}e^{#pm} + fake #tau_{h} obs.")
+    zee_ss_unweighted.legendstyle='pe'
+
+    plotter.add_legend([zeet_os_weighted, zee_ss_unweighted])
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('zmm-os-ss-charge-flip-control')
 
     plotter.plot('data', 'os/p1p2p3/prescale', styler=make_styler(1))
     plotter.save('zmm-os-prescale-check')

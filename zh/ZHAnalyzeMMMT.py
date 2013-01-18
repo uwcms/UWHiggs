@@ -52,7 +52,7 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
 
     def probe1_id(self, row):
-        return bool(row.m3PFIDTight) and bool(row.m3RelPFIsoDB < 0.15) ##THIS SEEMS too low
+        return bool(row.m3PFIDTight) and selections.muIsoTight(row, 'm3') ##THIS SEEMS too low
 
     def probe2_id(self, row):
         return bool(row.tMediumIso) ##Why not tMediumMVAIso

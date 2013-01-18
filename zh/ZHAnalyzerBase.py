@@ -28,21 +28,8 @@ import array
 import abdollah
 import os
 import pprint
-
-class debugRow(object):
-    'helper class for speed up debugging'
-    def __init__(self,row):
-        self._row = row
-        self._usedAttrs = {}
-        self._lastCalledAttr = (None,None)
-    def __getattribute__(self,name):
-        #memoize for speed acces
-        if name[0] == '_':
-            return object.__getattribute__(self, name)
-        elif name not in object.__getattribute__(self, '_usedAttrs'):
-            object.__getattribute__(self, '_usedAttrs')[name] = getattr(object.__getattribute__(self, '_row'), name)
-        self._lastCalledAttr = (name, object.__getattribute__(self, '_usedAttrs')[name])
-        return object.__getattribute__(self, '_usedAttrs')[name]
+import debug
+from debug import debugRow
 
 class ZHAnalyzerBase(MegaBase):
     def __init__(self, tree, outfile, wrapper, channel, **kwargs):
@@ -57,10 +44,10 @@ class ZHAnalyzerBase(MegaBase):
         ch    = (zdec[0][0]+zdec[1][0]).upper()+channel
         fname = '/'.join(['results',jobid,'ZHAnalyze'+ch,'abdollah_events.txt'])
         #print fname
-        ## if os.path.isfile(fname):
-        ##     self.fileLog = open(fname,'a')
-        ## else:
-        ##     self.fileLog = open(fname,'w')
+        if os.path.isfile(fname):
+            self.fileLog = open(fname,'a')
+        else:
+            self.fileLog = open(fname,'w')
         self.histograms = {}
         self.channel = channel
         #Special histograms, data member so child classes can add to this keeping
@@ -68,7 +55,7 @@ class ZHAnalyzerBase(MegaBase):
         self.hfunc   = { #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in fill_histos later
             'nTruePU' : lambda row, weight: row.nTruePU,
             'weight'  : lambda row, weight: weight,
-            'Event_ID': lambda row, weight: array.array("f", [row.run,row.lumi,int(row.evt)/10**5,int(row.evt)%10**5] ),
+            'Event_ID': lambda row, weight: array.array("f", [row.run,row.lumi,int(row.evt)/10**5,int(row.evt)%10**5,getattr(row,'%s_%s_Mass' % self.Z_decay_products()),getattr(row,'%s_%s_Mass' % self.H_decay_products())] ),
             }
         #print '__init__->self.channel %s' % self.channel
         
@@ -91,7 +78,7 @@ class ZHAnalyzerBase(MegaBase):
                 weightsAvail = [None, self.obj1_weight, self.obj2_weight]
                 flag_map[(sign,region_label)] = {
                     'selection' : {
-                        self.sign_cut  : (sign == 'os'),
+                        self.sign_cut  : (sign == 'os'), 
                         self.probe1_id : (not (1 in failing_objs) ),
                         self.probe2_id : (not (2 in failing_objs) ),
                         },
@@ -106,7 +93,7 @@ class ZHAnalyzerBase(MegaBase):
             folder = "/".join(folders)
             self.book_histos(folder) # in subclass
             if 'All_Passed' in folder: #if we are in the all passed region ONLY
-                self.book(folder, "Event_ID", "Event ID", 'run:lumi:evt1:evt2', type=ROOT.TNtuple)
+                self.book(folder, "Event_ID", "Event ID", 'run:lumi:evt1:evt2:zmass:hmass', type=ROOT.TNtuple)
             # Each of the weight subfolders
             wToApply = regionInfo['weights']
             for w in wToApply:
@@ -165,6 +152,15 @@ class ZHAnalyzerBase(MegaBase):
             ##     self.fileLog.write( ',\n\n' )
             ## else:
             ##     continue
+            ## Check why some of his events don't pass 
+            ## zdec = self.Z_decay_products()
+            ## hdec = self.H_decay_products()
+            ## channel = zdec[0][0]+zdec[1][0]+hdec[0][0]+hdec[1][0]
+            ## debug.output_file = self.fileLog
+            ## if (int(row.run),int(row.lumi),int(row.evt)) in debug.to_inspect[channel]:
+            ##     debug.debug_channel(row, channel, hdec)
+            ## else:
+            ##     continue
             ######################################################
             ##  END SYNC W/ ABDOLLAH DEBUG PART
             ######################################################
@@ -181,7 +177,7 @@ class ZHAnalyzerBase(MegaBase):
             ######################################################
             ##  END TRIG MATCH DEBUG
             ######################################################
-
+            
             # Apply basic preselection
             if not preselection(row):
                 continue
