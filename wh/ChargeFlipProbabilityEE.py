@@ -60,14 +60,7 @@ class ChargeFlipProbabilityEE(MegaBase):
             if not row.e1MVAIDH2TauWP: return False
             if not selections.eSelection(row, 'e2'): return False
             if not selections.vetos(row): return False
-            if  row.e1_e2_SS and \
-                row.e1RelPFIsoDB < 0.15 and \
-                row.e1MtToMET > 50 and \
-                row.metSignificance > 3: return False
-            if  row.e1_e2_SS and \
-                row.e1RelPFIsoDB > 0.3 and \
-                row.metSignificance < 3: return False
-            return (row.e1RelPFIsoDB < 0.1 and row.e2RelPFIsoDB < 0.1 and row.e2MVAIDH2TauWP and row.e1MVAIDH2TauWP and not any([ row.muVetoPt5, row.tauVetoPt20, row.eVetoCicTightIso,]))
+            return bool(selections.control_region_ee(row) == 'zee')
 
         #def fill(the_histos, row):
 
