@@ -6,9 +6,11 @@ import subprocess
 import re
 from glob import glob
 from fnmatch import fnmatch
+from hashlib import md5
 import time
+from progressbar import ETA, ProgressBar, FormatLabel, Bar
 
-if len(sys.argv) < 2 or sys.argv[-1] is '-h' or sys.argv[-1] is '--help':
+if len(sys.argv) < 2 or '-h' in sys.argv or '--help' in sys.argv:
     print 'Usage ./slimNTuples other_branches_to_keep.list /hdfs/dir/with/files/to/be/skimmed'
     sys.exit(1)
 
@@ -88,12 +90,12 @@ FindTrees( tfile, '', forest )
 
 timestamp = str(int(time.mktime(time.gmtime())))
 listsdir  = '/scratch/mverzett/%s' % timestamp
-## make_dir(listsdir)
+make_dir(listsdir)
 
 #define matching function, use generator to be faster (should stop at the first match)
 match  = lambda x:  any( ( fnmatch(x,y) for y in usedBranches) )
-## with open(listsdir+'/trees_location.list','w') as f:
-##     f.write('\n'.join(forest))
+with open(listsdir+'/trees_location.list','w') as f:
+    f.write('\n'.join(forest))
 
 tot_branches  = 0
 kept_branches = 0
@@ -105,25 +107,88 @@ for tree_name in forest:
         tot_branches     += len(matching_branches)
         matching_branches = filter(match, matching_branches)
         kept_branches    += len(matching_branches)
-        ## with open(listsdir+'/%s.list' % tree_name.replace('/','_'),'w') as f:
-        ##     f.write('\n'.join(matching_branches))
+        with open(listsdir+'/%s.list' % tree_name.replace('/','_'),'w') as f:
+            f.write('\n'.join(matching_branches))
 
 compression_ratio = float(kept_branches) / float(tot_branches)
 #os.path.getsize(
 print 'Compression ratio: %s' % compression_ratio
 print "Beginning multi threaded copy/complession/merge..."
-approx_chunk_size = 100*10**6 #~100MB
-for sample in SAMPLES:
-    print 'Merging %s...' % sample
-    chunk = []
-    size  = 0
-    for fname in glob('/'.join([hdfs_path,sample,'*.root'])):
-        isize = size + os.path.getsize(fname)
-        if isize*compression_ratio > approx_chunk_size:
-            print "Executing chenneso %s" % chunk.__repr__()
-            size  = os.path.getsize(fname)
-            chunk = [fname]
-        else:
-            size = isize
-            chunk.append(fname)
+approx_chunk_size = 70*10**6 #~50MB
+procs   = {}
+threads = os.environ['megaworkers'] if 'megaworkers' in os.environ else 2
+with open("copyMergeSlim_"+timestamp+".status",'w') as status_file:
+    logdir = os.getcwd()+'/'+timestamp
+    make_dir(logdir)
+    make_dir('/'.join(['','scratch',os.environ['USER'],'data',JOBID]) )
+    files_dict   = dict( [(sample, glob('/'.join([hdfs_path,sample,'*.root'])))  for sample in SAMPLES] )
+    tot_numfiles = reduce(lambda x, y: x+y, map(len,files_dict.itervalues()) )
+    pbar  = ProgressBar(
+        widgets = [
+            FormatLabel(
+                'Copied %(value)i/' + str(tot_numfiles) + ' files. '),
+                ETA(),
+                Bar('>')],
+        maxval = tot_numfiles ).start()
+    files_already_merged = 0
+    for sample in SAMPLES:
+        print 'Merging %s...' % sample
+        sample_dir = '/'.join(['','scratch',os.environ['USER'],'data',JOBID,sample])
+        make_dir( sample_dir )
+        chunk = []
+        size  = 0
+        for fname in files_dict[sample]:
+            isize = size + os.path.getsize(fname)
+            if isize*compression_ratio > approx_chunk_size:
+                hasher  = md5()
+                hasher.update(' '.join(chunk))
+                outName = hasher.hexdigest()
+                errlog = open('/'.join([logdir,outName+'.err']), 'w')
+                outlog = open('/'.join([logdir,outName+'.out']), 'w')
+                command = ['slimAndMergeNtuple',listsdir,'/'.join([sample_dir,outName+'.root']) ]
+                command.extend(chunk)
+                outlog.write("Executed: \n")
+                outlog.write(' '.join(command))
+                outlog.write('\n\n')
+                proc   = subprocess.Popen(command, stdout=outlog, stderr=errlog)
+                procs[outName] = {
+                    'proc' : proc,
+                    'out'  : outlog,
+                    'err'  : errlog,
+                    'nfile': len(chunk),
+                    }
+                size  = os.path.getsize(fname)
+                chunk = [fname]
+            else:
+                size = isize
+                chunk.append(fname)
+            while len(procs) >= threads: #wait the jobs to finish
+                time.sleep(3) #wait
+                todel = []
+                for name, info in procs.iteritems():
+                    info['err'].flush()
+                    info['out'].flush()
+                    ret_code = info['proc'].poll()
+                    if ret_code is not None: #One is done!
+                        val = 'OK' if ret_code == 0 else 'ERROR'
+                        status_file.write('%s MERGE_%s\n' % (name, val) ) #write on the status if it's done
+                        info['err'].close()
+                        info['out'].close()
+                        files_already_merged += info['nfile']
+                        pbar.update(files_already_merged)
+                        todel.append(name)
+                for name in todel:
+                    del procs[name]
 
+    for name, info in procs.iteritems():
+        ret_code = info['proc'].communicate() #now wait everythin is done
+        if ret_code is not None: #One is done!
+            print "%s DONE!" % name
+            val = 'OK' if ret_code == 0 else 'ERROR'
+            status_file.write('%s MERGE_%s\n' % (name, val) ) #write on the status if it's done
+            info['err'].close()
+            info['out'].close()
+            files_already_merged += info['nfile']
+            pbar.update(files_already_merged)
+            todel.append(name)
+    pbar.finish()
