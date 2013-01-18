@@ -117,8 +117,9 @@ class WHChargeFlipControlPlotsPlotter(Plotter):
         else:
             raise BinError("The tree input histograms don't have the same binning")
 
-    def make_xcheck_plot(self, var, sample, rebin=1, correctForDiboson=True):
+    def make_xcheck_plot(self, var, sample, **kwargs):
         self.canvas.cd()
+        rebin = kwargs['rebin'] if 'rebin' in kwargs else 1
         sample_views = self.make_views(rebin)
         if sample not in sample_views:
             print "Sample not found! Available: \nSkipping..." % sample_views.keys().__repr__()
@@ -126,27 +127,23 @@ class WHChargeFlipControlPlotsPlotter(Plotter):
 
         testH       = sample_views[sample].Get('SS_'+var)
         testH.drawstyle = 'ep'
-        #on the fly patch
-        if 'mass' not in var.lower():
-            sample_views[sample] = views.ScaleView(sample_views[sample],2.)
+
         weightedH   = sample_views[sample].Get('OS_weight_'+var)
         weightedHup = sample_views[sample].Get('OS_weightSysUp_'+var)
         weightedHdw = sample_views[sample].Get('OS_weightSysDwn_'+var)
         print "%s   %s: %i Events, %i Entries. Weighted from sideband: %.1f Events." % (sample, var+' observed', testH.Integral(), testH.GetEntries(),  weightedH.Integral())
         self.apply_error_from_sysHist(weightedHdw, weightedH, weightedHup)
         diboson = None
-        if correctForDiboson:
-            diboson = sample_views['diboson'].Get('SS_'+var)
-            print "diboson contamination: %.1f" % diboson.Integral()
-            self.keep.append(diboson)
-            weightedH += diboson
+
         graph = HistToTGRaphErrors(weightedH)
         graph.SetFillColor(ROOT.kAzure -4)
         self.keep.append(graph)
+        if 'xrange' in kwargs:
+            graph.GetXaxis().SetRangeUser(kwargs['xrange'][0],kwargs['xrange'][1])
+        if 'yrange' in kwargs:
+            graph.GetYaxis().SetRangeUser(kwargs['yrange'][0],kwargs['yrange'][1])
 
         graph.Draw("2A")
-        if correctForDiboson and diboson:
-            diboson.Draw(' same')
         graph.GetYaxis().SetRangeUser(0, max(testH.GetMaximum(),weightedH.GetMaximum())*1.2)
         testH.Draw(' same')
 
@@ -157,31 +154,43 @@ class WHChargeFlipControlPlotsPlotter(Plotter):
 ##########################################
 plotter = WHChargeFlipControlPlotsPlotter('EE')
 
-plotter.make_xcheck_plot('TrkMass','data',2)
+plotter.make_xcheck_plot('TrkMass','data',rebin=2)
 plotter.save('EE_Charge_Flip_xcheck_trk_invMass')
 
-plotter.make_xcheck_plot('SCMass','data',2)
+plotter.make_xcheck_plot('SCMass','data',rebin=2)
 plotter.save('EE_Charge_Flip_xcheck_SC_invMass')
 
-plotter.make_xcheck_plot('ePt','data',2)
+plotter.make_xcheck_plot('ePt','data',rebin=2)
 plotter.save('EE_Charge_Flip_xcheck_ePt')
 
-plotter.make_xcheck_plot('eAbsEta','data',2)
+plotter.make_xcheck_plot('eAbsEta','data',rebin=2)
 plotter.save('EE_Charge_Flip_xcheck_eAbsEta')
+
+plotter.make_xcheck_plot('SCDPhi','data', rebin=6)
+plotter.save('EE_Charge_Flip_xcheck_eSCDPhi')
+
+plotter.make_xcheck_plot('SCEnergy','data',rebin=5, xrange=[0,600])
+plotter.save('EE_Charge_Flip_xcheck_eSCEnergy')
 
 
 ##########################################
 ##    Zjets Closure test
 ##########################################
 
-plotter.make_xcheck_plot('TrkMass','zjets',2,False)
+plotter.make_xcheck_plot('TrkMass','zjets',rebin=2)
 plotter.save('EE_Charge_Flip_closure_test_zjets_trk_invM')
 
-plotter.make_xcheck_plot('SCMass','data',2)
+plotter.make_xcheck_plot('SCMass','data',rebin=2)
 plotter.save('EE_Charge_Flip_closure_test_zjets_SC_invMass')
 
-plotter.make_xcheck_plot('ePt','zjets',2,False)
+plotter.make_xcheck_plot('ePt','zjets',rebin=2)
 plotter.save('EE_Charge_Flip_closure_test_zjets_ePt')
 
-plotter.make_xcheck_plot('eAbsEta','zjets',2,False)
+plotter.make_xcheck_plot('eAbsEta','zjets',rebin=2)
 plotter.save('EE_Charge_Flip_closure_test_zjets_eAbsEta')
+
+plotter.make_xcheck_plot('SCDPhi','zjets', rebin=6)
+plotter.save('EE_Charge_Flip_closure_test_zjets_eSCDPhi')
+
+plotter.make_xcheck_plot('SCEnergy','zjets', rebin=5, xrange=[0,600])
+plotter.save('EE_Charge_Flip_closure_test_zjets_SCEnergy')
