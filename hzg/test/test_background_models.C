@@ -6,18 +6,23 @@ void test_background_models() {
 
   RooWorkspace test("test");
 
-  char fName[] = "/home/lgray/HZG_analysis/10JAN2013_vanilla/muon/ZGToLLG-8TeV/ZGToLLG_8TeV-madgraph.Summer12_DR53X-PU_S10_START53_V7A-v1.AODSIM.root";
-  char fName2[] = "/home/lgray/HZG_analysis/10JAN2013_vanilla/muon/DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball-8TeV/DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball.Summer12_DR53X-PU_S10_START53_V7A-v1.AODSIM.root";
+  
+  test.addClassDeclImportDir("/home/lgray/CMSSW_5_3_3_patch3/src/UWHiggs/hzg/src");
+  test.importClassCode(RooStepBernstein::Class(),true);
+
+  char fName[] = "/home/lgray/HZG_analysis/10JAN2013_vanilla/electron/ZGToLLG-8TeV/ZGToLLG_8TeV-madgraph.Summer12_DR53X-PU_S10_START53_V7A-v1.AODSIM.root";
+  char fName2[] = "/home/lgray/HZG_analysis/10JAN2013_vanilla/electron/DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball-8TeV/DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball.Summer12_DR53X-PU_S10_START53_V7A-v1.AODSIM.root";
 
   TFile* f = TFile::Open(fName,"READ");  
   TFile* f2 = TFile::Open(fName2,"READ");
+  TFile* fout = TFile::Open("test_ws.root","recreate");
   TTree* tree = (TTree*)f->Get("selected_zg");
   TTree* tree2 = (TTree*)f2->Get("selected_zg");   
 
   test.factory("procWeight[0]");
   test.factory("puWeight[0]");
   test.factory("weight[0]");
-  test.factory("Mzg[90,200]");
+  test.factory("Mzg[90,180]");
   test.factory("Mz[60,120]");
   test.factory("dMzg[0,25]");
   test.factory("dMz[0,25]");
@@ -30,9 +35,9 @@ void test_background_models() {
 
   int category = 4;
 
-  char channel[] = Form("muon_cat%i",category);
-  char subscriptzg[] = "#mu#mu#gamma";
-  char subscriptz[] = "#mu#mu";
+  char channel[] = Form("electron_cat%i",category);
+  char subscriptzg[] = "ee#gamma";
+  char subscriptz[] = "ee";
   
 
   RooDataSet dllg( "zgdata","M_{Z#gamma} with Errors",
@@ -57,10 +62,13 @@ void test_background_models() {
 		Form(" Mz + Mzg > 185 && r94cat == %i ",category) ,"weight" );
 
   RooDataSet dold( "data_old","M_{Z Jets} with Errors", &dllg, *wobs,
-		Form(" r94cat == %i ",category) ,"weight" );
+		Form(" r94cat == %i && Mzg > 115 && Mzg < 180",category) ,"weight" );
 
   test.import(d);
-  test.import(dold);
+  test.import(dold,
+	      RooFit::RenameVariable("Mzg","Mzg_old"));
+  test.var("Mzg_old")->setMin(115);
+  test.var("Mzg_old")->setMax(180);
   
   test.factory("RooGaussModel::MzgResoShape(Mzg,bias[120,90,150],sigma[1,0.01,10])");
   test.factory("RooDecay::MzgBkgShape(Mzg,tau[5,0,50],MzgResoShape,RooDecay::SingleSided)");
@@ -71,40 +79,58 @@ void test_background_models() {
   test.factory("FCONV::MzgBkgShape(Mzg,MzgTruthShape,MzgResoShape)");
   */
 
-  test.pdf("MzgBkgShape")->fitTo(*(test.data("data")),
-				 RooFit::SumW2Error(kTRUE));
+  RooFitResult* expFitRes = test.pdf("MzgBkgShape")->fitTo(*(test.data("data")),
+							   RooFit::Save(kTRUE),
+							   RooFit::SumW2Error(kTRUE));
 
   
   if(category == 1) {
-    test.factory("RooBernstein::MzgBkgShapeOldPoly(Mzg,{c0_old[-1e-6,1.01],c1_old[-1e-6,1.01],c2_old[-1e-6,1.01],c3_old[-1e-6,1.01]})");   
-    test.factory("RooStepBernstein::MzgBkgShapePolyTruth(Mzg,stepVal[0.1,0,1],{1.0,c1[0.5,-1e-6,1],c2[0.5,-1e-6,1],c3[0.5,-1e-6,1]})");    
-  } else {
-    test.factory("RooBernstein::MzgBkgShapeOldPoly(Mzg,{c0_old[-1e-6,1.01],c1_old[-1e-6,1.01],c2_old[-1e-6,1.01],c3_old[-1e-6,1.01],c4_old[-1e-6,1.01]})");    
+    test.factory("RooBernstein::MzgBkgShapeOldPolyBase(Mzg_old,{c0_old[-1e-6,1.01],c1_old[-1e-6,1.01],c2_old[-1e-6,1.01],c3_old[-1e-6,1.01],c4_old[-1e-6,1.01]})");
     test.factory("RooStepBernstein::MzgBkgShapePolyTruth(Mzg,stepVal[0.1,0,1],{1.0,c1[0.5,-1e-6,1],c2[0.5,-1e-6,1],c3[0.5,-1e-6,1],c4[0.5,-1e-6,1]})");    
+  } else {
+    test.factory("RooBernstein::MzgBkgShapeOldPolyBase(Mzg_old,{c0_old[-1e-6,1.01],c1_old[-1e-6,1.01],c2_old[-1e-6,1.01],c3_old[-1e-6,1.01],c4_old[-1e-6,1.01],c5_old[-1e-6,1.01]})");
+    test.factory("RooStepBernstein::MzgBkgShapePolyTruth(Mzg,stepVal[0.1,0,1],{1.0,c1[0.5,-1e-6,1],c2[0.5,-1e-6,1],c3[0.5,-1e-6,1],c4[0.5,-1e-6,1],c5[0.5,-1e-6,1]})");    
   }
-  test.factory("RooGaussian::MzgResoShapePoly(Mzg,biasPoly[0],sigmaPoly[5,0.01,20])");
-  test.factory("FCONV::MzgBkgShapePoly(Mzg,MzgBkgShapePolyTruth,MzgResoShapePoly)");
-  test.var("Mzg")->setBins(15000,"cache");
-  test.var("Mzg")->setRange("oldpolyfit",115,180);
-  //test.var("Mzg")->setRange("NormalizationRangeForoldpolyfit",115,180);
+  
+  test.var("Mzg").setRange("ROI",115,180);
 
-  RooFitResult* expFitRes = test.pdf("MzgBkgShapePoly")->fitTo(*(test.data("data")),
+  test.factory("RooGaussian::MzgResoShapePoly(Mzg,biasPoly[0],sigmaPoly[5,0.01,20])");
+  test.factory("FCONV::MzgBkgShapePolyBase(Mzg,MzgBkgShapePolyTruth,MzgResoShapePoly)");
+  test.var("Mzg")->setBins(30000,"cache");
+  
+  Double_t sumEntries = test.data("data")->sumEntries("Mzg > 115 && Mzg < 180");
+  test.factory(Form("nBkgShapePoly[%f,%f,%f]",sumEntries, sumEntries*0.75, sumEntries*1.25));
+  
+  test.factory("RooExtendPdf::MzgBkgShapePoly(MzgBkgShapePolyBase,nBkgShapePoly,\"ROI\")");
+
+  //test.var("Mzg_old")->setRange("oldpolyfit",115,180);
+  
+  
+  test.pdf("MzgBkgShapePoly")->fitTo(*(test.data("data")),
 				     RooFit::Minimizer("Minuit","simplex"),
 				     RooFit::SumW2Error(kTRUE),
-				     RooFit::Save(kTRUE));
+				     RooFit::Save(kTRUE)); 
   RooFitResult* polyFitRes = test.pdf("MzgBkgShapePoly")->fitTo(*(test.data("data")),
 								RooFit::SumW2Error(kTRUE),
 								RooFit::Save(kTRUE));
   
+  
   /*
-  test.pdf("MzgBkgShapeOldPoly")->fitTo(*(test.data("data")),
-					RooFit::Minimizer("Minuit","simplex"),
-					RooFit::Range("oldpolyfit"),
-					RooFit::SumW2Error(kTRUE));
-  test.pdf("MzgBkgShapeOldPoly")->fitTo(*(test.data("data")),
-					RooFit::Range("oldpolyfit"),
-					RooFit::SumW2Error(kTRUE));
+    test.pdf("MzgBkgShapeOldPoly")->fitTo(*(test.data("data_old")),
+    RooFit::Minimizer("Minuit","simplex"),
+    //RooFit::Range("oldpolyfit"),
+    RooFit::SumW2Error(kTRUE));
   */
+  
+  sumEntries = test.data("data_old")->sumEntries("Mzg_old > 115 && Mzg_old < 180");
+  test.factory(Form("nBkgShapeOldPoly[%f,%f,%f]",sumEntries, sumEntries*0.75, sumEntries*1.25));
+
+  test.factory("RooExtendPdf::MzgBkgShapeOldPoly(MzgBkgShapeOldPolyBase,nBkgShapeOldPoly,\"\")");
+
+  test.pdf("MzgBkgShapeOldPoly")->fitTo(*(test.data("data_old")),
+					///RooFit::Range("oldpolyfit"),
+					RooFit::SumW2Error(kTRUE));
+  
   
 
   RooRealIntegral* testint = test.pdf("MzgBkgShapePolyTruth")->createIntegral(RooArgSet(*test.var("Mzg")),
@@ -123,7 +149,7 @@ void test_background_models() {
   tlx = TLatex();
   tlx.SetNDC();
 
-  RooPlot* frame = test.var("Mzg")->frame(90,200,150);
+  RooPlot* frame = test.var("Mzg")->frame(115,180,87);//90,180,120);
   frame->SetTitle("");
   frame->GetXaxis()->SetTitle(Form("M_{%s} (GeV)",subscriptzg));
   frame->GetYaxis()->SetTitle("Entries");
@@ -132,49 +158,60 @@ void test_background_models() {
 				  RooFit::ProjWData(*(test.var("dMzg")),
 						    *(test.data("data"))));
   Double_t expchi2 = frame->chiSquare();
+  
+  RooPlot* oldpolyframe = test.var("Mzg_old")->frame(115,180,87);
   /*
-  test.pdf("MzgBkgShapePoly")->plotOn(frame,
+  test.pdf("MzgBkgShapePoly")->plotOn(oldpolyframe,
 				      RooFit::ProjWData(*(test.var("dMzg")),
 							*(test.data("data"))),
 				      RooFit::FillColor(kGreen),
 				      RooFit::VisualizeError(*polyFitRes,2.0,kTRUE));
-  test.pdf("MzgBkgShapePoly")->plotOn(frame,
+  test.pdf("MzgBkgShapePoly")->plotOn(oldpolyframe,
 				      RooFit::ProjWData(*(test.var("dMzg")),
 							*(test.data("data"))),
 				      RooFit::FillColor(kYellow),
 				      RooFit::VisualizeError(*polyFitRes,1.0,kTRUE));
   */
+   
   test.pdf("MzgBkgShapePoly")->plotOn(frame,
 				      RooFit::ProjWData(*(test.var("dMzg")),
 							*(test.data("data"))),
-				      RooFit::LineColor(kRed));
+				      RooFit::LineColor(kRed)
+				      );
+  Double_t gPolyChi2 = frame->chiSquare();
   
-  /*
-  Double_t old_norm= test.data("data")->sumEntries("Mzg > 115 && Mzg < 180");
-  Double_t tot_norm= test.data("data")->sumEntries();
-  test.pdf("MzgBkgShapeOldPoly")->plotOn(frame,	
+  
+  test.data("data_old")->plotOn(oldpolyframe); 
+  test.pdf("MzgBkgShapeOldPoly")->plotOn(oldpolyframe,	
 					 RooFit::Range("oldpolyfit"),
-					 RooFit::LineColor(kGreen-3));
-  */
-
+					 RooFit::LineColor(kGreen-3),
+					 RooFit::Name("oldpoly"));
+  Double_t polyChi2 = oldpolyframe->chiSquare();
+  RooCurve* theoldpoly = oldpolyframe->getCurve("oldpoly")->Clone("oplyclone");
+  frame->addObject(theoldpoly);
   
-  frame->GetYaxis()->SetRangeUser(0,70);
+  //frame->GetYaxis()->SetRangeUser(0,70);
   frame->Draw();
-  tlx.DrawLatex(0.60,0.88,Form("#chi^{2}_{Pol} = %.3f",frame->chiSquare()));
+  tlx.DrawLatex(0.60,0.88,Form("#chi^{2}_{Pol} = %.3f",gPolyChi2));
   tlx.DrawLatex(0.59,0.77,Form("#chi^{2}_{Exp} = %.3f",expchi2));
-  tlx.DrawLatex(0.59,0.65,Form("cat = %i",category));
+  tlx.DrawLatex(0.59,0.66,Form("#chi^{2}_{Old} = %.3f",polyChi2));
+  tlx.DrawLatex(0.59,0.55,Form("cat = %i",category));
   
   canv.Print(Form("bkgshapetest_test_zg_%s.pdf",channel));  
   canv.Clear();
   canv.SetLogy();
-  frame->GetYaxis()->SetRangeUser(1e-3,70);
+  //frame->GetYaxis()->SetRangeUser(1e-3,70);
   frame->Draw();
-  tlx.DrawLatex(0.60,0.88,Form("#chi^{2}_{Pol} = %.3f",frame->chiSquare()));
+  tlx.DrawLatex(0.60,0.88,Form("#chi^{2}_{Pol} = %.3f",gPolyChi2));
   tlx.DrawLatex(0.59,0.77,Form("#chi^{2}_{Exp} = %.3f",expchi2));
   canv.Print(Form("bkgshapetest_test_zg_log_%s.pdf",channel));
   canv.Clear();
 
-  delete frame;  
+  //delete frame;
+
+  fout->cd();
+  test.Write();
+  fout->Close();
 
   f->Close();
   f2->Close();
