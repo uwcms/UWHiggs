@@ -27,8 +27,8 @@ pwd = gDirectory.GetPath()
 
 int_lumi = 19.6*1000 #19.6/fb in /pb
 
-def prepare_truth_models(ws,truth,cat,mass):    
-    for channel in study_inputs:
+def prepare_truth_models(ws,cat,mass,channel):    
+    if channel in study_inputs:
         bkg_data = RooDataSet("bkgdata_%s"%(channel),
                               "M_{ll#gamma} with Errors",
                               ws.set("observables_weight"),
@@ -68,41 +68,87 @@ def prepare_truth_models(ws,truth,cat,mass):
         getattr(ws,'import')(data,
                              RooFit.Rename('bkgdata_%s_%i'%(channel,
                                                             cat)))
-        #make RooDecay 'truth' model
+        #make RooDecay 'truth' model with erf turn on
         ws.factory(
-            'RooGaussModel::MzgResoShape_%s_cat%i(Mzg,'\
-            'bias_%s_cat%i[120,90,150],sigma_%s_cat%i[1,0.01,10])'%(
+            'RooGaussModel::MzgResoShape_exp_%s_cat%i(Mzg,'\
+            'bias_exp_%s_cat%i[120,90,150],sigma_exp_%s_cat%i[1,0.01,10])'%(
             channel,cat,
             channel,cat,
             channel,cat)
             )
         ws.factory(
-            'RooDecay::MzgTruthModelBase_%s_cat%i(Mzg,'\
-            'tau_%s_cat%i[5,0,50],MzgResoShape_%s_cat%i,'
+            'RooDecay::MzgTruthModelBase_exp_%s_cat%i(Mzg,'\
+            'tau_%s_cat%i[5,0,50],MzgResoShape_exp_%s_cat%i,'
             'RooDecay::SingleSided)'%(channel,cat,
                                       channel,cat,
                                       channel,cat)
             )
         nevts = data.sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
         ws.factory(
-            'RooExtendPdf::MzgTruthModel_%s_cat%i('\
-            'MzgTruthModelBase_%s_cat%i,'\
-            'norm_truth_%s_cat%i[%f,%f,%f],"ROI")'%(channel,cat,
-                                                    channel,cat,
-                                                    channel,cat,
-                                                    nevts,
-                                                    0.75*nevts,1.25*nevts)
+            'RooExtendPdf::MzgTruthModel_exp_%s_cat%i('\
+            'MzgTruthModelBase_exp_%s_cat%i,'\
+            'norm_truth_exp_%s_cat%i[%f,%f,%f],"ROI")'%(channel,cat,
+                                                        channel,cat,
+                                                        channel,cat,
+                                                        nevts,
+                                                        0.75*nevts,1.25*nevts)
             )
-        ws.pdf('MzgTruthModel_%s_cat%i'%(channel,cat)).fitTo(
+        ws.pdf('MzgTruthModel_exp_%s_cat%i'%(channel,cat)).fitTo(
             ws.data('bkgdata_%s_%i'%(channel,cat)),
             RooFit.SumW2Error(True)
             )
+        #make power-law truth model with erf turn on
+        ws.factory('EXPR::MzgTruthModelShape_pow_%s_cat%i('\
+                   '"1e-10 + (@0 > @1)*((@0)^(-@2))",'\
+                   '{Mzg,step_pow_%s_cat%i[105,100,130],'\
+                   'pow_%s_cat%i[2,0,10]})'\
+                   %(channel,cat,
+                     channel,cat,
+                     channel,cat))
+        ws.factory(
+            'RooGaussModel::MzgResoShape_pow_%s_cat%i(Mzg,'\
+            'bias_pow_%s_cat%i[0],sigma_pow_%s_cat%i[1,0.01,10])'%(
+            channel,cat,
+            channel,cat,
+            channel,cat)
+            )
+        ws.factory('FCONV::MzgTruthModelBase_pow_%s_cat%i(Mzg,'\
+                   'MzgTruthModelShape_pow_%s_cat%i,'\
+                   'MzgResoShape_pow_%s_cat%i)'%(channel,cat,
+                                                 channel,cat,
+                                                 channel,cat))
+        ws.factory(
+            'RooExtendPdf::MzgTruthModel_pow_%s_cat%i('\
+            'MzgTruthModelBase_pow_%s_cat%i,'\
+            'norm_truth_pow_%s_cat%i[%f,%f,%f],"ROI")'%(channel,cat,
+                                                        channel,cat,
+                                                        channel,cat,
+                                                        nevts,
+                                                        0.75*nevts,1.25*nevts)
+            )
+        ws.pdf('MzgTruthModel_pow_%s_cat%i'%(channel,cat)).fitTo(
+            ws.data('bkgdata_%s_%i'%(channel,cat)),
+            RooFit.SumW2Error(True)
+            )
+        #build exponential convoluted with sigmoid turn-on
+        """
+        ws.factory(
+        'EXPR::MzgTruthModelAltReso_exp_cat%i("'\
+        'exp(-(@0-@1)/@2)/(@2*(1.0+exp(-(@0-@1)/@2))**2)'\
+        '",%s)'%(
+        cat,
+        ','.join(['Mzg',
+                  'rsb_altbias_cat%i[0]'%cat,
+                  'rsb_altsigma_cat%i[5,0.01,20]'%cat])
+        )
+        )
+        """
         
-poly_order ={1:4,2:5,3:5,4:5}
-def build_fitting_models(ws,cat,mass):
+
+def build_fitting_models(ws,cat,mass,order):
     ws.var('Mzg').setBins(20000,'cache')
 
-    cs=['c%i_cat%i[-1e-6,1.01]'%(k+1,cat) for k in range(poly_order[cat])]
+    cs=['c%i_cat%i[-1e-6,1.01]'%(k+1,cat) for k in range(order)]
     config = ['Mzg',
               'stepVal_cat%i[0.1,0,1]'%cat]
     config.append('{'+','.join(['1.0']+cs)+'}')
@@ -152,9 +198,9 @@ def build_fitting_models(ws,cat,mass):
     sumEntries = ws.data('bkgdata_electron_%i'%cat).sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
     
 
-def gen_data_and_fit(ws, iterations,cat, mass):
+def gen_data_and_fit(ws, iterations,cat, mass,channel):
     
-    for channel in channels:        
+    if channel in channels:        
         
         n_sample = int(ws.data('bkgdata_%s_%i'%(channel,cat)).sumEntries())
         ws.factory('N_ROI_true_%s_cat%i[0]'%(channel,cat))
@@ -181,7 +227,7 @@ def gen_data_and_fit(ws, iterations,cat, mass):
         for i in xrange(iterations):
             
             #build data from our truth model
-            truth = ws.pdf('MzgTruthModel_%s_cat%i'%(channel,cat))
+            truth = ws.pdf('MzgTruthModel_exp_%s_cat%i'%(channel,cat))
             toy_data = truth.generate(                    
                 RooArgSet(ws.var('Mzg')),
                 n_sample,
@@ -257,17 +303,15 @@ def gen_data_and_fit(ws, iterations,cat, mass):
             
             biasData.add(ws.set('biasVars_%s_cat%i'%(channel,cat)))
             getattr(ws,'import')(toy_data)
-            getattr(ws,'import')(biasData)
-            
-
+        getattr(ws,'import')(biasData)
 
 # if being executed run bias study
 if __name__ == '__main__':
-    ntoys = int(sys.argv[1])
-    truth = sys.argv[2]
-    category = int(sys.argv[3])
-    mass = float(sys.argv[4])
-    
+    ntoys = int(sys.argv[1])    
+    category = int(sys.argv[2])
+    mass = float(sys.argv[3])
+    channel = sys.argv[4]
+    order = int(sys.argv[5])    
     
     bs = RooWorkspace('bias_study')
 
@@ -276,6 +320,7 @@ if __name__ == '__main__':
     bs.factory("weight[0]")
     bs.factory("Mzg[100,180]")
     bs.var("Mzg").setRange("ROI",mass-1.5,mass+1.5)
+    bs.var("Mzg").setBins(20000,"cache")
     bs.factory("Mz[0]")
     bs.factory("dMzg[0,25]")
     bs.factory("dMz[0,25]")
@@ -285,14 +330,15 @@ if __name__ == '__main__':
     bs.defineSet("observables_weight",
                  "Mzg,Mz,dMzg,dMz,r94cat,procWeight,puWeight,weight")
 
-    prepare_truth_models(bs,truth,category,mass)
+    prepare_truth_models(bs,category,mass,channel)
+    
+    build_fitting_models(bs,category,mass,order)
 
-    build_fitting_models(bs,category,mass)
+    gen_data_and_fit(bs, ntoys, category,mass,channel)
 
-    gen_data_and_fit(bs, ntoys, category,mass)
-
-    out_f = TFile.Open("bias_study_ntoys%i_true%s_cat%i_m%s.root"%(ntoys,truth,
-                                                                   category,str(mass).replace('.','p')),
+    out_f = TFile.Open("bias_study_%s_ntoys%i_cat%i_m%s.root"%(channel,ntoys,
+                                                               category,
+                                                               str(mass).replace('.','p')),
                        "recreate")
     bs.Write()
     out_f.Close()
