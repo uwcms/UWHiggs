@@ -3,7 +3,7 @@
 import os, sys
 from math import sqrt
 
-#analysis_path = '/hdfs/store/user/lgray/HZG_bias_study'  #for the condor environment
+#analysis_path = '/store/user/lgray/HZG_bias_study'  #for the condor environment
 
 analysis_path = os.path.join(os.environ['hzganalysisroot'],
                              os.environ['hzganalysisname'])
@@ -19,7 +19,7 @@ for channel in channels:
     base_dir = os.path.join(analysis_path,channel)
     study_inputs[channel] = \
              [os.path.join(base_dir,sample) for sample in input_mc_samples]
-    #study_inputs[channel] = 'root:'+study_inputs[channel]
+    #study_inputs[channel] = 'root://cmsxrootd.hep.wisc.edu/'+study_inputs[channel]
 
 import ROOT
 from ROOT import RooWorkspace, RooMCStudy, RooFit, TFile, gDirectory,\
