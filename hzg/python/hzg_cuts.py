@@ -38,7 +38,7 @@ def no_scraping(IsTracksGood):
 
 mumu_good_event_data_reqs = OrderedDict([['trigger',
                                           [passes_mumu_trigger_data,
-                                           ['mu17mu8Pass','mu17mu8Prescale','run'],
+                                           ['doubleMuPass','doubleMuPrescale','run'],
                                            0]],
                                          ['goodvtx',
                                           [good_vtx,
@@ -47,7 +47,7 @@ mumu_good_event_data_reqs = OrderedDict([['trigger',
 
 mumu_good_event_mc_reqs = OrderedDict([['trigger',
                                         [passes_mumu_trigger_mc,
-                                         ['mu17mu8Pass','mu17mu8Prescale','eventFraction'],
+                                         ['doubleMuPass','doubleMuPrescale','eventFraction'],
                                          0]],
                                        ['goodvtx',
                                         [good_vtx,
@@ -56,7 +56,7 @@ mumu_good_event_mc_reqs = OrderedDict([['trigger',
 
 ee_good_event_data_reqs = OrderedDict([['trigger',
                                         [passes_ee_trigger_data,
-                                         ['doubleETightPass','doubleETightPrescale','run'],
+                                         ['doubleEPass','doubleEPrescale','run'],
                                          0]],
                                        ['goodvtx',
                                         [good_vtx,
@@ -65,7 +65,7 @@ ee_good_event_data_reqs = OrderedDict([['trigger',
                                        ])
 ee_good_event_mc_reqs = OrderedDict([['trigger',
                                       [passes_ee_trigger_mc,
-                                       ['doubleETightPass','doubleETightPrescale','eventFraction'],
+                                       ['doubleEPass','doubleEPrescale','eventFraction'],
                                        0]],
                                      ['goodvtx',
                                       [good_vtx,
@@ -90,6 +90,11 @@ def mu_iso(mu,pfchg,pfneut,pfpho,pfpuchg):
     eff_iso = max( pfneut + pfpho - 0.5*pfpuchg, 0.0 )
     iso = (pfchg + eff_iso)/mu.Pt()
     return (iso < 0.12)
+
+def mu_iso_2012(mu,pfchg,pfneut,pfpho,pfpuchg):        
+    eff_iso = max( pfneut + pfpho - 0.5*pfpuchg, 0.0 )
+    iso = (pfchg + eff_iso)/mu.Pt()
+    return (iso < 0.4)
 
 def mu_trg_match_data(trigMatches,run):
     hasMatch = True    
@@ -132,6 +137,27 @@ muon_selection_mc_reqs = OrderedDict([['mupt1',
                                       ['trigger_match',
                                        [mu_trg_match_mc,['metEt','eventFraction'],0]]])
 
+muon_selection_mc_reqs_2012 = OrderedDict([['mupt1',
+                                            [mu_pt,['ell1'],0]],
+                                           ['mueta1',
+                                            [mu_eta,['ell1'],0]],
+                                           ['mupt2',
+                                            [mu_pt,['ell2'],0]],
+                                           ['mueta2',
+                                            [mu_eta,['ell2'],0]],
+                                           ['muid1',
+                                            [mu_id,['m1IDHZG2012'],0]],
+                                           ['muid2',
+                                            [mu_id,['m2IDHZG2012'],0]],
+                                           ['muiso1',
+                                            [mu_iso_2012,['ell1','m1PFChargedIso','m1PFNeutralIso',
+                                                     'm1PFPhotonIso','m1PFPUChargedIso'],0]],
+                                           ['muiso2',
+                                            [mu_iso_2012,['ell2','m2PFChargedIso','m2PFNeutralIso',
+                                                     'm2PFPhotonIso','m2PFPUChargedIso'],0]],
+                                           ['trigger_match',
+                                            [mu_trg_match_mc,['metEt','eventFraction'],0]]])
+
 muon_selection_data_reqs = OrderedDict([['mupt1',
                                          [mu_pt,['ell1'],0]],
                                         ['mueta1',
@@ -152,6 +178,27 @@ muon_selection_data_reqs = OrderedDict([['mupt1',
                                                   'm2PFPhotonIso','m2PFPUChargedIso'],0]],
                                         ['trigger_match',
                                          [mu_trg_match_data,['metEt','run'],0]]])
+
+muon_selection_data_reqs_2012 = OrderedDict([['mupt1',
+                                              [mu_pt,['ell1'],0]],
+                                             ['mueta1',
+                                              [mu_eta,['ell1'],0]],
+                                             ['mupt2',
+                                              [mu_pt,['ell2'],0]],
+                                             ['mueta2',
+                                              [mu_eta,['ell2'],0]],
+                                             ['muid1',
+                                              [mu_id,['m1IDHZG2012'],0]],
+                                             ['muid2',
+                                              [mu_id,['m2IDHZG2012'],0]],
+                                             ['muiso1',
+                                              [mu_iso_2012,['ell1','m1PFChargedIso','m1PFNeutralIso',
+                                                       'm1PFPhotonIso','m1PFPUChargedIso'],0]],
+                                             ['muiso2',
+                                              [mu_iso_2012,['ell2','m2PFChargedIso','m2PFNeutralIso',
+                                                       'm2PFPhotonIso','m2PFPUChargedIso'],0]],
+                                             ['trigger_match',
+                                              [mu_trg_match_data,['metEt','run'],0]]])
 
 
 def ele_pt(pt):    
@@ -519,6 +566,8 @@ event_has_ifsr = CutflowDecision(event_has_ifsr)
 #single object IDs
 mu_cuts_data = CutflowDecision(muon_selection_data_reqs)
 mu_cuts_mc   = CutflowDecision(muon_selection_mc_reqs)
+mu_cuts_data_2012 = CutflowDecision(muon_selection_data_reqs_2012)
+mu_cuts_mc_2012   = CutflowDecision(muon_selection_mc_reqs_2012)
 e_cuts_data  = CutflowDecision(electron_selection_data_reqs)
 e_cuts_mc    = CutflowDecision(electron_selection_mc_reqs)
 e_cuts_data_2012  = CutflowDecision(electron_selection_data_reqs_2012)
