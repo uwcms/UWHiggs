@@ -19,7 +19,7 @@ from UWHiggs.hzg.hzg_cuts import muon_triggers_data,muon_triggers_mc, \
      e_cuts_data_2012,e_cuts_mc_2012, \
      mu_cuts_data,mu_cuts_mc,e_cuts_data,e_cuts_mc, photon_cuts_data, \
      photon_cuts_noifsr, mumu_cuts,ee_cuts,ell_gamma_dr, event_has_ifsr, \
-     photon_cuts_mc,photon_cuts_plj
+     photon_cuts_mc,photon_cuts_plj,mu_cuts_data_2012,mu_cuts_mc_2012
 
 #correction layer
 from UWHiggs.hzg.corrections import setup_corrections
@@ -436,10 +436,10 @@ cuts_by_year = {2011:{'data':{'muon':{'trigger':muon_triggers_data,
                                           'leptons':e_cuts_data,
                                           'z':ee_cuts}},
                       'mc':{'muon':{'trigger':muon_triggers_mc,
-                                    'leptons':mu_cuts_mc,
+                                    'leptons':mu_cuts_mc_2012,
                                     'z':mumu_cuts},
                             'electron':{'trigger':electron_triggers_mc,
-                                        'leptons':e_cuts_mc,
+                                        'leptons':e_cuts_mc_2012,
                                         'z':ee_cuts}},
                       
                       }
@@ -563,7 +563,7 @@ if options.datType != 'data' and options.crossSection is None:
 #set correction types if none set
 if options.leptonCor is None:
     if options.leptonType == 'electron':
-        options.leptonCor = 'CorrSmearedNoReg'
+        options.leptonCor = 'CorrReg'
     elif options.leptonType == 'muon':
         options.leptonCor = 'RochCor'
 
