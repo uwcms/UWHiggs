@@ -5,7 +5,6 @@ void test_background_models() {
   gSystem->Load("libUWHiggshzg.so");
 
   RooWorkspace test("test");
-
   
   test.addClassDeclImportDir("/home/lgray/CMSSW_5_3_3_patch3/src/UWHiggs/hzg/src");
   test.importClassCode(RooStepBernstein::Class(),true);
@@ -86,17 +85,13 @@ void test_background_models() {
   
   if(category == 1) {
     test.factory("RooBernstein::MzgBkgShapeOldPolyBase(Mzg_old,{c0_old[-1e-6,1.01],c1_old[-1e-6,1.01],c2_old[-1e-6,1.01],c3_old[-1e-6,1.01],c4_old[-1e-6,1.01]})");
-    test.factory("RooStepBernstein::MzgBkgShapePolyTruth(Mzg,stepVal[0.1,0,1],{1.0,c1[0.5,-1e-6,1],c2[0.5,-1e-6,1],c3[0.5,-1e-6,1],c4[0.5,-1e-6,1]})");    
+    test.factory("RooGaussStepBernstein::MzgBkgShapePolyBase(Mzg,meanPoly[105,90,130],sigmaPoly[5,0.01,20],{1.0,c1[0.5,-1e-6,1],c2[0.5,-1e-6,1],c3[0.5,-1e-6,1],c4[0.5,-1e-6,1]})");
   } else {
     test.factory("RooBernstein::MzgBkgShapeOldPolyBase(Mzg_old,{c0_old[-1e-6,1.01],c1_old[-1e-6,1.01],c2_old[-1e-6,1.01],c3_old[-1e-6,1.01],c4_old[-1e-6,1.01],c5_old[-1e-6,1.01]})");
-    test.factory("RooStepBernstein::MzgBkgShapePolyTruth(Mzg,stepVal[0.1,0,1],{1.0,c1[0.5,-1e-6,1],c2[0.5,-1e-6,1],c3[0.5,-1e-6,1],c4[0.5,-1e-6,1],c5[0.5,-1e-6,1]})");    
+    test.factory("RooGaussStepBernstein::MzgBkgShapePolyBase(Mzg,meanPoly[105,90,130],sigmaPoly[1,0.01,20],{1.0,c1[0.5,-1e-6,1],c2[0.5,-1e-6,1],c3[0.5,-1e-6,1],c4[0.5,-1e-6,1],c5[0.5,-1e-6,1]})");    
   }
   
   test.var("Mzg").setRange("ROI",115,180);
-
-  test.factory("RooGaussian::MzgResoShapePoly(Mzg,biasPoly[0],sigmaPoly[5,0.01,20])");
-  test.factory("FCONV::MzgBkgShapePolyBase(Mzg,MzgBkgShapePolyTruth,MzgResoShapePoly)");
-  test.var("Mzg")->setBins(30000,"cache");
   
   Double_t sumEntries = test.data("data")->sumEntries("Mzg > 115 && Mzg < 180");
   test.factory(Form("nBkgShapePoly[%f,%f,%f]",sumEntries, sumEntries*0.75, sumEntries*1.25));
@@ -133,13 +128,7 @@ void test_background_models() {
   
   
 
-  RooRealIntegral* testint = test.pdf("MzgBkgShapePolyTruth")->createIntegral(RooArgSet(*test.var("Mzg")),
-									      RooArgSet(*test.var("Mzg")));
-
   
-  
-  std::cout << "Normalized integral of step bernstein:: "<< testint->getVal() << std::endl;
-  delete testint;
 
   TCanvas canv("test","test",600,600);
 
@@ -149,7 +138,7 @@ void test_background_models() {
   tlx = TLatex();
   tlx.SetNDC();
 
-  RooPlot* frame = test.var("Mzg")->frame(115,180,87);//90,180,120);
+  RooPlot* frame = test.var("Mzg")->frame(90,180,120);//115,180,87);
   frame->SetTitle("");
   frame->GetXaxis()->SetTitle(Form("M_{%s} (GeV)",subscriptzg));
   frame->GetYaxis()->SetTitle("Entries");
@@ -208,6 +197,14 @@ void test_background_models() {
   canv.Clear();
 
   //delete frame;
+
+  RooRealIntegral* testint = test.pdf("MzgBkgShapePolyBase")->createIntegral(RooArgSet(*test.var("Mzg")),
+									     RooArgSet(*test.var("Mzg")));
+  
+  
+  
+  //std::cout << "Normalized integral of step bernstein x (gaus):: "<< testint->getVal() << std::endl;
+  delete testint;
 
   fout->cd();
   test.Write();

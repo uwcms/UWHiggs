@@ -97,7 +97,10 @@ for sample in sorted(analysis_list.keys()):
                 if '7TeV' in sample:
                     options.append('++runYear=2011')
                     if 'data' in subsample:
-                        options.append('++runType=AB')
+                        if '2011A' in subsample:
+                            options.append('++runType=A')
+                        if '2011B' in subsample:
+                            options.append('++runType=B')
                         options.append('++datType=data')
                     else:
                         options.append('++runType=AB')
