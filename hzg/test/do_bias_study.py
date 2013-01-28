@@ -28,7 +28,7 @@ for channel in channels:
 import ROOT
 from ROOT import RooWorkspace, RooMCStudy, RooFit, TFile, gDirectory,\
      RooDataSet, RooFormulaVar, RooConstVar, RooArgList, RooArgSet,\
-     RooMinuit
+     RooMinuit, RooMinimizer
 ROOT.gSystem.Load("libUWHiggshzg.so")
 pwd = gDirectory.GetPath()
 
@@ -139,6 +139,7 @@ def prepare_truth_models(ws,cat,mass,channel,turnon):
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
                 RooFit.SumW2Error(True)
                 )
+            
         #for erf fitting turn on we want sigmoid truth
         if turnon == 'erf':
             #build exponential convoluted with sigmoid turn-on
@@ -171,7 +172,7 @@ def prepare_truth_models(ws,cat,mass,channel,turnon):
                                                                  channel,cat,
                                                                  channel,cat,
                                                                  nevts,
-                                                                 0.75*nevts,1.25*nevts)
+                                                                 0.70*nevts,1.30*nevts)
                 )
             ws.pdf('MzgTruthModel_exp_sigm_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
@@ -207,17 +208,15 @@ def prepare_truth_models(ws,cat,mass,channel,turnon):
                                                                  channel,cat,
                                                                  channel,cat,
                                                                  nevts,
-                                                                 0.75*nevts,1.25*nevts)
+                                                                 0.70*nevts,1.30*nevts)
                 )
             ws.pdf('MzgTruthModel_pow_sigm_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
                 RooFit.SumW2Error(True)
-                )
-        
-        
+                )        
 
 def build_fitting_models(ws,cat,mass,order,turnon):
-    ws.var('Mzg').setBins(20000,'cache')
+    ws.var('Mzg').setBins(50000,'cache')
 
     cs=['c%i_cat%i[-1e-6,1.01]'%(k+1,cat) for k in range(order)]
     config = ['Mzg',
@@ -314,8 +313,8 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                     RooFit.Extended(),
                     RooFit.Name('toy_erfpow_%s_cat%i_%i'%(channel,cat,i))
                     )
-                true_ROI_yield_erfexp = toy_data_exp_erf.sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
-                true_ROI_yield_erfpow = toy_data_pow_erf.sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
+                true_ROI_yield_erfexp = ws.var('norm_truth_exp_%s_cat%i'%(channel,cat)).getVal()
+                true_ROI_yield_erfpow = ws.var('norm_truth_pow_erf_%s_cat%i'%(channel,cat)).getVal()
                 #setup the normalizations
                 sumEntries_erfexp  = toy_data_exp_erf.sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
                 sumEntries_erfpow  = toy_data_pow_erf.sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
@@ -329,21 +328,28 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                 sigm_nll = ws.pdf('RSBFitModelAlt_cat%i'%cat).createNLL(
                     toy_data_exp_erf
                     )
-                sigm_min = RooMinuit(sigm_nll)
+                sigm_min = RooMinimizer(sigm_nll)
+                sigm_min.setPrintLevel(0)
                 sigm_min.simplex()
                 sigm_min.migrad()
                 sigm_min.hesse()
-                del sigm_min
-                del sigm_nll
                 #sigm_min.minos(minos_var)
-                
+
                 fit_sigm_norm = ws.var('norm_altrsb_cat%i'%cat).getVal()
-                fit_sigm_err  = sqrt(fit_sigm_norm)#ws.var('norm_altrsb_cat%i'%cat).getError()
+                fit_sigm_err  = ws.var('norm_altrsb_cat%i'%cat).getError()
                 fit_sigm_pull = (fit_sigm_norm - true_ROI_yield_erfexp)/fit_sigm_err
+
+                print fit_sigm_norm, fit_sigm_err, true_ROI_yield_erfexp, fit_sigm_pull
                 
                 ws.var('pull_ROI_sigm_on_erfexp_%s_cat%i'%(channel,cat)).setVal(
                     fit_sigm_pull
                     )
+                
+                del sigm_min
+                del sigm_nll
+                
+                
+                
                 
                 #fit logistics(x)bern to erfpow
                 ws.var('norm_altrsb_cat%i'%cat).setMin(sumEntries_erfpow*0.70)
@@ -354,23 +360,30 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                 sigm_nll = ws.pdf('RSBFitModelAlt_cat%i'%cat).createNLL(
                     toy_data_pow_erf
                     )
-                sigm_min = RooMinuit(sigm_nll)
+                sigm_min = RooMinimizer(sigm_nll)
+                sigm_min.setPrintLevel(0)
                 sigm_min.simplex()
                 sigm_min.migrad()
                 sigm_min.hesse()
-                del sigm_min
-                del sigm_nll
                 #sigm_min.minos(minos_var)
-                
+
                 fit_sigm_norm = ws.var('norm_altrsb_cat%i'%cat).getVal()
-                fit_sigm_err  = sqrt(fit_sigm_norm)#ws.var('norm_altrsb_cat%i'%cat).getError()
+                fit_sigm_err  = ws.var('norm_altrsb_cat%i'%cat).getError()
                 fit_sigm_pull = (fit_sigm_norm - true_ROI_yield_erfpow)/fit_sigm_err
                 
                 ws.var('pull_ROI_sigm_on_erfpow_%s_cat%i'%(channel,cat)).setVal(
                     fit_sigm_pull
                     )
 
+                print fit_sigm_norm, fit_sigm_err, true_ROI_yield_erfpow, fit_sigm_pull
+
                 biasData.add(ws.set('biasVars_%s_cat%i'%(channel,cat)))
+                
+                del sigm_min
+                del sigm_nll
+               
+                
+                
                 #getattr(ws,'import')(toy_data_exp_erf)
                 #getattr(ws,'import')(toy_data_pow_erf)
                 del truth_exp_erf
@@ -393,60 +406,72 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                     RooFit.Extended(),
                     RooFit.Name('toy_sigmpow_%s_cat%i_%i'%(channel,cat,i))
                     )            
-                true_ROI_yield_sigmexp = toy_data_exp_sigm.sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
-                true_ROI_yield_sigmpow = toy_data_pow_sigm.sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
+                true_ROI_yield_sigmexp = ws.var('norm_truth_exp_sigm_%s_cat%i'%(channel,cat)).getVal()
+                true_ROI_yield_sigmpow = ws.var('norm_truth_pow_sigm_%s_cat%i'%(channel,cat)).getVal()
                         
-                #setup the normalizations    a        
+                #setup the normalizations       
                 sumEntries_sigmexp = toy_data_exp_sigm.sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
                 sumEntries_sigmpow = toy_data_pow_sigm.sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
                             
                 #### fit erf(x)bern models
                 
                 #fit erf(x)bern to sigmexp
-                ws.var('norm_rsb_cat%i'%cat).setMin(sumEntries_sigmexp*0.70)
-                ws.var('norm_rsb_cat%i'%cat).setMax(sumEntries_sigmexp*1.30)
-                ws.var('norm_rsb_cat%i'%cat).setVal(sumEntries_sigmexp)
+                ws.var('norm_rsb_cat%i'%cat).setMin(true_ROI_yield_sigmexp*0.70)
+                ws.var('norm_rsb_cat%i'%cat).setMax(true_ROI_yield_sigmexp*1.30)
+                ws.var('norm_rsb_cat%i'%cat).setVal(true_ROI_yield_sigmexp)
                 
                 minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
                 gaus_nll = ws.pdf('RSBFitModel_cat%i'%cat).createNLL(
                     toy_data_exp_sigm
                     )
-                gaus_min= RooMinuit(gaus_nll)
+                gaus_min= RooMinimizer(gaus_nll)
+                gaus_min.setPrintLevel(0)
                 gaus_min.simplex()
                 gaus_min.migrad()
                 gaus_min.hesse()
-                del gaus_min
-                del gaus_nll
                 #gaus_min.minos(minos_var)
-                
+
                 fit_erf_norm = ws.var('norm_rsb_cat%i'%cat).getVal()
-                fit_erf_err  = sqrt(fit_erf_norm)#ws.var('norm_rsb_cat%i'%cat).getError()
+                fit_erf_err  = ws.var('norm_rsb_cat%i'%cat).getError()
                 fit_erf_pull = (fit_erf_norm - true_ROI_yield_sigmexp)/fit_erf_err
+
+                print fit_erf_norm, fit_erf_err, true_ROI_yield_sigmexp, fit_erf_pull
                 
                 ws.var('pull_ROI_erf_on_sigmexp_%s_cat%i'%(channel,cat)).setVal(
                     fit_erf_pull
                     )
                 
+                del gaus_min
+                del gaus_nll
+                
+                
+                
+                
                 #fit erf(x)bern to sigmpow
-                ws.var('norm_rsb_cat%i'%cat).setMin(sumEntries_sigmpow*0.70)
-                ws.var('norm_rsb_cat%i'%cat).setMax(sumEntries_sigmpow*1.30)
-                ws.var('norm_rsb_cat%i'%cat).setVal(sumEntries_sigmpow)
+                ws.var('norm_rsb_cat%i'%cat).setMin(true_ROI_yield_sigmpow*0.70)
+                ws.var('norm_rsb_cat%i'%cat).setMax(true_ROI_yield_sigmpow*1.30)
+                ws.var('norm_rsb_cat%i'%cat).setVal(true_ROI_yield_sigmpow)
                 
                 minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
                 gaus_nll = ws.pdf('RSBFitModel_cat%i'%cat).createNLL(
                     toy_data_pow_sigm
                     )
-                gaus_min= RooMinuit(gaus_nll)
+                gaus_min= RooMinimizer(gaus_nll)
+                gaus_min.setPrintLevel(0)
                 gaus_min.simplex()
                 gaus_min.migrad()
                 gaus_min.hesse()
+                #gaus_min.minos(minos_var)
+                
                 del gaus_min
                 del gaus_nll
-                #gaus_min.minos(minos_var)
+                
             
                 fit_erf_norm = ws.var('norm_rsb_cat%i'%cat).getVal()
-                fit_erf_err  = sqrt(fit_erf_norm)#ws.var('norm_rsb_cat%i'%cat).getError()
+                fit_erf_err  = ws.var('norm_rsb_cat%i'%cat).getError()
                 fit_erf_pull = (fit_erf_norm - true_ROI_yield_sigmpow)/fit_erf_err
+
+                print fit_erf_norm, fit_erf_err, true_ROI_yield_sigmpow, fit_erf_pull
                 
                 ws.var('pull_ROI_erf_on_sigmpow_%s_cat%i'%(channel,cat)).setVal(
                     fit_erf_pull
@@ -477,7 +502,7 @@ if __name__ == '__main__':
     bs.factory("weight[0]")
     bs.factory("Mzg[100,180]")
     bs.var("Mzg").setRange("ROI",mass-1.5,mass+1.5)
-    bs.var("Mzg").setBins(20000,"cache")
+    bs.var("Mzg").setBins(30000,"cache")
     bs.factory("Mz[0]")
     bs.factory("dMzg[0,25]")
     bs.factory("dMz[0,25]")
