@@ -100,8 +100,8 @@ Double_t RooGaussStepBernstein::evaluate() const
   RooFIter iter;
   
   Double_t mean  = ( _mean - xmin )/( _x.max() - xmin ); // scale to [0,1]
-  Double_t sigma = _sigma ;// scale to [0,1]
-  Double_t gaus_param = 0.5*(mean - x)*(mean - x)/(sigma*sigma);
+  Double_t sigma = (_sigma) / (_x.max() - xmin) ;// scale to [0,1]
+  Double_t gaus_param = std::sqrt(0.5)*(x - mean)/(sigma);
   /*
   std::cout << mean << ' ' << sigma << ' ' 
 	    << x << ' ' << gaus_param << std::endl;
@@ -121,11 +121,11 @@ Double_t RooGaussStepBernstein::evaluate() const
       coef = ((RooAbsReal *)iter.next())->getVal();      
 
       beta += (coef*TMath::Binomial(degree,k)*
-	       TMath::Binomial(k,i)*std::pow(-1,k-i));
+	       TMath::Binomial(k,i)*std::pow(-1.,k-i));
     }
 
     prefactor = std::pow(2.0,0.5*(i-1));
-    prefactor *= std::exp(-gaus_param);
+    prefactor *= std::exp(-gaus_param*gaus_param);
     prefactor *= std::pow(1.0/(sigma*sigma),-0.5*(i+1));
     
     // gamma function multiplicative piece  
@@ -134,10 +134,10 @@ Double_t RooGaussStepBernstein::evaluate() const
     // the hypergeometric function terms
     hyperg_one = ROOT::Math::conf_hyperg(0.5*(1+i),
 					 0.5,
-					 gaus_param);
+					 gaus_param*gaus_param);
     hyperg_two = ROOT::Math::conf_hyperg(0.5*(2+i),
 					 1.5,
-					 gaus_param);
+					 gaus_param*gaus_param);
     
     multifact_two = std::sqrt(2.0)*std::sqrt(1.0/(sigma*sigma))*(-mean + x);
 

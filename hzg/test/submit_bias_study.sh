@@ -20,7 +20,7 @@ for channel in electron muon
       do
 	for turnon in erf sigm:
 	  do
-	  fajOpts="--input-files-per-job=2 --infer-cmssw-path --express-queue --output-dir=${hdfsOutDir} --input-dir=${hdfsInDir} --job-generates-output-name --fwklite"
+	  fajOpts="--input-files-per-job=2 --infer-cmssw-path --express-queue --output-dir=${hdfsOutDir} --input-dir=${hdfsInDir} --job-generates-output-name --vsize-limit=30000 --fwklite"
 	  jobName=hZg_bias_study.${channel}.c${cat}.m${mass}.o${order}.${turnon}
 	  echo farmoutAnalysisJobs $fajOpts $jobName $theCfg ${ntoys} ${cat} ${mass} ${channel} ${order} ${turnon} inputFiles='$inputFileNames'
 	  done 

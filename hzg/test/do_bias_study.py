@@ -324,7 +324,7 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                 ws.var('norm_altrsb_cat%i'%cat).setMax(sumEntries_erfexp*1.30)
                 ws.var('norm_altrsb_cat%i'%cat).setVal(sumEntries_erfexp)            
                 
-                minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
+                #minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
                 sigm_nll = ws.pdf('RSBFitModelAlt_cat%i'%cat).createNLL(
                     toy_data_exp_erf
                     )
@@ -356,7 +356,7 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                 ws.var('norm_altrsb_cat%i'%cat).setMax(sumEntries_erfpow*1.30)
                 ws.var('norm_altrsb_cat%i'%cat).setVal(sumEntries_erfpow)            
                 
-                minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
+                #minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
                 sigm_nll = ws.pdf('RSBFitModelAlt_cat%i'%cat).createNLL(
                     toy_data_pow_erf
                     )
@@ -420,7 +420,7 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                 ws.var('norm_rsb_cat%i'%cat).setMax(true_ROI_yield_sigmexp*1.30)
                 ws.var('norm_rsb_cat%i'%cat).setVal(true_ROI_yield_sigmexp)
                 
-                minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
+                #minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
                 gaus_nll = ws.pdf('RSBFitModel_cat%i'%cat).createNLL(
                     toy_data_exp_sigm
                     )
@@ -442,17 +442,14 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                     )
                 
                 del gaus_min
-                del gaus_nll
-                
-                
-                
+                del gaus_nll                
                 
                 #fit erf(x)bern to sigmpow
                 ws.var('norm_rsb_cat%i'%cat).setMin(true_ROI_yield_sigmpow*0.70)
                 ws.var('norm_rsb_cat%i'%cat).setMax(true_ROI_yield_sigmpow*1.30)
                 ws.var('norm_rsb_cat%i'%cat).setVal(true_ROI_yield_sigmpow)
                 
-                minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
+                #minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
                 gaus_nll = ws.pdf('RSBFitModel_cat%i'%cat).createNLL(
                     toy_data_pow_sigm
                     )
@@ -464,8 +461,7 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                 #gaus_min.minos(minos_var)
                 
                 del gaus_min
-                del gaus_nll
-                
+                del gaus_nll                
             
                 fit_erf_norm = ws.var('norm_rsb_cat%i'%cat).getVal()
                 fit_erf_err  = ws.var('norm_rsb_cat%i'%cat).getError()

@@ -88,10 +88,15 @@ void test_background_models() {
     test.factory("RooStepBernstein::MzgBkgShapePolyShape(Mzg,stepVal[0.1,0,1],{1.0,c1[0.5,-1e-6,1],c2[0.5,-1e-6,1],c3[0.5,-1e-6,1],c4[0.5,-1e-6,1]})");
   } else {
     test.factory("RooBernstein::MzgBkgShapeOldPolyBase(Mzg_old,{c0_old[-1e-6,1.01],c1_old[-1e-6,1.01],c2_old[-1e-6,1.01],c3_old[-1e-6,1.01],c4_old[-1e-6,1.01],c5_old[-1e-6,1.01]})");
-    test.factory("RooStepBernstein::MzgBkgShapePolyShape(Mzg,stepVal[0.1,0,1],{1.0,c1[0.5,-1e-6,1],c2[0.5,-1e-6,1],c3[0.5,-1e-6,1],c4[0.5,-1e-6,1],c5[0.5,-1e-6,1]})");    
+    test.factory("RooStepBernstein::MzgBkgShapePolyShape(Mzg,stepVal[0.1,0,1],{1.0,c1[0.5,-1e-6,1],c2[0.5,-1e-6,1],c3[0.5,-1e-6,1],c4[0.5,-1e-6,1],c5[0.5,-1e-6,1]})");  
+
+    
   }
-  test.var("Mzg").setBins(20000,"cache");
-  test.var("Mzg").setRange("ROI",115,180);
+
+  test.factory("RooGaussStepBernstein::MzgBkgShapePolyTest(Mzg,stepMean[120,100,150],stepSigma[3,0.01,20],{1.0,c1_test[0.5,-1e-6,1],c2_test[0.5,-1e-6,1],c3_test[0.5,-1e-6,1],c4_test[0.5,-1e-6,1],c5_test[0.5,-1e-6,1]})");  
+
+  test.var("Mzg")->setBins(20000,"cache");
+  test.var("Mzg")->setRange("ROI",115,180);
 
   test.factory("RooGaussian::MzgBkgShapePolyReso(Mzg,meanPoly[0],sigmaPoly[1,0.01,20])");
   
@@ -105,11 +110,11 @@ void test_background_models() {
   //test.var("Mzg_old")->setRange("oldpolyfit",115,180);
   
   
-  test.pdf("MzgBkgShapePoly")->fitTo(*(test.data("data")),
+  test.pdf("MzgBkgShapePolyTest")->fitTo(*(test.data("data")),
 				     RooFit::Minimizer("Minuit","simplex"),
 				     RooFit::SumW2Error(kTRUE),
 				     RooFit::Save(kTRUE)); 
-  RooFitResult* polyFitRes = test.pdf("MzgBkgShapePoly")->fitTo(*(test.data("data")),
+  RooFitResult* polyFitRes = test.pdf("MzgBkgShapePolyTest")->fitTo(*(test.data("data")),
 								RooFit::SumW2Error(kTRUE),
 								RooFit::Save(kTRUE));
   
@@ -154,19 +159,19 @@ void test_background_models() {
   
   RooPlot* oldpolyframe = test.var("Mzg_old")->frame(115,180,65);
   /*
-  test.pdf("MzgBkgShapePoly")->plotOn(oldpolyframe,
+  test.pdf("MzgBkgShapePolyTest")->plotOn(oldpolyframe,
 				      RooFit::ProjWData(*(test.var("dMzg")),
 							*(test.data("data"))),
 				      RooFit::FillColor(kGreen),
 				      RooFit::VisualizeError(*polyFitRes,2.0,kTRUE));
-  test.pdf("MzgBkgShapePoly")->plotOn(oldpolyframe,
+  test.pdf("MzgBkgShapePolyTest")->plotOn(oldpolyframe,
 				      RooFit::ProjWData(*(test.var("dMzg")),
 							*(test.data("data"))),
 				      RooFit::FillColor(kYellow),
 				      RooFit::VisualizeError(*polyFitRes,1.0,kTRUE));
   */
    
-  test.pdf("MzgBkgShapePoly")->plotOn(frame,
+  test.pdf("MzgBkgShapePolyTest")->plotOn(frame,
 				      RooFit::ProjWData(*(test.var("dMzg")),
 							*(test.data("data"))),
 				      RooFit::LineColor(kRed)
@@ -202,7 +207,7 @@ void test_background_models() {
 
   //delete frame;
 
-  RooRealIntegral* testint = test.pdf("MzgBkgShapePolyBase")->createIntegral(RooArgSet(*test.var("Mzg")),
+  RooRealIntegral* testint = test.pdf("MzgBkgShapePolyTest")->createIntegral(RooArgSet(*test.var("Mzg")),
 									     RooArgSet(*test.var("Mzg")));
   
   
