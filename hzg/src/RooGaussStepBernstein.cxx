@@ -101,47 +101,46 @@ Double_t RooGaussStepBernstein::evaluate() const
   
   Double_t mean  = ( _mean - xmin )/( _x.max() - xmin ); // scale to [0,1]
   Double_t sigma = (_sigma) / (_x.max() - xmin) ;// scale to [0,1]
-  Double_t gaus_param = std::sqrt(0.5)*(x - mean)/(sigma);
+  Double_t gaus_param = 0.5*(x - mean)*(x-mean)/(sigma*sigma);
   /*
   std::cout << mean << ' ' << sigma << ' ' 
 	    << x << ' ' << gaus_param << std::endl;
   */
     
-  Double_t prefactor,gamma,hyperg_one,hyperg_two,multifact_two,beta,coef;
+  Double_t prefactor,gamma1,gamma2,hyperg_one,hyperg_two,multifact_two,beta,coef;
   
   // iterate through each 
   Double_t result = 0.0;
   for(Int_t i = 0; i <= degree; ++i) {    
-    // beta is the sum of bernstein coefficients for a particular polynomial
-    // order
+    // calculate the coefficient in the 'power basis'
+    // i.e. the naive polynomial basis
     beta = 0.0;
     iter = _coefList.fwdIterator();
     for(Int_t k=i; k <= degree; ++k) {
       // coef is the bernstein polynomial coefficient
-      coef = ((RooAbsReal *)iter.next())->getVal();      
-
-      beta += (coef*TMath::Binomial(degree,k)*
-	       TMath::Binomial(k,i)*std::pow(-1.,k-i));
+      beta += (std::pow(-1.,k-i)*TMath::Binomial(degree,k)*TMath::Binomial(k,i));
     }
+    beta *= ((RooAbsReal *)iter.next())->getVal(); 
 
     prefactor = std::pow(2.0,0.5*(i-1));
-    prefactor *= std::exp(-gaus_param*gaus_param);
+    prefactor *= std::exp(-gaus_param);
     prefactor *= std::pow(1.0/(sigma*sigma),-0.5*(i+1));
     
     // gamma function multiplicative piece  
-    gamma = ROOT::Math::tgamma(0.5*(1+i));
+    gamma1 = ROOT::Math::tgamma(0.5*(1+i));
+    gamma2 = ROOT::Math::tgamma(0.5*(2+i));
     
     // the hypergeometric function terms
     hyperg_one = ROOT::Math::conf_hyperg(0.5*(1+i),
 					 0.5,
-					 gaus_param*gaus_param);
+					 gaus_param);
     hyperg_two = ROOT::Math::conf_hyperg(0.5*(2+i),
 					 1.5,
-					 gaus_param*gaus_param);
+					 gaus_param);
     
     multifact_two = std::sqrt(2.0)*std::sqrt(1.0/(sigma*sigma))*(-mean + x);
 
-    result += beta*prefactor*gamma*(hyperg_one + multifact_two*hyperg_two);
+    result += beta*prefactor*(gamma1*hyperg_one + gamma2*multifact_two*hyperg_two);
     
     
   }
@@ -162,7 +161,7 @@ Int_t RooGaussStepBernstein::getAnalyticalIntegral(RooArgSet& allVars,
     return 0 ;
   }
   
-  // no analytical calculation of integrals yet, this is evil.
+  
   if (matchArgs(allVars, analVars, _x)) return 0;
   return 0;
 }

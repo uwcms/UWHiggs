@@ -104,6 +104,11 @@ def prepare_truth_models(ws,cat,mass,channel,turnon):
                 )
             ws.pdf('MzgTruthModel_exp_erf_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
+                RooFit.Minimizer('Minuit','simplex'),
+                RooFit.SumW2Error(True)
+                )
+            ws.pdf('MzgTruthModel_exp_erf_%s_cat%i'%(channel,cat)).fitTo(
+                ws.data('bkgdata_%s_%i'%(channel,cat)),
                 RooFit.SumW2Error(True)
                 )
             #make power-law truth model with erf turn on
@@ -134,6 +139,11 @@ def prepare_truth_models(ws,cat,mass,channel,turnon):
                                                                 channel,cat,
                                                                 nevts,
                                                                 0.75*nevts,1.25*nevts)
+                )
+            ws.pdf('MzgTruthModel_pow_erf_%s_cat%i'%(channel,cat)).fitTo(
+                ws.data('bkgdata_%s_%i'%(channel,cat)),
+                RooFit.Minimizer('Minuit','simplex'),
+                RooFit.SumW2Error(True)
                 )
             ws.pdf('MzgTruthModel_pow_erf_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
@@ -172,7 +182,12 @@ def prepare_truth_models(ws,cat,mass,channel,turnon):
                                                                  channel,cat,
                                                                  channel,cat,
                                                                  nevts,
-                                                                 0.70*nevts,1.30*nevts)
+                                                                 0.25*nevts,1.75*nevts)
+                )
+            ws.pdf('MzgTruthModel_exp_sigm_%s_cat%i'%(channel,cat)).fitTo(
+                ws.data('bkgdata_%s_%i'%(channel,cat)),
+                RooFit.Minimizer('Minuit','simplex'),
+                RooFit.SumW2Error(True)
                 )
             ws.pdf('MzgTruthModel_exp_sigm_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
@@ -208,7 +223,12 @@ def prepare_truth_models(ws,cat,mass,channel,turnon):
                                                                  channel,cat,
                                                                  channel,cat,
                                                                  nevts,
-                                                                 0.70*nevts,1.30*nevts)
+                                                                 0.25*nevts,1.75*nevts)
+                )
+            ws.pdf('MzgTruthModel_pow_sigm_%s_cat%i'%(channel,cat)).fitTo(
+                ws.data('bkgdata_%s_%i'%(channel,cat)),
+                RooFit.Minimizer('Minuit','simplex'),
+                RooFit.SumW2Error(True)
                 )
             ws.pdf('MzgTruthModel_pow_sigm_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
@@ -216,7 +236,7 @@ def prepare_truth_models(ws,cat,mass,channel,turnon):
                 )        
 
 def build_fitting_models(ws,cat,mass,order,turnon):
-    ws.var('Mzg').setBins(50000,'cache')
+    ws.var('Mzg').setBins(30000,'cache')
 
     cs=['c%i_cat%i[-1e-6,1.01]'%(k+1,cat) for k in range(order)]
     config = ['Mzg',
@@ -320,8 +340,8 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                 sumEntries_erfpow  = toy_data_pow_erf.sumEntries('Mzg > %f && Mzg < %f'%(mass-1.5,mass+1.5))
                 
                 #fit logistics(x)bern to erfexp
-                ws.var('norm_altrsb_cat%i'%cat).setMin(sumEntries_erfexp*0.70)
-                ws.var('norm_altrsb_cat%i'%cat).setMax(sumEntries_erfexp*1.30)
+                ws.var('norm_altrsb_cat%i'%cat).setMin(sumEntries_erfexp*0.25)
+                ws.var('norm_altrsb_cat%i'%cat).setMax(sumEntries_erfexp*1.75)
                 ws.var('norm_altrsb_cat%i'%cat).setVal(sumEntries_erfexp)            
                 
                 #minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
@@ -352,8 +372,8 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                 
                 
                 #fit logistics(x)bern to erfpow
-                ws.var('norm_altrsb_cat%i'%cat).setMin(sumEntries_erfpow*0.70)
-                ws.var('norm_altrsb_cat%i'%cat).setMax(sumEntries_erfpow*1.30)
+                ws.var('norm_altrsb_cat%i'%cat).setMin(sumEntries_erfpow*0.25)
+                ws.var('norm_altrsb_cat%i'%cat).setMax(sumEntries_erfpow*1.75)
                 ws.var('norm_altrsb_cat%i'%cat).setVal(sumEntries_erfpow)            
                 
                 #minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
@@ -416,8 +436,8 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                 #### fit erf(x)bern models
                 
                 #fit erf(x)bern to sigmexp
-                ws.var('norm_rsb_cat%i'%cat).setMin(true_ROI_yield_sigmexp*0.70)
-                ws.var('norm_rsb_cat%i'%cat).setMax(true_ROI_yield_sigmexp*1.30)
+                ws.var('norm_rsb_cat%i'%cat).setMin(true_ROI_yield_sigmexp*0.25)
+                ws.var('norm_rsb_cat%i'%cat).setMax(true_ROI_yield_sigmexp*1.75)
                 ws.var('norm_rsb_cat%i'%cat).setVal(true_ROI_yield_sigmexp)
                 
                 #minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
@@ -445,8 +465,8 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon):
                 del gaus_nll                
                 
                 #fit erf(x)bern to sigmpow
-                ws.var('norm_rsb_cat%i'%cat).setMin(true_ROI_yield_sigmpow*0.70)
-                ws.var('norm_rsb_cat%i'%cat).setMax(true_ROI_yield_sigmpow*1.30)
+                ws.var('norm_rsb_cat%i'%cat).setMin(true_ROI_yield_sigmpow*0.25)
+                ws.var('norm_rsb_cat%i'%cat).setMax(true_ROI_yield_sigmpow*1.75)
                 ws.var('norm_rsb_cat%i'%cat).setVal(true_ROI_yield_sigmpow)
                 
                 #minos_var = RooArgSet(ws.var('norm_rsb_cat%i'%cat))
