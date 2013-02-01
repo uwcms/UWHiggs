@@ -1,5 +1,7 @@
 #include "UWHiggs/hzg/interface/RooStepBernstein.h"
 #include "UWHiggs/hzg/interface/RooGaussStepBernstein.h"
+#include "UWHiggs/hzg/interface/RooLogistics.h"
+#include "UWHiggs/hzg/interface/RooStepExponential.h"
 
 
 
@@ -11,5 +13,7 @@
 
 #pragma link C++ class RooStepBernstein;
 #pragma link C++ class RooGaussStepBernstein;
+#pragma link C++ class RooLogistics;
+#pragma link C++ class RooStepExponential;
 
 #endif

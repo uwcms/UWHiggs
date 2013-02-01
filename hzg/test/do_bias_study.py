@@ -154,17 +154,13 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
         #for erf fitting turn on we want sigmoid truth
         if turnon == 'erf' and truth == 'exp':
             #build exponential convoluted with sigmoid turn-on
-            ws.factory('EXPR::MzgTruthModelShape_exp_sigm_%s_cat%i('\
-                       '"1e-20 + (@0 > @1)*(exp(-@0/@2))",'\
-                       '{Mzg,step_exp_sigm_%s_cat%i[105,100,130],'\
-                       'tau_sigm_%s_cat%i[5,0,50]})'\
-                       %(channel,cat,
+            ws.factory('RooStepExponential::MzgTruthModelShape_exp_sigm_%s_cat%i'\
+                       '(Mzg,tau_sigm_%s_cat%i[-5,-50,0],'\
+                       'step_exp_sigm_%s_cat%i[105,100,130])'%(channel,cat,
                          channel,cat,
                          channel,cat))        
             ws.factory(
-                'EXPR::MzgResoShape_exp_sigm_%s_cat%i("'\
-                'exp(-(@0-@1)/@2)/(@2*(1.0+exp(-(@0-@1)/@2))**2)'\
-                '",%s)'%(
+                'RooLogistics::MzgResoShape_exp_sigm_%s_cat%i(%s)'%(
                 channel,cat,
                 ','.join(['Mzg',
                           'bias_exp_sigm_%s_cat%i[0]'%(channel,cat),
@@ -204,9 +200,7 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
                          channel,cat,
                          channel,cat))        
             ws.factory(
-                'EXPR::MzgResoShape_pow_sigm_%s_cat%i("'\
-                'exp(-(@0-@1)/@2)/(@2*(1.0+exp(-(@0-@1)/@2))**2)'\
-                '",%s)'%(
+                'RooLogistics::MzgResoShape_pow_sigm_%s_cat%i(%s)'%(
                 channel,cat,
                 ','.join(['Mzg',
                           'bias_pow_sigm_%s_cat%i[0]'%(channel,cat),
@@ -269,9 +263,7 @@ def build_fitting_models(ws,cat,mass,order,turnon):
     #build alternate fitting model (Bernstein(x)logistics)
     if turnon == 'sigm':
         ws.factory(
-            'EXPR::RSBFitModelAltReso_cat%i("'\
-            'exp(-(@0-@1)/@2)/(@2*(1.0+exp(-(@0-@1)/@2))**2)'\
-            '",%s)'%(
+            'RooLogistics::RSBFitModelAltReso_cat%i(%s)'%(
             cat,
             ','.join(['Mzg',
                       'rsb_altbias_cat%i[0]'%cat,
