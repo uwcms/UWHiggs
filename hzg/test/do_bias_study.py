@@ -350,7 +350,7 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                     if migrad_out != 0:
                         sigm_min.minos(minos_var)
                         fit_sigm_err  = max(abs(ws.var('norm_altrsb_cat%i'%cat).getErrorHi()),
-                                           abs(ws.var('norm_altrsb_cat%i'%cat).getErrorLo()))
+                                            abs(ws.var('norm_altrsb_cat%i'%cat).getErrorLo()))
                     else:
                         fit_sigm_err  = ws.var('norm_altrsb_cat%i'%cat).getError()
                     fit_sigm_norm = ws.var('norm_altrsb_cat%i'%cat).getVal()
