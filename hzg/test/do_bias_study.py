@@ -325,7 +325,7 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                     )
                 true_ROI_yield_erfexp = ws.var('norm_truth_exp_%s_cat%i'%(channel,cat)).getVal()
 
-            #fit logistics(x)bern to erfexp
+                #fit logistics(x)bern to erfexp
                 ws.var('norm_altrsb_cat%i'%cat).setMin(true_ROI_yield_erfexp*0.25)
                 ws.var('norm_altrsb_cat%i'%cat).setMax(true_ROI_yield_erfexp*1.75)
                 ws.var('norm_altrsb_cat%i'%cat).setVal(true_ROI_yield_erfexp)            
@@ -349,12 +349,12 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                     migrad_out = sigm_min.migrad()                    
                     if migrad_out != 0:
                         sigm_min.minos(minos_var)
-                        fit_erf_err  = max(abs(ws.var('norm_altrsb_cat%i'%cat).getErrorHi()),
+                        fit_sigm_err  = max(abs(ws.var('norm_altrsb_cat%i'%cat).getErrorHi()),
                                            abs(ws.var('norm_altrsb_cat%i'%cat).getErrorLo()))
                     else:
                         fit_sigm_err  = ws.var('norm_altrsb_cat%i'%cat).getError()
-                    fit_erf_norm = ws.var('norm_altrsb_cat%i'%cat).getVal()
-                    fit_erf_pull = (fit_erf_norm - true_ROI_yield_erfexp)/fit_erf_err
+                    fit_sigm_norm = ws.var('norm_altrsb_cat%i'%cat).getVal()
+                    fit_sigm_pull = (fit_sigm_norm - true_ROI_yield_erfexp)/fit_sigm_err
                 
                 print i, fit_sigm_norm, fit_sigm_err, true_ROI_yield_erfexp, fit_sigm_pull
                 
@@ -404,12 +404,12 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                     migrad_out = sigm_min.migrad()                    
                     if migrad_out != 0:
                         sigm_min.minos(minos_var)
-                        fit_erf_err  = max(abs(ws.var('norm_altrsb_cat%i'%cat).getErrorHi()),
+                        fit_sigm_err  = max(abs(ws.var('norm_altrsb_cat%i'%cat).getErrorHi()),
                                            abs(ws.var('norm_altrsb_cat%i'%cat).getErrorLo()))
                     else:
                         fit_sigm_err  = ws.var('norm_altrsb_cat%i'%cat).getError()
-                    fit_erf_norm = ws.var('norm_altrsb_cat%i'%cat).getVal()
-                    fit_erf_pull = (fit_erf_norm - true_ROI_yield_erfpow)/fit_erf_err
+                    fit_sigm_norm = ws.var('norm_altrsb_cat%i'%cat).getVal()
+                    fit_sigm_pull = (fit_sigm_norm - true_ROI_yield_erfpow)/fit_sigm_err
                 
                 ws.var('pull_ROI_sigm_on_erfpow_%s_cat%i'%(channel,cat)).setVal(
                     fit_sigm_pull
