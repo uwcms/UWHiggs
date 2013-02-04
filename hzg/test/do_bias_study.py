@@ -104,8 +104,13 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
                 )
             ws.pdf('MzgTruthModel_exp_erf_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
+                RooFit.Minimizer('Minuit2','scan'),
+                RooFit.SumW2Error(False)
+                )
+            ws.pdf('MzgTruthModel_exp_erf_%s_cat%i'%(channel,cat)).fitTo(
+                ws.data('bkgdata_%s_%i'%(channel,cat)),
                 RooFit.Minimizer('Minuit','simplex'),
-                RooFit.SumW2Error(True)
+                RooFit.SumW2Error(False)
                 )
             ws.pdf('MzgTruthModel_exp_erf_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
@@ -143,8 +148,13 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
                 )
             ws.pdf('MzgTruthModel_pow_erf_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
+                RooFit.Minimizer('Minuit2','scan'),
+                RooFit.SumW2Error(False)
+                )
+            ws.pdf('MzgTruthModel_pow_erf_%s_cat%i'%(channel,cat)).fitTo(
+                ws.data('bkgdata_%s_%i'%(channel,cat)),
                 RooFit.Minimizer('Minuit','simplex'),
-                RooFit.SumW2Error(True)
+                RooFit.SumW2Error(False)
                 )
             ws.pdf('MzgTruthModel_pow_erf_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
@@ -156,7 +166,7 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
             #build exponential convoluted with sigmoid turn-on
             ws.factory('RooStepExponential::MzgTruthModelShape_exp_sigm_%s_cat%i'\
                        '(Mzg,tau_sigm_%s_cat%i[-5,-50,0],'\
-                       'step_exp_sigm_%s_cat%i[105,100,130])'%(channel,cat,
+                       'step_exp_sigm_%s_cat%i[110,100,130])'%(channel,cat,
                          channel,cat,
                          channel,cat))        
             ws.factory(
@@ -183,8 +193,13 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
                 )
             ws.pdf('MzgTruthModel_exp_sigm_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
+                RooFit.Minimizer('Minuit2','scan'),
+                RooFit.SumW2Error(False)
+                )
+            ws.pdf('MzgTruthModel_exp_sigm_%s_cat%i'%(channel,cat)).fitTo(
+                ws.data('bkgdata_%s_%i'%(channel,cat)),
                 RooFit.Minimizer('Minuit','simplex'),
-                RooFit.SumW2Error(True)
+                RooFit.SumW2Error(False)
                 )
             ws.pdf('MzgTruthModel_exp_sigm_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
@@ -223,8 +238,13 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
                 )
             ws.pdf('MzgTruthModel_pow_sigm_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
+                RooFit.Minimizer('Minuit2','scan'),
+                RooFit.SumW2Error(False)
+                )
+            ws.pdf('MzgTruthModel_pow_sigm_%s_cat%i'%(channel,cat)).fitTo(
+                ws.data('bkgdata_%s_%i'%(channel,cat)),
                 RooFit.Minimizer('Minuit','simplex'),
-                RooFit.SumW2Error(True)
+                RooFit.SumW2Error(False)
                 )
             ws.pdf('MzgTruthModel_pow_sigm_%s_cat%i'%(channel,cat)).fitTo(
                 ws.data('bkgdata_%s_%i'%(channel,cat)),
@@ -558,13 +578,13 @@ if __name__ == '__main__':
     bs.var("Mzg").setRange("ROI",mass-1.5,mass+1.5)
     bs.var("Mzg").setBins(60000,"cache")
     bs.factory("Mz[0]")
-    bs.factory("dMzg[0,25]")
-    bs.factory("dMz[0,25]")
+    #bs.factory("dMzg[0,25]")
+    #bs.factory("dMz[0,25]")
     bs.factory("r94cat[cat1=1,cat2=2,cat3=3,cat4=4]")
     bs.defineSet("observables",
-                 "Mzg,Mz,dMzg,dMz,r94cat,procWeight,puWeight")
+                 "Mzg,Mz,r94cat,procWeight,puWeight")
     bs.defineSet("observables_weight",
-                 "Mzg,Mz,dMzg,dMz,r94cat,procWeight,puWeight,weight")
+                 "Mzg,Mz,r94cat,procWeight,puWeight,weight")
 
     prepare_truth_models(bs,category,mass,channel,turnon,truth)
     
