@@ -88,7 +88,7 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
                 )
             ws.factory(
                 'RooDecay::MzgTruthModelBase_exp_erf_%s_cat%i(Mzg,'\
-                'tau_erf_%s_cat%i[5,0,10],MzgResoShape_exp_erf_%s_cat%i,'
+                'tau_erf_%s_cat%i[25,0,50],MzgResoShape_exp_erf_%s_cat%i,'
                 'RooDecay::SingleSided)'%(channel,cat,
                                           channel,cat,
                                           channel,cat)
@@ -165,7 +165,7 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
         if turnon == 'erf' and truth == 'exp':
             #build exponential convoluted with sigmoid turn-on
             ws.factory('RooStepExponential::MzgTruthModelShape_exp_sigm_%s_cat%i'\
-                       '(Mzg,tau_sigm_%s_cat%i[-5,-10,0],'\
+                       '(Mzg,tau_sigm_%s_cat%i[-0.05,-10,0],'\
                        'step_exp_sigm_%s_cat%i[110,100,130])'%(channel,cat,
                          channel,cat,
                          channel,cat))        
