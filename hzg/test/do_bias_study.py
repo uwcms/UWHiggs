@@ -2,6 +2,7 @@
 
 import os, sys
 from math import sqrt
+import time
 
 #analysis_path = '/store/user/lgray/HZG_bias_study'  #for the condor environment
 
@@ -28,11 +29,23 @@ for channel in channels:
 import ROOT
 from ROOT import RooWorkspace, RooMCStudy, RooFit, TFile, gDirectory,\
      RooDataSet, RooFormulaVar, RooConstVar, RooArgList, RooArgSet,\
-     RooMinuit, RooMinimizer
+     RooMinuit, RooMinimizer, RooRandom
 ROOT.gSystem.Load("libUWHiggshzg.so")
 pwd = gDirectory.GetPath()
 
+RooRandom.randomGenerator().SetSeed(int(time.clock()*1e9))
+
 int_lumi = 19.6*1000 #19.6/fb in /pb
+
+def calculate_median(var,dataset):
+    vals = []
+    for i in xrange(dataset.numEntries()):
+        set = dataset.get(i)        
+        vals.append(set.getRealValue(var.GetName()))
+        del set
+    vals.sort()
+    middle = len(vals)/2
+    return vals[middle]
 
 def prepare_truth_models(ws,cat,mass,channel,turnon,truth):    
     if channel in study_inputs:
@@ -254,10 +267,10 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
 def build_fitting_models(ws,cat,mass,order,turnon):
     #ws.var('Mzg').setBins(60000,'cache')
 
-    cs=['c%i_cat%i[-1e-6,1.10]'%(k+1,cat) for k in range(order)]
+    cs=['c%i_cat%i[5,-1e-6,10]'%(k+1,cat) for k in range(order)]
     config = ['Mzg',
-              'stepVal_cat%i[0.1,0,1]'%cat]
-    config.append('{'+','.join(['1.0']+cs)+'}')
+              'stepVal_cat%i[0.1,0,1.0]'%cat]
+    config.append('{c0_cat%[10],'+','.join(cs)+'}')
     ws.factory(
             'RooStepBernstein::RSBFitModelTruth_cat%i(%s)'%(cat,
                                                             ','.join(config))
@@ -355,8 +368,10 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                     toy_data_exp_erf
                     )
                 sigm_min = RooMinimizer(sigm_nll)
-                sigm_min.setPrintLevel(0)
-                sigm_min.simplex()
+                sigm_min.setPrintLevel(1)
+                sigm_min.minimize('Minuit2','scan')
+                sigm_min.minimize('Minuit2','simplex')                
+                migrad_out = sigm_min.migrad()                
                 migrad_out = sigm_min.migrad()
                 hesse_out  = sigm_min.hesse()
                 
@@ -380,14 +395,19 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                 
                 ws.var('pull_ROI_sigm_on_erfexp_%s_cat%i'%(channel,cat)).setVal(
                     fit_sigm_pull
-                    )
+                    )                
 
+                biasData.add(ws.set('biasVars_%s_cat%i'%(channel,cat)))
+
+                var = ws.var('pull_ROI_sigm_on_erfexp_%s_cat%i'%(channel,cat))
+
+                print 'cumulative median bias: %.3f'%calculate_median(var,biasData)
                 
+                var = None                
+
                 del sigm_min
                 del sigm_nll
                 del truth_exp_erf
-
-                biasData.add(ws.set('biasVars_%s_cat%i'%(channel,cat)))
 
             if turnon =='sigm' and truth =='pow':
                 truth_pow_erf = ws.pdf('MzgTruthModel_pow_erf_%s_cat%i'%(channel,cat))                
@@ -410,8 +430,10 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                     toy_data_pow_erf
                     )
                 sigm_min = RooMinimizer(sigm_nll)
-                sigm_min.setPrintLevel(0)
-                sigm_min.simplex()
+                sigm_min.setPrintLevel(1)
+                sigm_min.minimize('Minuit2','scan')
+                sigm_min.minimize('Minuit2','simplex')
+                migrad_out = sigm_min.migrad()                
                 migrad_out = sigm_min.migrad()
                 hesse_out  = sigm_min.hesse()                
 
@@ -438,6 +460,12 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                 print i, fit_sigm_norm, fit_sigm_err, true_ROI_yield_erfpow, fit_sigm_pull
 
                 biasData.add(ws.set('biasVars_%s_cat%i'%(channel,cat)))
+                
+                var = ws.var('pull_ROI_sigm_on_erfpow_%s_cat%i'%(channel,cat))
+
+                print 'cumulative median bias: %.3f'%calculate_median(var,biasData)
+                
+                var = None
                                 
                 del sigm_min
                 del sigm_nll                
@@ -466,8 +494,10 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                     toy_data_exp_sigm
                     )
                 gaus_min= RooMinimizer(gaus_nll)
-                gaus_min.setPrintLevel(0)
-                gaus_min.simplex()
+                gaus_min.setPrintLevel(1)
+                gaus_min.minimize('Minuit2','scan')
+                gaus_min.minimize('Minuit2','simplex')
+                migrad_out = gaus_min.migrad()                
                 migrad_out = gaus_min.migrad()
                 hesse_out  = gaus_min.hesse()
                 
@@ -494,6 +524,12 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                 print i,fit_erf_norm, fit_erf_err, true_ROI_yield_sigmexp, fit_erf_pull
 
                 biasData.add(ws.set('biasVars_%s_cat%i'%(channel,cat)))
+
+                var = ws.var('pull_ROI_erf_on_sigmerf_%s_cat%i'%(channel,cat))
+
+                print 'cumulative median bias: %.3f'%calculate_median(var,biasData)
+                
+                var = None
                 
                 del gaus_min
                 del gaus_nll    
@@ -520,8 +556,10 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                     toy_data_pow_sigm
                     )
                 gaus_min= RooMinimizer(gaus_nll)
-                gaus_min.setPrintLevel(0)
-                gaus_min.simplex()
+                gaus_min.setPrintLevel(1)
+                gaus_min.minimize('Minuit2','scan')
+                gaus_min.minimize('Minuit2','simplex')
+                migrad_out = gaus_min.migrad()                
                 migrad_out = gaus_min.migrad()
                 hesse_out  = gaus_min.hesse()                                     
             
@@ -549,6 +587,12 @@ def gen_data_and_fit(ws, iterations,cat, mass,channel,turnon,truth):
                     )
                 
                 biasData.add(ws.set('biasVars_%s_cat%i'%(channel,cat)))
+
+                var = ws.var('pull_ROI_erf_on_sigmpow_%s_cat%i'%(channel,cat))
+
+                print 'cumulative median bias: %.3f'%calculate_median(var,biasData)
+                
+                var = None
                 
                 #getattr(ws,'import')(toy_data_exp_sigm)
                 #getattr(ws,'import')(toy_data_pow_sigm)
@@ -576,7 +620,7 @@ if __name__ == '__main__':
     bs.factory("weight[0]")
     bs.factory("Mzg[100,180]")
     bs.var("Mzg").setRange("ROI",mass-1.5,mass+1.5)
-    bs.var("Mzg").setBins(60000,"cache")
+    bs.var("Mzg").setBins(50000,"cache")
     bs.factory("Mz[0]")
     #bs.factory("dMzg[0,25]")
     #bs.factory("dMz[0,25]")
