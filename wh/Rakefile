@@ -51,24 +51,17 @@ end
 ##  targets:
 ##     fakerates - measure all fakerates
 ################################################################################
-# Output directory
-$frfit_dir = "results/#{$jobid}/fakerate_fits"
-directory $frfit_dir
-
-file "#{$frfit_dir}/charge_flip_prob_map.root" => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root", "baseSelections.py"] do |t|
-  sh "python make_charge_flip_probalility_map.py #{$frfit_dir}/charge_flip_prob_map.root charge/flipped_electrons charge/matched_electrons #{t.prerequisites[0]}"
-end
 
 # Map which samples need to be analyzed by which analyzer
 fr_analyzer_sample_map = Hash[
+  "FakeRatesEE.py"  => samples['data_ee'] + samples["zjets"],# + samples['diboson'],
   "FakeRatesMM.py"  => samples['diboson'] + samples['data_mm'],
   "FakeRatesEM.py"  => samples['diboson'] + samples['data_em'],
   "FakeRatesMMT.py" => samples['diboson'] + samples['data_mm'],
   "FakeRatesMMM.py" => samples['diboson'] + samples['data_mm'],
-  "FakeRatesEE.py"  => samples['data_ee'] + samples["zjets"]# + samples['diboson'],
+  "ChargeFlipProbabilityEE" => samples['zjets'],
 ]
 
-puts "CHENNESO"
 
 fr_common_dependencies = Array["baseSelections.py"]
 # Create an empty placeholder to enable tab-completion
@@ -76,19 +69,12 @@ task :fakerates => []
 #check if base class or some selections has changed
 fr_analyzer_sample_map.each do |analyzer, the_samples|
   deps = fr_common_dependencies
-  if analyzer == "FakeRatesEE.py"
-    deps << "#{$frfit_dir}/charge_flip_prob_map.root"
-  end
-  puts analyzer
+  ## if analyzer == "FakeRatesEE.py"
+  ##   deps << "#{$frfit_dir}/charge_flip_prob_map.root"
+  ## end
+  ## puts analyzer
   file analyzer => deps do |t|
-    puts "investigating..."
-    puts t.investigation
-    sh "touch #{t.name}"
   end
-end
-
-task :charge_flip_xcheck => get_analyzer_results("FakeRatesEE.py", fr_analyzer_sample_map["FakeRatesEE.py"]) do |t|
-  sh 'python Charge_flip_control_plots.py' #just because I don't know how to include it
 end
 
 # Create tasks for each sample + analyzer
@@ -97,22 +83,19 @@ fr_analyzer_sample_map.each do |analyzer, the_samples|
   get_analyzer_results(analyzer, the_samples).each do |result|
     results << result
   end
-  if analyzer == "FakeRatesEE.py"
-    results << :charge_flip_xcheck
-  end
   task :fakerates => results do |t|
-    puts "investigating..."
-    puts t.investigation
   end
   #end
 end
-
 
 ################################################################################
 ## Recipes to fit fake rates
 ##  targets:
 ##     fits
 ################################################################################
+# Output directory
+$frfit_dir = "results/#{$jobid}/fakerate_fits"
+directory $frfit_dir
 
 # Common fit functions
 exponential = "scale*TMath::Exp(x*decay)+offset"
@@ -204,7 +187,7 @@ fr_fits = Hash[
   ],
 
   #EE Sample
-  "ee_wjetsNoZmass_pt10_mvaidiso03_e2JetPt" => Hash[
+  "ee_wjetsNoZmass_pt10_mvaidiso03_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -214,7 +197,7 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "ee_qcd_pt10_mvaidiso03_e2JetPt" => Hash[
+  "ee_qcd_pt10_mvaidiso03_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -224,7 +207,7 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "ee_wjetsNoZmass_pt10_h2taucuts_e2JetPt" => Hash[
+  "ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -234,7 +217,7 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "ee_wjetsNoZmass_pt10_h2taucuts_e2Pt" => Hash[
+  "ee_wjetsNoZmass_pt10_h2taucuts_electronPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -244,7 +227,7 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "ee_qcd_pt10_h2taucuts_e2JetPt" => Hash[
+  "ee_qcd_pt10_h2taucuts_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -255,7 +238,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
 
-  "ee_wjetsNoZmass_pt20_mvaidiso03_e2JetPt" => Hash[
+  "ee_wjetsNoZmass_pt20_mvaidiso03_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -265,7 +248,7 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "ee_qcd_pt20_mvaidiso03_e2JetPt" => Hash[
+  "ee_qcd_pt20_mvaidiso03_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -275,7 +258,7 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "ee_wjetsNoZmass_pt20_h2taucuts_e2JetPt" => Hash[
+  "ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -285,7 +268,7 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "ee_wjetsNoZmass_pt20_h2taucuts_e2Pt" => Hash[
+  "ee_wjetsNoZmass_pt20_h2taucuts_electronPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -295,7 +278,7 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "ee_qcd_pt20_h2taucuts_e2JetPt" => Hash[
+  "ee_qcd_pt20_h2taucuts_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -530,6 +513,12 @@ fr_fits.each do |fit, fit_info|
 
 end
 
+file "#{$frfit_dir}/charge_flip_prob_map.root" => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root"] do |t|
+  sh "python make_charge_flip_probalility_map.py #{$frfit_dir}/charge_flip_prob_map.root charge/flipped_electrons charge/matched_electrons #{t.prerequisites[0]}"
+end
+
+task :fits => ["#{$frfit_dir}/charge_flip_prob_map.root"]
+
 ################################################################################
 ## Recipes to analyze WH
 ##  targets:
@@ -590,6 +579,7 @@ task :emt => emt_results
 task :eet => eet_results + eet_fake_rates
 task :mmcontrol => get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm'])
 task :emcontrol => get_analyzer_results("ControlEM.py", samples['ewk'] + samples['data_em'])
+task :eecontrol => get_analyzer_results("ControlZEE.py", samples['ewk'] + samples['data_ee']) + ["#{$frfit_dir}/charge_flip_prob_map.root"] + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root")
 
 # IF the FR fits change, make sure we re-run the analyses
 file "WHAnalyzeEMT.py" => [ 
@@ -608,7 +598,7 @@ file "WHAnalyzeMMT.py" => [
   "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
   sh "touch #{t.name}"
 end
-file "WHAnalyzeEET.py" => [ "#{$frfit_dir}/ee_wjetsNoZmass_pt20_mvaidiso01_e2JetPt-data_ee.root", "#{$frfit_dir}/ee_wjetsNoZmass_pt10_mvaidiso01_e2JetPt-data_ee.root", "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt-data_mm.root"] do |t|
+file "WHAnalyzeEET.py" => [ "#{$frfit_dir}/ee_wjetsNoZmass_pt20_mvaidiso01_electronJetPt-data_ee.root", "#{$frfit_dir}/ee_wjetsNoZmass_pt10_mvaidiso01_electronJetPt-data_ee.root", "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt-data_mm.root"] do |t|
   sh "touch #{t.name}"
 end
 
