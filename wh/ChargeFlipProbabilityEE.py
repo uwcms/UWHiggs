@@ -28,6 +28,9 @@ import array
 
 barrelThr = 1.479
 accThr    = 2.5
+binsEndcap = 5
+binsBarrel = 4
+ptbins     = [10.,30.,50.,130.]
 
 class ChargeFlipProbabilityEE(MegaBase):
     tree = 'ee/final/Ntuple'
@@ -42,12 +45,15 @@ class ChargeFlipProbabilityEE(MegaBase):
 
     def begin(self):
         # Charge mis-ID measurements
-        binsEndcap = 5
-        binsBarrel = 10
         etabins    = [(i*barrelThr/binsBarrel) for i in range(binsBarrel+1)]+[ (barrelThr+i*(accThr-barrelThr)/binsEndcap) for i in range(1,binsEndcap+1)] 
-        ptbins     = [10.,40.,130.]
         self.book('charge', 'flipped_electrons', 'Flipped electrons distribution; |#eta|; p_{T} [GeV]',     len(etabins)-1, array.array('f',etabins), len(ptbins) -1, array.array('f',ptbins), type=ROOT.TH2F)
         self.book('charge', 'matched_electrons', 'Gen-matched electrons distribution; |#eta|; p_{T} [GeV]', len(etabins)-1, array.array('f',etabins), len(ptbins) -1, array.array('f',ptbins), type=ROOT.TH2F)
+        self.book('charge', 'pt_in_barrel', 'Gen-matched pt; p_{T} [GeV]', 130,0.,130.)
+        self.book('charge', 'pt_in_endcap', 'Gen-matched pt; p_{T} [GeV]', 130,0.,130.)
+        self.book('charge', 'os_trkMass', '', 130,0.,130.)
+        self.book('charge', 'ss_trkMass', '', 130,0.,130.)
+        ## self.book('charge', 'trkMass_endcap', '', 130,0.,130.)
+        ## self.book('charge', 'trkMass_barrel', '', 130,0.,130.)
             
         #print self.histograms.keys()
 
@@ -69,12 +75,24 @@ class ChargeFlipProbabilityEE(MegaBase):
             if not preselection(row):
                 continue
 
-            if 'Zjets' in os.environ['megatarget']:
-                for el in ['e1','e2']:
-                    pdgid = getattr(row,el+'GenPdgId')
-                    histos['charge/matched_electrons'].Fill( getattr(row,el+'AbsEta'), getattr(row,el+'Pt') )
-                    if pdgid == -999 and row.e1_e2_SS: #FIXME make the electrons matched without caring about the charge   #e- --> -11; e+ --> 11 MISMEASURED ELECTRON # getattr(row,el+'Charge')*(11) == 
-                        histos['charge/flipped_electrons'].Fill( getattr(row,el+'AbsEta'), getattr(row,el+'Pt') )
+            if row.e1GenPdgId != -999 and row.e2GenPdgId != -999:
+                if row.e1_e2_SS:
+                    histos['charge/ss_trkMass'].Fill(row.e1_e2_Mass)
+                else:
+                    histos['charge/os_trkMass'].Fill(row.e1_e2_Mass)
+                    
+            for el in ['e1','e2']:
+                pdgid = getattr(row,el+'GenPdgId')
+                if pdgid != -999:
+                    eta = getattr(row,el+'AbsEta')
+                    pt  = getattr(row,el+'Pt')
+                    if eta < barrelThr:
+                        histos['charge/pt_in_barrel'].Fill(pt)
+                    elif eta < accThr:
+                        histos['charge/pt_in_endcap'].Fill(pt)
+                    histos['charge/matched_electrons'].Fill( eta, pt )
+                    if getattr(row,el+'Charge')*(11) == pdgid: ##e- --> -11; e+ --> 11 MISMEASURED ELECTRON # getattr(row,el+'Charge')*(11) == 
+                        histos['charge/flipped_electrons'].Fill( eta, pt )
 
     def finish(self):
         self.write_histos()
