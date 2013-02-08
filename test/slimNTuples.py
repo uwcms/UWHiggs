@@ -10,7 +10,7 @@ from hashlib import md5
 import time
 from progressbar import ETA, ProgressBar, FormatLabel, Bar
 
-if len(sys.argv) < 1 or '-h' in sys.argv or '--help' in sys.argv:
+if len(sys.argv) < 3 or '-h' in sys.argv or '--help' in sys.argv:
     print 'Usage ./slimNTuples other_branch_to_keep.list /hdfs/dir/with/files/to/be/skimmed'
     sys.exit(1)
 
@@ -33,7 +33,7 @@ stdout, stderr = proc.communicate()
 exitc  = proc.wait()
 regex = re.compile(r'row\.\w+')
 usedBranches = list( set([i.split('.')[-1] for i in regex.findall(stdout)]))
-
+#print usedBranches
 #look for more complex statements (getVar and getattr)
 proc = subprocess.Popen("grep getattr %s/src/UWHiggs/?h/*.py | grep row" % (os.environ['CMSSW_BASE']), shell=True, stdout=subprocess.PIPE)
 stdout, stderr = proc.communicate()
@@ -57,7 +57,7 @@ usedBranches.extend([line.strip() for line in open(branches_to_keep, 'r')])
 JOBID   = filter(lambda x: x is not '', hdfs_path.split('/'))[-1]
 SAMPLES = [i.split('/')[-1] for i in glob(hdfs_path+'/*')]
 ##SAMPLES = ['VH_120_HWW' , 'VH_130_HWW', 'VH_H2Tau_M-120', 'VH_H2Tau_M-130']
-print SAMPLES
+##print SAMPLES
 sample_tfile = glob('/'.join([hdfs_path,SAMPLES[0],'','*.root']))[0]
 print 'Using %s as sample file to find trees and matching branches...' % sample_tfile
 
@@ -110,7 +110,6 @@ for tree_name in forest:
         matching_branches = [branch.GetName() for branch in tree.GetListOfBranches()]
         tot_branches     += len(matching_branches)
         matching_branches = filter(match, matching_branches)
-##        matching_branches.extend([branch.GetName() for branch in tree.GetListOfBranches() if branch.GetName().find('Gen') is not -1 ])
         kept_branches    += len(matching_branches)
         with open(listsdir+'/%s.list' % tree_name.replace('/','_'),'w') as f:
             f.write('\n'.join(matching_branches))
