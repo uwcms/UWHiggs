@@ -11,14 +11,14 @@ import time
 from progressbar import ETA, ProgressBar, FormatLabel, Bar
 
 if len(sys.argv) < 1 or '-h' in sys.argv or '--help' in sys.argv:
-    print 'Usage ./slimNTuples /hdfs/dir/with/files/to/be/skimmed'
+    print 'Usage ./slimNTuples other_branch_to_keep.list /hdfs/dir/with/files/to/be/skimmed'
     sys.exit(1)
 
-#branches_to_keep = sys.argv[-2]
+branches_to_keep = sys.argv[-2]
 hdfs_path        = sys.argv[-1]
-#if not os.path.isfile(branches_to_keep):
-#    print "Error! %s: no such file" % branches_to_keep
-#    sys.exit(1)
+if not os.path.isfile(branches_to_keep):
+    print "Error! %s: no such file" % branches_to_keep
+    sys.exit(1)
 
 if not os.path.isdir(hdfs_path):
     print "Error! %s: no such directory" % hdfs_path
@@ -52,11 +52,15 @@ otherObjs = list( set(otherObjs) )
 #check that our starred branches don't match any non starred, in case of match discard the non starred
 usedBranches = filter(lambda x: not any( ( fnmatch(x,y) for y in otherObjs) ), usedBranches) #use generator to be faster
 usedBranches.extend(otherObjs)
+usedBranches.extend([line.strip() for line in open(branches_to_keep, 'r')])
 
 JOBID   = filter(lambda x: x is not '', hdfs_path.split('/'))[-1]
 SAMPLES = [i.split('/')[-1] for i in glob(hdfs_path+'/*')]
+##SAMPLES = ['VH_120_HWW' , 'VH_130_HWW', 'VH_H2Tau_M-120', 'VH_H2Tau_M-130']
+print SAMPLES
 sample_tfile = glob('/'.join([hdfs_path,SAMPLES[0],'','*.root']))[0]
 print 'Using %s as sample file to find trees and matching branches...' % sample_tfile
+
 
 import ROOT
 def GetContent(dir):
@@ -106,9 +110,11 @@ for tree_name in forest:
         matching_branches = [branch.GetName() for branch in tree.GetListOfBranches()]
         tot_branches     += len(matching_branches)
         matching_branches = filter(match, matching_branches)
+##        matching_branches.extend([branch.GetName() for branch in tree.GetListOfBranches() if branch.GetName().find('Gen') is not -1 ])
         kept_branches    += len(matching_branches)
         with open(listsdir+'/%s.list' % tree_name.replace('/','_'),'w') as f:
             f.write('\n'.join(matching_branches))
+        
 
 compression_ratio = float(kept_branches) / float(tot_branches)
 
@@ -157,13 +163,20 @@ for sample in SAMPLES:
 
     output_dir = 'srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN=/hdfs/store/user/'+'/'.join([os.environ['USER'],JOBID+'_light',sample])    
     submit_dir = '/'.join(['','scratch',os.environ['USER'],JOBID,sample])
+##    run+="""mkdir -p """+submit_dir+"""/dags
+##farmoutAnalysisJobs  --infer-cmssw-path \"--submit-dir="""+submit_dir+"""/submit\" \
+##\"--output-dag-file="""+submit_dir+"""/dags/dag\" \
+##\"--output-dir="""+output_dir+"""\" \
+##--input-files-per-job="""+str(int(ifile))+""" --shared-fs \"--input-dir="""+'/'.join([hdfs_path,sample,''])+"""\" --fwklite  \
+##"""+'-'.join([JOBID,sample])+""" run_slim_and_merge.sh """+str(listsdir)+""" '$outputFileName' '$inputFileNames' \n """
+    input_path=hdfs_path[5:]
     run+="""mkdir -p """+submit_dir+"""/dags
-farmoutAnalysisJobs --infer-cmssw-path \"--submit-dir="""+submit_dir+"""/submit\" \
+farmoutAnalysisJobs  --infer-cmssw-path \"--submit-dir="""+submit_dir+"""/submit\" \
 \"--output-dag-file="""+submit_dir+"""/dags/dag\" \
 \"--output-dir="""+output_dir+"""\" \
---input-files-per-job="""+str(int(ifile))+""" --shared-fs \"--input-dir="""+'/'.join([hdfs_path,sample,''])+"""\" --fwklite  \
+--input-files-per-job="""+str(int(ifile))+""" --shared-fs \"--input-dir=root://cmsxrootd.hep.wisc.edu/"""+'/'.join([input_path,sample,''])+"""\" --fwklite  \
 """+'-'.join([JOBID,sample])+""" run_slim_and_merge.sh """+str(listsdir)+""" '$outputFileName' '$inputFileNames' \n """
-##        farmoutAnalysisJobs --infer-cmssw-path \"--submit-dir="""+str('/'.join([listsdir,sample]))+"""submit\" \
+####        farmoutAnalysisJobs --infer-cmssw-path \"--submit-dir="""+str('/'.join([listsdir,sample]))+"""submit\" \
 ##        \"--output-dag-file="""+str('/'.join([listsdir,sample]))+"""dags/dag\" \
 ##        \"--output-dir=srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN="""+str('/'.join([hdfs_path,sample]))+"""\" \
 ##        --input-files-per-job="""+str(ifile)+""" --shared-fs \"--input-dir="""+str('/'.join([hdfs_path,sample]))+"""\" \
