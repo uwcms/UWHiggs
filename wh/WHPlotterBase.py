@@ -17,7 +17,7 @@ from FinalStateAnalysis.PlotTools.Plotter import Plotter
 from FinalStateAnalysis.PlotTools.BlindView import BlindView
 from FinalStateAnalysis.PlotTools.PoissonView import PoissonView
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
-
+import os
 import math
 
 
@@ -123,8 +123,9 @@ class QCDCorrectionView(object):
 
 
 class WHPlotterBase(Plotter):
-    def __init__(self, files, lumifiles, outputdir, blind=True):
+    def __init__(self, files, lumifiles, outputdir):
         blinder = None
+        blind   = 'blind' not in os.environ or os.environ['blind'] == 'YES'
         self.blind = blind
         if blind:
             # Don't look at the SS all pass region

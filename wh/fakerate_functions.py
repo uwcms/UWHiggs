@@ -62,6 +62,29 @@ lowpt_e_fr = build_roofunctor(
     'efficiency'
 )
 
+highpt_ee_fr = build_roofunctor(
+    frfit_dir + '/ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+lowpt_ee_fr = build_roofunctor(
+    frfit_dir + '/ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+highpt_ee_qcd_fr = build_roofunctor(
+    frfit_dir + '/ee_qcd_pt20_h2taucuts_electronJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+lowpt_ee_qcd_fr = build_roofunctor(
+    frfit_dir + '/ee_qcd_pt10_h2taucuts_electronJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
 
 ##################
 ## 1D Taus Func ##
@@ -79,17 +102,17 @@ tau_qcd_fr = tau_fr ## build_roofunctor(
 ##     'efficiency'
 ## )
 
-highpt_ee_fr = build_roofunctor(
-    frfit_dir + '/ee_wjets_pt20_mvaidiso01_e2JetPt-data_ee.root',
-    'fit_efficiency', # workspace name
-    'efficiency'
-)
+## highpt_ee_fr = build_roofunctor(
+##     frfit_dir + '/ee_wjets_pt20_mvaidiso01_e2JetPt-data_ee.root',
+##     'fit_efficiency', # workspace name
+##     'efficiency'
+## )
 
-lowpt_ee_fr = build_roofunctor(
-    frfit_dir + '/ee_wjets_pt10_mvaidiso01_e2JetPt-data_ee.root',
-    'fit_efficiency', # workspace name
-    'efficiency'
-)
+## lowpt_ee_fr = build_roofunctor(
+##     frfit_dir + '/ee_wjets_pt10_mvaidiso01_e2JetPt-data_ee.root',
+##     'fit_efficiency', # workspace name
+##     'efficiency'
+## )
 
 
 # Get 2D fake rates
@@ -138,7 +161,7 @@ mu_fr_qcd_2d_b = TwoDimFakeRate(
     get_view('data'), get_view('WZ*'), get_view('ZZ*'))
 
 
-e_charge_flip      = make_corrector_from_th2(frfit_dir+"/chare_flip_prob_map.root", "efficiency_map")         
-e_charge_flip_up   = make_corrector_from_th2(frfit_dir+"/chare_flip_prob_map.root", "efficiency_map_statUp")  
-e_charge_flip_down = make_corrector_from_th2(frfit_dir+"/chare_flip_prob_map.root", "efficiency_map_statDown")
+e_charge_flip      = make_corrector_from_th2(frfit_dir+"/charge_flip_prob_map.root", "efficiency_map")         
+e_charge_flip_up   = make_corrector_from_th2(frfit_dir+"/charge_flip_prob_map.root", "efficiency_map_statUp")  
+e_charge_flip_down = make_corrector_from_th2(frfit_dir+"/charge_flip_prob_map.root", "efficiency_map_statDown")
 
