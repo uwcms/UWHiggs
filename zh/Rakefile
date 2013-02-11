@@ -374,6 +374,16 @@ task :data_only_eeem => get_analyzer_results("ZHAnalyzeEEEM.py", samples['data_e
 task :data_only_mmtt => get_analyzer_results("ZHAnalyzeMMTT.py", samples['data_mm'])
 task :data_only_eett => get_analyzer_results("ZHAnalyzeEETT.py", samples['data_ee'])
 
+task :abdollah_sync_mmmt => ["results/#{$jobid}/ZHAnalyzeMMMT/ZH_AbdollahSync.root"]
+task :abdollah_sync_eemt => ["results/#{$jobid}/ZHAnalyzeEEMT/ZH_AbdollahSync.root"]
+task :abdollah_sync_mmet => ["results/#{$jobid}/ZHAnalyzeMMET/ZH_AbdollahSync.root"]
+task :abdollah_sync_eeet => ["results/#{$jobid}/ZHAnalyzeEEET/ZH_AbdollahSync.root"]
+
+task :abdollah_sync_mmem => ["results/#{$jobid}/ZHAnalyzeMMEM/ZH_AbdollahSync.root"]
+task :abdollah_sync_eeem => ["results/#{$jobid}/ZHAnalyzeEEEM/ZH_AbdollahSync.root"]
+task :abdollah_sync_mmtt => ["results/#{$jobid}/ZHAnalyzeMMTT/ZH_AbdollahSync.root"]
+task :abdollah_sync_eett => ["results/#{$jobid}/ZHAnalyzeEETT/ZH_AbdollahSync.root"]
+
 
 #A Task to dominate all...
 task :analyzezh => [ :mmmt, :eemt, :mmet, :eeet, :mmem, :eeem, :mmtt, :eett] do
@@ -382,6 +392,9 @@ end
 
 task :analyzezh_data => [ :data_only_mmmt, :data_only_eemt, :data_only_mmet, :data_only_eeet, :data_only_mmem, :data_only_eeem, :data_only_mmtt, :data_only_eett] do
   puts "called analyzezh_data task from local rakefile"
+end
+
+task :abdollah_sync => [:abdollah_sync_mmmt, :abdollah_sync_eemt, :abdollah_sync_mmet, :abdollah_sync_eeet,  :abdollah_sync_mmem, :abdollah_sync_eeem,  :abdollah_sync_mmtt, :abdollah_sync_eett] do
 end
 
 ################################################################################
