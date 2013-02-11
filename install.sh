@@ -21,6 +21,9 @@ echo "Checking out FSA dependencies"
 pushd FinalStateAnalysis/recipe
 LUMI=1 LIMITS=1 PATPROD=0 ./recipe.sh
 
+echo "Deleting unneeded PAT dependencies"
+FORCENUKE=1 ./nuke_pat_tools.sh
+
 echo "Manually creating FinalStateAnalysis python symlinks"
 ./symlink_python.sh
 
