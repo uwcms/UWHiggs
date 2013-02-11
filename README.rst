@@ -1,7 +1,7 @@
-University of Wisconsin CMS Higgs Analysis
-==========================================
+University of Wisconsin (and friends) CMS Higgs Analyses
+========================================================
 
-Contains final plotting/analysis code for UW H→ττ analyses.
+Contains final plotting/analysis code for UW Higgs analyses.
 
 Installation
 ------------
