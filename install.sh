@@ -19,6 +19,7 @@ fi
 
 echo "Checking out FSA dependencies"
 pushd FinalStateAnalysis/recipe
+source environment.sh
 LUMI=1 LIMITS=1 PATPROD=0 ./recipe.sh
 
 echo "Deleting unneeded PAT dependencies"
