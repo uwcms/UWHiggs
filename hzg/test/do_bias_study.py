@@ -267,10 +267,11 @@ def prepare_truth_models(ws,cat,mass,channel,turnon,truth):
 def build_fitting_models(ws,cat,mass,order,turnon):
     #ws.var('Mzg').setBins(60000,'cache')
 
-    cs=['c%i_cat%i[5,-1e-6,10]'%(k+1,cat) for k in range(order)]
+    #cs=['c%i_cat%i[5,-50,50]'%(k+1,cat) for k in range(order)]
+    c2s = ['prod::csqr%i_cat%i(c%i_cat%i[5,0,30],c%i_cat%i)'%(k+1,cat,k+1,cat,k+1,cat) for k in range(order)]
     config = ['Mzg',
               'stepVal_cat%i[0.1,0,1.0]'%cat]
-    config.append('{c0_cat%[10],'+','.join(cs)+'}')
+    config.append('{c0_cat%[15],'+','.join(c2s)+'}')
     ws.factory(
             'RooStepBernstein::RSBFitModelTruth_cat%i(%s)'%(cat,
                                                             ','.join(config))
@@ -620,7 +621,7 @@ if __name__ == '__main__':
     bs.factory("weight[0]")
     bs.factory("Mzg[100,180]")
     bs.var("Mzg").setRange("ROI",mass-1.5,mass+1.5)
-    bs.var("Mzg").setBins(50000,"cache")
+    bs.var("Mzg").setBins(40000,"cache")
     bs.factory("Mz[0]")
     #bs.factory("dMzg[0,25]")
     #bs.factory("dMz[0,25]")
