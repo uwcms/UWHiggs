@@ -16,6 +16,7 @@ if len(sys.argv) < 3 or '-h' in sys.argv or '--help' in sys.argv:
 
 branches_to_keep = sys.argv[-2]
 hdfs_path        = sys.argv[-1]
+user             = os.environ['USER']
 if not os.path.isfile(branches_to_keep):
     print "Error! %s: no such file" % branches_to_keep
     sys.exit(1)
@@ -93,7 +94,7 @@ FindTrees( tfile, '', forest )
 
 timestamp = str(int(time.mktime(time.gmtime())))
 #listsdir  = '/scratch/taroni/%s' % timestamp
-listsdir = '/afs/hep.wisc.edu/cms/%s/%s' % (os.environ['USER'],timestamp)
+listsdir = '/afs/hep.wisc.edu/cms/%s/%s' % (user,timestamp)
 make_dir(listsdir)
 
 #define matching function, use generator to be faster (should stop at the first match)
@@ -140,7 +141,7 @@ files_dict   = dict( [(sample, glob('/'.join([hdfs_path,sample,'','*.root'])))  
 #                Bar('>')],
 #        maxval = tot_numfiles ).start()
 #    files_already_merged = 0
-run = 'source /afs/hep.wisc.edu/cms/taroni/newHiggs/src/FinalStateAnalysis/environment.sh\n'
+run = 'source %s/environment.sh\n' % os.environ['fsa']
 for sample in SAMPLES:
     print 'Merging %s...' % sample
     sample_dir = '/'.join(['','scratch',os.environ['USER'],'data',JOBID,sample])
@@ -160,27 +161,16 @@ for sample in SAMPLES:
 #    job_file.close()
 ##devo fare un file che contenga i file di input per tutti i sample?
 
-    output_dir = 'srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN=/hdfs/store/user/'+'/'.join([os.environ['USER'],JOBID+'_light',sample])    
-    submit_dir = '/'.join(['','scratch',os.environ['USER'],JOBID,sample])
-##    run+="""mkdir -p """+submit_dir+"""/dags
-##farmoutAnalysisJobs  --infer-cmssw-path \"--submit-dir="""+submit_dir+"""/submit\" \
-##\"--output-dag-file="""+submit_dir+"""/dags/dag\" \
-##\"--output-dir="""+output_dir+"""\" \
-##--input-files-per-job="""+str(int(ifile))+""" --shared-fs \"--input-dir="""+'/'.join([hdfs_path,sample,''])+"""\" --fwklite  \
-##"""+'-'.join([JOBID,sample])+""" run_slim_and_merge.sh """+str(listsdir)+""" '$outputFileName' '$inputFileNames' \n """
+    output_jid = JOBID+'_light'
+    output_dir = 'srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN=/hdfs/store/user/'+'/'.join([os.environ['USER'],output_jid,sample])    
+    submit_dir = '/'.join(['','scratch',os.environ['USER'],output_jid,sample])
     input_path=hdfs_path[5:]
     run+="""mkdir -p """+submit_dir+"""/dags
 farmoutAnalysisJobs  --infer-cmssw-path \"--submit-dir="""+submit_dir+"""/submit\" \
 \"--output-dag-file="""+submit_dir+"""/dags/dag\" \
 \"--output-dir="""+output_dir+"""\" \
 --input-files-per-job="""+str(int(ifile))+""" --shared-fs \"--input-dir=root://cmsxrootd.hep.wisc.edu/"""+'/'.join([input_path,sample,''])+"""\" --fwklite  \
-"""+'-'.join([JOBID,sample])+""" run_slim_and_merge.sh """+str(listsdir)+""" '$outputFileName' '$inputFileNames' \n """
-####        farmoutAnalysisJobs --infer-cmssw-path \"--submit-dir="""+str('/'.join([listsdir,sample]))+"""submit\" \
-##        \"--output-dag-file="""+str('/'.join([listsdir,sample]))+"""dags/dag\" \
-##        \"--output-dir=srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN="""+str('/'.join([hdfs_path,sample]))+"""\" \
-##        --input-files-per-job="""+str(ifile)+""" --shared-fs \"--input-dir="""+str('/'.join([hdfs_path,sample]))+"""\" \
-##        slimNTuples makeQuad=1 makeTNP=1 makeH2Tau=0 makeTrilepton=1 make4L=1 \
-##        rerunFSA=1 noPhotons=1 'inputFiles=$inputFileNames' 'outputFile=$outputFileName'"""
+"""+'-'.join([output_jid,sample])+""" run_slim_and_merge.sh """+str(listsdir)+""" '$outputFileName' '$inputFileNames' \n """
 
 run_file = open("slimAndMergeNtuples"+JOBID+".run","w")
 run_file.write(run)
