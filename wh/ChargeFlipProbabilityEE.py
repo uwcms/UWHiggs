@@ -26,7 +26,7 @@ import os
 import ROOT
 import array
 
-barrelThr = 1.479
+barrelThr = 1.48
 accThr    = 2.5
 binsEndcap = 5
 binsBarrel = 4
