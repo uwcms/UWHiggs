@@ -12,8 +12,9 @@ import os
 import ROOT
 import sys
 import WHPlotterBase
+from WHPlotterBase import make_styler
 
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 class WHPlotterEET(WHPlotterBase.WHPlotterBase):
     def __init__(self, files, lumifiles, outputdir):
@@ -34,6 +35,7 @@ if __name__ == "__main__":
         'WZJetsTo3LNu*',
         'ZZ*',
         'VH*',
+        'WW*',
         'TTplusJets_madgraph',
         "data_DoubleEl*",
     ]
@@ -56,14 +58,14 @@ if __name__ == "__main__":
     ###########################################################################
 
     # Control Z->mumu + jet region
-    plotter.plot_mc_vs_data('os/p1p2f3', 'e1e2Mass', xaxis='m_{ee} (GeV)', xrange=(60, 120))
+    plotter.plot_mc_vs_data('os/p1p2f3', 'e1_e2_Mass', xaxis='m_{ee} (GeV)', xrange=(60, 120))
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-os-p1p2f3-e1e2Mass')
 
-    plotter.plot_mc_vs_data('os/p1p2f3/w3', 'e1e2Mass')
+    plotter.plot_mc_vs_data('os/p1p2f3/w3', 'e1_e2_Mass')
     plotter.save('mcdata-os-p1p2f3-w3-e1e2Mass')
 
-    plotter.plot_mc_vs_data('os/p1f2p3', 'e1e2Mass', xaxis='m_{ee} (GeV)', xrange=(60, 120))
+    plotter.plot_mc_vs_data('os/p1f2p3', 'e1_e2_Mass', xaxis='m_{ee} (GeV)', xrange=(60, 120))
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-os-p1f2p3-e1e2Mass')
 
@@ -82,24 +84,16 @@ if __name__ == "__main__":
     plotter.save('mcdata-os-p1p2p3-nvtx')
 
     # Make Z->mumu + tau jet control
-    def make_styler(color, format=None):
-        def unsuck(x):
-            x.SetFillStyle(0)
-            x.SetLineColor(color)
-            x.SetLineWidth(2)
-            if format:
-                x.format = format
-        return unsuck
 
     #
     # Makes Tau fr control plot
     #
-    zmm_weighted = plotter.plot('data', 'os/p1p2f3/w3/e1e2Mass',  'hist', styler=make_styler(2, 'hist'), xrange=(60, 120))
+    zmm_weighted = plotter.plot('data', 'os/p1p2f3/w3/e1_e2_Mass',  'hist', styler=make_styler(2, 'hist'), xrange=(60, 120))
     zmm_weighted.SetTitle("Zee + fake #tau_{h} est.")
     zmm_weighted.legendstyle='l'
     zmm_weighted.GetXaxis().SetTitle("m_{ee} (GeV)")
 
-    zmm_unweighted = plotter.plot('data', 'os/p1p2p3/e1e2Mass', 'same', styler=make_styler(1), xrange=(60, 120))
+    zmm_unweighted = plotter.plot('data', 'os/p1p2p3/e1_e2_Mass', 'same', styler=make_styler(1), xrange=(60, 120))
     zmm_unweighted.SetTitle("Zee observed")
     zmm_unweighted.SetTitle("Zee + fake #tau_{h} obs.")
     zmm_unweighted.legendstyle='pe'
@@ -112,27 +106,24 @@ if __name__ == "__main__":
     # Makes charge fr control plot
     #
 
-    zeet_os_weighted = plotter.plot('data', 'os/p1p2f3/c1/e1e2Mass',  'hist', styler=make_styler(2, 'hist'), xrange=(60, 120))
+    zeet_os_weighted = plotter.plot('data', 'os/p1p2f3/c1/e1_e2_Mass',  'hist', styler=make_styler(2, 'hist'), xrange=(60, 120))
     zeet_os_weighted.SetTitle("Ze^{#pm}e^{#mp} + fake #tau_{h} charge flip est.")
     zeet_os_weighted.legendstyle='l'
     zeet_os_weighted.GetXaxis().SetTitle("M_{ee} (GeV)")
 
-    zee_ss_unweighted = plotter.plot('data', 'ss/p1p2f3/e1e2Mass', 'same', styler=make_styler(1), xrange=(60, 120))
+    zee_ss_unweighted = plotter.plot('data', 'ss/p1p2f3/e1_e2_Mass', 'same', styler=make_styler(1), xrange=(60, 120))
     zee_ss_unweighted.SetTitle("Ze^{#pm}e^{#pm} + fake #tau_{h} obs.")
     zee_ss_unweighted.legendstyle='pe'
 
     plotter.add_legend([zeet_os_weighted, zee_ss_unweighted])
     plotter.add_cms_blurb(sqrts)
-    plotter.save('zmm-os-ss-charge-flip-control')
-
-    plotter.plot('data', 'os/p1p2p3/prescale', styler=make_styler(1))
-    plotter.save('zmm-os-prescale-check')
+    plotter.save('zee-os-ss-charge-flip-control')
 
     plotter.plot('Zjets_M50', 'os/p1p2f3/weight')
-    plotter.save('zmm-mc-event-weights')
+    plotter.save('zee-mc-event-weights')
     # Check MC weights
-    plotter.plot('Zjets_M50', 'os/p1p2f3/weight_nopu')
-    plotter.save('zmm-mc-event-weight_nopu')
+    ## plotter.plot('Zjets_M50', 'os/p1p2f3/weight_nopu')
+    ## plotter.save('zee-mc-event-weight_nopu')
 
 
     ###########################################################################
@@ -143,7 +134,7 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1f2p3-e1Pt')
 
-    plotter.plot_mc_vs_data('ss/p1f2p3', 'subMass', rebin=10, xaxis='m_{e2#tau} (GeV)', leftside=False)
+    plotter.plot_mc_vs_data('ss/p1f2p3', 'e2_t_Mass', rebin=10, xaxis='m_{e2#tau} (GeV)', leftside=False)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1f2p3-subMass')
 
@@ -151,15 +142,15 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1f2p3-w2-e1Pt')
 
-    plotter.plot_mc_vs_data('ss/f1p2p3', 'subMass', rebin=20, xaxis='m_{e2#tau} (GeV)', leftside=False)
+    plotter.plot_mc_vs_data('ss/f1p2p3', 'e2_t_Mass', rebin=20, xaxis='m_{e2#tau} (GeV)', leftside=False)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-f1p2p3-subMass')
 
-    plotter.plot_mc_vs_data('ss/f1p2p3/w1', 'subMass', rebin=20, xaxis='m_{e2#tau} (GeV)', leftside=False)
+    plotter.plot_mc_vs_data('ss/f1p2p3/w1', 'e2_t_Mass', rebin=20, xaxis='m_{e2#tau} (GeV)', leftside=False)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-f1p2p3-w1-subMass')
 
-    plotter.plot_mc_vs_data('ss/p1p2f3', 'e1e2Mass', rebin=10, xaxis='m_{ee} (GeV)', leftside=False)
+    plotter.plot_mc_vs_data('ss/p1p2f3', 'e1_e2_Mass', rebin=10, xaxis='m_{ee} (GeV)', leftside=False)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1p2f3-e1e2Mass')
 
@@ -193,15 +184,15 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-tAbsEta')
 
-    plotter.plot_final('subMass', 20, xaxis='m_{e_{2}#tau} (GeV)')
+    plotter.plot_final('e2_t_Mass', 20, xaxis='m_{e_{2}#tau} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass')
 
-    plotter.plot_final('e1tMass', 20, xaxis='m_{e_{1}#tau} (GeV)')
+    plotter.plot_final('e1_t_Mass', 20, xaxis='m_{e_{1}#tau} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-e1tMass')
 
-    plotter.plot_final('e1e2Mass', 20, xaxis='m_{ee} (GeV)')
+    plotter.plot_final('e1_e2_Mass', 20, xaxis='m_{ee} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-e1e2Mass')
 
@@ -209,11 +200,11 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-tAbsEta')
 
-    plotter.plot_final('e2Iso', 10)
+    plotter.plot_final('e2RelPFIsoDB', 10)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-e2Iso')
 
-    plotter.plot_final('metSig', 5)
+    plotter.plot_final('metSignificance', 5)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-metSig')
 
@@ -229,7 +220,7 @@ if __name__ == "__main__":
     shape_file = ROOT.TFile(
         os.path.join(outputdir, 'eet_shapes_%s.root' % period), 'RECREATE')
     shape_dir = shape_file.mkdir('eet')
-    plotter.write_shapes('subMass', 20, shape_dir)
+    plotter.write_shapes('e2_t_Mass', 20, shape_dir)
     shape_file.Close()
 
 
