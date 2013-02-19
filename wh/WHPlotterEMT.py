@@ -12,6 +12,7 @@ import os
 import ROOT
 import sys
 import WHPlotterBase
+from WHPlotterBase import make_styler
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
@@ -96,15 +97,6 @@ if __name__ == "__main__":
     #plotter.save('mcdata-os-p1p2p3-nvtx')
 
     # Make Z->mumu + tau jet control
-    def make_styler(color, format=None):
-        def unsuck(x):
-            x.SetFillStyle(0)
-            x.SetLineColor(color)
-            x.SetLineWidth(2)
-            x.SetMaximum(1.5*x.GetMaximum())
-            if format:
-                x.format = format
-        return unsuck
 
     weighted = plotter.plot('data', 'os/p1p2f3/w3/emMass',  'hist', rebin=20, styler=make_styler(2, 'hist'), xaxis='m_{e#mu} (GeV)')
     unweighted = plotter.plot('data', 'os/p1p2p3/emMass', 'same', rebin=20, styler=make_styler(1), xaxis='m_{e#mu} (GeV)')
