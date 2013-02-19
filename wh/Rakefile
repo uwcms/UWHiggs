@@ -562,24 +562,6 @@ mmt_debug   = get_analyzer_results("WHAnalyzeMMT.py", Array['Zjets_M50'] )
 task :mmt_dbg => mmt_debug
 eet_data    = get_analyzer_results("WHAnalyzeEET.py", samples['data_ee'])
 task :eet_data => eet_data + eet_fake_rates
-# Make the analyzer results also depend on the necessary fake rates
-#mmt_results.each do |result|
-  #mmt_fake_rates.each do |needed_fakerate|
-    #file result => needed_fakerate
-  #end
-#end
-#emt_results.each do |result|
-  #emt_fake_rates.each do |needed_fakerate|
-    #file result => needed_fakerate
-  #end
-#end
-
-task :mmt => mmt_results
-task :emt => emt_results
-task :eet => eet_results + eet_fake_rates
-task :mmcontrol => get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm'])
-task :emcontrol => get_analyzer_results("ControlEM.py", samples['ewk'] + samples['data_em'])
-task :eecontrol => get_analyzer_results("ControlZEE.py", samples['ewk'] + samples['data_ee']) + ["#{$frfit_dir}/charge_flip_prob_map.root"] + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root")
 
 # IF the FR fits change, make sure we re-run the analyses
 file "WHAnalyzeEMT.py" => [ 
@@ -598,9 +580,31 @@ file "WHAnalyzeMMT.py" => [
   "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
   sh "touch #{t.name}"
 end
-file "WHAnalyzeEET.py" => [ "#{$frfit_dir}/ee_wjetsNoZmass_pt20_mvaidiso01_electronJetPt-data_ee.root", "#{$frfit_dir}/ee_wjetsNoZmass_pt10_mvaidiso01_electronJetPt-data_ee.root", "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt-data_mm.root"] do |t|
+file "WHAnalyzeEET.py" => [ 
+  "#{$frfit_dir}/ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt.root",
+  "#{$frfit_dir}/ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt.root",
+  "#{$frfit_dir}/ee_qcd_pt20_h2taucuts_electronJetPt.root",
+  "#{$frfit_dir}/ee_qcd_pt10_h2taucuts_electronJetPt.root",
+  "#{$frfit_dir}/charge_flip_prob_map.root",
+  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root"] do |t|
   sh "touch #{t.name}"
 end
+
+task :mmt => mmt_results
+task :emt => emt_results
+task :eet => eet_results
+
+task :mmcontrol => get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm'])
+task :emcontrol => get_analyzer_results("ControlEM.py", samples['ewk'] + samples['data_em'])
+task :eecontrol => get_analyzer_results("ControlZEE.py", samples['ewk'] + samples['data_ee']) + ["#{$frfit_dir}/charge_flip_prob_map.root"] + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") 
+
+task :mmt_signal => get_analyzer_results("WHAnalyzeMMT.py", samples['signal'])
+task :emt_signal => get_analyzer_results("WHAnalyzeEMT.py", samples['signal'])
+task :eet_signal => get_analyzer_results("WHAnalyzeEET.py", samples['signal'])
+task :run_signal => [
+   :mmt_signal,
+   :emt_signal,
+   :eet_signal,]
 
 ################################################################################
 # Recipes to make data cards (plots come for free)
