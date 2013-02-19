@@ -53,6 +53,8 @@ The output histogram has the following structure:
 '''
 
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
+import os
+import ROOT
                         
 class WHAnalyzerBase(MegaBase):
     def __init__(self, tree, outfile, wrapper, **kwargs):
@@ -143,14 +145,30 @@ class WHAnalyzerBase(MegaBase):
         folder_str = '/'.join(folder + ('',))
         for attr in self.histo_locations[folder_str]:
             value = self.histograms[folder_str+attr]
-            if attr in self.hfunc:
-                result, weight = self.hfunc[attr](row, weight)
-                if weight is None:
-                    value.Fill( result ) #saves you when filling NTuples!
+            if isinstance(value, ROOT.TH2):
+                if attr in self.hfunc:
+                    result, weight = self.hfunc[attr](row, weight)
+                    r1, r2 = result
+                    if weight is None:
+                        value.Fill( r1, r2 ) #saves you when filling NTuples!
+                    else:
+                        value.Fill( r1, r2, weight )
                 else:
-                    value.Fill( result, weight )
+                    attr1, attr2 = tuple(attr.split('#'))
+                    v1 = getattr(row,attr1)
+                    v2 = getattr(row,attr2)
+                    value.Fill( v1, v2, weight ) if weight is not None else value.Fill( v1, v2 )
             else:
-                value.Fill( getattr(row,attr), weight ) if weight is not None else value.Fill( getattr(row,attr) )
+                if attr in self.hfunc:
+                    result, weight = self.hfunc[attr](row, weight)
+                    if weight is None:
+                        value.Fill( result ) #saves you when filling NTuples!
+                    else:
+                        value.Fill( result, weight )
+                else:
+                    value.Fill( getattr(row,attr), weight ) if weight is not None else value.Fill( getattr(row,attr) )
+
+                    
         return None
 
     def begin(self):
@@ -162,7 +180,7 @@ class WHAnalyzerBase(MegaBase):
             # Each of the weight subfolders
             for weight_folder in weight_folders:
                 self.book_histos("/".join(base_folder + (weight_folder,)))
-
+           
         # Add WZ control region
         self.book_histos('ss/p1p2p3_enhance_wz')
         # Where second light lepton fails
@@ -173,6 +191,8 @@ class WHAnalyzerBase(MegaBase):
         # ss/p1p2p3
         self.book_histos('os/p1p2p3/c1')
         self.book_histos('os/p1p2f3/c1')
+        self.book_histos('os/p1p2p3/c2')
+        self.book_histos('os/p1p2f3/c2')
         for key in self.histograms:
             charpos  = key.rfind('/')
             location = key[ : charpos]+'/'
@@ -260,15 +280,14 @@ class WHAnalyzerBase(MegaBase):
 
                 if not sign_result and obj1_id_result and obj2_id_result:
                     # Object 1 can only flip if it is OS with the tau
-                    if self.obj1_obj3_SS(row):
-                        charge_flip_prob = self.obj1_charge_flip(row)
-                        if charge_flip_prob:
-                            charge_flip_prob = charge_flip_prob/(1. - charge_flip_prob)
+                    obj1_obj3_SS     = self.obj1_obj3_SS(row)
+                    charge_flip_prob = self.obj1_charge_flip(row) if obj1_obj3_SS else self.obj2_charge_flip(row)
+                    directory        = 'os/p1p2%s3/c1' if obj1_obj3_SS else 'os/p1p2%s3/c2'
+                    directory        = directory % ('p' if obj3_id_result else 'f')
+                    if charge_flip_prob:
+                        charge_flip_prob = charge_flip_prob/(1. - charge_flip_prob)
 
-                        if obj3_id_result:
-                            fill_histos(histos, ('os/p1p2p3/c1',), row, event_weight*charge_flip_prob)
-                        else:
-                            fill_histos(histos, ('os/p1p2f3/c1',), row, event_weight*charge_flip_prob)
+                    fill_histos(histos, (directory,), row, event_weight*charge_flip_prob)
 
             elif sign_result and obj1_id_result and obj3_id_result:
                 # WZ object topology fails. Check if we are in signal region.
