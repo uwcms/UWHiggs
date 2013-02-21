@@ -12,6 +12,7 @@ import os
 import ROOT
 import sys
 import WHPlotterBase
+from WHPlotterBase import make_styler
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
@@ -114,14 +115,6 @@ if __name__ == "__main__":
     plotter.save('mcdata-os-p1p2p3-nvtx')
 
     # Make Z->mumu + tau jet control
-    def make_styler(color, format=None):
-        def unsuck(x):
-            x.SetFillStyle(0)
-            x.SetLineColor(color)
-            x.SetLineWidth(2)
-            if format:
-                x.format = format
-        return unsuck
 
     antiiso_m2JetPt = plotter.plot('data', 'ss/p1f2p3/m2JetPt',  'hist', styler=make_styler(2, 'hist'), xrange=(0, 120), rebin=10)
     antiiso_m2JetPt.SetTitle("Anti-iso CR yield")
