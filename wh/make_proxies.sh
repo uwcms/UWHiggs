@@ -4,9 +4,14 @@
 
 source jobid.sh
 
-export datasrc=/scratch/efriis/data/
 export jobid=$jobid8
-export afile=`find $datasrc/$jobid | grep root | head -n 1`
+export datasrc=`ls -d /scratch/*/data/$jobid | head -n 1`
+
+if [ -z $1 ]; then
+    export afile=`find $datasrc/ | grep root | head -n 1`
+else
+    export afile=$1
+fi
 
 echo "Building cython wrappers from file: $afile"
 
