@@ -513,7 +513,7 @@ fr_fits.each do |fit, fit_info|
 
 end
 
-file "#{$frfit_dir}/charge_flip_prob_map.root" => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root"] do |t|
+file "#{$frfit_dir}/charge_flip_prob_map.root" => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root", "make_charge_flip_probalility_map.py"] do |t|
   sh "python make_charge_flip_probalility_map.py #{$frfit_dir}/charge_flip_prob_map.root charge/flipped_electrons charge/matched_electrons #{t.prerequisites[0]}"
 end
 
