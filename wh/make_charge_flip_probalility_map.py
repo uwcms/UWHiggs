@@ -128,7 +128,6 @@ if __name__ == "__main__":
     eff_map_statUp.Write()
     eff_map_statDown.Write()
     worse_rel_err.Write()
-    outFile.Close()
 
     m          = ROOT.RooRealVar('m', 'm', 55,55,200)
     os_trkMass = ROOT.RooDataHist('higgs_data','higgs_data',ROOT.RooArgList(m),input_view.Get('charge/os_trkMass'))
@@ -139,12 +138,12 @@ if __name__ == "__main__":
     alphaR     = ROOT.RooRealVar('alphaR' ,'alphaR' ,1  ,0 ,30 )
     os_func    = ROOT.RooCruijff( 'os_func', 'os_func', m, mean, sigmaL, sigmaR, alphaL, alphaR)
 
-    ## fit_result = os_func.fitTo(
-    ##     os_trkMass,
-    ##     ROOT.RooFit.Save(True),
-    ##     ROOT.RooFit.PrintLevel(-1),
-    ##     #ROOT.RooFit.SumW2Error(True),
-    ##     )
+    fit_result = os_func.fitTo(
+        os_trkMass,
+        ROOT.RooFit.Save(True),
+        ROOT.RooFit.PrintLevel(-1),
+        #ROOT.RooFit.SumW2Error(True),
+        )
 
     canvas = ROOT.TCanvas("asdf", "asdf", 800, 600)
     frame = m.frame(ROOT.RooFit.Title("OS Trk Mass distribution"))
@@ -153,47 +152,38 @@ if __name__ == "__main__":
     )
     os_func.plotOn(frame, ROOT.RooFit.LineColor(ROOT.EColor.kAzure))
     frame.Draw()
-    canvas.Print("os_trkMass.png")
+    canvas.Print("/afs/hep.wisc.edu/home/mverzett/public_html/mytests/eet/os_trkMass.png")
 
     #Fizin all the parameters
     #mean.setVal(0)
-    ## mean.setConstant(True)
-    ## sigmaL.setConstant(True)
-    ## sigmaR.setConstant(True)
-    ## alphaL.setConstant(True)
-    ## alphaR.setConstant(True)
+    mean.setConstant(True)
+    sigmaL.setConstant(True)
+    sigmaR.setConstant(True)
+    alphaL.setConstant(True)
+    alphaR.setConstant(True)
 
     m.setBins(10000,"cache")
     ss_trkMass = ROOT.RooDataHist('ss_trkMass','ss_trkMass',ROOT.RooArgList(m), input_view.Get('charge/ss_trkMass'))
-    fake_width = ROOT.RooRealVar('fake_width' ,'fake_width' ,30 ,0  ,100)
-    fake_mean  = ROOT.RooRealVar('fake_mean'  ,'fake_mean'  ,90 ,80 ,100)
-    fake_alr   = ROOT.RooRealVar('fake_alr'   ,'fake_alr'   ,0)
-    decay_cnst = ROOT.RooRealVar('decay_cnst' ,'decay_cnst' ,3  ,0  ,10)
-    alpha      = ROOT.RooRealVar('alpha'      ,'alpha'      ,1  ,0  ,20)
-    ss_func    = ROOT.RooCBShape('ss_func'    ,'ss_func', m, fake_mean, fake_width, alpha, decay_cnst)
+    mass_scale = ROOT.RooRealVar('mass_scale' ,'mass_scale', 1, 0.8,1.2)
+    loss_fcn   = ROOT.RooFormulaVar('loss_fcn' ,'fake_width' , '@0 * @1', ROOT.RooArgList(mass_scale,m))
+    ss_func    = ROOT.RooCruijff( 'ss_func', 'ss_func', loss_fcn, mean, sigmaL, sigmaR, alphaL, alphaR)
 
-    ## fake_width = ROOT.RooRealVar('fake_width' ,'fake_width' ,0.1)
-    ## fake_mean  = ROOT.RooRealVar('fake_mean'  ,'fake_mean'  ,0)
-    ## fake_alpha = ROOT.RooRealVar('fake_alpha' ,'fake_alr'   ,0)
-    ## fake_n     = ROOT.RooRealVar('fake_n'     ,'decay_cnst' ,3)# ,0 ,10)
-    ## ss_func    = ROOT.RooCBShape( 'ss_func', 'os_func', m, fake_alr, fake_width, alpha, decay_cnst)
-    ## ss_func    = loss_fcn
-    ## ss_func    = ROOT.RooFFTConvPdf("ss_func","ss_func",m,loss_fcn, os_func)
-
-
-
-    fit_result = os_func.fitTo(
-        os_trkMass,
+    fit_result = ss_func.fitTo(
+        ss_trkMass,
         ROOT.RooFit.Save(True),
         #ROOT.RooFit.PrintLevel(-1),
         #ROOT.RooFit.SumW2Error(True),
         )
 
+    fit_result.Print()
     frame = m.frame(ROOT.RooFit.Title("SS Trk Mass distribution"))
     ss_trkMass.plotOn(
         frame,
     )
+    
     ss_func.plotOn(frame, ROOT.RooFit.LineColor(ROOT.EColor.kAzure))
     frame.Draw()
     canvas.Print("/afs/hep.wisc.edu/home/mverzett/public_html/mytests/eet/ss_trkMass.png")
 
+    mass_scale.Write()
+    outFile.Close()
