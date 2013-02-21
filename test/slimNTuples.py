@@ -1,4 +1,17 @@
 #! /bin/env python
+__doc__ = '''
+Usage ./slimNTuples other_branch_to_keep.list /hdfs/dir/with/files/to/be/skimmed
+
+This scripts provides an easy and automated way to steer FinalStateAnalysis' slimAndMergeNtuple.
+The script automatically looks into zh/ and wh/ directories looking for the most common statements to call a tree branch in the code, namely row.ATTRIBUTE, getattr( row, "ATTR" ), getVar( something, "ATTR").
+The system is set to ignore spaces and other meaningless charatcers. The last two expressions are translated into a more generic form allowing expressions such getattr( row, muon_id + "ATTR" ) to be properly matched.
+Arguments:
+  other_branch_to_keep.list is a list containing additional branches that should be kept. These branches may be the ones that sneak past the authomatic search in the code or branches that the user foresee to include in his/her code.
+  The list must be new-line separated (each branch in a new line) and basic wildcards *? are allowed
+  /hdfs/dir/with/files/to/be/skimmed is the hdfs path containing the directory tree with the "fat" NTuples. NOTE: the last directory will be used as jobid name appending a "_light".
+
+This script creates several files to configure condor and the jobs themselves. In particular it will write a directory named as the current time in /afs/hep.wisc.edu/cms/$USER/. For cleanness' sake this directory should be deleted once all the jobs are done
+'''
 
 import os
 import sys
@@ -11,7 +24,7 @@ import time
 from progressbar import ETA, ProgressBar, FormatLabel, Bar
 
 if len(sys.argv) < 3 or '-h' in sys.argv or '--help' in sys.argv:
-    print 'Usage ./slimNTuples other_branch_to_keep.list /hdfs/dir/with/files/to/be/skimmed'
+    print __doc__
     sys.exit(1)
 
 branches_to_keep = sys.argv[-2]
@@ -96,6 +109,7 @@ timestamp = str(int(time.mktime(time.gmtime())))
 #listsdir  = '/scratch/taroni/%s' % timestamp
 listsdir = '/afs/hep.wisc.edu/cms/%s/%s' % (user,timestamp)
 make_dir(listsdir)
+os.system('fs setacl -dir %s -acl condor-hosts rl' % listsdir) #make this dir visible to condor in case it is not
 
 #define matching function, use generator to be faster (should stop at the first match)
 match  = lambda x:  any( ( fnmatch(x,y) for y in usedBranches) )
@@ -118,33 +132,15 @@ for tree_name in forest:
 
 compression_ratio = float(kept_branches) / float(tot_branches)
 
-##newhdfs_path = hdfs_path
-##print newhdfs_path.replace("mverzett","taroni")
-
-#os.path.getsize(
 print 'Compression ratio: %s' % compression_ratio
 print "Beginning multi threaded copy/complession/merge..."
 approx_chunk_size = 70*10**6 #~50MB
 procs   = {}
-#threads = os.environ['megaworkers'] if 'megaworkers' in os.environ else 2
-#with open("copyMergeSlim_"+timestamp+".status",'w') as status_file:
-#    logdir = os.getcwd()+'/'+timestamp
-#    make_dir(logdir)
-#    make_dir('/'.join(['','scratch',os.environ['USER'],'data',JOBID]) )
 files_dict   = dict( [(sample, glob('/'.join([hdfs_path,sample,'','*.root'])))  for sample in SAMPLES] )
-#    tot_numfiles = reduce(lambda x, y: x+y, map(len,files_dict.itervalues()) )
-#    pbar  = ProgressBar(
-#        widgets = [
-#            FormatLabel(
-#                'Copied %(value)i/' + str(tot_numfiles) + ' files. '),
-#                ETA(),
-#                Bar('>')],
-#        maxval = tot_numfiles ).start()
-#    files_already_merged = 0
 run = 'source %s/environment.sh\n' % os.environ['fsa']
 for sample in SAMPLES:
     print 'Merging %s...' % sample
-    sample_dir = '/'.join(['','scratch',os.environ['USER'],'data',JOBID,sample])
+    sample_dir = '/'.join(['','scratch',user,'data',JOBID,sample])
     make_dir( sample_dir )
     chunk = []
     isize  = 0
@@ -154,16 +150,9 @@ for sample in SAMPLES:
     ifile = len(files_dict[sample])/(isize*compression_ratio/(approx_chunk_size))
         
     print 'number of file for farmoutAnalysisJob '+ str(int(ifile)) +''
-#    job = """slimAndMergeNtuple """+str(listsdir)+""" test"""+str(sample)+""".root """+str('/'.join([hdfs_path,sample,'']))+"""*.root
-#    """
-#    job_file= open("slimNtuples"+str(sample)+"","w")
-#    job_file.write(job)
-#    job_file.close()
-##devo fare un file che contenga i file di input per tutti i sample?
-
     output_jid = JOBID+'_light'
-    output_dir = 'srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN=/hdfs/store/user/'+'/'.join([os.environ['USER'],output_jid,sample])    
-    submit_dir = '/'.join(['','scratch',os.environ['USER'],output_jid,sample])
+    output_dir = 'srm://cmssrm.hep.wisc.edu:8443/srm/v2/server?SFN=/hdfs/store/user/'+'/'.join([user,output_jid,sample])    
+    submit_dir = '/'.join(['','scratch',user,output_jid,sample])
     input_path=hdfs_path[5:]
     run+="""mkdir -p """+submit_dir+"""/dags
 farmoutAnalysisJobs  --infer-cmssw-path \"--submit-dir="""+submit_dir+"""/submit\" \
@@ -185,5 +174,5 @@ sh_file= open("run_slim_and_merge.sh","w")
 sh_file.write(sh)
 sh_file.close()
 os.popen("chmod a+x run_slim_and_merge.sh")
-            
+print "run:\n  bash <  slimAndMergeNtuples"+JOBID+".run\nto submit slimming to condor"
                 
