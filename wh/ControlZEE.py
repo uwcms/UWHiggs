@@ -78,6 +78,7 @@ class ControlZEE(MegaBase):
             self.book(dirname, 'SCEnergy', 'electron Super Cluster energy', 500, 0, 1000)
             self.book(dirname, 'SCDPhi'  , 'electron Super Cluster DeltaPhi', 180, 0, math.Pi())
             self.book(dirname, 'TrkMass' , 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
+            self.book(dirname, 'TrkMass_NOSCALE' , 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
             self.book(dirname, 'SCMass'  , 'Dielectrons Super Cluster invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
             self.book(dirname, "e1Pt"    , "electron 1 Pt", 100, 0, 100)
             self.book(dirname, "e2Pt"    , "electron 2 Pt", 100, 0, 100)
@@ -137,7 +138,9 @@ class ControlZEE(MegaBase):
             histos[dirname+ '/eAbsEta' ].Fill(row.e2AbsEta,weight)
             histos[dirname+ '/SCEnergy'].Fill(row.e2SCEnergy,weight)
 
-            histos[dirname+ '/TrkMass' ].Fill(row.e1_e2_Mass,weight)
+            mass = frfits.mass_scaler(row.e1_e2_Mass) if "charge_weight" in dirname else row.e1_e2_Mass
+            histos[dirname+ '/TrkMass' ].Fill(mass, weight)
+            histos[dirname+ '/TrkMass_NOSCALE' ].Fill(row.e1_e2_Mass, weight)
             histos[dirname+ '/SCMass'  ].Fill(sc_inv_mass(row),weight)
             histos[dirname+ "/e1Pt"    ].Fill(row.e1Pt,weight)
             histos[dirname+ "/e2Pt"    ].Fill(row.e2Pt,weight)
