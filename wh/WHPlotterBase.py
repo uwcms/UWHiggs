@@ -122,6 +122,17 @@ class QCDCorrectionView(object):
         return total
 
 
+def make_styler(color, format=None):
+    def unsuck(x):
+        x.SetFillStyle(0)
+        x.SetLineColor(color)
+        x.SetLineWidth(2)
+        x.SetMaximum(1.5*x.GetMaximum())
+        if format:
+            x.drawstyle = format
+    return unsuck
+
+
 class WHPlotterBase(Plotter):
     def __init__(self, files, lumifiles, outputdir):
         blinder = None
@@ -217,7 +228,7 @@ class WHPlotterBase(Plotter):
             output['vh%i' % mass] = vh_view
             if mass % 10 == 0:
                 ww_view = views.SubdirectoryView(
-                    self.rebin_view(self.get_view('WH_%i*' % mass), rebin),
+                    self.rebin_view(self.get_view('VHWW_lepdecay_%i*' % mass), rebin),
                     'ss/p1p2p3/'
                 )
                 output['vh%i_hww' % mass] = ww_view
@@ -251,7 +262,7 @@ class WHPlotterBase(Plotter):
             all_data_view, mapping[control_region]['qcd']), "QCD")
 
         qcd_view = views.StyleView(
-            qcd_view, format='hist', linecolor=colors['red'],
+            qcd_view, drawstyle='hist', linecolor=colors['red'],
             fillstyle=0, legendstyle='l'
         )
         return {'obs': data_view, 'qcd': qcd_view}

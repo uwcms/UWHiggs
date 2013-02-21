@@ -16,7 +16,9 @@ import ROOT
 import mcCorrectors
 import baseSelections as selections
 import fakerate_functions as frfits
+import ROOT
 
+mtr = frfits.mt_likelihood_ratio
 ################################################################################
 #### Analysis logic ############################################################
 ################################################################################
@@ -25,7 +27,25 @@ class WHAnalyzeEET(WHAnalyzerBase.WHAnalyzerBase):
     tree = 'eet/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         super(WHAnalyzeEET, self).__init__(tree, outfile, EETauTree, **kwargs)
-        self.hfunc['subMTMass'] = lambda row, weight: (row.m2_t_Mass, weight) if row.m1MtToMET > row.m2MtToMET else (row.m1_t_Mass, weight) #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
+        self.hfunc['subMTMass'] = lambda row, weight: (row.e2_t_Mass, weight) if row.e1MtToMET > row.e2MtToMET else (row.e1_t_Mass, weight) #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
+        self.hfunc['higgsLMtToMet'] = lambda row, weight: ((row.e1MtToMET,row.e2MtToMET), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2MtToMET,row.e1MtToMET), weight)
+        self.hfunc['higgsLIso']     = lambda row, weight: ((row.e1RelPFIsoDB,row.e2RelPFIsoDB), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2RelPFIsoDB,row.e1RelPFIsoDB), weight)
+        self.hfunc['higgsLPt']      = lambda row, weight: ((row.e1Pt,row.e2Pt), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2Pt,row.e1Pt), weight)
+
+        self.hfunc['higgsLMtToMet_1d'] = lambda row, weight: ((row.e1MtToMET-row.e2MtToMET), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2MtToMET-row.e1MtToMET), weight)
+        self.hfunc['higgsMtRatio_1d']  = lambda row, weight: ((mtr(row.e1MtToMET)-mtr(row.e2MtToMET)), weight) if bool(row.e1ComesFromHiggs)  else ((mtr(row.e2MtToMET)-mtr(row.e1MtToMET)), weight)
+        self.hfunc['higgsLIso_1d']     = lambda row, weight: ((row.e1RelPFIsoDB-row.e2RelPFIsoDB), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2RelPFIsoDB-row.e1RelPFIsoDB), weight)
+        self.hfunc['higgsLPt_1d']      = lambda row, weight: ((row.e1Pt-row.e2Pt), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2Pt-row.e1Pt), weight)
+        self.hfunc['higgsTDR_1d']   = lambda row, weight: ((row.e1_t_DR-row.e2_t_DR), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2_t_DR-row.e1_t_DR), weight)
+        self.hfunc['higgsTPt_1d']   = lambda row, weight: ((row.e1_t_Pt-row.e2_t_Pt), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2_t_Pt-row.e1_t_Pt), weight)
+        self.hfunc['higgsDPhiMet']  = lambda row, weight: ((row.e1ToMETDPhi-row.e2ToMETDPhi), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2ToMETDPhi-row.e1ToMETDPhi), weight)
+
+        self.hfunc['H_LMtToMet'] = lambda row, weight: (row.e1MtToMET, weight) if bool(row.e1ComesFromHiggs)  else (row.e2MtToMET, weight)
+        self.hfunc['H_LIso']     = lambda row, weight: (row.e1RelPFIsoDB, weight) if bool(row.e1ComesFromHiggs)  else (row.e2RelPFIsoDB, weight)
+        self.hfunc['H_LPt']      = lambda row, weight: (row.e1Pt, weight) if bool(row.e1ComesFromHiggs)  else (row.e2Pt, weight)
+        self.hfunc['W_LMtToMet'] = lambda row, weight: (row.e2MtToMET, weight) if bool(row.e1ComesFromHiggs)  else (row.e1MtToMET, weight)
+        self.hfunc['W_LIso']     = lambda row, weight: (row.e2RelPFIsoDB, weight) if bool(row.e1ComesFromHiggs)  else (row.e1RelPFIsoDB, weight)
+        self.hfunc['W_LPt']      = lambda row, weight: (row.e2Pt, weight) if bool(row.e1ComesFromHiggs)  else (row.e1Pt, weight)
         self.pucorrector = mcCorrectors.make_puCorrector('doublee')
 
     def book_histos(self, folder):
@@ -33,7 +53,6 @@ class WHAnalyzeEET(WHAnalyzerBase.WHAnalyzerBase):
         #self.book(folder, "weight_nopu", "Event weight without PU", 100, 0, 5)
         self.book(folder, "rho", "Fastjet #rho", 100, 0, 25)
         self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
-        self.book(folder, "prescale", "HLT prescale", 21, -0.5, 20.5)
 
         self.book(folder, "e1Pt", "E 1 Pt", 100, 0, 100)
         self.book(folder, "e2Pt", "E 2 Pt", 100, 0, 100)
@@ -48,10 +67,31 @@ class WHAnalyzeEET(WHAnalyzerBase.WHAnalyzerBase):
         self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 100, 0, 0.3)
         self.book(folder, "tPt", "tPt", 100, 0,100)
         self.book(folder, "tAbsEta", "tAbsEta", 100, 0, 2.3)
-        self.book(folder, "metSignificance", "MET significance", 100, 0, 15)
+        #self.book(folder, "metSignificance", "MET significance", 100, 0, 15)
         self.book(folder, "LT", "L_T", 100, 0, 300)
+        #Book additial histograms for signal MC
+        if 'VH' in os.environ['megatarget'] and folder == 'ss/p1p2p3' and 'VHTests' in os.environ and os.environ['VHTests'] == 'YES':
+            self.book(folder, "higgsLPt"        , "p_{T} lepton from higgs vs p_{T} lepton from W", 100, 0, 100, 100, 0, 100, type=ROOT.TH2F)
+            self.book(folder, "higgsLIso"       , "Isolation lepton from higgs vs Isolation lepton from W", 100, 0, 0.3, 100, 0, 0.3, type=ROOT.TH2F)
+            self.book(folder, "higgsLMtToMet"   , "M_{T} lepton from higgs vs M_{T} lepton from W", 100, 0, 200, 100, 0, 200, type=ROOT.TH2F)
+            self.book(folder, 'higgsLMtToMet_1d', "difference between lepton coming from higgs and the one from W", 100, -200, 200)
+            self.book(folder, 'higgsLIso_1d'    , "difference between lepton coming from higgs and the one from W", 100, -0.3, 0.3)
+            self.book(folder, 'higgsLPt_1d'     , "difference between lepton coming from higgs and the one from W", 100, -100, 100)
+            self.book(folder, 'higgsMtRatio_1d' , "", 100, -10, 10)
+            self.book(folder, 'higgsTDR_1d', "", 100, -10, 10)
+            self.book(folder, 'higgsTPt_1d', "", 100, -100, 100)
+            self.book(folder, 'higgsDPhiMet', "", 100, -7,7)
 
-    def preselection(self, row):
+            self.book(folder, 'H_LMtToMet', "", 100, 0, 200)
+            self.book(folder, 'H_LIso'    , "", 100, 0, 0.3) 
+            self.book(folder, 'H_LPt'     , "", 100, 0, 100) 
+            self.book(folder, 'W_LMtToMet', "", 100, 0, 200)
+            self.book(folder, 'W_LIso'    , "", 100, 0, 0.3) 
+            self.book(folder, 'W_LPt'     , "", 100, 0, 100) 
+            
+    #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
+    @staticmethod
+    def preselection(row):
         ''' Preselection applied to events.
 
         Excludes FR object IDs and sign cut.
@@ -64,31 +104,42 @@ class WHAnalyzeEET(WHAnalyzerBase.WHAnalyzerBase):
         if not selections.tauSelection(row, 't'): return False
 
         if row.e1_e2_Mass < 20:       return False
-        if row.metSignificance < 2.5: return False
+            #if row.metSignificance < 2.5: return False
         if row.e1_e2_Mass > 81 \
             and row.e1_e2_Mass < 101: return False
-        if row.LT < 100:              return False
+        if row.LT < 80:              return False
         if not selections.vetos(row): return False #applies mu bjet e additional tau vetoes
 
         if not row.tAntiMuonTight:   return False
         if row.tMuOverlap:           return False
+        if not row.tAntiElectronMVA: return False
         #'t_ElectronOverlapWP95 < 0.5',
         return True
 
-    def sign_cut(self, row):
+    #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
+    @staticmethod
+    def sign_cut(row):
         ''' Returns true if muons are SS '''
         return bool(row.e1_e2_SS)
 
-    def obj1_id(self, row):
+    #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
+    @staticmethod
+    def obj1_id(row):
         return bool(row.e1MVAIDH2TauWP) and bool( row.e1RelPFIsoDB < 0.1 or (row.e1RelPFIsoDB < 0.15 and row.e1AbsEta < 1.479))
 
-    def obj2_id(self, row):
+    #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
+    @staticmethod
+    def obj2_id(row):
         return bool(row.e2MVAIDH2TauWP) and bool( row.e2RelPFIsoDB < 0.1 or (row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479))
 
-    def obj3_id(self, row):
+    #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
+    @staticmethod
+    def obj3_id(row):
         return bool(row.tLooseMVAIso)
 
-    def anti_wz(self, row):
+    #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
+    @staticmethod
+    def anti_wz(row):
         return row.tAntiElectronMVA and not row.tCiCTightElecOverlap
 
     def enhance_wz(self, row):
@@ -96,7 +147,7 @@ class WHAnalyzeEET(WHAnalyzerBase.WHAnalyzerBase):
         # to have M_Z +- 20 
         if self.anti_wz(row):
             return False
-        # Make sure any Z is from m1
+        # Make sure any Z is from e1
         e2_good_Z = bool(71 < row.e2_t_Mass < 111)
         return not e2_good_Z
 
@@ -114,19 +165,19 @@ class WHAnalyzeEET(WHAnalyzerBase.WHAnalyzerBase):
 
     
     def obj1_weight(self, row):
-        return frfits.highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
+        return frfits.highpt_ee_fr(max(row.e1JetPt, row.e1Pt))
 
     def obj2_weight(self, row):
-        return frfits.lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
+        return frfits.lowpt_ee_fr(max(row.e2JetPt, row.e2Pt))
 
     def obj3_weight(self, row):
         return frfits.tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row):
-        return frfits.highpt_mu_qcd_fr(max(row.m1JetPt, row.m1Pt))
+        return frfits.highpt_ee_qcd_fr(max(row.e1JetPt, row.e1Pt))
 
     def obj2_qcd_weight(self, row):
-        return frfits.lowpt_mu_qcd_fr(max(row.m2JetPt, row.m2Pt))
+        return frfits.lowpt_ee_qcd_fr(max(row.e2JetPt, row.e2Pt))
 
     def obj3_qcd_weight(self, row):
         return frfits.tau_qcd_fr(row.tPt)
@@ -134,11 +185,13 @@ class WHAnalyzeEET(WHAnalyzerBase.WHAnalyzerBase):
     # For measuring charge flip probability
     # Not really used in this channel
     def obj1_obj3_SS(self, row):
-        return not row.m1_t_SS
+        return not row.e1_t_SS
 
     def obj1_charge_flip(self, row):
         return frfits.e_charge_flip(row.e1AbsEta,row.e1Pt)
 
+    def obj2_charge_flip(self, row):
+        return frfits.e_charge_flip(row.e2AbsEta,row.e2Pt)
 
 
 
