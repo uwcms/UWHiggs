@@ -150,6 +150,9 @@ plotter = ControlZEEPlotter()
 plotter.make_charge_flip_control_plot('TrkMass','Tracker Inv Mass (GeV)',2)
 plotter.save('EE_Charge_Flip_xcheck_trk_invMass')
 
+plotter.make_charge_flip_control_plot('TrkMass_NOSCALE','Tracker Inv Mass (GeV)',2)
+plotter.save('EE_Charge_Flip_xcheck_trk_invMass_NoScale')
+
 plotter.make_charge_flip_control_plot('SCMass','SuperCluster Inv Mass (GeV)',2)
 plotter.save('EE_Charge_Flip_xcheck_SC_invMass')
 
