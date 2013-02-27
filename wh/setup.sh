@@ -16,8 +16,8 @@ export datasrc=$(ls -d /scratch/*/data/$jobid | awk -F$jobid '{print $1}')
 ./make_proxies.sh
 for dir in $datasrc; do
     echo $dir
-##     rake "meta:getinputs[$jobid, $dir]"
-##     rake "meta:getmeta[inputs/$jobid, mm/metaInfo, 8]"
+    rake "meta:getinputs[$jobid, $dir]"
+    rake "meta:getmeta[inputs/$jobid, mm/metaInfo, 8]"
 done
 # Use the 7TeV WH samples for 8TeV
 #pushd inputs/$jobid/
