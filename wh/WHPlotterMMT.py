@@ -56,27 +56,27 @@ if __name__ == "__main__":
     ###########################################################################
 
     # Control Z->mumu + jet region
-    plotter.plot_mc_vs_data('os/p1p2f3', 'm1m2Mass', xaxis='m_{#mu#mu} (GeV)', xrange=(60, 120))
+    plotter.plot_mc_vs_data('os/p1p2f3', 'm1_m2_Mass', xaxis='m_{#mu#mu} (GeV)', xrange=(60, 120))
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-os-p1p2f3-m1m2Mass')
 
-    plotter.plot_mc_vs_data('os/p1p2p3', 'm1m2Mass', xaxis='m_{#mu#mu} (GeV)', xrange=(60, 120))
+    plotter.plot_mc_vs_data('os/p1p2p3', 'm1_m2_Mass', xaxis='m_{#mu#mu} (GeV)', xrange=(60, 120))
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-os-p1p2p3-m1m2Mass')
 
-    plotter.plot_mc_vs_data('ss/p1p2p3_enhance_wz', 'subMass', xaxis='m_{#mu#mu} (GeV)', xrange=(0, 120), rebin=10)
+    plotter.plot_mc_vs_data('ss/p1p2p3_enhance_wz', 'm2_t_Mass', xaxis='m_{#mu#mu} (GeV)', xrange=(0, 120), rebin=10)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1p2p3-enhance_wz-subMass')
 
-    plotter.plot_mc_vs_data('ss/p1p2p3_enhance_wz', 'leadMass', xaxis='m_{#mu#mu} (GeV)', xrange=(0, 120), rebin=10)
+    plotter.plot_mc_vs_data('ss/p1p2p3_enhance_wz', 'm1_t_Mass', xaxis='m_{#mu#mu} (GeV)', xrange=(0, 120), rebin=10)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1p2p3-enhance_wz-leadMass')
 
-    plotter.plot_mc_vs_data('ss/p1f2p3_enhance_wz', 'leadMass', xaxis='m_{#mu#mu} (GeV)', xrange=(0, 120), rebin=10)
+    plotter.plot_mc_vs_data('ss/p1f2p3_enhance_wz', 'm1_t_Mass', xaxis='m_{#mu#mu} (GeV)', xrange=(0, 120), rebin=10)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1f2p3-enhance_wz-leadMass')
 
-    plotter.plot_mc_vs_data('ss/p1f2p3_enhance_wz/w2', 'leadMass', xaxis='m_{#mu#mu} (GeV)', xrange=(0, 120), rebin=10)
+    plotter.plot_mc_vs_data('ss/p1f2p3_enhance_wz/w2', 'm1_t_Mass', xaxis='m_{#mu#mu} (GeV)', xrange=(0, 120), rebin=10)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1f2p3-w2-enhance_wz-leadMass')
 
@@ -93,10 +93,10 @@ if __name__ == "__main__":
     plotter.compare_shapes('Zjets_M50', 'data', 'os/p1p2f3/rho')
     plotter.save('z-vs-data-rho-shape')
 
-    plotter.plot_mc_vs_data('os/p1p2f3/w3', 'm1m2Mass')
+    plotter.plot_mc_vs_data('os/p1p2f3/w3', 'm1_m2_Mass')
     plotter.save('mcdata-os-p1p2f3-w3-m1m2Mass')
 
-    plotter.plot_mc_vs_data('os/p1f2p3', 'm1m2Mass', xaxis='m_{#mu#mu} (GeV)', xrange=(60, 120))
+    plotter.plot_mc_vs_data('os/p1f2p3', 'm1_m2_Mass', xaxis='m_{#mu#mu} (GeV)', xrange=(60, 120))
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-os-p1f2p3-m1m2Mass')
 
@@ -128,12 +128,12 @@ if __name__ == "__main__":
     antiiso_m1JetPt.GetXaxis().SetTitle("#mu_{1} Jet Pt")
     plotter.save('data-f1p2p3-m1JetPt')
 
-    zmm_weighted = plotter.plot('data', 'os/p1p2f3/w3/m1m2Mass',  'hist', styler=make_styler(2, 'hist'), xrange=(60, 120))
+    zmm_weighted = plotter.plot('data', 'os/p1p2f3/w3/m1_m2_Mass',  'hist', styler=make_styler(2, 'hist'), xrange=(60, 120))
     zmm_weighted.SetTitle("Z#mu#mu + fake #tau_{h} est.")
     zmm_weighted.legendstyle='l'
     zmm_weighted.GetXaxis().SetTitle("m_{#mu#mu} (GeV)")
 
-    zmm_unweighted = plotter.plot('data', 'os/p1p2p3/m1m2Mass', 'same', styler=make_styler(1), xrange=(60, 120))
+    zmm_unweighted = plotter.plot('data', 'os/p1p2p3/m1_m2_Mass', 'same', styler=make_styler(1), xrange=(60, 120))
     zmm_unweighted.SetTitle("Z#mu#mu observed")
     zmm_unweighted.SetTitle("Z#mu#mu + fake #tau_{h} obs.")
     zmm_unweighted.legendstyle='pe'
@@ -142,14 +142,14 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('zmm-os-fr-control')
 
-    plotter.plot('data', 'os/p1p2p3/prescale', styler=make_styler(1))
-    plotter.save('zmm-os-prescale-check')
+    ## plotter.plot('data', 'os/p1p2p3/prescale', styler=make_styler(1))
+    ## plotter.save('zmm-os-prescale-check')
 
     plotter.plot('Zjets_M50', 'os/p1p2f3/weight')
     plotter.save('zmm-mc-event-weights')
     # Check MC weights
-    plotter.plot('Zjets_M50', 'os/p1p2f3/weight_nopu')
-    plotter.save('zmm-mc-event-weight_nopu')
+    ## plotter.plot('Zjets_M50', 'os/p1p2f3/weight_nopu')
+    ## plotter.save('zmm-mc-event-weight_nopu')
 
     plotter.plot('Zjets_M50', 'os/p1p2f3/nTruePU', 'nTruePU', rebin=1, xaxis='True PU')
     plotter.save('zjets-os-p1p2f3-nTruePU')
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1f2p3-m1Pt')
 
-    plotter.plot_mc_vs_data('ss/p1f2p3', 'subMass', rebin=10, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
+    plotter.plot_mc_vs_data('ss/p1f2p3', 'm2_t_Mass', rebin=10, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1f2p3-subMass')
 
@@ -171,11 +171,11 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-p1f2p3-w2-m1Pt')
 
-    plotter.plot_mc_vs_data('ss/f1p2p3', 'subMass', rebin=20, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
+    plotter.plot_mc_vs_data('ss/f1p2p3', 'm2_t_Mass', rebin=20, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-f1p2p3-subMass')
 
-    plotter.plot_mc_vs_data('ss/f1p2p3/w1', 'subMass', rebin=20, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
+    plotter.plot_mc_vs_data('ss/f1p2p3/w1', 'm2_t_Mass', rebin=20, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-ss-f1p2p3-w1-subMass')
 
@@ -217,32 +217,32 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-m2AbsEta')
 
-    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)')
+    plotter.plot_final('m2_t_Mass', 20, xaxis='m_{#mu_{2}#tau} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass')
 
-    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', qcd_weight_fraction=1)
+    plotter.plot_final('m2_t_Mass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', qcd_weight_fraction=1)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-qweight-subMass')
 
-    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
+    plotter.plot_final('m2_t_Mass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-qweight05-subMass')
 
-    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', show_error=True)
+    plotter.plot_final('m2_t_Mass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', show_error=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass-werror')
 
-    plotter.plot_final('subMass', 20, xaxis='m_{#mu_{2}#tau} (GeV)',
+    plotter.plot_final('m2_t_Mass', 20, xaxis='m_{#mu_{2}#tau} (GeV)',
                        show_error=True, fake_error=0, wz_error=0, zz_error=0)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass-wshapeerror')
 
-    plotter.plot_final('m2Iso', 10)
+    plotter.plot_final('m2RelPFIsoDB', 10)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-m2Iso')
 
-    plotter.plot_final_wz('leadMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_wz('m1_t_Mass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-wz-leadMass')
 
@@ -254,11 +254,11 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-wz-m2JetPt')
 
-    plotter.plot_final_f3('leadMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_f3('m1_t_Mass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-leadMass')
 
-    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_f3('m2_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass')
 
@@ -266,32 +266,32 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-m2JetBtag')
 
-    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=True)
+    plotter.plot_final_f3('m2_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3q-subMass')
 
-    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=1)
+    plotter.plot_final_f3('m2_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=1)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-qweight-subMass')
 
-    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5)
+    plotter.plot_final_f3('m2_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-qweight05-subMass')
 
-    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5, show_error=True)
+    plotter.plot_final_f3('m2_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5, show_error=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-qweight05-werror-subMass')
 
-    plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5,
+    plotter.plot_final_f3('m2_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5,
                           show_error=True, fake_error=0, wz_error=0, zz_error=0)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-qweight05-wshapeerror-subMass')
 
-    plotter.plot_final_f3_split('subMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_f3_split('m2_t_Mass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-split-subMass')
 
-    plotter.plot_final_f3('subMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', show_error=True)
+    plotter.plot_final_f3('m2_t_Mass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', show_error=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-subMass-werror')
 
@@ -315,11 +315,11 @@ if __name__ == "__main__":
     ##  Check QCD contamination in control regions ############################
     ###########################################################################
 
-    plotter.plot_qcd_contamination('subMass', 2, 10)
+    plotter.plot_qcd_contamination('m2_t_Mass', 2, 10)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-qcd2-subMass')
 
-    plotter.plot_qcd_contamination('subMass', 1, 20)
+    plotter.plot_qcd_contamination('m2_t_Mass', 1, 20)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-qcd1-subMass')
 
@@ -338,10 +338,10 @@ if __name__ == "__main__":
     shape_file = ROOT.TFile(
         os.path.join(outputdir, 'mmt_shapes_%s.root' % period), 'RECREATE')
     shape_dir = shape_file.mkdir('mmt')
-    plotter.write_shapes('subMass', 20, shape_dir, unblinded=True, qcd_fraction=0.5)
+    plotter.write_shapes('m2_t_Mass', 20, shape_dir, unblinded=True, qcd_fraction=0.5)
     shape_dir = shape_file.mkdir('mmt_w')
-    plotter.write_shapes('subMass', 20, shape_dir, unblinded=True, qcd_fraction=0.0)
+    plotter.write_shapes('m2_t_Mass', 20, shape_dir, unblinded=True, qcd_fraction=0.0)
     shape_dir = shape_file.mkdir('mmt_q')
-    plotter.write_shapes('subMass', 20, shape_dir, unblinded=True, qcd_fraction=1.0)
+    plotter.write_shapes('m2_t_Mass', 20, shape_dir, unblinded=True, qcd_fraction=1.0)
     #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
     shape_file.Close()
