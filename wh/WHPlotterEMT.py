@@ -57,7 +57,7 @@ if __name__ == "__main__":
     ###########################################################################
 
     # Control Z->tautau + jet region
-    plotter.plot_mc_vs_data('os/p1p2f3', 'emMass', rebin=10, xaxis='m_{e#mu} (GeV)', leftside=False)
+    plotter.plot_mc_vs_data('os/p1p2f3', 'e_m_Mass', rebin=10, xaxis='m_{e#mu} (GeV)', leftside=False)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mcdata-os-p1p2f3-emMass')
 
@@ -69,17 +69,17 @@ if __name__ == "__main__":
     plotter.save('zjets-os-p1p2f3-nTruePU')
 
 
-    plotter.plot_mc_vs_data('os/p1p2f3', 'bCSVVeto', rebin=1, xaxis='bveto')
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('mcdata-os-p1p2f3-bveto')
+    ## plotter.plot_mc_vs_data('os/p1p2f3', 'bCSVVeto', rebin=1, xaxis='bveto')
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('mcdata-os-p1p2f3-bveto')
 
-    plotter.plot_mc_vs_data('os/p1p2f3/w3', 'emMass', 10)
+    plotter.plot_mc_vs_data('os/p1p2f3/w3', 'e_m_Mass', 10)
     plotter.save('mcdata-os-p1p2f3-w3-emMass')
 
-    plotter.plot_mc_vs_data('os/p1f2p3', 'emMass', 10)
+    plotter.plot_mc_vs_data('os/p1f2p3', 'e_m_Mass', 10)
     plotter.save('mcdata-os-p1f2p3-emMass')
 
-    plotter.plot_mc_vs_data('os/f1p2p3', 'emMass', 10)
+    plotter.plot_mc_vs_data('os/f1p2p3', 'e_m_Mass', 10)
     plotter.save('mcdata-os-p1f2p3-emMass')
 
     # Check PU variables
@@ -98,8 +98,8 @@ if __name__ == "__main__":
 
     # Make Z->mumu + tau jet control
 
-    weighted = plotter.plot('data', 'os/p1p2f3/w3/emMass',  'hist', rebin=20, styler=make_styler(2, 'hist'), xaxis='m_{e#mu} (GeV)')
-    unweighted = plotter.plot('data', 'os/p1p2p3/emMass', 'same', rebin=20, styler=make_styler(1), xaxis='m_{e#mu} (GeV)')
+    weighted = plotter.plot('data', 'os/p1p2f3/w3/e_m_Mass',  'hist', rebin=20, styler=make_styler(2, 'hist'), xaxis='m_{e#mu} (GeV)')
+    unweighted = plotter.plot('data', 'os/p1p2p3/e_m_Mass', 'same', rebin=20, styler=make_styler(1), xaxis='m_{e#mu} (GeV)')
     weighted.SetTitle('e^{+}#mu^{-} + fake #tau_{h} est.')
     weighted.legendstyle = 'l'
     unweighted.SetTitle('e^{+}#mu^{-} + fake #tau_{h} obs.')
@@ -189,17 +189,17 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass-wshapeerror')
 
-    plotter.plot_final('metSig', 5)
-    plotter.save('final-metSig')
+    ## plotter.plot_final('metSig', 5)
+    ## plotter.save('final-metSig')
     plotter.plot_final('tLeadDR', 10)
     plotter.save('final-tLeadDR')
     plotter.plot_final('tSubDR', 10)
     plotter.save('final-tSubDR')
 
-    plotter.plot_final('etMass', 10)
+    plotter.plot_final('e_t_Mass', 10)
     plotter.save('final-etMass')
 
-    plotter.plot_final_wz('etMass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_wz('e_t_Mass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-wz-etMass')
 
@@ -232,11 +232,11 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-werror-subMass')
 
-    plotter.plot_final_f3('etMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_f3('e_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-etMass')
 
-    plotter.plot_final_f3('emMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+    plotter.plot_final_f3('e_m_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-emMass')
 
@@ -256,9 +256,9 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-f3-ePt')
 
-    plotter.plot_final_f3('eChargeIdMedium', 1, xaxis='Charge ID Med', maxy=None)
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('final-f3-eChargeIdMedium')
+    ## plotter.plot_final_f3('eChargeIdMedium', 1, xaxis='Charge ID Med', maxy=None)
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('final-f3-eChargeIdMedium')
 
     plotter.plot_final_f3('eChargeIdTight', 1, xaxis='Charge ID Tight', maxy=None)
     plotter.add_cms_blurb(sqrts)
