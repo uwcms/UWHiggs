@@ -137,6 +137,7 @@ class WHPlotterBase(Plotter):
     def __init__(self, files, lumifiles, outputdir):
         blinder = None
         blind   = 'blind' not in os.environ or os.environ['blind'] == 'YES'
+        print '\n\nRunning Blind: %s\n\n' % blind
         self.blind = blind
         if blind:
             # Don't look at the SS all pass region
@@ -177,13 +178,13 @@ class WHPlotterBase(Plotter):
             # Give the individual object views nice colors
             obj1_view = views.TitleView(
                 views.StyleView(obj1_view, **data_styles['TT*']),
-                'Non-prompt Obj1')
+                'Reducible bkg. 1')
             obj2_view = views.TitleView(
                 views.StyleView(obj2_view, **data_styles['QCD*']),
-                'Non-prompt Obj2')
+                'Reducible bkg. 2')
             obj12_view = views.TitleView(
                 views.StyleView(obj12_view, **data_styles['WW*']),
-                'Non-prompt Obj12')
+                'Reducible bkg. 12')
 
             subtract_obj12_view = views.ScaleView(obj12_view, -1)
             return obj1_view, obj2_view, obj12_view, subtract_obj12_view
@@ -200,7 +201,7 @@ class WHPlotterBase(Plotter):
         # Corrected fake view
         fakes_view = views.SumView(obj1_view, obj2_view, subtract_obj12_view)
         fakes_view = views.TitleView(
-            views.StyleView(fakes_view, **data_styles['Zjets*']), 'Non-prompt')
+            views.StyleView(fakes_view, **data_styles['Zjets*']), 'Reducible bkg.')
 
         charge_fakes = views.TitleView(
             views.StyleView(
@@ -228,7 +229,7 @@ class WHPlotterBase(Plotter):
             output['vh%i' % mass] = vh_view
             if mass % 10 == 0:
                 ww_view = views.SubdirectoryView(
-                    self.rebin_view(self.get_view('VHWW_lepdecay_%i*' % mass), rebin),
+                    self.rebin_view(self.get_view('VH_%i_HWW*' % mass), rebin),
                     'ss/p1p2p3/'
                 )
                 output['vh%i_hww' % mass] = ww_view
@@ -297,13 +298,13 @@ class WHPlotterBase(Plotter):
             # Give the individual object views nice colors
             obj1_view = views.TitleView(
                 views.StyleView(obj1_view, **data_styles['TT*']),
-                'Non-prompt Obj1')
+                'Reducible bkg. 1')
             obj2_view = views.TitleView(
                 views.StyleView(obj2_view, **data_styles['QCD*']),
-                'Non-prompt Obj2')
+                'Reducible bkg. 2')
             obj12_view = views.TitleView(
                 views.StyleView(obj12_view, **data_styles['WW*']),
-                'Non-prompt Obj12')
+                'Reducible bkg. 12')
 
             subtract_obj12_view = views.ScaleView(obj12_view, -1)
             return obj1_view, obj2_view, obj12_view, subtract_obj12_view
@@ -320,7 +321,7 @@ class WHPlotterBase(Plotter):
         # Corrected fake view
         fakes_view = views.SumView(obj1_view, obj2_view, subtract_obj12_view)
         fakes_view = views.TitleView(
-            views.StyleView(fakes_view, **data_styles['Zjets*']), 'Non-prompt')
+            views.StyleView(fakes_view, **data_styles['Zjets*']), 'Reducible bkg.')
 
         if False and qcd_correction:  # broken
             obj1_view = QCDCorrectionView(all_data_view,
@@ -388,7 +389,7 @@ class WHPlotterBase(Plotter):
 
         fakes_view = views.SumView(fakes_view, inverted_diboson_view)
 
-        fakes_view = views.TitleView(fakes_view, 'Non-prompt')
+        fakes_view = views.TitleView(fakes_view, 'Reducible bkg.')
 
         output = {
             'wz': wz_view,
@@ -453,7 +454,7 @@ class WHPlotterBase(Plotter):
                    qcd_weight_fraction=0, **kwargs):
         ''' Plot the final output - with bkg. estimation '''
         sig_view = self.make_signal_views(
-            rebin, unblinded=True, qcd_weight_fraction=qcd_weight_fraction)
+            rebin, unblinded=(not self.blind), qcd_weight_fraction=qcd_weight_fraction)
         vh_10x = views.TitleView(
             views.StyleView(
                 views.ScaleView(sig_view['signal120'], 5),
