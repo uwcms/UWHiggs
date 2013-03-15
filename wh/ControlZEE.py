@@ -67,7 +67,7 @@ def assign_charge_weight_one_maps(dir_, row):
         return charge_flip(row.e1AbsEta,row.e1Pt) + charge_flip(row.e2AbsEta,row.e2Pt)
     return 1 #No Charge w to be applied!
 
-assign_charge_weight = assign_charge_weight_one_maps
+assign_charge_weight = assign_charge_weight_two_maps
 
 def assign_id_weight(dir_, row):
     if 'wjet_w' not in dir_ and 'qcd_w' not in dir_: #NO Weights to be applied!
@@ -143,7 +143,7 @@ class ControlZEE(MegaBase):
         if not selections.eSelection(row, 'e1'): return False
         if not selections.eSelection(row, 'e2'): return False
         if not selections.vetos(row): return False
-        region = selections.control_region_ee(row)
+            #region = selections.control_region_ee(row)
         return True
 
     def obj1_id(self, row):

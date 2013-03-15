@@ -15,15 +15,12 @@ import array
 from RecoLuminosity.LumiDB import argparse
 from FinalStateAnalysis.PlotTools.RebinView import RebinView
 from FinalStateAnalysis.PlotTools.THBin import zipBins
-#from FinalStateAnalysis.Utilities.palettes import set_temperature_palette
 import logging
 import sys
 args = sys.argv[:]
 sys.argv = [sys.argv[0]]
 from FinalStateAnalysis.Utilities.rootbindings import ROOT
 ROOT.gROOT.SetBatch(True)
-#set_temperature_palette()
-ROOT.gStyle.SetPalette(53)
 
 log = logging.getLogger("make_charge_flip_probability_map")
 
@@ -57,11 +54,8 @@ if __name__ == "__main__":
     parser.add_argument('output', metavar='output.root', help='Output root file')
     parser.add_argument('num', metavar='/path/to/numerator',   help='Path to numerator histogram')
     parser.add_argument('den', metavar='/path/to/denominator', help='Path to denominator histogram')
-    parser.add_argument('os_mass_histo', metavar='/path/to/os_mass_histo',   help='Path to OS mass histogram')
-    parser.add_argument('ss_mass_histo', metavar='/path/to/ss_mass_histo',   help='Path to SS mass histogram')
     parser.add_argument('input', nargs='+', metavar='input.root', help='Input root files - will be summed')
     parser.add_argument('--verbose', action='store_true', help='More log output')
-    parser.add_argument('--plot_z_range', metavar='z_range', type=str, required=False, help='forces z range of the plotted map')
     parser.add_argument('--rebinX', metavar='N', type=int, required=False, help='Rebin histograms before fitting. '
                         #'Can be either an integer or a list of bin edges.'
                         #' If variable binning is used, the numbers should '
@@ -127,14 +121,7 @@ if __name__ == "__main__":
             eff_map_statUp.SetBinContent(ibinx, ibiny, statUp)
             eff_map_statDown.SetBinContent(ibinx, ibiny, statDown)
             worse_rel_err.SetBinContent(ibinx, ibiny, worse_err)
-
-    canvas = ROOT.TCanvas("asdf", "asdf", 900, 900)
-    if args.plot_z_range:
-        z_range = eval(args.plot_z_range)
-        eff_map.GetZaxis().SetRangeUser(*z_range)
-    eff_map.Draw('text90')
-    canvas.Print(args.output.replace('.root',".png"))
-    
+            
     outFile = ROOT.TFile(args.output,'recreate') #FIXME move to rootpy io
     outFile.cd()
     eff_map.Write()
@@ -143,7 +130,7 @@ if __name__ == "__main__":
     worse_rel_err.Write()
 
     m          = ROOT.RooRealVar('m', 'm', 55,55,200)
-    os_trkMass = ROOT.RooDataHist('higgs_data','higgs_data',ROOT.RooArgList(m),input_view.Get(args.os_mass_histo))
+    os_trkMass = ROOT.RooDataHist('higgs_data','higgs_data',ROOT.RooArgList(m),input_view.Get('charge/os_trkMass'))
     mean       = ROOT.RooRealVar('mean', 'mean', 90,80,110)
     sigmaL     = ROOT.RooRealVar('sigmaL' ,'sigmaL' ,30 ,0 ,100)
     sigmaR     = ROOT.RooRealVar('sigmaR' ,'sigmaR' ,25 ,0 ,100)
@@ -158,13 +145,14 @@ if __name__ == "__main__":
         #ROOT.RooFit.SumW2Error(True),
         )
 
+    canvas = ROOT.TCanvas("asdf", "asdf", 800, 600)
     frame = m.frame(ROOT.RooFit.Title("OS Trk Mass distribution"))
     os_trkMass.plotOn(
         frame,
     )
     os_func.plotOn(frame, ROOT.RooFit.LineColor(ROOT.EColor.kAzure))
     frame.Draw()
-    canvas.Print(args.output.replace('.root',"_os_trkMass.png"))
+    canvas.Print(args.output.replace(".root","os_trkMass.png"))
 
     #Fizin all the parameters
     #mean.setVal(0)
@@ -175,7 +163,7 @@ if __name__ == "__main__":
     alphaR.setConstant(True)
 
     m.setBins(10000,"cache")
-    ss_trkMass = ROOT.RooDataHist('ss_trkMass','ss_trkMass',ROOT.RooArgList(m), input_view.Get(args.ss_mass_histo))
+    ss_trkMass = ROOT.RooDataHist('ss_trkMass','ss_trkMass',ROOT.RooArgList(m), input_view.Get('charge/ss_trkMass'))
     mass_scale = ROOT.RooRealVar('mass_scale' ,'mass_scale', 1, 0.8,1.2)
     loss_fcn   = ROOT.RooFormulaVar('loss_fcn' ,'fake_width' , '@0 * @1', ROOT.RooArgList(mass_scale,m))
     ss_func    = ROOT.RooCruijff( 'ss_func', 'ss_func', loss_fcn, mean, sigmaL, sigmaR, alphaL, alphaR)
@@ -195,7 +183,7 @@ if __name__ == "__main__":
     
     ss_func.plotOn(frame, ROOT.RooFit.LineColor(ROOT.EColor.kAzure))
     frame.Draw()
-    canvas.Print(args.output.replace('.root',"_ss_trkMass.png"))
+    canvas.Print(args.output.replace(".root","os_trkMass.png"))
 
     mass_scale.Write()
     outFile.Close()
