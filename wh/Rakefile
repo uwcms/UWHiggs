@@ -601,7 +601,7 @@ task :eet => eet_results
 
 task :mmcontrol => get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm'])
 task :emcontrol => get_analyzer_results("ControlEM.py", samples['ewk'] + samples['data_em'])
-task :eecontrol => get_analyzer_results("ControlZEE.py", samples['ewk'] + samples['data_ee']) + ["#{$frfit_dir}/charge_flip_prob_map.root"] + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") 
+task :eecontrol => get_analyzer_results("ControlZEE.py", samples['data_ee']) + ["#{$frfit_dir}/charge_flip_prob_map.root"] + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") #samples['ewk'] +
 
 task :mmt_signal => get_analyzer_results("WHAnalyzeMMT.py", samples['signal'])
 task :emt_signal => get_analyzer_results("WHAnalyzeEMT.py", samples['signal'])
