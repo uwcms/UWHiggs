@@ -50,7 +50,8 @@ class ChargeFlipProbabilityEE(MegaBase):
 
     def begin(self):
         # Charge mis-ID measurements
-        etabins    = [(i*barrelThr/binsBarrel) for i in range(binsBarrel+1)]+[ (barrelThr+i*(accThr-barrelThr)/binsEndcap) for i in range(1,binsEndcap+1)] 
+        etabins    = [(i*barrelThr/binsBarrel) for i in range(binsBarrel+1)] + \
+            [ (barrelThr+i*(accThr-barrelThr)/binsEndcap) for i in range(1,binsEndcap+1)] 
         self.book('charge', 'flipped_electrons', 'Flipped electrons distribution; |#eta|; p_{T} [GeV]',
                   len(etabins)-1, array.array('f',etabins), len(ptbins) -1, array.array('f',ptbins), type=ROOT.TH2F)
         self.book('charge', 'matched_electrons', 'Gen-matched electrons distribution; |#eta|; p_{T} [GeV]',
@@ -76,14 +77,18 @@ class ChargeFlipProbabilityEE(MegaBase):
 
         def preselection(row):
             if not row.doubleEPass:  return False
-            if (row.e1GenPdgId == -999) or (row.e2GenPdgId == -999): return False
+            #if (row.e1GenPdgId == -999) or (row.e2GenPdgId == -999): return False
             if row.e1Pt < 20:        return False
             if not selections.eSelection(row, 'e1'): return False
             if not selections.eSelection(row, 'e2'): return False
-            if not selections.vetos(row):            return False
+            if any([ row.muVetoPt5,
+                      row.tauVetoPt20,
+                      row.eVetoCicTightIso]):        return False
             if not selections.h2tau_eid(row, 'e1'):  return False
             if not selections.h2tau_eid(row, 'e2'):  return False
             return True
+            if not selections.vetos(row): return False
+            ## return bool(selections.control_region_ee(row) == 'zee')
 
         #def fill(the_histos, row):
 
@@ -111,7 +116,7 @@ class ChargeFlipProbabilityEE(MegaBase):
                     histos['charge/matched_electrons'].Fill( eta, pt )
                     single_hist = 'charge/matched_%s' % el
                     histos[single_hist].Fill( eta, pt )
-                    if charge*(11) == pdgid: ##e- --> -11; e+ --> 11 MISMEASURED ELECTRON # getattr(row,el+'Charge')*(11) ==
+                    if charge*(11) == pdgid: ##e- --> -11; e+ --> 11 MISMEASURED ELECTRON
                         single_hist = 'charge/flipped_%s' % el
                         histos[single_hist].Fill( eta, pt )
                         histos['charge/flipped_electrons'].Fill( eta, pt )

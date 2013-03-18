@@ -58,7 +58,6 @@ class ControlZEEPlotter(Plotter):
             lumifiles.extend(glob.glob('inputs/%s/%s.lumicalc.sum' % (self.jobid, x)))
         super(ControlZEEPlotter, self).__init__(files, lumifiles, self.output_dir)
         self.mc_samples = ['Zjets_M50']
-        self.stream = None
 
     def get_flip_data(self, rebin=1, xaxis=''):
         data_view = self.get_view('data')
@@ -123,10 +122,7 @@ class ControlZEEPlotter(Plotter):
         estimate_error.SetFillColor(ROOT.EColor.kBlack)
         estimate_error.SetTitle('Error on estimate')
 
-        if not self.stream:
-            print variable,'expected:', estimate_hist.Integral(), 'observed:',obs_hist.Integral(), 'ratio:', ( (estimate_hist.Integral()/obs_hist.Integral())*100 if obs_hist.Integral() != 0 else 0)
-        else:
-            self.stream.write('%20s%20.1f%20.1f%20.1f\n' % (variable, estimate_hist.Integral(), obs_hist.Integral(), ((estimate_hist.Integral()/obs_hist.Integral())*100 if obs_hist.Integral() != 0 else 0)) )
+        print variable, estimate_hist.GetMaximum(), max(list(obs_hist)), max( [ estimate_hist.GetMaximum(), max(list(obs_hist)) ] )
         hmax = max( [ estimate_hist.GetMaximum(), max(list(obs_hist)) ] )
         obs_hist.GetYaxis().SetRangeUser(0,hmax*1.3)
 
@@ -150,8 +146,6 @@ class ControlZEEPlotter(Plotter):
 
 
 plotter = ControlZEEPlotter()
-plotter.stream = open(plotter.output_dir+'/yields.raw_txt','w')
-plotter.stream.write('%20s%20s%20s%20s\n' % ('var','expected','observed','ratio'))
 
 plotter.make_charge_flip_control_plot('TrkMass','Tracker Inv Mass (GeV)',2)
 plotter.save('EE_Charge_Flip_xcheck_trk_invMass')
@@ -168,6 +162,12 @@ plotter.save('EE_Charge_Flip_xcheck_ePt')
 plotter.make_charge_flip_control_plot('eAbsEta','electron |#eta|',4, legend_on_the_left=True)
 plotter.save('EE_Charge_Flip_xcheck_eAbsEta')
 
+plotter.make_charge_flip_control_plot('SCDPhi','Super Cluster #Delta#phi', 6)
+plotter.save('EE_Charge_Flip_xcheck_eSCDPhi')
+
+plotter.make_charge_flip_control_plot('SCEnergy','Super cluster energy (GeV)',5)
+plotter.save('EE_Charge_Flip_xcheck_eSCEnergy')
+
 plotter.make_charge_flip_control_plot('e1Pt','electron p_{T}',2)
 plotter.save('EE_Charge_Flip_xcheck_e1Pt')
 
@@ -180,39 +180,3 @@ plotter.save('EE_Charge_Flip_xcheck_e2Pt')
 plotter.make_charge_flip_control_plot('e2AbsEta','electron |#eta|',4, legend_on_the_left=True)
 plotter.save('EE_Charge_Flip_xcheck_e2AbsEta')
 
-plotter.make_charge_flip_control_plot('SCDPhi','Super Cluster #Delta#phi', 6)
-plotter.save('EE_Charge_Flip_xcheck_eSCDPhi')
-
-plotter.make_charge_flip_control_plot('SCEnergy','Super cluster energy (GeV)',5)
-plotter.save('EE_Charge_Flip_xcheck_eSCEnergy')
-
-plotter.stream.close()
-## plotter.plot_mc_vs_data('zmm', 'm1m2Mass', rebin=2, xaxis='m_{#mu#mu} (GeV)')
-## plotter.add_cms_blurb(sqrts)
-## plotter.save('mass')
-## 
-## plotter.plot_mc_vs_data('zmm', 'm1m2Mass', rebin=6, xaxis='m_{#mu#mu} (GeV)')
-## plotter.add_cms_blurb(sqrts)
-## plotter.save('mass_rebin')
-## 
-## plotter.plot_mc_vs_data('zmm', 'm1Pt')
-## plotter.save('m1Pt')
-## plotter.plot_mc_vs_data('zmm', 'm1Pt', 5)
-## plotter.save('m1Pt_rebin')
-## plotter.plot_mc_vs_data('zmm', 'm2Pt')
-## plotter.save('m2Pt')
-## plotter.plot_mc_vs_data('zmm', 'm2Pt', 5)
-## plotter.save('m2Pt_rebin')
-## 
-## plotter.plot_mc_vs_data('zmm', 'm1AbsEta')
-## plotter.save('m1AbsEta')
-## plotter.plot_mc_vs_data('zmm', 'm2AbsEta')
-## plotter.save('m2AbsEta')
-## 
-## plotter.plot_mc_vs_data('zmm', 'm1AbsEta', 5)
-## plotter.save('m1AbsEta_rebin')
-## plotter.plot_mc_vs_data('zmm', 'm2AbsEta', 5)
-## plotter.save('m2AbsEta_rebin')
-## 
-## plotter.plot_mc_vs_data('zmm', 'nvtx')
-## plotter.save('nvtx')
