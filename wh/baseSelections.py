@@ -43,7 +43,7 @@ def h2tau_eid(row, name):
 
 def control_region_ee(row):
     '''Figure out what control region we are in. Shared among two codes, to avoid mismatching copied here'''
-    if  row.e1_e2_SS and row.e1RelPFIsoDB < 0.15 and row.e1MtToMET > 30 and row.e2MtToMET < 30:# and row.e2MtToMET < 30: #and row.metEt > 30: #row.metSignificance > 3:
+    if  row.e1_e2_SS and h2tau_eid(row, 'e1') and row.e1MtToMET > 30: # and row.e2MtToMET < 30:# and row.e2MtToMET < 30: #and row.metEt > 30: #row.metSignificance > 3:
         return 'wjets'
     elif row.e1_e2_SS and row.e1RelPFIsoDB > 0.3 and row.metEt < 25: #and row.metSignificance < 3: #
         return 'qcd'
