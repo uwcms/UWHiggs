@@ -171,12 +171,12 @@ plotter.save('EE_Charge_Flip_xcheck_eSCEnergy')
 plotter.make_charge_flip_control_plot('e1Pt','electron p_{T}',2)
 plotter.save('EE_Charge_Flip_xcheck_e1Pt')
 
-plotter.make_charge_flip_control_plot('e1AbsEta','electron |#eta|',4, legend_on_the_left=True)
+plotter.make_charge_flip_control_plot('e1AbsEta','electron |#eta|',10, legend_on_the_left=True)
 plotter.save('EE_Charge_Flip_xcheck_e1AbsEta')
 
 plotter.make_charge_flip_control_plot('e2Pt','electron p_{T}',2)
 plotter.save('EE_Charge_Flip_xcheck_e2Pt')
 
-plotter.make_charge_flip_control_plot('e2AbsEta','electron |#eta|',4, legend_on_the_left=True)
+plotter.make_charge_flip_control_plot('e2AbsEta','electron |#eta|',10, legend_on_the_left=True)
 plotter.save('EE_Charge_Flip_xcheck_e2AbsEta')
 
