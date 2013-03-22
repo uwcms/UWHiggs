@@ -55,6 +55,17 @@ The output histogram has the following structure:
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 import os
 import ROOT
+import math
+
+def quad(*xs):
+    return math.sqrt(sum(x * x for x in xs))
+
+def inv_mass(*args):
+    lorentz_vecs = [ROOT.TLorentzVector() for i in xrange(len(args))]
+    for v,i in zip(lorentz_vecs,args):
+        v.SetPtEtaPhiM(*i)
+    return sum(lorentz_vecs,ROOT.TLorentzVector()).M() #We need to give the staring point otherwise it starts from an int and it does not work
+    
                         
 class WHAnalyzerBase(MegaBase):
     def __init__(self, tree, outfile, wrapper, **kwargs):
@@ -260,7 +271,6 @@ class WHAnalyzerBase(MegaBase):
 
             if anti_wz:
                 base_folder, weights = region_result
-
                 # Fill the un-fr-weighted histograms
                 fill_histos(histos, base_folder, row, event_weight)
 
@@ -282,9 +292,7 @@ class WHAnalyzerBase(MegaBase):
                     charge_flip_prob = self.obj1_charge_flip(row) if obj1_obj3_SS else self.obj2_charge_flip(row)
                     directory        = 'os/p1p2%s3/c1' if obj1_obj3_SS else 'os/p1p2%s3/c2'
                     directory        = directory % ('p' if obj3_id_result else 'f')
-                    if charge_flip_prob:
-                        charge_flip_prob = charge_flip_prob/(1. - charge_flip_prob)
-
+                    charge_flip_prob = charge_flip_prob/(1. - charge_flip_prob)
                     fill_histos(histos, (directory,), row, event_weight*charge_flip_prob)
 
             elif sign_result and obj1_id_result and obj3_id_result:
