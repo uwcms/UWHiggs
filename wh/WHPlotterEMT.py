@@ -13,6 +13,8 @@ import ROOT
 import sys
 import WHPlotterBase
 from WHPlotterBase import make_styler
+import rootpy.plotting.views as views
+from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
@@ -152,6 +154,53 @@ if __name__ == "__main__":
     ###########################################################################
     ##  Signal region plots    ################################################
     ###########################################################################
+
+    #BEGIN - New topologicla variables
+    ## plotter.plot_final('LT', 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-LT')
+    ## sig_view = plotter.make_signal_views(20, unblinded=(not plotter.blind))
+    ## vh_10x   = views.StyleView(
+    ##     sig_view['signal120'], 
+    ##     **data_styles['VH*']
+    ##     )
+    ## subm_hist= vh_10x.Get('subMass')
+    ## subm_hist.SetTitle('subleading Mass')
+    ## subm_hist.Draw()
+    ## true_hist= vh_10x.Get('true_mass')
+    ## true_hist.SetTitle('true Mass')
+    ## true_hist.SetLineColor(2)
+    ## true_hist.Draw('same')
+    ## subm_hist.GetYaxis().SetRangeUser(0,max([subm_hist.GetMaximum(),true_hist.GetMaximum()])*1.2)
+    ## legend = plotter.add_legend([subm_hist,true_hist], leftside=False)
+    ## legend.Draw()
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-trueMass')
+
+    plotter.plot_final('tToMETDPhi', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-tToMETDPhi')
+
+    plotter.plot_final('recoilDaught', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-recoilDaught')
+
+    plotter.plot_final('recoilWithMet', 20, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-recoilWithMet')
+
+    plotter.plot_final('lepRecoil_wMET', 5,  x_range=[0,300], qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-lepRecoilwMET')
+
+    plotter.plot_final('lepRecoil', 5,  x_range=[0,300], qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-lepRecoil')
+
+    plotter.plot_final('metEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,500])
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-metEt')
+    #END
 
     plotter.plot_final('mPt', 10)
     plotter.save('final-mPt')
