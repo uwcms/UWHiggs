@@ -19,6 +19,7 @@ Author: Evan K. Friis, UW
 '''
 
 import EETree
+#from EETauTree import EETauTree
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 import baseSelections as selections
 import math
@@ -39,6 +40,7 @@ ptbins       = [10.,30.,50.,130.]
 
 class ChargeFlipProbabilityEE(MegaBase):
     tree = 'ee/final/Ntuple'
+    #tree = 'eet/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         super(ChargeFlipProbabilityEE, self).__init__(tree, outfile, **kwargs)
         # Use the cython wrapper
@@ -86,8 +88,8 @@ class ChargeFlipProbabilityEE(MegaBase):
                       row.eVetoCicTightIso]):        return False
             if not selections.h2tau_eid(row, 'e1'):  return False
             if not selections.h2tau_eid(row, 'e2'):  return False
+            if not (row.jetVeto40 >= 1):              return False
             return True
-            if not selections.vetos(row): return False
             ## return bool(selections.control_region_ee(row) == 'zee')
 
         #def fill(the_histos, row):
