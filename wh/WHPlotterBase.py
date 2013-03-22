@@ -24,6 +24,14 @@ import math
 def quad(*xs):
     return math.sqrt(sum(x * x for x in xs))
 
+def create_mapper(mapping):
+    def _f(path):
+        for key, out in mapping.iteritems():
+            if key in path:
+                path = path.replace(key,out)
+        return path
+    return _f
+
 
 class BackgroundErrorView(object):
     ''' Compute the total background error in each bin. '''
@@ -134,16 +142,19 @@ def make_styler(color, format=None):
 
 
 class WHPlotterBase(Plotter):
-    def __init__(self, files, lumifiles, outputdir):
+    def __init__(self, files, lumifiles, outputdir, obj1_charge_mapper={}, obj2_charge_mapper={}):
         blinder = None
         blind   = 'blind' not in os.environ or os.environ['blind'] == 'YES'
         print '\n\nRunning Blind: %s\n\n' % blind
         self.blind = blind
+        self.obj1_charge_mapper=obj1_charge_mapper #maps scaled charge flip histograms to the ones of the normal categories
+        self.obj2_charge_mapper=obj2_charge_mapper #maps scaled charge flip histograms to the ones of the normal categories
         if blind:
             # Don't look at the SS all pass region
             blinder = lambda x: BlindView(x, "ss/p1p2p3/.*")
         super(WHPlotterBase, self).__init__(files, lumifiles, outputdir,
                                             blinder)
+        self.defaults = {} #allows to set some options and avoid repeating them each function call
 
     def make_signal_views(self, rebin, unblinded=False, qcd_weight_fraction=0):
         ''' Make signal views with FR background estimation '''
@@ -203,10 +214,20 @@ class WHPlotterBase(Plotter):
         fakes_view = views.TitleView(
             views.StyleView(fakes_view, **data_styles['Zjets*']), 'Reducible bkg.')
 
-        charge_fakes = views.TitleView(
+        charge_fakes = views.TitleView( 
             views.StyleView(
-                views.SubdirectoryView(all_data_view, 'os/p1p2p3/c1'),
-                **data_styles['TT*']), 'Charge mis-id')
+                views.SumView(
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2p3/c1'),
+                        create_mapper(self.obj1_charge_mapper)
+                        ),
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2p3/c2'),
+                        create_mapper(self.obj2_charge_mapper)
+                        ),
+                    ),
+                **data_styles['TT*']),
+            'Charge mis-id')
 
         output = {
             'wz': wz_view,
@@ -336,10 +357,20 @@ class WHPlotterBase(Plotter):
                                           'ss/p1f2f3/q2')
             obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2f3/w12')
 
-        charge_fakes = views.TitleView(
+        charge_fakes = views.TitleView( 
             views.StyleView(
-                views.SubdirectoryView(all_data_view, 'os/p1p2f3/c1'),
-                **data_styles['TT*']), 'Charge mis-id')
+                views.SumView(
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2f3/c1'),
+                        create_mapper(self.obj1_charge_mapper)
+                        ),
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2f3/c2'),
+                        create_mapper(self.obj2_charge_mapper)
+                        ),
+                    ),
+                **data_styles['TT*']),
+            'Charge mis-id')
 
         output = {
             'wz': wz_view,
@@ -450,9 +481,10 @@ class WHPlotterBase(Plotter):
         return self.write_shapes(variable, nbins, outdir, unblinded)
 
     def plot_final(self, variable, rebin=1, xaxis='', maxy=15,
-                   show_error=False, qcd_correction=False,
-                   qcd_weight_fraction=0, **kwargs):
-        ''' Plot the final output - with bkg. estimation '''
+                   show_error=False, qcd_correction=False, stack_higgs=True, 
+                   qcd_weight_fraction=0, x_range=None, show_charge_fakes=False,**kwargs):
+        ''' Plot the final output - with bkg. estimation '''        
+        show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
         sig_view = self.make_signal_views(
             rebin, unblinded=(not self.blind), qcd_weight_fraction=qcd_weight_fraction)
         vh_10x = views.TitleView(
@@ -465,17 +497,20 @@ class WHPlotterBase(Plotter):
 
         # Fudge factor to go from 120->125 - change in xsec*BR
         vh_10x = views.ScaleView(vh_10x, .783)
-
-        stack = views.StackView(
-            sig_view['wz'],
-            sig_view['zz'],
-            sig_view['fakes'],
-            vh_10x,
-        )
+        tostack = [sig_view['wz'], sig_view['zz'], sig_view['fakes'], vh_10x] if stack_higgs else \
+            [sig_view['wz'], sig_view['zz'], sig_view['fakes']]
+        if show_charge_fakes:
+            tostack = [sig_view['charge_fakes']]+tostack
+        stack = views.StackView( *tostack )
         histo = stack.Get(variable)
         histo.Draw()
         histo.GetHistogram().GetXaxis().SetTitle(xaxis)
-        histo.SetMaximum(maxy)
+        if x_range:
+            histo.GetHistogram().GetXaxis().SetRangeUser(x_range[0], x_range[1])
+        if isinstance(maxy, (int, long, float)):
+            histo.SetMaximum(maxy)
+        else:
+            histo.SetMaximum(sum(histo.GetHists()).GetMaximum()*1.2)
         self.keep.append(histo)
 
         # Add legend
@@ -497,10 +532,15 @@ class WHPlotterBase(Plotter):
         sig_view['data'] = PoissonView(sig_view['data'], x_err=False)
 
         data = sig_view['data'].Get(variable)
-        if True or not self.blind:
+        if not self.blind:
             data.Draw('pe,same')
         self.keep.append(data)
 
+        if not stack_higgs:
+            higgs_plot = vh_10x.Get(variable)
+            higgs_plot.Draw('same')
+            self.keep.append(higgs_plot)
+            
         #legend.AddEntry(data)
         legend.Draw()
 
@@ -530,7 +570,7 @@ class WHPlotterBase(Plotter):
 
     def plot_final_f3(self, variable, rebin=1, xaxis='', maxy=None,
                       show_error=False, qcd_correction=False,
-                      qcd_weight_fraction=0, **kwargs):
+                      qcd_weight_fraction=0, x_range=None, **kwargs):
         ''' Plot the final F3 control region - with bkg. estimation '''
         sig_view = self.make_obj3_fail_cr_views(
             rebin, qcd_correction, qcd_weight_fraction)
@@ -544,6 +584,8 @@ class WHPlotterBase(Plotter):
         histo = stack.Get(variable)
         histo.Draw()
         histo.GetHistogram().GetXaxis().SetTitle(xaxis)
+        if x_range:
+            histo.GetHistogram().GetXaxis().SetRangeUser(x_range[0], x_range[1])
 
         # Add legend
         legend = self.add_legend(histo, leftside=False, entries=4)
@@ -562,7 +604,7 @@ class WHPlotterBase(Plotter):
 
         data = sig_view['data'].Get(variable)
         data.Draw('same')
-        if maxy:
+        if isinstance(maxy, (int, long, float)):
             histo.SetMaximum(maxy)
         else:
             #histo.SetMaximum(
