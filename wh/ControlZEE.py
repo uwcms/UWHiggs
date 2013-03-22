@@ -143,6 +143,7 @@ class ControlZEE(MegaBase):
         if not selections.eSelection(row, 'e1'): return False
         if not selections.eSelection(row, 'e2'): return False
         if not selections.vetos(row): return False
+        if not (row.jetVeto40 >= 1):             return False
             #region = selections.control_region_ee(row)
         return True
 
