@@ -13,12 +13,14 @@ import ROOT
 import sys
 import WHPlotterBase
 from WHPlotterBase import make_styler
+import rootpy.plotting.views as views
+from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 
 logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 class WHPlotterEET(WHPlotterBase.WHPlotterBase):
-    def __init__(self, files, lumifiles, outputdir):
-        super(WHPlotterEET, self).__init__(files, lumifiles, outputdir)
+    def __init__(self, files, lumifiles, outputdir, obj1_charge_mapper={}, obj2_charge_mapper={}):
+        super(WHPlotterEET, self).__init__(files, lumifiles, outputdir, obj1_charge_mapper, obj2_charge_mapper)
 
 if __name__ == "__main__":
     jobid = os.environ['jobid']
@@ -51,7 +53,8 @@ if __name__ == "__main__":
     if not os.path.exists(outputdir):
         os.makedirs(outputdir)
 
-    plotter = WHPlotterEET(files, lumifiles, outputdir)
+    plotter = WHPlotterEET(files, lumifiles, outputdir, obj1_charge_mapper={"e1_e2_Mass":"e*1_e2_Mass","e1_t_Mass":"e*1_t_Mass"}, obj2_charge_mapper={"e1_e2_Mass":"e1_e*2_Mass","e2_t_Mass":"e*2_t_Mass"})
+    plotter.defaults['show_charge_fakes'] = True
 
     ###########################################################################
     ##  Zmm control plots #####################################################
@@ -159,6 +162,108 @@ if __name__ == "__main__":
     ###########################################################################
     ##  Signal region plots    ################################################
     ###########################################################################
+
+    #BEGIN - New topologicla variables
+    ## sig_view = plotter.make_signal_views(20, unblinded=(not plotter.blind))
+    ## vh_10x   = views.StyleView(
+    ##     sig_view['signal120'], 
+    ##     **data_styles['VH*']
+    ##     )
+    ## subm_hist= vh_10x.Get('e2_t_Mass')
+    ## subm_hist.SetTitle('subleading Mass')
+    ## subm_hist.Draw()
+    ## true_hist= vh_10x.Get('true_mass')
+    ## true_hist.SetTitle('true Mass')
+    ## true_hist.SetLineColor(2)
+    ## true_hist.Draw('same')
+    ## subm_hist.GetYaxis().SetRangeUser(0,max([subm_hist.GetMaximum(),true_hist.GetMaximum()])*1.2)
+    ## legend = plotter.add_legend([subm_hist,true_hist], leftside=False)
+    ## legend.Draw()
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-trueMass')
+
+    plotter.plot_final('LT', 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-LT')
+
+    ## plotter.plot_final('_recoilDaught', 3, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False, x_range=[0,300])
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-recoilDaught')
+
+    ## rebin=3
+    ## plotter.plot_final_f3('_recoilDaught', rebin, qcd_weight_fraction=0.5, maxy='auto', x_range=[0,300])
+    ## sig_view = plotter.make_signal_views(  rebin, unblinded=(not plotter.blind))
+    ## vh_10x   = views.TitleView(
+    ##     views.StyleView(
+    ##         views.ScaleView(sig_view['signal120'], 120),
+    ##         **data_styles['VH*']
+    ##         ),
+    ##         "(20#times) m_{H} = 125"
+    ##     )
+    ## sign_hist= vh_10x.Get('_recoilDaught')
+    ## sign_hist.Draw('same')
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-f3-recoilDaught')
+
+    ## rebin=20
+    ## plotter.plot_final_f3('tToMETDPhi',  rebin, qcd_weight_fraction=0.5, maxy='auto')
+    ## sig_view = plotter.make_signal_views(rebin, unblinded=(not plotter.blind))
+    ## vh_10x   = views.TitleView(
+    ##     views.StyleView(
+    ##         views.ScaleView(sig_view['signal120'], 120),
+    ##         **data_styles['VH*']
+    ##         ),
+    ##         "(20#times) m_{H} = 125"
+    ##     )
+    ## sign_hist= vh_10x.Get('tToMETDPhi')
+    ## sign_hist.Draw('same')
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-f3-tToMETDPhi')
+
+    plotter.plot_final('e1_e2_Mass', 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-e1_e2_Mass')
+
+    ## plotter.plot_final('mass', 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-mass')
+
+    ## plotter.plot_final('pt_ratio', 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-pt_ratio')
+
+    ## plotter.plot_final('metEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,500])
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-metEt')
+
+    plotter.plot_final_f3('e1Pt',  10, qcd_weight_fraction=0.5, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-e1Pt')
+
+    plotter.plot_final_f3('e2Pt',  10, qcd_weight_fraction=0.5, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-e2Pt')
+
+    plotter.plot_final_f3('e1_e2_Mass', 2, qcd_weight_fraction=0.5, stack_higgs=False, maxy=140, x_range=[60,120])
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-e1_e2_Mass')
+
+    plotter.plot_final_f3('e1eta_on_z_peak', 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-e1eta_on_z_peak')
+
+    plotter.plot_final_f3('e1pt_on_z_peak', 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-e1pt_on_z_peak')
+
+    plotter.plot_final_f3('e2eta_on_z_peak', 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-e2eta_on_z_peak')
+
+    plotter.plot_final_f3('e2pt_on_z_peak', 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-e2pt_on_z_peak')
+    ## #END
 
     plotter.plot_final('e1Pt', 10)
     plotter.add_cms_blurb(sqrts)
