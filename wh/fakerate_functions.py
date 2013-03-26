@@ -161,12 +161,20 @@ mu_fr_qcd_2d_b = TwoDimFakeRate(
     'qcd/pt10b/h2taucuts/muonJetVsLeptonPt', 'qcd/pt10b/muonJetVsLeptonPt',
     get_view('data'), get_view('WZ*'), get_view('ZZ*'))
 
-
 e_charge_flip      = make_corrector_from_th2(frfit_dir+"/charge_flip_prob_map.root", "efficiency_map")         
 e_charge_flip_up   = make_corrector_from_th2(frfit_dir+"/charge_flip_prob_map.root", "efficiency_map_statUp")  
 e_charge_flip_down = make_corrector_from_th2(frfit_dir+"/charge_flip_prob_map.root", "efficiency_map_statDown")
-e_charge_flip_down = make_corrector_from_th2(frfit_dir+"/charge_flip_prob_map.root", "efficiency_map_statDown")
 mass_scaler        = make_scaler(frfit_dir+"/charge_flip_prob_map.root", 'mass_scale')
+
+highpt_e_charge_flip      = make_corrector_from_th2(frfit_dir+"/e1_flip_prob_map.root", "efficiency_map")         
+highpt_e_charge_flip_up   = make_corrector_from_th2(frfit_dir+"/e1_flip_prob_map.root", "efficiency_map_statUp")  
+highpt_e_charge_flip_down = make_corrector_from_th2(frfit_dir+"/e1_flip_prob_map.root", "efficiency_map_statDown")
+
+lowpt_e_charge_flip       = make_corrector_from_th2(frfit_dir+"/e2_flip_prob_map.root", "efficiency_map")         
+lowpt_e_charge_flip_up    = make_corrector_from_th2(frfit_dir+"/e2_flip_prob_map.root", "efficiency_map_statUp")  
+lowpt_e_charge_flip_down  = make_corrector_from_th2(frfit_dir+"/e2_flip_prob_map.root", "efficiency_map_statDown")
+
+
 
 w_function = build_roofunctor(frfit_dir + '/mt_shapes.root', 'fit_shapes', 'w_func','mt')      if os.path.isfile(frfit_dir + '/mt_shapes.root') else lambda mt: 0.5
 h_function = build_roofunctor(frfit_dir + '/mt_shapes.root', 'fit_shapes', 'higgs_func', 'mt') if os.path.isfile(frfit_dir + '/mt_shapes.root') else lambda mt: 0.5
