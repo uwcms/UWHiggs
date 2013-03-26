@@ -16,8 +16,10 @@ import rootpy.plotting.views as views
 from FinalStateAnalysis.PlotTools.Plotter import Plotter
 from FinalStateAnalysis.PlotTools.BlindView import BlindView
 from FinalStateAnalysis.PlotTools.PoissonView import PoissonView
+from FinalStateAnalysis.PlotTools.MedianView import MedianView
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 import os
+import glob
 import math
 
 
@@ -35,7 +37,7 @@ def create_mapper(mapping):
 
 class BackgroundErrorView(object):
     ''' Compute the total background error in each bin. '''
-    def __init__(self, fakes, wz, zz, wz_error=0.1, zz_error=0.04,
+    def __init__(self, fakes, wz, zz, charge_fake, wz_error=0.1, zz_error=0.04,
                  fake_error=0.3):
         self.fakes = fakes
         self.wz = wz
@@ -43,11 +45,13 @@ class BackgroundErrorView(object):
         self.fake_error = fake_error
         self.wz_error = wz_error
         self.zz_error = zz_error
+        self.charge_fake = charge_fake
 
     def Get(self, path):
         fakes = self.fakes.Get(path)
         wz = self.wz.Get(path)
         zz = self.zz.Get(path)
+        charge_fake = self.charge_fake.Get(path)
 
         bkg_error = wz.Clone()
         bkg_error.SetTitle("Bkg. Unc.")
@@ -57,12 +61,14 @@ class BackgroundErrorView(object):
                 fakes.GetBinError(bin),
                 fakes.GetBinContent(bin) * self.fake_error,
                 wz.GetBinContent(bin) * self.wz_error,
-                zz.GetBinContent(bin) * self.zz_error
+                zz.GetBinContent(bin) * self.zz_error,
+                charge_fake.GetBinError(bin)
             )
             total = (
                 fakes.GetBinContent(bin) +
                 wz.GetBinContent(bin) +
-                zz.GetBinContent(bin)
+                zz.GetBinContent(bin) +
+                charge_fake.GetBinContent(bin)
             )
             bkg_error.SetBinContent(bin, total)
             bkg_error.SetBinError(bin, error)
@@ -142,7 +148,36 @@ def make_styler(color, format=None):
 
 
 class WHPlotterBase(Plotter):
-    def __init__(self, files, lumifiles, outputdir, obj1_charge_mapper={}, obj2_charge_mapper={}):
+    def __init__(self, channel, obj1_charge_mapper={}, obj2_charge_mapper={}):
+        jobid = os.environ['jobid']
+        print "\nPlotting %s for %s\n" % (channel, jobid)
+
+        # Figure out if we are 7 or 8 TeV
+        period = '7TeV' if '7TeV' in jobid else '8TeV'
+        self.period = period
+        self.sqrts = 7 if '7TeV' in jobid else 8
+        samples = [
+            'Zjets_M50',
+            'WplusJets_madgraph',
+            'WZJetsTo3LNu*',
+            'ZZ*',
+            'VH*',
+            'WW*',
+            'TTplusJets_madgraph',
+            "data_*",
+        ]
+
+        files = []
+        lumifiles = []
+
+        for x in samples:
+            files.extend(glob.glob('results/%s/WHAnalyze%s/%s.root' % (jobid, channel, x)))
+            lumifiles.extend(glob.glob('inputs/%s/%s.lumicalc.sum' % (jobid, x)))
+
+        self.outputdir = 'results/%s/plots/%s' % (jobid, channel.lower())
+        if not os.path.exists(self.outputdir):
+            os.makedirs(self.outputdir)
+
         blinder = None
         blind   = 'blind' not in os.environ or os.environ['blind'] == 'YES'
         print '\n\nRunning Blind: %s\n\n' % blind
@@ -152,7 +187,7 @@ class WHPlotterBase(Plotter):
         if blind:
             # Don't look at the SS all pass region
             blinder = lambda x: BlindView(x, "ss/p1p2p3/.*")
-        super(WHPlotterBase, self).__init__(files, lumifiles, outputdir,
+        super(WHPlotterBase, self).__init__(files, lumifiles, self.outputdir,
                                             blinder)
         self.defaults = {} #allows to set some options and avoid repeating them each function call
 
@@ -228,6 +263,23 @@ class WHPlotterBase(Plotter):
                     ),
                 **data_styles['TT*']),
             'Charge mis-id')
+
+        charge_fakes_sysup = views.TitleView( 
+            views.StyleView(
+                views.SumView(
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2p3/c1_sysup'),
+                        create_mapper(self.obj1_charge_mapper)
+                        ),
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2p3/c2_sysup'),
+                        create_mapper(self.obj2_charge_mapper)
+                        ),
+                    ),
+                **data_styles['TT*']),
+            'Charge mis-id')
+
+        charge_fakes = MedianView(highv=charge_fakes_sysup, centv=charge_fakes)
 
         output = {
             'wz': wz_view,
@@ -371,7 +423,24 @@ class WHPlotterBase(Plotter):
                     ),
                 **data_styles['TT*']),
             'Charge mis-id')
+        
+        charge_fakes_sysup = views.TitleView(
+                 views.StyleView(
+                     views.SumView(
+                         views.PathModifierView(
+                             views.SubdirectoryView(all_data_view, 'os/p1p2f3/c1_sysup'),
+                             create_mapper(self.obj1_charge_mapper)
+                         ),
+                         views.PathModifierView(
+                             views.SubdirectoryView(all_data_view, 'os/p1p2f3/c2_sysup'),
+                             create_mapper(self.obj2_charge_mapper)
+                         ),
+                     ),
+                 **data_styles['TT*']),
+            'Charge mis-id')
 
+        charge_fakes = MedianView(highv=charge_fakes_sysup, centv=charge_fakes)
+                
         output = {
             'wz': wz_view,
             'zz': zz_view,
@@ -521,6 +590,7 @@ class WHPlotterBase(Plotter):
                 sig_view['fakes'],
                 sig_view['wz'],
                 sig_view['zz'],
+                sig_view['charge_fakes'],
                 **kwargs
             )
             bkg_error = bkg_error_view.Get(variable)
@@ -592,9 +662,10 @@ class WHPlotterBase(Plotter):
 
         if show_error:
             bkg_error_view = BackgroundErrorView(
-                views.SumView(sig_view['fakes'], sig_view['charge_fakes']),
+                views.SumView(sig_view['fakes']),
                 sig_view['wz'],
                 sig_view['zz'],
+                sig_view['charge_fakes'],
                 **kwargs
             )
             bkg_error = bkg_error_view.Get(variable)
