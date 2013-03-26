@@ -202,6 +202,10 @@ class WHAnalyzerBase(MegaBase):
         self.book_histos('os/p1p2f3/c1')
         self.book_histos('os/p1p2p3/c2')
         self.book_histos('os/p1p2f3/c2')
+        self.book_histos('os/p1p2p3/c1_sysup')
+        self.book_histos('os/p1p2f3/c1_sysup')
+        self.book_histos('os/p1p2p3/c2_sysup')
+        self.book_histos('os/p1p2f3/c2_sysup')
         for key in self.histograms:
             charpos  = key.rfind('/')
             location = key[ : charpos]+'/'
@@ -289,11 +293,15 @@ class WHAnalyzerBase(MegaBase):
                 if not sign_result and obj1_id_result and obj2_id_result:
                     # Object 1 can only flip if it is OS with the tau
                     obj1_obj3_SS     = self.obj1_obj3_SS(row)
-                    charge_flip_prob = self.obj1_charge_flip(row) if obj1_obj3_SS else self.obj2_charge_flip(row)
-                    directory        = 'os/p1p2%s3/c1' if obj1_obj3_SS else 'os/p1p2%s3/c2'
-                    directory        = directory % ('p' if obj3_id_result else 'f')
-                    charge_flip_prob = charge_flip_prob/(1. - charge_flip_prob)
-                    fill_histos(histos, (directory,), row, event_weight*charge_flip_prob)
+                    if (obj1_obj3_SS and hasattr(self,'obj1_charge_flip')) \
+                        or ( not obj1_obj3_SS and hasattr(self,'obj2_charge_flip')): #there is the function --> we have to compute it, otherwise skip and save some precious filling time!
+                        charge_flip_prob = self.obj1_charge_flip(row)       if obj1_obj3_SS else self.obj2_charge_flip(row)
+                        charge_flip_sysu = self.obj1_charge_flip_sysup(row) if obj1_obj3_SS else self.obj2_charge_flip_sysup(row)
+                        directory        = 'os/p1p2%s3/c1' if obj1_obj3_SS else 'os/p1p2%s3/c2'
+                        directory        = directory % ('p' if obj3_id_result else 'f')
+                        charge_flip_prob = charge_flip_prob/(1. - charge_flip_prob)
+                        fill_histos(histos, (directory,), row, event_weight*charge_flip_prob)
+                        fill_histos(histos, (directory+'_sysup',), row, event_weight*charge_flip_sysu)
 
             elif sign_result and obj1_id_result and obj3_id_result:
                 # WZ object topology fails. Check if we are in signal region.
