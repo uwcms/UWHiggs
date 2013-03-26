@@ -7,35 +7,14 @@ Make inclusive Z->mumu control plots
 import os
 import glob
 from FinalStateAnalysis.PlotTools.Plotter import Plotter
+from FinalStateAnalysis.PlotTools.MedianView import MedianView
 import rootpy.plotting.views as views
-import math
 from FinalStateAnalysis.PlotTools.HistToTGRaphErrors import HistStackToTGRaphErrors
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 import ROOT
 
 ROOT.gROOT.SetBatch(True)
 
-def quad(*xs):
-    return math.sqrt(sum(x * x for x in xs))
-
-class MedianView(object):
-    ''' Takes high and low, returns median assigning half the diff as error. '''
-    def __init__(self, highv, lowv):
-        self.highv = highv
-        self.centv = views.ScaleView( views.SumView(lowv, self.highv) , 0.5)
-
-    def Get(self, path):
-        central_hist = self.centv.Get(path)
-        high_hist    = self.highv.Get(path)
-
-        ret_hist = central_hist.Clone()
-        for bin in range(1, high_hist.GetNbinsX() + 1):
-            error = quad(
-                central_hist.GetBinError(bin),
-                (high_hist.GetBinContent(bin) - central_hist.GetBinContent(bin))
-            )
-            ret_hist.SetBinError(bin, error)
-        return ret_hist
 
 class ControlZEEPlotter(Plotter):
     def __init__(self):
@@ -87,26 +66,26 @@ class ControlZEEPlotter(Plotter):
         ss_fakes_est = views.SumView(ss_fakes_1, ss_fakes_2, ss_fakes_12)
         ss_fakes_est = views.TitleView( views.StyleView(ss_fakes_est, **data_styles['Zjets*']), 'Fakes;%s' % xaxis)
 
-        os_f1p2_qcd_views, os_p1f2_qcd_views, os_f1f2_qcd_views = zip(make_fakes_view('os', 'qcd_w/charge_weightSysUp'), make_fakes_view('os', 'qcd_w/charge_weightSysDwn'))
-        os_f1p2_wje_views, os_p1f2_wje_views, os_f1f2_wje_views = zip(make_fakes_view('os', 'wjet_w/charge_weightSysUp'),make_fakes_view('os', 'wjet_w/charge_weightSysDwn'))
+        ## os_f1p2_qcd_views, os_p1f2_qcd_views, os_f1f2_qcd_views = zip(make_fakes_view('os', 'qcd_w/charge_weightSysUp'), make_fakes_view('os', 'qcd_w/charge_weightSysDwn'))
+        ## os_f1p2_wje_views, os_p1f2_wje_views, os_f1f2_wje_views = zip(make_fakes_view('os', 'wjet_w/charge_weightSysUp'),make_fakes_view('os', 'wjet_w/charge_weightSysDwn'))
 
-        os_f1p2_qcd_view = MedianView( *os_f1p2_qcd_views )
-        os_p1f2_qcd_view = MedianView( *os_p1f2_qcd_views )
-        os_f1f2_qcd_view = MedianView( *os_f1f2_qcd_views )
+        ## os_f1p2_qcd_view = MedianView( *os_f1p2_qcd_views )
+        ## os_p1f2_qcd_view = MedianView( *os_p1f2_qcd_views )
+        ## os_f1f2_qcd_view = MedianView( *os_f1f2_qcd_views )
 
-        os_f1p2_wje_view = MedianView( *os_f1p2_wje_views )
-        os_p1f2_wje_view = MedianView( *os_p1f2_wje_views )
-        os_f1f2_wje_view = MedianView( *os_f1f2_wje_views )
+        ## os_f1p2_wje_view = MedianView( *os_f1p2_wje_views )
+        ## os_p1f2_wje_view = MedianView( *os_p1f2_wje_views )
+        ## os_f1f2_wje_view = MedianView( *os_f1f2_wje_views )
 
-        os_fakes_1   = MedianView(os_f1p2_qcd_view, os_f1p2_wje_view)
-        os_fakes_2   = MedianView(os_p1f2_qcd_view, os_p1f2_wje_view)
-        os_fakes_12  = MedianView(os_f1f2_qcd_view, os_f1f2_wje_view)
-        os_fakes_est = views.SumView(os_fakes_1, os_fakes_2, os_fakes_12)
-        neg_os_fakes = views.ScaleView(os_fakes_est, -1)
+        ## os_fakes_1   = MedianView(os_f1p2_qcd_view, os_f1p2_wje_view)
+        ## os_fakes_2   = MedianView(os_p1f2_qcd_view, os_p1f2_wje_view)
+        ## os_fakes_12  = MedianView(os_f1f2_qcd_view, os_f1f2_wje_view)
+        ## os_fakes_est = views.SumView(os_fakes_1, os_fakes_2, os_fakes_12)
+        ## neg_os_fakes = views.ScaleView(os_fakes_est, -1)
 
         os_flip_est_up  = views.SubdirectoryView( data_view, 'os/p1p2/charge_weightSysUp')
-        os_flip_est_dwn = views.SubdirectoryView( data_view, 'os/p1p2/charge_weightSysDwn')
-        os_flip_est     = MedianView(os_flip_est_up, os_flip_est_dwn)
+        os_flip_est     = views.SubdirectoryView( data_view, 'os/p1p2/charge_weight')
+        os_flip_est     = MedianView(highv=os_flip_est_up, centv=os_flip_est)
         os_flip_est_nofake = os_flip_est#views.SumView(os_flip_est, neg_os_fakes)
         os_flip_est_nofake = views.TitleView( views.StyleView(os_flip_est_nofake, **data_styles['WZ*']), 'charge-fakes;%s' % xaxis)
         return ss_p1p2_view, ss_fakes_est, os_flip_est_nofake
