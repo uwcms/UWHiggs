@@ -1,20 +1,8 @@
 '''
 
-Measure fake rates in dielectron events.
+Measures probability for a gen electron to be reconstructed with different charge
 
-NB that the triggers we are using always have the same iso on the leading
-and subleading legs.
-
-We measure W+jet (iso electron) control regions.
-
-The layout of output is:
-
-    region/denom_tag/var1
-    region/denom_tag/var2
-    region/denom_tag/num_tag/var1
-    region/denom_tag/num_tag/var2
-
-Author: Evan K. Friis, UW
+Author: M. Verzetti, UZH
 
 '''
 
