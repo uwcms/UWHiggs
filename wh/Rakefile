@@ -590,7 +590,7 @@ file "WHAnalyzeEET.py" => [
   "#{$frfit_dir}/ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt.root",
   "#{$frfit_dir}/ee_qcd_pt20_h2taucuts_electronJetPt.root",
   "#{$frfit_dir}/ee_qcd_pt10_h2taucuts_electronJetPt.root",
-#  "#{$frfit_dir}/charge_flip_prob_map.root",
+  "#{$frfit_dir}/charge_flip_prob_map.root",
   "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root"] do |t|
   sh "touch #{t.name}"
 end
