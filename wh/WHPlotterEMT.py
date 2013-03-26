@@ -19,40 +19,12 @@ from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 class WHPlotterEMT(WHPlotterBase.WHPlotterBase):
-    def __init__(self, files, lumifiles, outputdir):
-        super(WHPlotterEMT, self).__init__(files, lumifiles, outputdir)
+    def __init__(self):
+        super(WHPlotterEMT, self).__init__('EMT')
 
 if __name__ == "__main__":
-    jobid = os.environ['jobid']
-
-    print "Plotting EMT for %s" % jobid
-
-    # Figure out if we are 7 or 8 TeV
-    period = '7TeV' if '7TeV' in jobid else '8TeV'
-
-    sqrts = 7 if '7TeV' in jobid else 8
-
-    samples = [
-        'Zjets_M50',
-        'WplusJets_madgraph',
-        'WZJetsTo3LNu*',
-        'ZZ*',
-        'WW*',
-        'VH*',
-        'WH*',
-        'TTplusJets_madgraph',
-        "data_MuEG*",
-    ]
-
-    files = []
-    lumifiles = []
-
-    for x in samples:
-        files.extend(glob.glob('results/%s/WHAnalyzeEMT/%s.root' % (jobid, x)))
-        lumifiles.extend(glob.glob('inputs/%s/%s.lumicalc.sum' % (jobid, x)))
-
-    outputdir = 'results/%s/plots/emt' % jobid
-    plotter = WHPlotterEMT(files, lumifiles, outputdir)
+    plotter = WHPlotterEMT()
+    sqrts   = plotter.sqrts
 
     ###########################################################################
     ##  Zmm control plots #####################################################
@@ -181,11 +153,11 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-tToMETDPhi')
 
-    plotter.plot_final('recoilDaught', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
+    plotter.plot_final('_recoilDaught', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-recoilDaught')
 
-    plotter.plot_final('recoilWithMet', 20, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+    plotter.plot_final('_recoilWithMet', 20, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-recoilWithMet')
 
@@ -200,6 +172,14 @@ if __name__ == "__main__":
     plotter.plot_final('metEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,500])
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-metEt')
+
+    plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-subMass-qweight05')
+
+    plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-qweight05-werror-subMass')
     #END
 
     plotter.plot_final('mPt', 10)
@@ -322,7 +302,7 @@ if __name__ == "__main__":
     ###########################################################################
 
     shape_file = ROOT.TFile(
-        os.path.join(outputdir, 'emt_shapes_%s.root' % period), 'RECREATE')
+        os.path.join(plotter.outputdir, 'emt_shapes_%s.root' % plotter.period), 'RECREATE')
     shape_dir = shape_file.mkdir('emt')
     plotter.write_shapes('subMass', 20, shape_dir, unblinded=True, qcd_fraction=0.5)
     shape_dir = shape_file.mkdir('emt_w')
