@@ -16,18 +16,28 @@ import rootpy.plotting.views as views
 from FinalStateAnalysis.PlotTools.Plotter import Plotter
 from FinalStateAnalysis.PlotTools.BlindView import BlindView
 from FinalStateAnalysis.PlotTools.PoissonView import PoissonView
+from FinalStateAnalysis.PlotTools.MedianView import MedianView
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 import os
+import glob
 import math
 
 
 def quad(*xs):
     return math.sqrt(sum(x * x for x in xs))
 
+def create_mapper(mapping):
+    def _f(path):
+        for key, out in mapping.iteritems():
+            if key in path:
+                path = path.replace(key,out)
+        return path
+    return _f
+
 
 class BackgroundErrorView(object):
     ''' Compute the total background error in each bin. '''
-    def __init__(self, fakes, wz, zz, wz_error=0.1, zz_error=0.04,
+    def __init__(self, fakes, wz, zz, charge_fake, wz_error=0.1, zz_error=0.04,
                  fake_error=0.3):
         self.fakes = fakes
         self.wz = wz
@@ -35,11 +45,13 @@ class BackgroundErrorView(object):
         self.fake_error = fake_error
         self.wz_error = wz_error
         self.zz_error = zz_error
+        self.charge_fake = charge_fake
 
     def Get(self, path):
         fakes = self.fakes.Get(path)
         wz = self.wz.Get(path)
         zz = self.zz.Get(path)
+        charge_fake = self.charge_fake.Get(path)
 
         bkg_error = wz.Clone()
         bkg_error.SetTitle("Bkg. Unc.")
@@ -49,12 +61,14 @@ class BackgroundErrorView(object):
                 fakes.GetBinError(bin),
                 fakes.GetBinContent(bin) * self.fake_error,
                 wz.GetBinContent(bin) * self.wz_error,
-                zz.GetBinContent(bin) * self.zz_error
+                zz.GetBinContent(bin) * self.zz_error,
+                charge_fake.GetBinError(bin)
             )
             total = (
                 fakes.GetBinContent(bin) +
                 wz.GetBinContent(bin) +
-                zz.GetBinContent(bin)
+                zz.GetBinContent(bin) +
+                charge_fake.GetBinContent(bin)
             )
             bkg_error.SetBinContent(bin, total)
             bkg_error.SetBinError(bin, error)
@@ -134,15 +148,48 @@ def make_styler(color, format=None):
 
 
 class WHPlotterBase(Plotter):
-    def __init__(self, files, lumifiles, outputdir):
+    def __init__(self, channel, obj1_charge_mapper={}, obj2_charge_mapper={}):
+        jobid = os.environ['jobid']
+        print "\nPlotting %s for %s\n" % (channel, jobid)
+
+        # Figure out if we are 7 or 8 TeV
+        period = '7TeV' if '7TeV' in jobid else '8TeV'
+        self.period = period
+        self.sqrts = 7 if '7TeV' in jobid else 8
+        samples = [
+            'Zjets_M50',
+            'WplusJets_madgraph',
+            'WZJetsTo3LNu*',
+            'ZZ*',
+            'VH*',
+            'WW*',
+            'TTplusJets_madgraph',
+            "data_*",
+        ]
+
+        files = []
+        lumifiles = []
+
+        for x in samples:
+            files.extend(glob.glob('results/%s/WHAnalyze%s/%s.root' % (jobid, channel, x)))
+            lumifiles.extend(glob.glob('inputs/%s/%s.lumicalc.sum' % (jobid, x)))
+
+        self.outputdir = 'results/%s/plots/%s' % (jobid, channel.lower())
+        if not os.path.exists(self.outputdir):
+            os.makedirs(self.outputdir)
+
         blinder = None
         blind   = 'blind' not in os.environ or os.environ['blind'] == 'YES'
+        print '\n\nRunning Blind: %s\n\n' % blind
         self.blind = blind
+        self.obj1_charge_mapper=obj1_charge_mapper #maps scaled charge flip histograms to the ones of the normal categories
+        self.obj2_charge_mapper=obj2_charge_mapper #maps scaled charge flip histograms to the ones of the normal categories
         if blind:
             # Don't look at the SS all pass region
             blinder = lambda x: BlindView(x, "ss/p1p2p3/.*")
-        super(WHPlotterBase, self).__init__(files, lumifiles, outputdir,
+        super(WHPlotterBase, self).__init__(files, lumifiles, self.outputdir,
                                             blinder)
+        self.defaults = {} #allows to set some options and avoid repeating them each function call
 
     def make_signal_views(self, rebin, unblinded=False, qcd_weight_fraction=0):
         ''' Make signal views with FR background estimation '''
@@ -177,13 +224,13 @@ class WHPlotterBase(Plotter):
             # Give the individual object views nice colors
             obj1_view = views.TitleView(
                 views.StyleView(obj1_view, **data_styles['TT*']),
-                'Non-prompt Obj1')
+                'Reducible bkg. 1')
             obj2_view = views.TitleView(
                 views.StyleView(obj2_view, **data_styles['QCD*']),
-                'Non-prompt Obj2')
+                'Reducible bkg. 2')
             obj12_view = views.TitleView(
                 views.StyleView(obj12_view, **data_styles['WW*']),
-                'Non-prompt Obj12')
+                'Reducible bkg. 12')
 
             subtract_obj12_view = views.ScaleView(obj12_view, -1)
             return obj1_view, obj2_view, obj12_view, subtract_obj12_view
@@ -200,12 +247,39 @@ class WHPlotterBase(Plotter):
         # Corrected fake view
         fakes_view = views.SumView(obj1_view, obj2_view, subtract_obj12_view)
         fakes_view = views.TitleView(
-            views.StyleView(fakes_view, **data_styles['Zjets*']), 'Non-prompt')
+            views.StyleView(fakes_view, **data_styles['Zjets*']), 'Reducible bkg.')
 
-        charge_fakes = views.TitleView(
+        charge_fakes = views.TitleView( 
             views.StyleView(
-                views.SubdirectoryView(all_data_view, 'os/p1p2p3/c1'),
-                **data_styles['TT*']), 'Charge mis-id')
+                views.SumView(
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2p3/c1'),
+                        create_mapper(self.obj1_charge_mapper)
+                        ),
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2p3/c2'),
+                        create_mapper(self.obj2_charge_mapper)
+                        ),
+                    ),
+                **data_styles['TT*']),
+            'Charge mis-id')
+
+        charge_fakes_sysup = views.TitleView( 
+            views.StyleView(
+                views.SumView(
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2p3/c1_sysup'),
+                        create_mapper(self.obj1_charge_mapper)
+                        ),
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2p3/c2_sysup'),
+                        create_mapper(self.obj2_charge_mapper)
+                        ),
+                    ),
+                **data_styles['TT*']),
+            'Charge mis-id')
+
+        charge_fakes = MedianView(highv=charge_fakes_sysup, centv=charge_fakes)
 
         output = {
             'wz': wz_view,
@@ -228,7 +302,7 @@ class WHPlotterBase(Plotter):
             output['vh%i' % mass] = vh_view
             if mass % 10 == 0:
                 ww_view = views.SubdirectoryView(
-                    self.rebin_view(self.get_view('VHWW_lepdecay_%i*' % mass), rebin),
+                    self.rebin_view(self.get_view('VH_%i_HWW*' % mass), rebin),
                     'ss/p1p2p3/'
                 )
                 output['vh%i_hww' % mass] = ww_view
@@ -297,13 +371,13 @@ class WHPlotterBase(Plotter):
             # Give the individual object views nice colors
             obj1_view = views.TitleView(
                 views.StyleView(obj1_view, **data_styles['TT*']),
-                'Non-prompt Obj1')
+                'Reducible bkg. 1')
             obj2_view = views.TitleView(
                 views.StyleView(obj2_view, **data_styles['QCD*']),
-                'Non-prompt Obj2')
+                'Reducible bkg. 2')
             obj12_view = views.TitleView(
                 views.StyleView(obj12_view, **data_styles['WW*']),
-                'Non-prompt Obj12')
+                'Reducible bkg. 12')
 
             subtract_obj12_view = views.ScaleView(obj12_view, -1)
             return obj1_view, obj2_view, obj12_view, subtract_obj12_view
@@ -320,7 +394,7 @@ class WHPlotterBase(Plotter):
         # Corrected fake view
         fakes_view = views.SumView(obj1_view, obj2_view, subtract_obj12_view)
         fakes_view = views.TitleView(
-            views.StyleView(fakes_view, **data_styles['Zjets*']), 'Non-prompt')
+            views.StyleView(fakes_view, **data_styles['Zjets*']), 'Reducible bkg.')
 
         if False and qcd_correction:  # broken
             obj1_view = QCDCorrectionView(all_data_view,
@@ -335,11 +409,38 @@ class WHPlotterBase(Plotter):
                                           'ss/p1f2f3/q2')
             obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2f3/w12')
 
-        charge_fakes = views.TitleView(
+        charge_fakes = views.TitleView( 
             views.StyleView(
-                views.SubdirectoryView(all_data_view, 'os/p1p2f3/c1'),
-                **data_styles['TT*']), 'Charge mis-id')
+                views.SumView(
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2f3/c1'),
+                        create_mapper(self.obj1_charge_mapper)
+                        ),
+                    views.PathModifierView(
+                        views.SubdirectoryView(all_data_view, 'os/p1p2f3/c2'),
+                        create_mapper(self.obj2_charge_mapper)
+                        ),
+                    ),
+                **data_styles['TT*']),
+            'Charge mis-id')
+        
+        charge_fakes_sysup = views.TitleView(
+                 views.StyleView(
+                     views.SumView(
+                         views.PathModifierView(
+                             views.SubdirectoryView(all_data_view, 'os/p1p2f3/c1_sysup'),
+                             create_mapper(self.obj1_charge_mapper)
+                         ),
+                         views.PathModifierView(
+                             views.SubdirectoryView(all_data_view, 'os/p1p2f3/c2_sysup'),
+                             create_mapper(self.obj2_charge_mapper)
+                         ),
+                     ),
+                 **data_styles['TT*']),
+            'Charge mis-id')
 
+        charge_fakes = MedianView(highv=charge_fakes_sysup, centv=charge_fakes)
+                
         output = {
             'wz': wz_view,
             'zz': zz_view,
@@ -388,7 +489,7 @@ class WHPlotterBase(Plotter):
 
         fakes_view = views.SumView(fakes_view, inverted_diboson_view)
 
-        fakes_view = views.TitleView(fakes_view, 'Non-prompt')
+        fakes_view = views.TitleView(fakes_view, 'Reducible bkg.')
 
         output = {
             'wz': wz_view,
@@ -449,11 +550,12 @@ class WHPlotterBase(Plotter):
         return self.write_shapes(variable, nbins, outdir, unblinded)
 
     def plot_final(self, variable, rebin=1, xaxis='', maxy=15,
-                   show_error=False, qcd_correction=False,
-                   qcd_weight_fraction=0, **kwargs):
-        ''' Plot the final output - with bkg. estimation '''
+                   show_error=False, qcd_correction=False, stack_higgs=True, 
+                   qcd_weight_fraction=0, x_range=None, show_charge_fakes=False,**kwargs):
+        ''' Plot the final output - with bkg. estimation '''        
+        show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
         sig_view = self.make_signal_views(
-            rebin, unblinded=True, qcd_weight_fraction=qcd_weight_fraction)
+            rebin, unblinded=(not self.blind), qcd_weight_fraction=qcd_weight_fraction)
         vh_10x = views.TitleView(
             views.StyleView(
                 views.ScaleView(sig_view['signal120'], 5),
@@ -464,17 +566,20 @@ class WHPlotterBase(Plotter):
 
         # Fudge factor to go from 120->125 - change in xsec*BR
         vh_10x = views.ScaleView(vh_10x, .783)
-
-        stack = views.StackView(
-            sig_view['wz'],
-            sig_view['zz'],
-            sig_view['fakes'],
-            vh_10x,
-        )
+        tostack = [sig_view['wz'], sig_view['zz'], sig_view['fakes'], vh_10x] if stack_higgs else \
+            [sig_view['wz'], sig_view['zz'], sig_view['fakes']]
+        if show_charge_fakes:
+            tostack = [sig_view['charge_fakes']]+tostack
+        stack = views.StackView( *tostack )
         histo = stack.Get(variable)
         histo.Draw()
         histo.GetHistogram().GetXaxis().SetTitle(xaxis)
-        histo.SetMaximum(maxy)
+        if x_range:
+            histo.GetHistogram().GetXaxis().SetRangeUser(x_range[0], x_range[1])
+        if isinstance(maxy, (int, long, float)):
+            histo.SetMaximum(maxy)
+        else:
+            histo.SetMaximum(sum(histo.GetHists()).GetMaximum()*1.2)
         self.keep.append(histo)
 
         # Add legend
@@ -485,6 +590,7 @@ class WHPlotterBase(Plotter):
                 sig_view['fakes'],
                 sig_view['wz'],
                 sig_view['zz'],
+                sig_view['charge_fakes'],
                 **kwargs
             )
             bkg_error = bkg_error_view.Get(variable)
@@ -496,10 +602,15 @@ class WHPlotterBase(Plotter):
         sig_view['data'] = PoissonView(sig_view['data'], x_err=False)
 
         data = sig_view['data'].Get(variable)
-        if True or not self.blind:
+        if not self.blind:
             data.Draw('pe,same')
         self.keep.append(data)
 
+        if not stack_higgs:
+            higgs_plot = vh_10x.Get(variable)
+            higgs_plot.Draw('same')
+            self.keep.append(higgs_plot)
+            
         #legend.AddEntry(data)
         legend.Draw()
 
@@ -529,7 +640,7 @@ class WHPlotterBase(Plotter):
 
     def plot_final_f3(self, variable, rebin=1, xaxis='', maxy=None,
                       show_error=False, qcd_correction=False,
-                      qcd_weight_fraction=0, **kwargs):
+                      qcd_weight_fraction=0, x_range=None, **kwargs):
         ''' Plot the final F3 control region - with bkg. estimation '''
         sig_view = self.make_obj3_fail_cr_views(
             rebin, qcd_correction, qcd_weight_fraction)
@@ -543,15 +654,18 @@ class WHPlotterBase(Plotter):
         histo = stack.Get(variable)
         histo.Draw()
         histo.GetHistogram().GetXaxis().SetTitle(xaxis)
+        if x_range:
+            histo.GetHistogram().GetXaxis().SetRangeUser(x_range[0], x_range[1])
 
         # Add legend
         legend = self.add_legend(histo, leftside=False, entries=4)
 
         if show_error:
             bkg_error_view = BackgroundErrorView(
-                views.SumView(sig_view['fakes'], sig_view['charge_fakes']),
+                views.SumView(sig_view['fakes']),
                 sig_view['wz'],
                 sig_view['zz'],
+                sig_view['charge_fakes'],
                 **kwargs
             )
             bkg_error = bkg_error_view.Get(variable)
@@ -561,7 +675,7 @@ class WHPlotterBase(Plotter):
 
         data = sig_view['data'].Get(variable)
         data.Draw('same')
-        if maxy:
+        if isinstance(maxy, (int, long, float)):
             histo.SetMaximum(maxy)
         else:
             #histo.SetMaximum(
