@@ -232,9 +232,11 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     def obj1_obj3_SS(self, row):
         return row.m_t_SS
 
-    def obj1_charge_flip(self, row):
-        return 0
+    ## def obj1_charge_flip(self, row):
+    ##     return 0
 
     def obj2_charge_flip(self, row):
         return frfits.e_charge_flip(row.eAbsEta,row.ePt)
 
+    def obj2_charge_flip_sysup(self, row):
+        return frfits.e_charge_flip_up(row.eAbsEta,row.ePt) #lowpt_e_charge_flip
