@@ -235,11 +235,16 @@ class WHAnalyzeEET(WHAnalyzerBase):
         return not row.e1_t_SS
 
     def obj1_charge_flip(self, row):
-        return frfits.highpt_e_charge_flip(row.e1AbsEta,row.e1Pt)
+        return frfits.e_charge_flip(row.e1AbsEta,row.e1Pt) #highpt_e_charge_flip
 
     def obj2_charge_flip(self, row):
-        return frfits.lowpt_e_charge_flip(row.e2AbsEta,row.e2Pt)
+        return frfits.e_charge_flip(row.e2AbsEta,row.e2Pt) #lowpt_e_charge_flip
 
+    def obj1_charge_flip_sysup(self, row):
+        return frfits.e_charge_flip_up(row.e1AbsEta,row.e1Pt) #highpt_e_charge_flip
+
+    def obj2_charge_flip_sysup(self, row):
+        return frfits.e_charge_flip_up(row.e2AbsEta,row.e2Pt) #lowpt_e_charge_flip
 
 
 
