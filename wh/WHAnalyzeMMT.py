@@ -242,8 +242,8 @@ class WHAnalyzeMMT(WHAnalyzerBase):
     def obj1_obj3_SS(self, row):
         return row.m1_t_SS
 
-    def obj1_charge_flip(self, row):
-        return 0
+    ## def obj1_charge_flip(self, row):
+    ##     return 0
 
-    def obj2_charge_flip(self, row):
-        return 0
+    ## def obj2_charge_flip(self, row):
+    ##     return 0
