@@ -87,6 +87,8 @@ void kdplots(char* channel, char* leg3, char* leg4) {
   kd2_wz->Write();
   kd1_signal->Write();
   kd2_signal->Write();
+  delete c1;
+  delete c2;
   ofile->Write();
   ofile->Close();
 
