@@ -5,18 +5,40 @@
 
  generates comparison plots (signal vs. WZ vs. Z+jets) for two kinematic discriminators, with each shape normalized. */
 
-void kdplots(char* channel) {
+void kdplots(char* channel, char* leg3, char* leg4) {
+  TFile *ofile = new TFile(TString::Format("results/2012-10-24-8TeV-v1-Higgs/kd_plots/root_files/output-%s.root",channel),"RECREATE");
   TFile *signal = TFile::Open(TString::Format("results/2012-10-24-8TeV-v1-Higgs/ZHAnalyze%s/VH_H2Tau_M-120.root",channel));
   TFile *wz = TFile::Open(TString::Format("results/2012-10-24-8TeV-v1-Higgs/ZHAnalyze%s/WZJetsTo3LNu_pythia.root",channel));
-  TFile *zjets = TFile::Open(TString::Format("results/2012-10-24-8TeV-v1-Higgs/ZHAnalyze%s/Zjets_M50.root",channel));
+  TFile *zjets = TFile::Open(TString::Format("results/2012-10-24-8TeV-v1-Higgs/ZHAnalyze%s/Zjets_M50.root",channel));  
 
   TH1F *kd1_signal = signal->Get("os/All_Passed/kinematicDiscriminant1");
+  kd1_signal->SetName("kd1_signal");
   TH1F *kd2_signal = signal->Get("os/All_Passed/kinematicDiscriminant2");
-  TH1F *kd1_zjets = zjets->Get("os/All_Passed/kinematicDiscriminant1");
-  TH1F *kd2_zjets = zjets->Get("os/All_Passed/kinematicDiscriminant2");
+  kd2_signal->SetName("kd2_signal");
+  //TH1F *kd1_zjets = zjets->Get("os/All_Passed/kinematicDiscriminant1");
+  //TH1F *kd2_zjets = zjets->Get("os/All_Passed/kinematicDiscriminant2");
   TH1F *kd1_wz = wz->Get("os/All_Passed/kinematicDiscriminant1");
+  kd1_wz->SetName("kd1_wz");
   TH1F *kd2_wz = wz->Get("os/All_Passed/kinematicDiscriminant2");
+  kd2_wz->SetName("kd2_wz");
   
+  // get Zjets statistics from the sideband region, weighted by fake rate
+  TH1F *kd1_zjets_f3 = zjets->Get(TString::Format("os/%sIsoFailed/obj1_weight/kinematicDiscriminant1",leg3));
+  TH1F *kd1_zjets_f4 = zjets->Get(TString::Format("os/%sIsoFailed/obj2_weight/kinematicDiscriminant1",leg4));
+  TH1F *kd1_zjets_f3f4 = zjets->Get(TString::Format("os/%sIsoFailed_%sIsoFailed/all_weights_applied/kinematicDiscriminant1",leg3,leg4));
+
+  TH1F *kd2_zjets_f3 = zjets->Get(TString::Format("os/%sIsoFailed/obj1_weight/kinematicDiscriminant2",leg3));
+  TH1F *kd2_zjets_f4 = zjets->Get(TString::Format("os/%sIsoFailed/obj2_weight/kinematicDiscriminant2",leg4));
+  TH1F *kd2_zjets_f3f4 = zjets->Get(TString::Format("os/%sIsoFailed_%sIsoFailed/all_weights_applied/kinematicDiscriminant2",leg3,leg4));
+
+  TH1F *kd1_zjets = kd1_zjets_f3->Clone("kd1_zjets");
+  kd1_zjets->Add(kd1_zjets_f4);
+  kd1_zjets->Add(kd1_zjets_f3f4,-1);
+  
+  TH1F *kd2_zjets = kd2_zjets_f3->Clone("kd2_zjets");
+  kd2_zjets->Add(kd2_zjets_f4);
+  kd2_zjets->Add(kd2_zjets_f3f4,-1);
+
   // Normalize histograms
   kd1_signal = kd1_signal->Scale(1/kd1_signal->Integral());
   kd2_signal = kd2_signal->Scale(1/kd2_signal->Integral());
@@ -26,12 +48,14 @@ void kdplots(char* channel) {
   kd2_wz = kd2_wz->Scale(1/kd2_wz->Integral());
  
   // Plot normalized histograms
+  
+  gStyle->SetOptStat(0);
   TCanvas *c1 = new TCanvas("c1","kd1");
   kd1_zjets->SetMarkerColor(2);
   kd1_wz->SetMarkerColor(4);
-  kd1_signal->Draw();
-  kd1_zjets->Draw("same");
-  kd1_wz->Draw("same");
+  kd1_zjets->Draw("hist e");
+  kd1_signal->Draw("hist same e");
+  kd1_wz->Draw("hist same e");
   TLegend *l1 = new TLegend(0.5,0.95,0.65,0.8,"");
   l1->AddEntry(kd1_zjets,"zjets","p");
   l1->AddEntry(kd1_wz,"wz","p");
@@ -44,9 +68,9 @@ void kdplots(char* channel) {
   TCanvas *c2 = new TCanvas("c2","kd2");
   kd2_zjets->SetMarkerColor(2);
   kd2_wz->SetMarkerColor(4);
-  kd2_signal->Draw();
-  kd2_zjets->Draw("same");
-  kd2_wz->Draw("same");
+  kd2_zjets->Draw("hist e");
+  kd2_signal->Draw("hist same e");
+  kd2_wz->Draw("hist same e");
   TLegend *l2 = new TLegend(0.5,0.95,0.65,0.8,"");
   l2->AddEntry(kd2_zjets,"zjets","p");
   l2->AddEntry(kd2_wz,"wz","p");
@@ -55,5 +79,15 @@ void kdplots(char* channel) {
   l2->SetFillColor(0);
   l2->Draw();
   c2->SaveAs(TString::Format("results/2012-10-24-8TeV-v1-Higgs/kd_plots/kd2_%s.png",channel));
+
+  ofile->cd();
+  kd1_zjets->Write();
+  kd2_zjets->Write();
+  kd1_wz->Write();
+  kd2_wz->Write();
+  kd1_signal->Write();
+  kd2_signal->Write();
+  ofile->Write();
+  ofile->Close();
 
 }
