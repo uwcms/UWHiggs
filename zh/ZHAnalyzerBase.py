@@ -28,8 +28,8 @@ import array
 #import abdollah
 import os
 import pprint
-import debug
-from debug import debugRow
+#import debug
+#from debug import debugRow
 
 class ZHAnalyzerBase(MegaBase):
     def __init__(self, tree, outfile, wrapper, channel, **kwargs):
@@ -213,6 +213,8 @@ class ZHAnalyzerBase(MegaBase):
         #self.book(folder, "weight_nopu", "Event weight without PU", 100, 0, 5)
         self.book(folder, "rho", "Fastjet #rho", 100, 0, 25)
         self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
+        self.book(folder, "kinematicDiscriminant1", "pT(ZH)/(pT(Z) + pT(H))", 5, 0, 1)
+        self.book(folder, "kinematicDiscriminant2", "pT(H)/(pT(Tau1) + pT(Tau2))", 5, 0, 1)
         return None
 
     def book_kin_histos(self, folder, Id):
@@ -260,11 +262,19 @@ class ZHAnalyzerBase(MegaBase):
                 value.Fill(
                     self.hfunc[attr](row, weight)
                     )
-            ## if attr == 'nTruePU':
-            ##     value.Fill(row.nTruePU)
-            ## elif attr == 'weight':
-            ##     value.Fill(weight)
+            elif attr == 'kinematicDiscriminant1':
+                # special case - move me to hfunc, eventually
+                pt_ZH = row.Pt
+                pt_Z = getattr(row, "%s_%s_Pt" % self.Z_decay_products())
+                pt_H = getattr(row, "%s_%s_Pt" % self.H_decay_products())
+                value.Fill(pt_ZH / (pt_Z + pt_H), weight)
+            elif attr == 'kinematicDiscriminant2':
+                pt_H = getattr(row, "%s_%s_Pt" % self.H_decay_products())
+                pt_Tau1 = getattr(row, "%sPt" % self.H_decay_products()[0]) 
+                pt_Tau2 = getattr(row, "%sPt" % self.H_decay_products()[1])
+                value.Fill(pt_H / (pt_Tau1 + pt_Tau2), weight)
             else:
+                # general case, we can just do getattr(row, "variable") i.e. row.variable
                 value.Fill( getattr(row,attr), weight )
         return None
 

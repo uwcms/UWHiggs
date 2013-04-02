@@ -85,6 +85,9 @@ if __name__ == "__main__":
    
     data = rebin_view(the_views['data']['view'])
 
+    output = io.open(args.outputfile, 'RECREATE')
+    output.cd()
+
     uncorr_numerator = data.Get(args.numerator)
     uncorr_denominator = data.Get(args.denom)
 
@@ -106,9 +109,6 @@ if __name__ == "__main__":
         zz_view = get_view('ZZ*')
         corrected_view = int_view(
             SubtractionView(data, wz_view, zz_view, restrict_positive=True))
-
-        output = io.open(args.outputfile, 'RECREATE')
-        output.cd()
 
         corr_numerator = corrected_view.Get(args.numerator)
         corr_denominator = corrected_view.Get(args.denom)
