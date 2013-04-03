@@ -79,7 +79,7 @@ class ZHAnalyzeEETT(ZHAnalyzerBase.ZHAnalyzerBase):
             mcCorrectors.get_electron_corrections(row, 'e1','e2')
 
     def obj1_weight(self, row):
-        return fr_fcn.tau_tight_fr( row.t1Pt )
+        return fr_fcn.tau_tight_fr( row.t1Pt ) / (1 - fr_fcn.tau_tight_fr( row.t1Pt ))
 
     def obj2_weight(self, row):
-        return fr_fcn.tau_tight_fr( row.t2Pt )
+        return fr_fcn.tau_tight_fr( row.t2Pt ) / (1 - fr_fcn.tau_tight_fr( row.t2Pt ))
