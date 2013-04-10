@@ -19,6 +19,8 @@ import logging
 import sys
 args = sys.argv[:]
 sys.argv = [sys.argv[0]]
+from FinalStateAnalysis.Utilities.rootbindings import ROOT
+ROOT.gROOT.SetBatch(True)
 
 log = logging.getLogger("make_charge_flip_probability_map")
 
@@ -126,4 +128,64 @@ if __name__ == "__main__":
     eff_map_statUp.Write()
     eff_map_statDown.Write()
     worse_rel_err.Write()
+
+    m          = ROOT.RooRealVar('m', 'm', 55,55,200)
+    os_trkMass = ROOT.RooDataHist('higgs_data','higgs_data',ROOT.RooArgList(m),input_view.Get('charge/os_trkMass'))
+    mean       = ROOT.RooRealVar('mean', 'mean', 90,80,110)
+    sigmaL     = ROOT.RooRealVar('sigmaL' ,'sigmaL' ,30 ,0 ,100)
+    sigmaR     = ROOT.RooRealVar('sigmaR' ,'sigmaR' ,25 ,0 ,100)
+    alphaL     = ROOT.RooRealVar('alphaL' ,'alphaL' ,1  ,0 ,30 )
+    alphaR     = ROOT.RooRealVar('alphaR' ,'alphaR' ,1  ,0 ,30 )
+    os_func    = ROOT.RooCruijff( 'os_func', 'os_func', m, mean, sigmaL, sigmaR, alphaL, alphaR)
+
+    fit_result = os_func.fitTo(
+        os_trkMass,
+        ROOT.RooFit.Save(True),
+        ROOT.RooFit.PrintLevel(-1),
+        #ROOT.RooFit.SumW2Error(True),
+        )
+
+    canvas = ROOT.TCanvas("asdf", "asdf", 800, 600)
+    frame = m.frame(ROOT.RooFit.Title("OS Trk Mass distribution"))
+    os_trkMass.plotOn(
+        frame,
+    )
+    os_func.plotOn(frame, ROOT.RooFit.LineColor(ROOT.EColor.kAzure))
+    frame.Draw()
+    canvas.Print(args.output.replace(".root","os_trkMass.png"))
+    canvas.Print(args.output.replace(".root","os_trkMass.pdf"))
+
+    #Fizin all the parameters
+    #mean.setVal(0)
+    mean.setConstant(True)
+    sigmaL.setConstant(True)
+    sigmaR.setConstant(True)
+    alphaL.setConstant(True)
+    alphaR.setConstant(True)
+
+    m.setBins(10000,"cache")
+    ss_trkMass = ROOT.RooDataHist('ss_trkMass','ss_trkMass',ROOT.RooArgList(m), input_view.Get('charge/ss_trkMass'))
+    mass_scale = ROOT.RooRealVar('mass_scale' ,'mass_scale', 1, 0.8,1.2)
+    loss_fcn   = ROOT.RooFormulaVar('loss_fcn' ,'fake_width' , '@0 * @1', ROOT.RooArgList(mass_scale,m))
+    ss_func    = ROOT.RooCruijff( 'ss_func', 'ss_func', loss_fcn, mean, sigmaL, sigmaR, alphaL, alphaR)
+
+    fit_result = ss_func.fitTo(
+        ss_trkMass,
+        ROOT.RooFit.Save(True),
+        #ROOT.RooFit.PrintLevel(-1),
+        #ROOT.RooFit.SumW2Error(True),
+        )
+
+    fit_result.Print()
+    frame = m.frame(ROOT.RooFit.Title("SS Trk Mass distribution"))
+    ss_trkMass.plotOn(
+        frame,
+    )
+    
+    ss_func.plotOn(frame, ROOT.RooFit.LineColor(ROOT.EColor.kAzure))
+    frame.Draw()
+    canvas.Print(args.output.replace(".root","ss_trkMass.png"))
+    canvas.Print(args.output.replace(".root","ss_trkMass.pdf"))
+
+    mass_scale.Write()
     outFile.Close()

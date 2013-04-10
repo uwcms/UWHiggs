@@ -47,6 +47,10 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_kin_histos(folder, 'm2')
         self.book_kin_histos(folder, 'm3')
         self.book_kin_histos(folder, 't')
+
+        self.book(folder, 'Pt',"total pt",100,0,100) # stephane
+        #self.book(folder, '"Pt/(m1_m2_Pt+m3_t_Pt)', "ZH system kinematic ratio",20,0,1) 
+
         self.book_Z_histos(folder)
         self.book_H_histos(folder)
         self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
@@ -82,10 +86,10 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
 
     def obj1_weight(self, row):
         #return fr_fcn.mu_tight_jetpt_fr( row.m3JetPt)
-        return fr_fcn.mu_tight_fr( row.m3Pt)
+        return fr_fcn.mu_tight_fr( row.m3Pt)/(1 - fr_fcn.mu_tight_fr( row.m3Pt))
 
     def obj2_weight(self, row):
-        return fr_fcn.tau_medium_fr(row.tPt)
+        return fr_fcn.tau_medium_fr(row.tPt)/(1 - fr_fcn.tau_medium_fr(row.tPt))
 
 
 if __name__ == "__main__":

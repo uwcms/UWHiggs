@@ -5,22 +5,65 @@ Analyze MMT events for the WH analysis
 '''
 
 from MuMuTauTree import MuMuTauTree
-import os
-import WHAnalyzerBase
 import ROOT
+import os
+from WHAnalyzerBase import WHAnalyzerBase, quad, inv_mass
 import mcCorrectors
 import baseSelections as selections
 import fakerate_functions as frfits
+import math
+
+mtr = frfits.mt_likelihood_ratio
 
 ################################################################################
 #### Analysis logic ############################################################
 ################################################################################
 
-class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
+class WHAnalyzeMMT(WHAnalyzerBase):
     tree = 'mmt/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         super(WHAnalyzeMMT, self).__init__(tree, outfile, MuMuTauTree, **kwargs)
         self.hfunc['subMTMass'] = lambda row, weight: (row.m2_t_Mass, weight) if row.m1MtToMET > row.m2MtToMET else (row.m1_t_Mass, weight) #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
+        self.hfunc['pt_ratio' ] = lambda row, weight: (row.m2Pt/row.m1Pt, weight)
+        self.hfunc['mass'     ] = lambda row, weight: (inv_mass(\
+                                                                (row.m1Pt, row.m1Eta, row.m1Phi, 0.),\
+                                                                (row.m2Pt, row.m2Eta, row.m2Phi, 0.),\
+                                                                (row.tPt , row.tEta , row.tPhi , 0.),\
+                                                                ), weight)
+        self.hfunc['lepRecoil'] = lambda row, weight: ( \
+                                                        quad( (row.m1Pt*math.cos(row.m1Phi) + row.m2Pt*math.cos(row.m2Phi) ), \
+                                                              (row.m1Pt*math.sin(row.m1Phi) + row.m2Pt*math.sin(row.m2Phi) ), ),\
+                                                        weight)
+        self.hfunc['lepRecoil_wMET'] = lambda row, weight: ( \
+                                                        quad( (row.m1Pt*math.cos(row.m1Phi) + row.m2Pt*math.cos(row.m2Phi) + row.metEt*math.cos(row.metPhi) ), \
+                                                              (row.m1Pt*math.sin(row.m1Phi) + row.m2Pt*math.sin(row.m2Phi) + row.metEt*math.sin(row.metPhi) ), ),\
+                                                        weight)
+        self.hfunc["_recoilDaught" ] = lambda row, weight: (math.sqrt(row.recoilDaught) , weight)
+        self.hfunc["_recoilWithMet"] = lambda row, weight: (math.sqrt(row.recoilWithMet), weight)
+
+        #MC ONLY
+        self.hfunc['higgsLMtToMet'] = lambda row, weight: ((row.m1MtToMET,row.m2MtToMET), weight) if bool(row.m1ComesFromHiggs)  else ((row.m2MtToMET,row.m1MtToMET), weight)
+        self.hfunc['higgsLIso']     = lambda row, weight: ((row.m1RelPFIsoDB,row.m2RelPFIsoDB), weight) if bool(row.m1ComesFromHiggs)  else ((row.m2RelPFIsoDB,row.m1RelPFIsoDB), weight)
+        self.hfunc['higgsLPt']      = lambda row, weight: ((row.m1Pt,row.m2Pt), weight) if bool(row.m1ComesFromHiggs)  else ((row.m2Pt,row.m1Pt), weight)
+        #self.hfunc['higgsLPt']      = lambda row, weight: (((row.m1Pt-row.m2Pt),(row.m1RelPFIsoDB-row.m2RelPFIsoDB)), weight) if bool(row.m1ComesFromHiggs)  else ((row.m2Pt,row.m1Pt), weight)
+
+        self.hfunc['higgsLMtToMet_1d'] = lambda row, weight: ((row.m1MtToMET-row.m2MtToMET), weight) if bool(row.m1ComesFromHiggs)  else ((row.m2MtToMET-row.m1MtToMET), weight)
+        self.hfunc['higgsLIso_1d']     = lambda row, weight: ((row.m1RelPFIsoDB-row.m2RelPFIsoDB), weight) if bool(row.m1ComesFromHiggs)  else ((row.m2RelPFIsoDB-row.m1RelPFIsoDB), weight)
+        self.hfunc['higgsLPt_1d']      = lambda row, weight: ((row.m1Pt-row.m2Pt), weight) if bool(row.m1ComesFromHiggs)  else ((row.m2Pt-row.m1Pt), weight)
+        self.hfunc['higgsMtRatio_1d']  = lambda row, weight: ((mtr(row.m1MtToMET)-mtr(row.m2MtToMET)), weight) if bool(row.m1ComesFromHiggs)  else ((mtr(row.m2MtToMET)-mtr(row.m1MtToMET)), weight)
+
+        self.hfunc['higgsTDR_1d']   = lambda row, weight: ((row.m1_t_DR-row.m2_t_DR), weight) if bool(row.m1ComesFromHiggs)  else ((row.m2_t_DR-row.m1_t_DR), weight)
+        self.hfunc['higgsTPt_1d']   = lambda row, weight: ((row.m1_t_Pt-row.m2_t_Pt), weight) if bool(row.m1ComesFromHiggs)  else ((row.m2_t_Pt-row.m1_t_Pt), weight)
+        self.hfunc['higgsDPhiMet']  = lambda row, weight: ((row.m1ToMETDPhi-row.m2ToMETDPhi), weight) if bool(row.m1ComesFromHiggs)  else ((row.m2ToMETDPhi-row.m1ToMETDPhi), weight)
+
+        self.hfunc['H_LMtToMet'] = lambda row, weight: (row.m1MtToMET, weight) if bool(row.m1ComesFromHiggs)  else (row.m2MtToMET, weight)
+        self.hfunc['H_LIso']     = lambda row, weight: (row.m1RelPFIsoDB, weight) if bool(row.m1ComesFromHiggs)  else (row.m2RelPFIsoDB, weight)
+        self.hfunc['H_LPt']      = lambda row, weight: (row.m1Pt, weight) if bool(row.m1ComesFromHiggs)  else (row.m2Pt, weight)
+        self.hfunc['W_LMtToMet'] = lambda row, weight: (row.m2MtToMET, weight) if bool(row.m1ComesFromHiggs)  else (row.m1MtToMET, weight)
+        self.hfunc['W_LIso']     = lambda row, weight: (row.m2RelPFIsoDB, weight) if bool(row.m1ComesFromHiggs)  else (row.m1RelPFIsoDB, weight)
+        self.hfunc['W_LPt']      = lambda row, weight: (row.m2Pt, weight) if bool(row.m1ComesFromHiggs)  else (row.m1Pt, weight)
+        self.hfunc['true_mass']  = lambda row, weight: (row.m1_t_Mass, weight) if bool(row.m1ComesFromHiggs)  else (row.m2_t_Mass, weight)
+        
         self.pucorrector = mcCorrectors.make_puCorrector('doublemu')
 
     def book_histos(self, folder):
@@ -44,12 +87,45 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         self.book(folder, "m2RelPFIsoDB", "m2Iso", 100, 0, 0.3)
         self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
         self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
-        self.book(folder, "tDecayMode", "Tau AbsEta", 15, -0.5, 14.5)
+        #self.book(folder, "tDecayMode", "Tau AbsEta", 15, -0.5, 14.5)
         self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
         self.book(folder, "m1DZ",  "m1DZ", 100, 0., 1)
         self.book(folder, "m2DZ",  "m2DZ", 100, 0., 1)
         self.book(folder, "tDZ" ,  "tDZ" , 100, 0., 1)
         self.book(folder, "LT" ,  "LT" , 100, 0., 500)
+
+        #let's look for osme other possible selections
+        self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
+        self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
+        self.book(folder, "_recoilDaught"  , "recoilDaught"  , 600, 0, 8000)
+        self.book(folder, "_recoilWithMet" , "recoilWithMet" , 600, 0, 8000)
+        self.book(folder, "lepRecoil"     , "lepRecoil"     , 600, 0, 8000)
+        self.book(folder, "lepRecoil_wMET", "lepRecoil_wMET", 600, 0, 8000)
+        self.book(folder, "mass"          , "mass"          , 800, 0, 800 )
+        self.book(folder, "metEt"         , "metEt"         , 300, 0, 2000)
+       
+        ## self.book(folder, "tToMETDPhi#metEt", 100, 0, 4, 100, 0, 800, type=ROOT.TH2F)
+        ## self.book(folder, "recoilWithMet#metEt", "recoilWithMet#metEt", 100, 0, 800, 100, 0, 800, type=ROOT.TH2F)
+        
+        #Book additial histograms for signal MC
+        if 'VH' in os.environ['megatarget'] and folder == 'ss/p1p2p3' and 'VHTests' in os.environ and os.environ['VHTests'] == 'YES':
+            self.book(folder, "true_mass", "True Mass", 200, 0, 200)
+            self.book(folder, "higgsLPt", "p_{T} lepton from higgs vs p_{T} lepton from W", 100, 0, 100, 100, 0, 100, type=ROOT.TH2F)
+            self.book(folder, "higgsLIso", "Isolation lepton from higgs vs Isolation lepton from W", 100, 0, 0.3, 100, 0, 0.3, type=ROOT.TH2F)
+            self.book(folder, "higgsLMtToMet", "M_{T} lepton from higgs vs M_{T} lepton from W", 100, 0, 200, 100, 0, 200, type=ROOT.TH2F)
+            self.book(folder, 'higgsLMtToMet_1d', "difference between lepton coming from higgs and the one from W", 100, -200, 200)
+            self.book(folder, 'higgsLIso_1d'    , "difference between lepton coming from higgs and the one from W", 100, -0.3, 0.3)
+            self.book(folder, 'higgsLPt_1d'     , "difference between lepton coming from higgs and the one from W", 100, -100, 100)
+            self.book(folder, 'higgsTDR_1d', "", 100, -10, 10)
+            self.book(folder, 'higgsTPt_1d', "", 100, -100, 100)
+            self.book(folder, 'higgsMtRatio_1d' , "", 100, -10, 10)
+            self.book(folder, 'higgsDPhiMet', "", 100, -7,7)
+            self.book(folder, 'H_LMtToMet', "", 100, 0, 200)
+            self.book(folder, 'H_LIso'    , "", 100, 0, 0.3) 
+            self.book(folder, 'H_LPt'     , "", 100, 0, 100) 
+            self.book(folder, 'W_LMtToMet', "", 100, 0, 200)
+            self.book(folder, 'W_LIso'    , "", 100, 0, 0.3) 
+            self.book(folder, 'W_LPt'     , "", 100, 0, 100)
 
     def preselection(self, row):
         ''' Preselection applied to events.
@@ -62,6 +138,7 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
         if not selections.muSelection(row, 'm1'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         if not selections.muSelection(row, 'm2'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         if not selections.tauSelection(row, 't'): return False #applies basic selection (eta, pt > 20, DZ)
+        if row.m1_m2_SS and row.m1_t_SS         : return False #remove three SS leptons
 
         if row.m1_m2_Mass < 20:    return False
         if row.LT < 80:            return False
@@ -98,24 +175,29 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
            row.m2L3fL1DoubleMu10MuOpenL1f0L2f10L3Filtered17:
             return True
 
-    def sign_cut(self, row):
+    @staticmethod
+    def sign_cut(row):
         ''' Returns true if muons are SS '''
         return bool(row.m1_m2_SS)
 
-    def obj1_id(self, row):
+    @staticmethod
+    def obj1_id(row):
         return bool(row.m1PFIDTight) and (
             row.m1RelPFIsoDB < 0.1 or
             (row.m1RelPFIsoDB < 0.15 and row.m1AbsEta < 1.479))
 
-    def obj2_id(self, row):
+    @staticmethod
+    def obj2_id(row):
         return bool(row.m2PFIDTight) and (
             row.m2RelPFIsoDB < 0.1 or
             (row.m2RelPFIsoDB < 0.15 and row.m2AbsEta < 1.479))
 
-    def obj3_id(self, row):
+    @staticmethod
+    def obj3_id(row):
         return bool(row.tLooseMVAIso)
 
-    def anti_wz(self, row):
+    @staticmethod
+    def anti_wz(row):
         return row.tAntiMuonTight and not row.tMuOverlap
 
     def enhance_wz(self, row):
@@ -158,7 +240,10 @@ class WHAnalyzeMMT(WHAnalyzerBase.WHAnalyzerBase):
     # For measuring charge flip probability
     # Not really used in this channel
     def obj1_obj3_SS(self, row):
-        return not row.m1_t_SS
+        return row.m1_t_SS
 
-    def obj1_charge_flip(self, row):
-        return 0
+    ## def obj1_charge_flip(self, row):
+    ##     return 0
+
+    ## def obj2_charge_flip(self, row):
+    ##     return 0

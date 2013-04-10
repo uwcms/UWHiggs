@@ -1,15 +1,15 @@
-University of Wisconsin CMS Higgs Analysis
-==========================================
+University of Wisconsin (and friends) CMS Higgs Analyses
+========================================================
 
-Contains final plotting/analysis code for UW H→ττ analyses.
+Contains final plotting/analysis code for UW Higgs analyses.
 
 Installation
 ------------
 
-Start from a CMSSW 5_3_3 or greater working area.
+Start from a CMSSW 5_3_7 or greater working area.
 Clone the code from the remote repository::
 
-   git clone --recursive https://github.com/ekfriis/UWHiggs.git
+   git clone --recursive https://github.com/uwcms/UWHiggs.git
 
 The --recursive option is necessary for the dependencies, which are stored as
 git submodules, to be downloaded correctly.  Now check out/install all the
