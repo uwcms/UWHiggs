@@ -551,7 +551,8 @@ class WHPlotterBase(Plotter):
 
     def plot_final(self, variable, rebin=1, xaxis='', maxy=15,
                    show_error=False, qcd_correction=False, stack_higgs=True, 
-                   qcd_weight_fraction=0, x_range=None, show_charge_fakes=False,**kwargs):
+                   qcd_weight_fraction=0, x_range=None, show_charge_fakes=False,
+                   leftside_legend=False, **kwargs):
         ''' Plot the final output - with bkg. estimation '''        
         show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
         sig_view = self.make_signal_views(
@@ -583,7 +584,7 @@ class WHPlotterBase(Plotter):
         self.keep.append(histo)
 
         # Add legend
-        legend = self.add_legend(histo, leftside=False, entries=4)
+        legend = self.add_legend(histo, leftside=leftside_legend, entries=4)
 
         if show_error:
             bkg_error_view = BackgroundErrorView(
