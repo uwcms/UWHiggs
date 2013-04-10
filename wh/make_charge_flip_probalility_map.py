@@ -152,7 +152,7 @@ if __name__ == "__main__":
     )
     os_func.plotOn(frame, ROOT.RooFit.LineColor(ROOT.EColor.kAzure))
     frame.Draw()
-    canvas.Print(args.output.replace(".root","os_trkMass.png"))
+    canvas.Print("/afs/hep.wisc.edu/home/mverzett/public_html/mytests/eet/os_trkMass.png")
 
     #Fizin all the parameters
     #mean.setVal(0)
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     
     ss_func.plotOn(frame, ROOT.RooFit.LineColor(ROOT.EColor.kAzure))
     frame.Draw()
-    canvas.Print(args.output.replace(".root","os_trkMass.png"))
+    canvas.Print("/afs/hep.wisc.edu/home/mverzett/public_html/mytests/eet/ss_trkMass.png")
 
     mass_scale.Write()
     outFile.Close()
