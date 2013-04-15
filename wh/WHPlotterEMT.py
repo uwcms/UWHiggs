@@ -153,23 +153,23 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-tToMETDPhi')
 
-    plotter.plot_final('_recoilDaught', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('study-recoilDaught')
+##     plotter.plot_final('_recoilDaught', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
+##     plotter.add_cms_blurb(sqrts)
+##     plotter.save('study-recoilDaught')
 
-    plotter.plot_final('_recoilWithMet', 20, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('study-recoilWithMet')
+##     plotter.plot_final('_recoilWithMet', 20, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+##     plotter.add_cms_blurb(sqrts)
+##     plotter.save('study-recoilWithMet')
 
-    plotter.plot_final('lepRecoil_wMET', 5,  x_range=[0,300], qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('study-lepRecoilwMET')
+##     plotter.plot_final('lepRecoil_wMET', 5,  x_range=[0,300], qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+##     plotter.add_cms_blurb(sqrts)
+##     plotter.save('study-lepRecoilwMET')
 
-    plotter.plot_final('lepRecoil', 5,  x_range=[0,300], qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('study-lepRecoil')
+##     plotter.plot_final('lepRecoil', 5,  x_range=[0,300], qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+##     plotter.add_cms_blurb(sqrts)
+##     plotter.save('study-lepRecoil')
 
-    plotter.plot_final('metEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,500])
+    plotter.plot_final('type1_pfMetEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,500])
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-metEt')
 
