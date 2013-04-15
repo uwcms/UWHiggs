@@ -40,25 +40,25 @@ charge_flip       = make_weight(frfits.e_charge_flip      )
 charge_flip_up    = make_weight(frfits.e_charge_flip_up   )
 charge_flip_down  = make_weight(frfits.e_charge_flip_down )
 
-highpt_e_charge_flip      = make_weight( frfits.highpt_e_charge_flip      )
-highpt_e_charge_flip_up   = make_weight( frfits.highpt_e_charge_flip_up   )
-highpt_e_charge_flip_down = make_weight( frfits.highpt_e_charge_flip_down )
+## highpt_e_charge_flip      = make_weight( frfits.highpt_e_charge_flip      )
+## highpt_e_charge_flip_up   = make_weight( frfits.highpt_e_charge_flip_up   )
+## highpt_e_charge_flip_down = make_weight( frfits.highpt_e_charge_flip_down )
 
-lowpt_e_charge_flip       = make_weight( frfits.lowpt_e_charge_flip       )
-lowpt_e_charge_flip_up    = make_weight( frfits.lowpt_e_charge_flip_up    )
-lowpt_e_charge_flip_down  = make_weight( frfits.lowpt_e_charge_flip_down  )
+## lowpt_e_charge_flip       = make_weight( frfits.lowpt_e_charge_flip       )
+## lowpt_e_charge_flip_up    = make_weight( frfits.lowpt_e_charge_flip_up    )
+## lowpt_e_charge_flip_down  = make_weight( frfits.lowpt_e_charge_flip_down  )
 
 leading_e_fr_wjets    = make_weight(frfits.highpt_ee_fr )
 leading_e_fr_qcd      = make_weight(frfits.highpt_ee_qcd_fr )
 subleading_e_fr_wjets = make_weight(frfits.lowpt_ee_fr )
 subleading_e_fr_qcd   = make_weight(frfits.lowpt_ee_qcd_fr )
 
-def assign_charge_weight_two_maps(dir_, row):
-    if "charge_weightSysUp"  in dir_: return highpt_e_charge_flip_up(row.e1AbsEta,row.e1Pt) + lowpt_e_charge_flip_up(row.e2AbsEta,row.e2Pt)
-    if "charge_weightSysDwn" in dir_: return highpt_e_charge_flip_down(row.e1AbsEta,row.e1Pt) + lowpt_e_charge_flip_down(row.e2AbsEta,row.e2Pt)
-    if "charge_weight"       in dir_:
-        return highpt_e_charge_flip(row.e1AbsEta,row.e1Pt) + lowpt_e_charge_flip(row.e2AbsEta,row.e2Pt)
-    return 1 #No Charge w to be applied!
+## def assign_charge_weight_two_maps(dir_, row):
+##     if "charge_weightSysUp"  in dir_: return highpt_e_charge_flip_up(row.e1AbsEta,row.e1Pt) + lowpt_e_charge_flip_up(row.e2AbsEta,row.e2Pt)
+##     if "charge_weightSysDwn" in dir_: return highpt_e_charge_flip_down(row.e1AbsEta,row.e1Pt) + lowpt_e_charge_flip_down(row.e2AbsEta,row.e2Pt)
+##     if "charge_weight"       in dir_:
+##         return highpt_e_charge_flip(row.e1AbsEta,row.e1Pt) + lowpt_e_charge_flip(row.e2AbsEta,row.e2Pt)
+##     return 1 #No Charge w to be applied!
 
 def assign_charge_weight_one_maps(dir_, row):
     if "charge_weightSysUp"  in dir_: return charge_flip_up(row.e1AbsEta,row.e1Pt)   + charge_flip_up(row.e2AbsEta,row.e2Pt)
@@ -67,7 +67,7 @@ def assign_charge_weight_one_maps(dir_, row):
         return charge_flip(row.e1AbsEta,row.e1Pt) + charge_flip(row.e2AbsEta,row.e2Pt)
     return 1 #No Charge w to be applied!
 
-assign_charge_weight = assign_charge_weight_two_maps
+assign_charge_weight = assign_charge_weight_one_maps #assign_charge_weight_two_maps
 
 def assign_id_weight(dir_, row):
     if 'wjet_w' not in dir_ and 'qcd_w' not in dir_: #NO Weights to be applied!
