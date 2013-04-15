@@ -29,10 +29,10 @@ def tauSelection(row, name):
     return True
 
 def vetos(row):
-    if row.muVetoPt5:         return False
+    if row.muVetoPt5IsoIdVtx: return False
     if row.bjetCSVVeto:       return False
-    if row.tauVetoPt20:       return False
-    if row.eVetoCicTightIso:  return False
+    if row.eVetoMVAIsoVtx:    return False
+    if row.tauVetoPt20Loose3HitsVtx: return False
     return True
 
 def h2tau_eid(row, name):
@@ -45,12 +45,12 @@ def control_region_ee(row):
     '''Figure out what control region we are in. Shared among two codes, to avoid mismatching copied here'''
     if  row.e1_e2_SS and h2tau_eid(row, 'e1') and row.e1MtToMET > 30: # and row.e2MtToMET < 30:# and row.e2MtToMET < 30: #and row.metEt > 30: #row.metSignificance > 3:
         return 'wjets'
-    elif row.e1_e2_SS and row.e1RelPFIsoDB > 0.3 and row.metEt < 25: #and row.metSignificance < 3: #
+    elif row.e1_e2_SS and row.e1RelPFIsoDB > 0.3 and row.type1_pfMetEt < 25: #and row.metSignificance < 3: #
         return 'qcd'
     elif h2tau_eid(row,'e1') and h2tau_eid(row,'e2') \
-        and not any([ row.muVetoPt5,
-                      row.tauVetoPt20,
-                      row.eVetoCicTightIso,
+        and not any([ row.muVetoPt5IsoIdVtx,
+                      row.tauVetoPt20Loose3HitsVtx,
+                      row.eVetoMVAIsoVtx,
                       ]):
         return 'zee'
     else:

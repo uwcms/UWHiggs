@@ -96,15 +96,15 @@ class FakeRatesEE(MegaBase):
             #the_histos['metSignificance'].Fill(row.metSignificance)
             the_histos['e1MtToMET'].Fill(row.e1MtToMET)
             the_histos['e2MtToMET'].Fill(row.e2MtToMET)
-            the_histos['MET'].Fill(row.metEt)
+            the_histos['MET'].Fill(row.type1_pfMetEt)
             the_histos['OSS'].Fill(int(row.e1_e2_SS))
             if row.e1_e2_Mass > 60 and row.e1_e2_Mass < 120 :
-                the_histos['MET_Z'].Fill(row.metEt)
+                the_histos['MET_Z'].Fill(row.type1_pfMetEt)
                 the_histos['OSS_Z'].Fill(int(row.e1_e2_SS))
                 the_histos['e1MtToMET_Z'].Fill(row.e1MtToMET)
                 the_histos['e2MtToMET_Z'].Fill(row.e2MtToMET)
             else:
-                the_histos['MET_NoZ'].Fill(row.metEt)
+                the_histos['MET_NoZ'].Fill(row.type1_pfMetEt)
                 the_histos['e1MtToMET_NoZ'].Fill(row.e1MtToMET)
                 the_histos['e2MtToMET_NoZ'].Fill(row.e2MtToMET)
                 

@@ -14,10 +14,20 @@ import fakerate_functions as frfits
 import ROOT
 import math
 
-mtr = frfits.mt_likelihood_ratio
+#mtr = frfits.mt_likelihood_ratio
 ################################################################################
 #### Analysis logic ############################################################
 ################################################################################
+
+def logic_cut_1(row, weight):
+    if row.e1_e2_Mass > 81 and row.e1_e2_Mass < 101:
+        if row.type1_pfMetEt < 70:
+            return (0.,weight)
+        else:
+            (1.,weight)
+    else:
+        return (1.,weight)
+
 
 class WHAnalyzeEET(WHAnalyzerBase):
     tree = 'eet/final/Ntuple'
@@ -30,14 +40,14 @@ class WHAnalyzeEET(WHAnalyzerBase):
                                                                 (row.e2Pt, row.e2Eta, row.e2Phi, 0.),\
                                                                 (row.tPt , row.tEta , row.tPhi , 0.),\
                                                                 ), weight)
-        self.hfunc['lepRecoil'] = lambda row, weight: ( \
-                                                        quad( (row.e1Pt*math.cos(row.e1Phi) + row.e2Pt*math.cos(row.e2Phi) ), \
-                                                              (row.e1Pt*math.sin(row.e1Phi) + row.e2Pt*math.sin(row.e2Phi) ), ),\
-                                                        weight)
-        self.hfunc['lepRecoil_wMET'] = lambda row, weight: ( \
-                                                        quad( (row.e1Pt*math.cos(row.e1Phi) + row.e2Pt*math.cos(row.e2Phi) + row.metEt*math.cos(row.metPhi) ), \
-                                                              (row.e1Pt*math.sin(row.e1Phi) + row.e2Pt*math.sin(row.e2Phi) + row.metEt*math.sin(row.metPhi) ), ),\
-                                                        weight)
+##         self.hfunc['logic_cut_1'] = lambda row, weight: \
+##             (0.,weight) if row.e1_e2_Mass > 81 and row.e1_e2_Mass < 101 and row.metEt < 70 else \
+##             (1.,weight)
+        
+##         self.hfunc['lepRecoil_wMET'] = lambda row, weight: ( \
+##                                                         quad( (row.e1Pt*math.cos(row.e1Phi) + row.e2Pt*math.cos(row.e2Phi) + row.metEt*math.cos(row.metPhi) ), \
+##                                                               (row.e1Pt*math.sin(row.e1Phi) + row.e2Pt*math.sin(row.e2Phi) + row.metEt*math.sin(row.metPhi) ), ),\
+##                                                         weight)
         self.hfunc["e*1_e2_Mass"] = lambda row, weight: ( frfits.mass_scaler( row.e1_e2_Mass), weight)
         self.hfunc["e*1_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler( row.e1_t_Mass ), weight)
         self.hfunc["e1_e*2_Mass"] = lambda row, weight: ( frfits.mass_scaler( row.e1_e2_Mass), weight)
@@ -57,7 +67,6 @@ class WHAnalyzeEET(WHAnalyzerBase):
         ## self.hfunc['higgsLPt']      = lambda row, weight: ((row.e1Pt,row.e2Pt), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2Pt,row.e1Pt), weight)
 
         ## self.hfunc['higgsLMtToMet_1d'] = lambda row, weight: ((row.e1MtToMET-row.e2MtToMET), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2MtToMET-row.e1MtToMET), weight)
-        ## self.hfunc['higgsMtRatio_1d']  = lambda row, weight: ((mtr(row.e1MtToMET)-mtr(row.e2MtToMET)), weight) if bool(row.e1ComesFromHiggs)  else ((mtr(row.e2MtToMET)-mtr(row.e1MtToMET)), weight)
         ## self.hfunc['higgsLIso_1d']     = lambda row, weight: ((row.e1RelPFIsoDB-row.e2RelPFIsoDB), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2RelPFIsoDB-row.e1RelPFIsoDB), weight)
         ## self.hfunc['higgsLPt_1d']      = lambda row, weight: ((row.e1Pt-row.e2Pt), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2Pt-row.e1Pt), weight)
         ## self.hfunc['higgsTDR_1d']   = lambda row, weight: ((row.e1_t_DR-row.e2_t_DR), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2_t_DR-row.e1_t_DR), weight)
@@ -91,11 +100,16 @@ class WHAnalyzeEET(WHAnalyzerBase):
         self.book(folder, "e1_t_Mass", "leadingMass", 200, 0, 200)
         self.book(folder, "e2_t_Mass", "subleadingMass", 200, 0, 200)
 
+        self.book(folder, "e1_e2_CosThetaStar", "subleadingMass", 200, -1., 1.)
+        self.book(folder, "e1_t_CosThetaStar" , "subleadingMass", 200, -1., 1.)
+        self.book(folder, "e2_t_CosThetaStar" , "subleadingMass", 200, -1., 1.)
+
         self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 100, 0, 0.3)
         self.book(folder, "tPt", "tPt", 100, 0,100)
         self.book(folder, "tAbsEta", "tAbsEta", 100, 0, 2.3)
         #self.book(folder, "metSignificance", "MET significance", 100, 0, 15)
         self.book(folder, "LT", "L_T", 100, 0, 300)
+
         #Charge mis-id special histograms
         if 'c1' in folder:
             self.book(folder, "e*1_e2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
@@ -117,9 +131,15 @@ class WHAnalyzeEET(WHAnalyzerBase):
         self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
         self.book(folder, "_recoilDaught"  , "recoilDaught"  , 600, 0, 8000)
         self.book(folder, "_recoilWithMet" , "recoilWithMet" , 600, 0, 8000)
-        self.book(folder, "lepRecoil"     , "lepRecoil"     , 600, 0, 8000)
-        self.book(folder, "lepRecoil_wMET", "lepRecoil_wMET", 600, 0, 8000)
-        self.book(folder, "metEt"         , "metEt"         , 300, 0, 2000)
+        self.book(folder, "e1_e2_Pt"       , "lepRecoil"     , 600, 0, 8000)
+        self.book(folder, "e1_e2_DR"       , "e1_e2_DR"      , 500, 0, 10)
+        self.book(folder, "m1_m2_CosThetaStar", "m1_m2_CosThetaStar", 200, -1, 1)
+        self.book(folder, "m1_t_CosThetaStar" , "m1_t_CosThetaStar" , 200, -1, 1)
+        self.book(folder, "m2_t_CosThetaStar" , "m2_t_CosThetaStar" , 200, -1, 1)
+        #self.book(folder, "lepRecoil_wMET", "lepRecoil_wMET", 600, 0, 8000)
+        self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
+        self.book(folder, "type1_pfMetEt#e1_e2_Mass", "metEt#e1_e2_Mass", 100, 0, 300, 120, 0, 120, type=ROOT.TH2F)
+        #self.book(folder, "logic_cut_1" ,"logic_cut_1", 2, 0.,2.)
 
         #Book additial histograms for signal MC
         ## if 'VH' in os.environ['megatarget'] and folder == 'ss/p1p2p3' and 'VHTests' in os.environ and os.environ['VHTests'] == 'YES':
@@ -130,7 +150,6 @@ class WHAnalyzeEET(WHAnalyzerBase):
         ##     self.book(folder, 'higgsLMtToMet_1d', "difference between lepton coming from higgs and the one from W", 100, -200, 200)
         ##     self.book(folder, 'higgsLIso_1d'    , "difference between lepton coming from higgs and the one from W", 100, -0.3, 0.3)
         ##     self.book(folder, 'higgsLPt_1d'     , "difference between lepton coming from higgs and the one from W", 100, -100, 100)
-        ##     self.book(folder, 'higgsMtRatio_1d' , "", 100, -10, 10)
         ##     self.book(folder, 'higgsTDR_1d', "", 100, -10, 10)
         ##     self.book(folder, 'higgsTPt_1d', "", 100, -100, 100)
         ##     self.book(folder, 'higgsDPhiMet', "", 100, -7,7)
@@ -163,9 +182,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
         if row.LT < 80:              return False
         if not selections.vetos(row): return False #applies mu bjet e additional tau vetoes
 
-        if not row.tAntiMuonTight:   return False
-        if row.tMuOverlap:           return False
-        if not row.tAntiElectronMVA: return False
+        if not row.tAntiMuonLoose:   return False
         #'t_ElectronOverlapWP95 < 0.5',
         return True
 
@@ -188,12 +205,17 @@ class WHAnalyzeEET(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj3_id(row):
-        return bool(row.tLooseMVAIso)
+        return bool(row.tLooseIso3Hits)
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def anti_wz(row):
-        return row.tAntiElectronMVA and not row.tCiCTightElecOverlap
+        if row.e_t_Zcompat < 20:
+            if not row.tAntiElectronMVA3Tight:
+                return False
+        elif not row.tAntiElectronMVA3Medium:
+            return False
+        return True
 
     def enhance_wz(self, row):
         # Require the "tau" to be a electron, and require the third electron

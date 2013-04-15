@@ -15,7 +15,6 @@ import fakerate_functions as frfits
 import ROOT
 import math
 
-mtr = frfits.mt_likelihood_ratio
 ################################################################################
 #### Analysis logic ############################################################
 ################################################################################
@@ -32,19 +31,19 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         self.hfunc['tLeadDR']   = lambda row, weight: (row.m_t_DR,   weight)    if row.ePt < row.mPt else (row.e_t_DR,   weight) 
         self.hfunc['tSubDR']    = lambda row, weight: (row.e_t_DR,   weight)    if row.ePt < row.mPt else (row.m_t_DR,   weight) 
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.ePt/row.mPt, weight) if row.ePt < row.mPt else (row.mPt/row.ePt, weight)
-        self.hfunc['mass'     ] = lambda row, weight: (inv_mass(\
-                                                                (row.mPt, row.mEta, row.mPhi, 0.),\
-                                                                (row.ePt, row.eEta, row.ePhi, 0.),\
-                                                                (row.tPt, row.tEta, row.tPhi, 0.),\
-                                                                ), weight)
-        self.hfunc['lepRecoil'] = lambda row, weight: ( \
-                                                        quad( (row.mPt*math.cos(row.mPhi) + row.ePt*math.cos(row.ePhi) ), \
-                                                              (row.mPt*math.sin(row.mPhi) + row.ePt*math.sin(row.ePhi) ), ),\
-                                                        weight)
-        self.hfunc['lepRecoil_wMET'] = lambda row, weight: ( \
-                                                        quad( (row.mPt*math.cos(row.mPhi) + row.ePt*math.cos(row.ePhi) + row.metEt*math.cos(row.metPhi) ), \
-                                                              (row.mPt*math.sin(row.mPhi) + row.ePt*math.sin(row.ePhi) + row.metEt*math.sin(row.metPhi) ), ),\
-                                                        weight)
+##         self.hfunc['mass'     ] = lambda row, weight: (inv_mass(\
+##                                                                 (row.mPt, row.mEta, row.mPhi, 0.),\
+##                                                                 (row.ePt, row.eEta, row.ePhi, 0.),\
+##                                                                 (row.tPt, row.tEta, row.tPhi, 0.),\
+##                                                                 ), weight)
+##         self.hfunc['lepRecoil'] = lambda row, weight: ( \
+##                                                         quad( (row.mPt*math.cos(row.mPhi) + row.ePt*math.cos(row.ePhi) ), \
+##                                                               (row.mPt*math.sin(row.mPhi) + row.ePt*math.sin(row.ePhi) ), ),\
+##                                                         weight)
+##         self.hfunc['lepRecoil_wMET'] = lambda row, weight: ( \
+##                                                         quad( (row.mPt*math.cos(row.mPhi) + row.ePt*math.cos(row.ePhi) + row.metEt*math.cos(row.metPhi) ), \
+##                                                               (row.mPt*math.sin(row.mPhi) + row.ePt*math.sin(row.ePhi) + row.metEt*math.sin(row.metPhi) ), ),\
+##                                                         weight)
         self.hfunc["e*_t_Mass"] = lambda row, weight: ( frfits.mass_scaler( row.e_t_Mass), weight)
         self.hfunc["e*_m_Mass"] = lambda row, weight: ( frfits.mass_scaler( row.e_m_Mass), weight)
         self.hfunc["subMass*" ] = lambda row, weight: ( frfits.mass_scaler( row.e_t_Mass), weight)    if row.ePt < row.mPt else (row.m_t_Mass, weight)
@@ -60,7 +59,6 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         self.hfunc['higgsLMtToMet_1d'] = lambda row, weight: ((row.eMtToMET-row.mMtToMET), weight) if bool(row.eComesFromHiggs)  else ((row.mMtToMET-row.eMtToMET), weight)
         self.hfunc['higgsLIso_1d']     = lambda row, weight: ((row.eRelPFIsoDB-row.mRelPFIsoDB), weight) if bool(row.eComesFromHiggs)  else ((row.mRelPFIsoDB-row.eRelPFIsoDB), weight)
         self.hfunc['higgsLPt_1d']      = lambda row, weight: ((row.ePt-row.mPt), weight) if bool(row.eComesFromHiggs)  else ((row.mPt-row.ePt), weight)
-        self.hfunc['higgsMtRatio_1d']  = lambda row, weight: ((mtr(row.eMtToMET)-mtr(row.mMtToMET)), weight) if bool(row.eComesFromHiggs)  else ((mtr(row.mMtToMET)-mtr(row.eMtToMET)), weight)
         self.hfunc['H_LMtToMet'] = lambda row, weight: (row.eMtToMET, weight) if bool(row.eComesFromHiggs)  else (row.mMtToMET, weight)
         self.hfunc['H_LIso']     = lambda row, weight: (row.eRelPFIsoDB, weight) if bool(row.eComesFromHiggs)  else (row.mRelPFIsoDB, weight)
         self.hfunc['H_LPt']      = lambda row, weight: (row.ePt, weight) if bool(row.eComesFromHiggs)  else (row.mPt, weight)
@@ -101,34 +99,33 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             self.book(folder, "e*_m_Mass", "Electron-Muon Mass", 200, 0, 200)
         
         #let's look for osme other possible selections
-        self.book(folder, "mass"          , "mass"          , 800, 0, 800 )
+        #self.book(folder, "mass"          , "mass"          , 800, 0, 800 )
         self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
         self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
-        self.book(folder, "_recoilDaught"  , "recoilDaught"  , 600, 0, 8000)
-        self.book(folder, "_recoilWithMet" , "recoilWithMet" , 600, 0, 8000)
-        self.book(folder, "lepRecoil"     , "lepRecoil"     , 600, 0, 8000)
-        self.book(folder, "lepRecoil_wMET", "lepRecoil_wMET", 600, 0, 8000)
-        self.book(folder, "metEt"         , "metEt"         , 300, 0, 2000)
+        #self.book(folder, "_recoilDaught"  , "recoilDaught"  , 600, 0, 8000)
+        #self.book(folder, "_recoilWithMet" , "recoilWithMet" , 600, 0, 8000)
+        #self.book(folder, "lepRecoil"     , "lepRecoil"     , 600, 0, 8000)
+        #self.book(folder, "lepRecoil_wMET", "lepRecoil_wMET", 600, 0, 8000)
+        self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
 
         #Book additial histograms for signal MC
-        if 'VH' in os.environ['megatarget'] and folder == 'ss/p1p2p3' and 'VHTests' in os.environ and os.environ['VHTests'] == 'YES':
-            self.book(folder, "true_mass", "True Mass", 200, 0, 200)
-            self.book(folder, "higgsLPt", "p_{T} lepton from higgs vs p_{T} lepton from W", 100, 0, 100, 100, 0, 100, type=ROOT.TH2F)
-            self.book(folder, "higgsLIso", "Isolation lepton from higgs vs Isolation lepton from W", 100, 0, 0.3, 100, 0, 0.3, type=ROOT.TH2F)
-            self.book(folder, "higgsLMtToMet", "M_{T} lepton from higgs vs M_{T} lepton from W", 100, 0, 200, 100, 0, 200, type=ROOT.TH2F)
-            self.book(folder, 'higgsLMtToMet_1d', "difference between lepton coming from higgs and the one from W", 100, -200, 200)
-            self.book(folder, 'higgsLIso_1d'    , "difference between lepton coming from higgs and the one from W", 100, -0.3, 0.3)
-            self.book(folder, 'higgsLPt_1d'     , "difference between lepton coming from higgs and the one from W", 100, -100, 100)
-            self.book(folder, 'higgsMtRatio_1d' , "", 100, -10, 10)
-            self.book(folder, 'higgsTDR_1d', "", 100, -10, 10)
-            self.book(folder, 'higgsTPt_1d', "", 100, -100, 100)
-            self.book(folder, 'higgsDPhiMet', "", 100, -7,7)
-            self.book(folder, 'H_LMtToMet', "", 100, 0, 200)
-            self.book(folder, 'H_LIso'    , "", 100, 0, 0.3) 
-            self.book(folder, 'H_LPt'     , "", 100, 0, 100) 
-            self.book(folder, 'W_LMtToMet', "", 100, 0, 200)
-            self.book(folder, 'W_LIso'    , "", 100, 0, 0.3) 
-            self.book(folder, 'W_LPt'     , "", 100, 0, 100) 
+##         if 'VH' in os.environ['megatarget'] and folder == 'ss/p1p2p3' and 'VHTests' in os.environ and os.environ['VHTests'] == 'YES':
+##             self.book(folder, "true_mass", "True Mass", 200, 0, 200)
+##             self.book(folder, "higgsLPt", "p_{T} lepton from higgs vs p_{T} lepton from W", 100, 0, 100, 100, 0, 100, type=ROOT.TH2F)
+##             self.book(folder, "higgsLIso", "Isolation lepton from higgs vs Isolation lepton from W", 100, 0, 0.3, 100, 0, 0.3, type=ROOT.TH2F)
+##             self.book(folder, "higgsLMtToMet", "M_{T} lepton from higgs vs M_{T} lepton from W", 100, 0, 200, 100, 0, 200, type=ROOT.TH2F)
+##             self.book(folder, 'higgsLMtToMet_1d', "difference between lepton coming from higgs and the one from W", 100, -200, 200)
+##             self.book(folder, 'higgsLIso_1d'    , "difference between lepton coming from higgs and the one from W", 100, -0.3, 0.3)
+##             self.book(folder, 'higgsLPt_1d'     , "difference between lepton coming from higgs and the one from W", 100, -100, 100)
+##             self.book(folder, 'higgsTDR_1d', "", 100, -10, 10)
+##             self.book(folder, 'higgsTPt_1d', "", 100, -100, 100)
+##             self.book(folder, 'higgsDPhiMet', "", 100, -7,7)
+##             self.book(folder, 'H_LMtToMet', "", 100, 0, 200)
+##             self.book(folder, 'H_LIso'    , "", 100, 0, 0.3) 
+##             self.book(folder, 'H_LPt'     , "", 100, 0, 100) 
+##             self.book(folder, 'W_LMtToMet', "", 100, 0, 200)
+##             self.book(folder, 'W_LIso'    , "", 100, 0, 0.3) 
+##             self.book(folder, 'W_LPt'     , "", 100, 0, 100) 
 
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
@@ -181,17 +178,15 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj3_id( row):
-        return bool(row.tLooseMVAIso)
+        return bool(row.tLooseIso3Hits)
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def anti_wz( row):
-        if row.tCiCTightElecOverlap:
-            return False
         if row.e_t_Zcompat < 20:
-            if not row.tAntiElectronMVA:
+            if not row.tAntiElectronMVA3Medium:
                 return False
-        elif not row.tAntiElectronLoose:
+        elif not row.tAntiElectronMVA3Loose:
             return False
         return True
 
