@@ -193,7 +193,9 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-f3-tToMETDPhi')
 
-    plotter.plot_final('e1_e2_Mass', 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', show_error=True)
+    plotter.plot_final('e1_e2_Mass', 10, qcd_weight_fraction=0.5, stack_higgs=False,
+                       maxy='auto', show_error=True, x_range=[20,120], leftside_legend=True,
+                       xaxis='M_{ee} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-e1_e2_Mass')
 
@@ -205,9 +207,25 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-pt_ratio')
 
-    plotter.plot_final('metEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,500], show_error=True)
+    plotter.plot_final('type1_pfMetEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,500], show_error=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-metEt')
+
+    plotter.plot_final('e1_e2_Pt'    , 1, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,300])
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-e1_e2_Pt')
+
+    plotter.plot_final('e1_e2_DR'    , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,6])
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-e1_e2_DR')
+
+    plotter.plot_final_f3('e1_e2_DR',  10, qcd_weight_fraction=0.5, maxy='auto', x_range=[0,6])
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-e1_e2_DR')
+
+    plotter.plot_final_f3('e1_e2_Pt',  1, qcd_weight_fraction=0.5, maxy='auto', x_range=[0,300])
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-e1_e2_Pt')
 
     plotter.plot_final_f3('e1Pt',  10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
@@ -217,7 +235,7 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-f3-e2Pt')
 
-    plotter.plot_final_f3('e1_e2_Mass', 2, qcd_weight_fraction=0.5, show_error=True, maxy=80, x_range=[60,120])
+    plotter.plot_final_f3('e1_e2_Mass', 2, qcd_weight_fraction=0.5, show_error=True, maxy=80, x_range=[60,120],xaxis='M_{ee} (GeV)')
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-f3-e1_e2_Mass')
 
@@ -235,7 +253,16 @@ if __name__ == "__main__":
 
     plotter.plot_final_f3('e2pt_on_z_peak', 10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
-    plotter.save('study-f3-e2pt_on_z_peak')    
+    plotter.save('study-f3-e2pt_on_z_peak')
+
+    plotter.plot_final_f3('e2_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', show_error=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-subMass')
+
+    plotter.plot_final('e2_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)')
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-subMass')
+
     ## #END
 
     plotter.plot_final('e1Pt', 10)

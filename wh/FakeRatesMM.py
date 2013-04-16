@@ -25,7 +25,7 @@ def control_region(row):
     # Figure out what control region we are in.
     if row.m1RelPFIsoDB < 0.15 and row.m1MtToMET > 35 and row.m2MtToMET < 35:
         return 'wjets'
-    elif row.m1RelPFIsoDB > 0.3 and row.metEt < 25:
+    elif row.m1RelPFIsoDB > 0.3 and row.type1_pfMetEt < 25:
         return 'qcd'
     else:
         return None

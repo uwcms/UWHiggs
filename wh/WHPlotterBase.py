@@ -293,20 +293,19 @@ class WHPlotterBase(Plotter):
         }
 
         # Add signal
-        #for mass in [110, 115, 120, 125, 130, 135, 140]:
-        for mass in [110, 120, 130, 140]:
+        for mass in range(110, 165, 5):
             vh_view = views.SubdirectoryView(
                 self.rebin_view(self.get_view('VH_*%i' % mass), rebin),
                 'ss/p1p2p3/'
             )
             output['vh%i' % mass] = vh_view
-            if mass % 10 == 0:
-                ww_view = views.SubdirectoryView(
-                    self.rebin_view(self.get_view('VH_%i_HWW*' % mass), rebin),
-                    'ss/p1p2p3/'
-                )
-                output['vh%i_hww' % mass] = ww_view
-                output['signal%i' % mass] = views.SumView(ww_view, vh_view)
+##             if mass % 10 == 0:
+##                 ww_view = views.SubdirectoryView(
+##                     self.rebin_view(self.get_view('VH_%i_HWW*' % mass), rebin),
+##                     'ss/p1p2p3/'
+##                 )
+##                 output['vh%i_hww' % mass] = ww_view
+            output['signal%i' % mass] = views.SumView(vh_view)#views.SumView(ww_view, vh_view)
 
         return output
 
@@ -525,15 +524,15 @@ class WHPlotterBase(Plotter):
         fakes.SetName('fakes')
 
         #for mass in [110, 115, 120, 125, 130, 135, 140]:
-        for mass in [110, 120, 130, 140]:
+        for mass in range(110, 165, 5):
             vh = sig_view['vh%i' % mass].Get(variable)
             vh.SetName('WH%i' % mass)
             vh.Write()
-            if mass % 10 == 0:
-                # Only have 10 GeV steps for WW
-                ww = sig_view['vh%i_hww' % mass].Get(variable)
-                ww.SetName('WH_hww%i' % mass)
-                ww.Write()
+##             if mass % 10 == 0:
+##                 # Only have 10 GeV steps for WW
+##                 ww = sig_view['vh%i_hww' % mass].Get(variable)
+##                 ww.SetName('WH_hww%i' % mass)
+##                 ww.Write()
 
         wz.Write()
         zz.Write()

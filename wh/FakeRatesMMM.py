@@ -23,7 +23,7 @@ import os
 def control_region(row):
     # Figure out what control region we are in.
     if row.m1RelPFIsoDB < 0.25 and row.m2RelPFIsoDB < 0.25 \
-       and row.m1_m2_Zcompat < 20 and row.metEt < 25\
+       and row.m1_m2_Zcompat < 20 and row.type1_pfMetEt < 25\
        and row.m3MtToMET < 20:
         return 'zmm'
     else:
