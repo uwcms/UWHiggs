@@ -13,76 +13,90 @@ import baseSelections as selections
 import fakerate_functions as frfits
 import ROOT
 import math
+import array
 
 #mtr = frfits.mt_likelihood_ratio
 ################################################################################
 #### Analysis logic ############################################################
 ################################################################################
 
-def logic_cut_1(row, weight):
-    if row.e1_e2_Mass > 81 and row.e1_e2_Mass < 101:
-        if row.type1_pfMetEt < 70:
-            return (0.,weight)
-        else:
-            (1.,weight)
-    else:
-        return (1.,weight)
-
-
 class WHAnalyzeEET(WHAnalyzerBase):
     tree = 'eet/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         super(WHAnalyzeEET, self).__init__(tree, outfile, EETauTree, **kwargs)
         self.hfunc['subMTMass'] = lambda row, weight: (row.e2_t_Mass, weight) if row.e1MtToMET > row.e2MtToMET else (row.e1_t_Mass, weight) #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
+	def make_both_barrel(attribute):
+		def f_(row, weight):
+			return ( getattr(row, attribute), weight ) if row.e1AbsEta < 1.48 and row.e2AbsEta < 1.48 else (0., 0.)
+		return f_
+
+	def make_both_endcap(attribute):
+		def f_(row, weight):
+			return ( getattr(row, attribute), weight ) if row.e1AbsEta >= 1.48 and row.e2AbsEta >= 1.48 else (0., 0.)
+		return f_
+
+	def make_mixed(attribute):
+		def f_(row, weight):
+			return ( getattr(row, attribute), weight ) \
+			    if (row.e1AbsEta >= 1.48 and row.e2AbsEta < 1.48) or \
+			    (row.e1AbsEta < 1.48 and row.e2AbsEta >= 1.48) \
+		            else (0., 0.)
+		return f_
+	
+		
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.e2Pt/row.e1Pt, weight)
-        self.hfunc['mass'     ] = lambda row, weight: (inv_mass(\
-                                                                (row.e1Pt, row.e1Eta, row.e1Phi, 0.),\
-                                                                (row.e2Pt, row.e2Eta, row.e2Phi, 0.),\
-                                                                (row.tPt , row.tEta , row.tPhi , 0.),\
-                                                                ), weight)
-##         self.hfunc['logic_cut_1'] = lambda row, weight: \
-##             (0.,weight) if row.e1_e2_Mass > 81 and row.e1_e2_Mass < 101 and row.metEt < 70 else \
-##             (1.,weight)
-        
-##         self.hfunc['lepRecoil_wMET'] = lambda row, weight: ( \
-##                                                         quad( (row.e1Pt*math.cos(row.e1Phi) + row.e2Pt*math.cos(row.e2Phi) + row.metEt*math.cos(row.metPhi) ), \
-##                                                               (row.e1Pt*math.sin(row.e1Phi) + row.e2Pt*math.sin(row.e2Phi) + row.metEt*math.sin(row.metPhi) ), ),\
-##                                                         weight)
         self.hfunc["e*1_e2_Mass"] = lambda row, weight: ( frfits.mass_scaler( row.e1_e2_Mass), weight)
         self.hfunc["e*1_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler( row.e1_t_Mass ), weight)
         self.hfunc["e1_e*2_Mass"] = lambda row, weight: ( frfits.mass_scaler( row.e1_e2_Mass), weight)
         self.hfunc["e*2_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler( row.e2_t_Mass ), weight)
-        self.hfunc["_recoilDaught" ] = lambda row, weight: (math.sqrt(row.recoilDaught) , weight)
-        self.hfunc["_recoilWithMet"] = lambda row, weight: (math.sqrt(row.recoilWithMet), weight)
-        self.hfunc["e1eta_on_z_peak"] = lambda row, weight: ( row.e1AbsEta, weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
-        self.hfunc["e1pt_on_z_peak" ] = lambda row, weight: ( row.e1Pt    , weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
-        self.hfunc["e2eta_on_z_peak"] = lambda row, weight: ( row.e2AbsEta, weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
-        self.hfunc["e2pt_on_z_peak" ] = lambda row, weight: ( row.e2Pt    , weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
-        
+        self.hfunc["logic_cut_met" ] = self.logic_cut_met
+	self.hfunc["my_selection_info" ] = self.fill_id_info
 
-        
-        #MC ONLY
-        ## self.hfunc['higgsLMtToMet'] = lambda row, weight: ((row.e1MtToMET,row.e2MtToMET), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2MtToMET,row.e1MtToMET), weight)
-        ## self.hfunc['higgsLIso']     = lambda row, weight: ((row.e1RelPFIsoDB,row.e2RelPFIsoDB), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2RelPFIsoDB,row.e1RelPFIsoDB), weight)
-        ## self.hfunc['higgsLPt']      = lambda row, weight: ((row.e1Pt,row.e2Pt), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2Pt,row.e1Pt), weight)
+	self.hfunc["type1_pfMetEt_barr"] = make_both_barrel("type1_pfMetEt")
+	self.hfunc["type1_pfMetEt_endc"] = make_both_endcap("type1_pfMetEt")
+	self.hfunc["type1_pfMetEt_mix" ] = make_mixed("type1_pfMetEt")      
+	self.hfunc["mva_metEt_barr"] = make_both_barrel("mva_metEt")
+	self.hfunc["mva_metEt_endc"] = make_both_endcap("mva_metEt")
+	self.hfunc["mva_metEt_mix" ] = make_mixed("mva_metEt")      
 
-        ## self.hfunc['higgsLMtToMet_1d'] = lambda row, weight: ((row.e1MtToMET-row.e2MtToMET), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2MtToMET-row.e1MtToMET), weight)
-        ## self.hfunc['higgsLIso_1d']     = lambda row, weight: ((row.e1RelPFIsoDB-row.e2RelPFIsoDB), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2RelPFIsoDB-row.e1RelPFIsoDB), weight)
-        ## self.hfunc['higgsLPt_1d']      = lambda row, weight: ((row.e1Pt-row.e2Pt), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2Pt-row.e1Pt), weight)
-        ## self.hfunc['higgsTDR_1d']   = lambda row, weight: ((row.e1_t_DR-row.e2_t_DR), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2_t_DR-row.e1_t_DR), weight)
-        ## self.hfunc['higgsTPt_1d']   = lambda row, weight: ((row.e1_t_Pt-row.e2_t_Pt), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2_t_Pt-row.e1_t_Pt), weight)
-        ## self.hfunc['higgsDPhiMet']  = lambda row, weight: ((row.e1ToMETDPhi-row.e2ToMETDPhi), weight) if bool(row.e1ComesFromHiggs)  else ((row.e2ToMETDPhi-row.e1ToMETDPhi), weight)
-
-        ## self.hfunc['H_LMtToMet'] = lambda row, weight: (row.e1MtToMET, weight) if bool(row.e1ComesFromHiggs)  else (row.e2MtToMET, weight)
-        ## self.hfunc['H_LIso']     = lambda row, weight: (row.e1RelPFIsoDB, weight) if bool(row.e1ComesFromHiggs)  else (row.e2RelPFIsoDB, weight)
-        ## self.hfunc['H_LPt']      = lambda row, weight: (row.e1Pt, weight) if bool(row.e1ComesFromHiggs)  else (row.e2Pt, weight)
-        ## self.hfunc['W_LMtToMet'] = lambda row, weight: (row.e2MtToMET, weight) if bool(row.e1ComesFromHiggs)  else (row.e1MtToMET, weight)
-        ## self.hfunc['W_LIso']     = lambda row, weight: (row.e2RelPFIsoDB, weight) if bool(row.e1ComesFromHiggs)  else (row.e1RelPFIsoDB, weight)
-        ## self.hfunc['W_LPt']      = lambda row, weight: (row.e2Pt, weight) if bool(row.e1ComesFromHiggs)  else (row.e1Pt, weight)
-        ## self.hfunc['true_mass']  = lambda row, weight: (row.e1_t_Mass, weight) if bool(row.e1ComesFromHiggs)  else (row.e2_t_Mass, weight)
-
-
+        self.hfunc["e1_t_CosThetaStar_barr"] = make_both_barrel("e1_t_CosThetaStar")
+        self.hfunc["e1_t_CosThetaStar_endc"] = make_both_endcap("e1_t_CosThetaStar")
+        self.hfunc["e1_t_CosThetaStar_mix" ] = make_mixed("e1_t_CosThetaStar")      
+	self.hfunc["e1_e2_Mass_barr"] = make_both_barrel("e1_e2_Mass")
+	self.hfunc["e1_e2_Mass_endc"] = make_both_endcap("e1_e2_Mass")
+	self.hfunc["e1_e2_Mass_mix" ] = make_mixed("e1_e2_Mass")      
+	
+        ## self.hfunc["e1eta_on_z_peak"] = lambda row, weight: ( row.e1AbsEta, weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
+        ## self.hfunc["e1pt_on_z_peak" ] = lambda row, weight: ( row.e1Pt    , weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
+        ## self.hfunc["e2eta_on_z_peak"] = lambda row, weight: ( row.e2AbsEta, weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
+        ## self.hfunc["e2pt_on_z_peak" ] = lambda row, weight: ( row.e2Pt    , weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
         self.pucorrector = mcCorrectors.make_puCorrector('doublee')
+
+    
+
+    @staticmethod
+    def logic_cut_met( row, weight):
+        if row.e1AbsEta < 1.48 and row.e2AbsEta < 1.48: #both barrel
+            return (0.5, weight) \
+		    if row.type1_pfMetEt < 30 and \
+		    abs(row.e1_e2_Mass - 91.2) < 10 \
+		    else (1.5, weight)
+        elif row.e1AbsEta < 1.48 or row.e2AbsEta < 1.48: #at least one in barrel
+            return (0.5, weight) \
+		    if row.type1_pfMetEt < 50 and \
+		    abs(row.e1_e2_Mass - 91.2) < 10 \
+		    else (1.5, weight)
+        else: #both in endcap
+            return (0.5, weight) \
+		    if row.type1_pfMetEt < 50 and \
+		    abs(row.e1_e2_Mass - 91.2) < 20 \
+	        else (1.5, weight)
+        return (1.5, weight)
+
+
+    @staticmethod
+    def fill_id_info(row, weight):
+	    return array.array("f", [row.e1_e2_Mass, row.e1AbsEta, row.e2AbsEta, row.type1_pfMetEt, row.e2_t_CosThetaStar, row.e1_t_CosThetaStar, row.e1_e2_CosThetaStar, weight] ), None
 
     def book_histos(self, folder):
         self.book(folder, "weight", "Event weight", 100, 0, 5)
@@ -100,15 +114,12 @@ class WHAnalyzeEET(WHAnalyzerBase):
         self.book(folder, "e1_t_Mass", "leadingMass", 200, 0, 200)
         self.book(folder, "e2_t_Mass", "subleadingMass", 200, 0, 200)
 
-        self.book(folder, "e1_e2_CosThetaStar", "subleadingMass", 200, -1., 1.)
-        self.book(folder, "e1_t_CosThetaStar" , "subleadingMass", 200, -1., 1.)
-        self.book(folder, "e2_t_CosThetaStar" , "subleadingMass", 200, -1., 1.)
-
         self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 100, 0, 0.3)
         self.book(folder, "tPt", "tPt", 100, 0,100)
         self.book(folder, "tAbsEta", "tAbsEta", 100, 0, 2.3)
         #self.book(folder, "metSignificance", "MET significance", 100, 0, 15)
         self.book(folder, "LT", "L_T", 100, 0, 300)
+	self.book(folder, "my_selection_info", "my_selection_info", 'e1_e2_Mass:e1AbsEta:e2AbsEta:type1_pfMetEt:e2_t_CosThetaStar:e1_t_CosThetaStar:e1_e2_CosThetaStar:weight', type=ROOT.TNtuple)
 
         #Charge mis-id special histograms
         if 'c1' in folder:
@@ -118,27 +129,43 @@ class WHAnalyzeEET(WHAnalyzerBase):
             self.book(folder, "e1_e*2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
             self.book(folder, "e*2_t_Mass", "subleadingMass with misid sclaing correction", 200, 0, 200)
 
-        if 'f3' in folder:
-            self.book(folder, "e1eta_on_z_peak", "Muon 1 AbsEta", 100, 0, 2.4)
-            self.book(folder, "e1pt_on_z_peak" , "E 1 Pt", 100, 0, 100)
-            self.book(folder, "e2eta_on_z_peak", "Muon 1 AbsEta", 100, 0, 2.4)
-            self.book(folder, "e2pt_on_z_peak" , "E 1 Pt", 100, 0, 100)
-
-
         #let's look for osme other possible selections
-        self.book(folder, "mass"          , "mass"          , 800, 0, 800 )
         self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
         self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
-        self.book(folder, "_recoilDaught"  , "recoilDaught"  , 600, 0, 8000)
-        self.book(folder, "_recoilWithMet" , "recoilWithMet" , 600, 0, 8000)
         self.book(folder, "e1_e2_Pt"       , "lepRecoil"     , 600, 0, 8000)
         self.book(folder, "e1_e2_DR"       , "e1_e2_DR"      , 500, 0, 10)
-        self.book(folder, "m1_m2_CosThetaStar", "m1_m2_CosThetaStar", 200, -1, 1)
-        self.book(folder, "m1_t_CosThetaStar" , "m1_t_CosThetaStar" , 200, -1, 1)
-        self.book(folder, "m2_t_CosThetaStar" , "m2_t_CosThetaStar" , 200, -1, 1)
-        #self.book(folder, "lepRecoil_wMET", "lepRecoil_wMET", 600, 0, 8000)
-        self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
+        self.book(folder, "e1_e2_CosThetaStar", "e1_e2_CosThetaStar", 110, 0., 1.1)
+        self.book(folder, "e1_t_CosThetaStar" , "e1_t_CosThetaStar" , 110, 0., 1.1)
+        self.book(folder, "e2_t_CosThetaStar" , "e2_t_CosThetaStar" , 110, 0., 1.1)
+        self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 300)
+        self.book(folder, "mva_metEt"         , "metEt"         , 300, 0, 300)
+
+	#split into both e in barr/endcap/mixed
+	self.book(folder, "type1_pfMetEt_barr", "metEt", 300, 0, 300)
+	self.book(folder, "type1_pfMetEt_endc", "metEt", 300, 0, 300)
+	self.book(folder, "type1_pfMetEt_mix" , "metEt", 300, 0, 300)
+
+	self.book(folder, "mva_metEt_barr", "metEt", 300, 0, 300)
+	self.book(folder, "mva_metEt_endc", "metEt", 300, 0, 300)
+	self.book(folder, "mva_metEt_mix" , "metEt", 300, 0, 300)
+
+        self.book(folder, "e1_t_CosThetaStar_barr", "e1_t_CosThetaStar" , 110, 0., 1.1)
+        self.book(folder, "e1_t_CosThetaStar_endc", "e1_t_CosThetaStar" , 110, 0., 1.1)
+        self.book(folder, "e1_t_CosThetaStar_mix" , "e1_t_CosThetaStar" , 110, 0., 1.1)
+
+	self.book(folder, "e1_e2_Mass_barr", "E 1-2 Mass", 120, 0, 120)
+	self.book(folder, "e1_e2_Mass_endc", "E 1-2 Mass", 120, 0, 120)
+	self.book(folder, "e1_e2_Mass_mix" , "E 1-2 Mass", 120, 0, 120)
+
+        
         self.book(folder, "type1_pfMetEt#e1_e2_Mass", "metEt#e1_e2_Mass", 100, 0, 300, 120, 0, 120, type=ROOT.TH2F)
+        self.book(folder, "e1_t_CosThetaStar#type1_pfMetEt" , "e1_t_CosThetaStar#type1_pfMetEt" , 110, 0., 1.1, 100, 0, 300, type=ROOT.TH2F)
+        self.book(folder, "e1_e2_CosThetaStar#e1_e2_Mass", "e1_e2_CosThetaStar#e1_e2_Mass", 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
+        self.book(folder, "e1_t_CosThetaStar#e1_e2_Mass" , "e1_t_CosThetaStar#e1_e2_Mass" , 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
+        self.book(folder, "e2_t_CosThetaStar#e1_e2_Mass" , "e2_t_CosThetaStar#e1_e2_Mass" , 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
+
+        self.book(folder, "logic_cut_met"     , "logic_cut_met"     , 2, 0, 2)
+
         #self.book(folder, "logic_cut_1" ,"logic_cut_1", 2, 0.,2.)
 
         #Book additial histograms for signal MC
@@ -183,7 +210,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
         if not selections.vetos(row): return False #applies mu bjet e additional tau vetoes
 
         if not row.tAntiMuonLoose:   return False
-        #'t_ElectronOverlapWP95 < 0.5',
+            #if not row.tAntiElectronMVA3Tight: return False
         return True
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
@@ -210,11 +237,11 @@ class WHAnalyzeEET(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def anti_wz(row):
-        if row.e_t_Zcompat < 20:
-            if not row.tAntiElectronMVA3Tight:
-                return False
-        elif not row.tAntiElectronMVA3Medium:
-            return False
+##         if row.e2_t_Zcompat < 20 or row.e1_t_Zcompat < 20 :
+##             if not row.tAntiElectronMVA3Tight:
+##                 return False
+##         elif not row.tAntiElectronMVA3Medium:
+##             return False
         return True
 
     def enhance_wz(self, row):
