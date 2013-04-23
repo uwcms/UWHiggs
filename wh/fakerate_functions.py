@@ -50,15 +50,25 @@ lowpt_mu_qcd_fr = build_roofunctor(
 #######################
 
 lowpt_e_qcd_fr = build_roofunctor(
-    #frfit_dir + '/e_qcd_pt10_mvaidiso03_eJetPt.root',
     frfit_dir + '/e_qcd_pt10_h2taucuts_eJetPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
 )
 
 lowpt_e_fr = build_roofunctor(
-    #frfit_dir + '/e_wjets_pt10_mvaidiso03_eJetPt.root',
     frfit_dir + '/e_wjets_pt10_h2taucuts_eJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+highpt_e_qcd_fr = build_roofunctor(
+    frfit_dir + '/e_qcd_pt20_h2taucuts_eJetPt.root',
+    'fit_efficiency', # workspace name
+    'efficiency'
+)
+
+highpt_e_fr = build_roofunctor(
+    frfit_dir + '/e_wjets_pt20_h2taucuts_eJetPt.root',
     'fit_efficiency', # workspace name
     'efficiency'
 )
