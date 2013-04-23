@@ -159,3 +159,7 @@ plotter.save('EE_Charge_Flip_xcheck_e2Pt')
 plotter.make_charge_flip_control_plot('e2AbsEta','electron |#eta|',10, legend_on_the_left=True)
 plotter.save('EE_Charge_Flip_xcheck_e2AbsEta')
 
+plotter.make_charge_flip_control_plot('type1_pfMetEt','electron |#eta|',10, legend_on_the_left=True)
+plotter.save('EE_Charge_Flip_xcheck_type1_pfMetEt')
+
+

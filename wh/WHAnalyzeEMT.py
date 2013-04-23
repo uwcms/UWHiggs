@@ -135,12 +135,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
 
         Excludes FR object IDs and sign cut.
         '''
-        if not use_iso_trigger:
-            if not row.mu17ele8Pass:
-                return False
-        elif not row.mu17ele8isoPass:
-            return False
-        if row.mPt < 20:            return False
+        mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
+        mu8e17 = (row.mu8ele17isoPass and row.ePt >= 20) #if use_iso_trigger else (row.mu17ele8Pass and row.mPt < 20)
+        if not (mu17e8 or mu8e17):                return False
         if not selections.muSelection(row, 'm'):  return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         if not selections.eSelection(row, 'e'):   return False #applies basic selection (eta, pt > 10, DZ, missingHits, jetBTag, HasConversion and chargedIdTight)
         if not selections.tauSelection(row, 't'): return False #applies basic selection (eta, pt > 20, DZ)
@@ -205,10 +202,18 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             mcCorrectors.correct_mueg_e(row.ePt, row.eAbsEta)
 
     def obj1_weight(self, row):
-        return frfits.highpt_mu_fr(max(row.mJetPt, row.mPt))
+        mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
+        if mu17e8:
+            return frfits.highpt_mu_fr(max(row.mJetPt, row.mPt))
+        else:
+            return frfits.lowpt_mu_fr(max(row.mJetPt, row.mPt))
 
     def obj2_weight(self, row):
-        return frfits.lowpt_e_fr(max(row.eJetPt, row.ePt))
+        mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
+        if mu17e8:
+            return frfits.lowpt_e_fr(max(row.eJetPt, row.ePt))
+        else:
+            return frfits.highpt_e_fr(max(row.eJetPt, row.ePt))
 
     def obj3_weight(self, row):
         return frfits.tau_fr(row.tPt)

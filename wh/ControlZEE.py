@@ -103,6 +103,8 @@ class ControlZEE(MegaBase):
             self.book(dirname, "e2Pt"    , "electron 2 Pt", 100, 0, 100)
             self.book(dirname, "e1AbsEta", "electron 1 abseta", 100, 0., 2.5)
             self.book(dirname, "e2AbsEta", "electron 2 abseta", 100, 0., 2.5)
+            self.book(dirname, "type1_pfMetEt", "metEt"         , 300, 0, 300)
+            self.book(dirname, "mva_metEt", "mva_metEt", 300, 0, 300)
 
         self.dirs = ['/'.join([sign,id_,weight,ch_weight]) for sign in ['os','ss']
                 for id_ in [h+k for h in ['p1','f1'] for k in ['p2','f2'] ]
@@ -170,7 +172,9 @@ class ControlZEE(MegaBase):
             histos[dirname]["e1AbsEta"].Fill(row.e1AbsEta,weight)
             histos[dirname]["e2AbsEta"].Fill(row.e2AbsEta,weight)
             histos[dirname]['TrkMass_NOSCALE'].Fill(row.e1_e2_Mass, weight)
-
+            histos[dirname]['type1_pfMetEt'].Fill(row.type1_pfMetEt, weight)
+            histos[dirname]['mva_metEt'].Fill(row.mva_metEt, weight)
+            
         for row in self.tree:
             if not self.preselection(row):
                 continue

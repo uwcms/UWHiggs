@@ -191,9 +191,9 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-LT')
 
-    plotter.plot_final('tToMETDPhi', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('study-tToMETDPhi')
+    ## plotter.plot_final('tToMETDPhi', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-tToMETDPhi')
 
     ## plotter.plot_final('_recoilDaught', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
     ## plotter.add_cms_blurb(sqrts)
@@ -211,9 +211,9 @@ if __name__ == "__main__":
     ## plotter.add_cms_blurb(sqrts)
     ## plotter.save('study-lepRecoil')
 
-    plotter.plot_final('type1_pfMetEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,500])
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('study-metEt')
+    ## plotter.plot_final('type1_pfMetEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,500])
+    ## plotter.add_cms_blurb(sqrts)
+    ## plotter.save('study-metEt')
 
     plotter.plot_final('m2_t_Mass', 20, xaxis='m_{#mu_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
     plotter.add_cms_blurb(sqrts)
