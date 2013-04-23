@@ -29,7 +29,7 @@ def quad(*xs):
 def create_mapper(mapping):
     def _f(path):
         for key, out in mapping.iteritems():
-            if key in path:
+            if key == path:
                 path = path.replace(key,out)
         return path
     return _f
@@ -551,17 +551,17 @@ class WHPlotterBase(Plotter):
     def plot_final(self, variable, rebin=1, xaxis='', maxy=15,
                    show_error=False, qcd_correction=False, stack_higgs=True, 
                    qcd_weight_fraction=0, x_range=None, show_charge_fakes=False,
-                   leftside_legend=False, **kwargs):
+                   leftside_legend=False, higgs_xsec_multiplier=5, **kwargs):
         ''' Plot the final output - with bkg. estimation '''        
         show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
         sig_view = self.make_signal_views(
             rebin, unblinded=(not self.blind), qcd_weight_fraction=qcd_weight_fraction)
         vh_10x = views.TitleView(
             views.StyleView(
-                views.ScaleView(sig_view['signal120'], 5),
+                views.ScaleView(sig_view['signal120'], higgs_xsec_multiplier),
                 **data_styles['VH*']
             ),
-            "(5#times) m_{H} = 125"
+            "(%i#times) m_{H} = 125" % higgs_xsec_multiplier
         )
 
         # Fudge factor to go from 120->125 - change in xsec*BR
