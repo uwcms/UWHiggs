@@ -55,9 +55,9 @@ end
 # Map which samples need to be analyzed by which analyzer
 fr_analyzer_sample_map = Hash[
   "ChargeFlipProbabilityEE" => samples['zjets'],
+  "FakeRatesEM.py"  => samples['diboson'] + samples['data_em'],
   "FakeRatesEE.py"  => samples['data_ee'] + samples["zjets"],# + samples['diboson'],
   "FakeRatesMM.py"  => samples['diboson'] + samples['data_mm'],
-  "FakeRatesEM.py"  => samples['diboson'] + samples['data_em'],
   "FakeRatesMMT.py" => samples['diboson'] + samples['data_mm'],
   "FakeRatesMMM.py" => samples['diboson'] + samples['data_mm'],
 ]
@@ -120,37 +120,7 @@ fr_fits = Hash[
   ## Electrons Func ##
   ####################
   #EM Sample
-  "e_wjets_pt10_mvaidiso03_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "e_qcd_pt10_mvaidiso03_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
   "e_wjets_pt10_h2taucuts_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "e_wjets_pt10_h2taucuts_ePt" => Hash[
     "samples" => Array["diboson", "data_em"],
     "analyzer" => "FakeRatesEM",
     #"function" => landau,
@@ -170,44 +140,30 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "e_wjets_pt10_mvaidiso02_eJetPt" => Hash[
+
+  "e_wjets_pt20_h2taucuts_eJetPt" => Hash[
     "samples" => Array["diboson", "data_em"],
     "analyzer" => "FakeRatesEM",
-    "function" => landau,
-    "variables" => landau_vars,
+    #"function" => landau,
+    #"variables" => landau_vars,
+    "function" => exponential,
+    "variables" => exponential_vars,
     "rebin" => fr_binning,
-    "range" => "10 100",
+    "range" => "20 100",
   ],
-  "e_wjets_pt10_mvaidiso01_eJetPt" => Hash[
+  "e_qcd_pt20_h2taucuts_eJetPt" => Hash[
     "samples" => Array["diboson", "data_em"],
     "analyzer" => "FakeRatesEM",
-    "function" => landau,
-    "variables" => landau_vars,
+    #"function" => landau,
+    #"variables" => landau_vars,
+    "function" => exponential,
+    "variables" => exponential_vars,
     "rebin" => fr_binning,
-    "range" => "10 100",
+    "range" => "20 100",
   ],
 
+
   #EE Sample
-  "ee_wjetsNoZmass_pt10_mvaidiso03_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_qcd_pt10_mvaidiso03_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
   "ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
@@ -215,16 +171,6 @@ fr_fits = Hash[
     "variables" => landau_vars,
     #"function" => exponential,
     #"variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_wjetsNoZmass_pt10_h2taucuts_electronPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
@@ -239,37 +185,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
 
-  "ee_wjetsNoZmass_pt20_mvaidiso03_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_qcd_pt20_mvaidiso03_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
   "ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_wjetsNoZmass_pt20_h2taucuts_electronPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -293,30 +209,6 @@ fr_fits = Hash[
   ################
   ## Muons Func ##
   ################
-  "m_wjets_pt10_pfidiso01_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt10_pfidiso03_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt20_pfidiso03_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
   "m_wjets_pt10_h2taucuts_muonJetPt" => Hash[
     "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMM",
@@ -349,111 +241,10 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "20 100",
   ],
-  "m_wjets_pt10_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt10t_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt10b_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt10f_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_qcd_pt10_pfidiso01_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning_tight,
-    "range" => "10 100",
-  ],
-  "m_qcd_pt10_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning_tight,
-    "range" => "10 100",
-  ],
-  "m_qcd_pt20_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning_tight,
-    "range" => "20 100",
-  ],
-  "m_zmm_pt10_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_zmm_pt20_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "m_wjets_pt20_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "m_wjets_pt20_pfidiso01_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  # Versus regular pt
-  "m_zmm_pt10_pfidiso02_muonPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMMM",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "m_wjets_pt10_pfidiso02_muonPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
+
+  ################
+  ## Taus Func ##
+  ################
   "t_ztt_pt20_mvaloose_tauPt" => Hash[
     "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMT",
@@ -609,7 +400,46 @@ task :eet_signal => get_analyzer_results("WHAnalyzeEET.py", samples['signal'])
 task :run_signal => [
    :mmt_signal,
    :emt_signal,
-   :eet_signal,]
+   :eet_signal]
+
+################################################################################
+# Recipes to make control plots
+#  targets:
+#      control_zmm
+#      control_zee
+#      control_em
+################################################################################
+
+# Output directories
+
+$zmmdir = "results/#{$jobid}/plots/zmm/"
+directory $zmmdir
+
+file "#{$zmmdir}/.plot_timestamp" => Array["PlotControlZMM.py"]+get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm']) do |t|
+  sh "python PlotControlZMM.py"
+  sh "touch #{t.name}"
+end
+task :control_zmm => "#{$zmmdir}/.plot_timestamp"
+
+$emdir  = "results/#{$jobid}/plots/em/"
+directory $emdir 
+
+file "#{$emdir}/.plot_timestamp" => Array["PlotControlZMM.py"]+get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm']) do |t|
+  sh "python PlotControlZMM.py"
+  sh "touch #{t.name}"
+end
+task :control_em  => "#{$emdir}/.plot_timestamp"
+
+$zeedir = "results/#{$jobid}/plots/zee/"
+directory $zeedir
+
+file "#{$zeedir}/.plot_timestamp" => Array["PlotControlZEE.py"]+get_analyzer_results("ControlZEE.py", samples['data_ee']) do |t|
+  t.investigation
+  sh "python PlotControlZEE.py"
+  sh "touch #{t.name}"
+end
+task :control_zee => "#{$zeedir}/.plot_timestamp"
+
 
 ################################################################################
 # Recipes to make data cards (plots come for free)
@@ -780,9 +610,9 @@ file "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root" => ["#{$carddir}/shape
 end
 
 task :copycards => [
-  "#{$httcombodir}/cgs-sm-#{$period}-00.conf",
-  "#{$httcombodir}/unc-sm-#{$period}-00.conf",
-  "#{$httcombodir}/unc-sm-#{$period}-00.vals",
-  "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root"]  do |t|
-    puts t.investigation
-  end
+                    "#{$httcombodir}/cgs-sm-#{$period}-00.conf",
+                    "#{$httcombodir}/unc-sm-#{$period}-00.conf",
+                    "#{$httcombodir}/unc-sm-#{$period}-00.vals",
+                    "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root"]  do |t|
+  puts t.investigation
+end
