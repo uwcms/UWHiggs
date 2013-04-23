@@ -73,14 +73,16 @@ class ZHAnalyzerBase(MegaBase):
         #print channel
         flag_map = {}
         for sign in ['ss', 'os']:
-            for failing_objs in [(), (1,2), (1,), (2,),]:
-                region_label = '_'.join(['%sIsoFailed' % self.H_decay_products()[obj-1] for obj in failing_objs]) if len(failing_objs) else 'All_Passed'
-                weightsAvail = [None, self.obj1_weight, self.obj2_weight]
+            for failing_objs in [(), (1,2), (1,), (2,), (3,), (4,), (3,4), (1,2,3,4)]:
+                region_label = '_'.join(['Leg%iFailed' % obj for obj in failing_objs]) if len(failing_objs) else 'All_Passed'
+                weightsAvail = [None, self.leg1_weight, self.leg2_weight, self.leg3_weight, self.leg4_weight]
                 flag_map[(sign,region_label)] = {
                     'selection' : {
                         self.sign_cut  : (sign == 'os'), 
-                        self.probe1_id : (not (1 in failing_objs) ),
-                        self.probe2_id : (not (2 in failing_objs) ),
+                        self.leg1_id : (not (1 in failing_objs) ),
+                        self.leg2_id : (not (2 in failing_objs) ),
+                        self.leg3_id : (not (3 in failing_objs) ),
+                        self.leg4_id : (not (4 in failing_objs) ),
                         },
                     'weights'   : [weightsAvail[i] for i in failing_objs], 
                     }
