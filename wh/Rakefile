@@ -5,9 +5,9 @@ import recipes
 $jobid = ENV['jobid']
 
 # Figure out what run period we are in
-$period = '7TeV'
-if $jobid.include? '8TeV'
-  $period = '8TeV'
+$period = '8TeV'
+if $jobid.include? '7TeV'
+  $period = '7TeV'
 end
 
 ################################################################################
@@ -405,9 +405,9 @@ task :run_signal => [
 ################################################################################
 # Recipes to make control plots
 #  targets:
-#      control_zmm
-#      control_zee
-#      control_em
+#      plot_zmm
+#      plot_zee
+#      plot_em
 ################################################################################
 
 # Output directories
@@ -419,16 +419,16 @@ file "#{$zmmdir}/.plot_timestamp" => Array["PlotControlZMM.py"]+get_analyzer_res
   sh "python PlotControlZMM.py"
   sh "touch #{t.name}"
 end
-task :control_zmm => "#{$zmmdir}/.plot_timestamp"
+task :plot_zmm => "#{$zmmdir}/.plot_timestamp"
 
 $emdir  = "results/#{$jobid}/plots/em/"
 directory $emdir 
 
 file "#{$emdir}/.plot_timestamp" => Array["PlotControlZMM.py"]+get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm']) do |t|
-  sh "python PlotControlZMM.py"
+  sh "python PlotControlEM.py"
   sh "touch #{t.name}"
 end
-task :control_em  => "#{$emdir}/.plot_timestamp"
+task :plot_em  => "#{$emdir}/.plot_timestamp"
 
 $zeedir = "results/#{$jobid}/plots/zee/"
 directory $zeedir
@@ -438,8 +438,40 @@ file "#{$zeedir}/.plot_timestamp" => Array["PlotControlZEE.py"]+get_analyzer_res
   sh "python PlotControlZEE.py"
   sh "touch #{t.name}"
 end
-task :control_zee => "#{$zeedir}/.plot_timestamp"
+task :plot_zee => "#{$zeedir}/.plot_timestamp"
 
+################################################################################
+# Recipes to make signal plots
+#  targets:
+#      plot_mmt
+#      plot_eet
+#      plot_emt
+################################################################################
+# Output directories
+$mmtdir = "results/#{$jobid}/plots/mmt/"
+$emtdir = "results/#{$jobid}/plots/emt/"
+$eetdir = "results/#{$jobid}/plots/eet/"
+
+directory $mmtdir
+directory $eetdir
+directory $emtdir
+
+# The .root files with the shapes
+file "#{$mmtdir}/mmt_shapes_#{$period}.root" => ['WHPlotterMMT.py', 'WHPlotterBase.py'] do |t|
+  sh "python WHPlotterMMT.py"
+end
+task :plot_mmt => "#{$mmtdir}/mmt_shapes_#{$period}.root"
+
+file "#{$emtdir}/emt_shapes_#{$period}.root" => ['WHPlotterEMT.py', 'WHPlotterBase.py'] do |t|
+  sh "python WHPlotterEMT.py"
+end
+task :plot_emt => "#{$emtdir}/emt_shapes_#{$period}.root"
+
+file "#{$eetdir}/eet_shapes_#{$period}.root" => ['WHPlotterEET.py', 'WHPlotterBase.py'] do |t|
+  puts t.investigation
+  sh "python WHPlotterEET.py"
+end
+task :plot_eet => "#{$eetdir}/eet_shapes_#{$period}.root"
 
 ################################################################################
 # Recipes to make data cards (plots come for free)
@@ -451,16 +483,6 @@ task :control_zee => "#{$zeedir}/.plot_timestamp"
 #      copycards -> move cards to official HTT CVS area
 ################################################################################
 
-
-# Output directories
-$mmtdir = "results/#{$jobid}/plots/mmt/"
-$emtdir = "results/#{$jobid}/plots/emt/"
-$eetdir = "results/#{$jobid}/plots/eet/"
-
-directory $mmtdir
-directory $eetdir
-directory $emtdir
-
 # Recipes for adding stat. error shapes.  Makes a new file task:
 # input_file_stat_errors.root => input_file.root
 def add_fake_errors(input_file, prefix)
@@ -471,22 +493,12 @@ def add_fake_errors(input_file, prefix)
   end
 end
 
-# The .root files with the shapes
-file "#{$mmtdir}/mmt_shapes_#{$period}.root" => ['WHPlotterMMT.py', 'WHPlotterBase.py'] do |t|
-  sh "python WHPlotterMMT.py"
-end
 add_fake_errors("#{$mmtdir}/mmt_shapes_#{$period}.root", "mmt")
 task :mmt_shapes => ["#{$mmtdir}/mmt_shapes_#{$period}_statshapes.root" ]
 
-file "#{$emtdir}/emt_shapes_#{$period}.root" => ['WHPlotterEMT.py', 'WHPlotterBase.py'] do |t|
-  sh "python WHPlotterEMT.py"
-end
 add_fake_errors("#{$emtdir}/emt_shapes_#{$period}.root", "emt")
 task :emt_shapes => ["#{$emtdir}/emt_shapes_#{$period}_statshapes.root" ]
 
-file "#{$eetdir}/eet_shapes_#{$period}.root" => ['WHPlotterEET.py', 'WHPlotterBase.py'] do |t|
-  sh "python WHPlotterEET.py"
-end
 add_fake_errors("#{$eetdir}/eet_shapes_#{$period}.root", "eet")
 task :eet_shapes => ["#{$eetdir}/eet_shapes_#{$period}_statshapes.root" ]
 
@@ -495,20 +507,17 @@ $carddir = "results/#{$jobid}/cards"
 # Combine all category shape files into the datacard project
 file "#{$carddir}/shapes_unmorphed.root" => [
   "#{$mmtdir}/mmt_shapes_#{$period}_statshapes.root", 
-  "#{$emtdir}/emt_shapes_#{$period}_statshapes.root"] do |t|
+  "#{$emtdir}/emt_shapes_#{$period}_statshapes.root",
+  "#{$emtdir}/eet_shapes_#{$period}_statshapes.root"] do |t|
   sh "mkdir -p #{$carddir}"
   sh "hadd -f #{t.name} #{t.prerequisites.join(' ')}"
 end
 
-# Masses where actually have signal samples
-pivot_masses = "120,130,140"
-
 # Now do the horizontal morphing
 file "#{$carddir}/shapes.root" => ["#{$carddir}/shapes_unmorphed.root"] do |t|
-  puts "Doing horizontal morphing"
-  sh "mkdir -p #{$carddir}"
-  sh "cp #{t.prerequisites[0]} #{t.name}"
-  sh "horizontal-morphing.py --categories='emt,mmt' --samples='WH{MASS},WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=1 -i #{t.name}"
+  #skip horizontal morphing, no need for it by now this part is removed 
+  #after 4e52f2b62d4bb745145d0a5990661738de43709b in case you need it back
+  sh "cp #{t.name} #{t.prerequisites[0]}"
 end
 
 stat_shape_lists = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.txt")
@@ -577,42 +586,46 @@ end
 
 task :cards => []
 
-cardmasses = Array[110, 120, 125, 130, 135, 140]
+cardmasses = get_sample_names('VH') #get all the VH samples available
+cardmasses = cardmasses.select{|x| x.include? "H2Tau"} #get only the H2Tau, to avid repetition
+cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
+cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it's really needed but can't harm)
 
 cardmasses.each do |mass|
   task :cards => make_datacard_task(mass, '2lt', '')
   task :cards => make_datacard_task(mass, 'emt', 'emt')
   task :cards => make_datacard_task(mass, 'mmt', 'mmt')
+  task :cards => make_datacard_task(mass, 'eet', 'eet')
 end
 
-################################################################################
-### Copying card configuration to official place ###############################
-################################################################################
-
-#$httcombodir="/afs/hep.wisc.edu/cms/efriis/HIG-12-051/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
-$httcombodir="/afs/cern.ch/work/f/friis/HttLimits/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
-
-file "#{$httcombodir}/cgs-sm-#{$period}-00.conf" => ["#{$carddir}/cgs.conf"] do |t|
-    puts t.investigation
-  sh "cp -v #{t.prerequisites[0]} #{t.name}"
-end
-
-file "#{$httcombodir}/unc-sm-#{$period}-00.conf" => ["#{$carddir}/unc.conf"] do |t|
-  sh "cp -v #{t.prerequisites[0]} #{t.name}"
-end
-
-file "#{$httcombodir}/unc-sm-#{$period}-00.vals" => ["#{$carddir}/unc.vals"] do |t|
-  sh "cp -v #{t.prerequisites[0]} #{t.name}"
-end
-
-file "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root" => ["#{$carddir}/shapes.root"] do |t|
-  sh "cp -v #{t.prerequisites[0]} #{t.name}"
-end
-
-task :copycards => [
-                    "#{$httcombodir}/cgs-sm-#{$period}-00.conf",
-                    "#{$httcombodir}/unc-sm-#{$period}-00.conf",
-                    "#{$httcombodir}/unc-sm-#{$period}-00.vals",
-                    "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root"]  do |t|
-  puts t.investigation
-end
+#################################################################################
+#### Copying card configuration to official place ###############################
+#################################################################################
+# 
+# #$httcombodir="/afs/hep.wisc.edu/cms/efriis/HIG-12-051/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
+# $httcombodir="/afs/cern.ch/work/f/friis/HttLimits/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
+# 
+# file "#{$httcombodir}/cgs-sm-#{$period}-00.conf" => ["#{$carddir}/cgs.conf"] do |t|
+#     puts t.investigation
+#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
+# end
+# 
+# file "#{$httcombodir}/unc-sm-#{$period}-00.conf" => ["#{$carddir}/unc.conf"] do |t|
+#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
+# end
+# 
+# file "#{$httcombodir}/unc-sm-#{$period}-00.vals" => ["#{$carddir}/unc.vals"] do |t|
+#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
+# end
+# 
+# file "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root" => ["#{$carddir}/shapes.root"] do |t|
+#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
+# end
+# 
+# task :copycards => [
+#                     "#{$httcombodir}/cgs-sm-#{$period}-00.conf",
+#                     "#{$httcombodir}/unc-sm-#{$period}-00.conf",
+#                     "#{$httcombodir}/unc-sm-#{$period}-00.vals",
+#                     "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root"]  do |t|
+#   puts t.investigation
+# end

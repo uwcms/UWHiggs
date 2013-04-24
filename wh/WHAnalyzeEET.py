@@ -158,11 +158,11 @@ class WHAnalyzeEET(WHAnalyzerBase):
 	self.book(folder, "e1_e2_Mass_mix" , "E 1-2 Mass", 120, 0, 120)
 
         
-        self.book(folder, "type1_pfMetEt#e1_e2_Mass", "metEt#e1_e2_Mass", 100, 0, 300, 120, 0, 120, type=ROOT.TH2F)
-        self.book(folder, "e1_t_CosThetaStar#type1_pfMetEt" , "e1_t_CosThetaStar#type1_pfMetEt" , 110, 0., 1.1, 100, 0, 300, type=ROOT.TH2F)
-        self.book(folder, "e1_e2_CosThetaStar#e1_e2_Mass", "e1_e2_CosThetaStar#e1_e2_Mass", 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
-        self.book(folder, "e1_t_CosThetaStar#e1_e2_Mass" , "e1_t_CosThetaStar#e1_e2_Mass" , 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
-        self.book(folder, "e2_t_CosThetaStar#e1_e2_Mass" , "e2_t_CosThetaStar#e1_e2_Mass" , 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
+        ## self.book(folder, "type1_pfMetEt#e1_e2_Mass", "metEt#e1_e2_Mass", 100, 0, 300, 120, 0, 120, type=ROOT.TH2F)
+        ## self.book(folder, "e1_t_CosThetaStar#type1_pfMetEt" , "e1_t_CosThetaStar#type1_pfMetEt" , 110, 0., 1.1, 100, 0, 300, type=ROOT.TH2F)
+        ## self.book(folder, "e1_e2_CosThetaStar#e1_e2_Mass", "e1_e2_CosThetaStar#e1_e2_Mass", 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
+        ## self.book(folder, "e1_t_CosThetaStar#e1_e2_Mass" , "e1_t_CosThetaStar#e1_e2_Mass" , 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
+        ## self.book(folder, "e2_t_CosThetaStar#e1_e2_Mass" , "e2_t_CosThetaStar#e1_e2_Mass" , 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
 
         self.book(folder, "logic_cut_met"     , "logic_cut_met"     , 2, 0, 2)
 

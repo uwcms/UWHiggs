@@ -200,17 +200,9 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-e1_e2_DR')
 
-    plotter.plot_final('logic_cut_costheta', 1, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('study-logic_cut_costheta')
-    
     plotter.plot_final('logic_cut_met', 1, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-logic_cut_met')
-
-    plotter.plot_final('logic_cut_combo', 1, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('study-logic_cut_combo')
 
     plotter.plot_final("e1_e2_CosThetaStar", 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
     plotter.add_cms_blurb(sqrts)
@@ -288,50 +280,50 @@ if __name__ == "__main__":
     plotter.add_cms_blurb(sqrts)
     plotter.save('study-subMass')
 
-    ## ##2D histograms
-    signal_region_views = plotter.make_signal_views(1, unblinded=True, qcd_weight_fraction=0.5)
-    signal_region_views['signal'] = views.SumView(*[view for sample, view in signal_region_views.iteritems() if 'signal' in sample])
-    ROOT.gStyle.SetPalette(53)
-    vars_to_plot = [
-        ('type1_pfMetEt#e1_e2_Mass'            ,  5,  4),
-        ("e1_e2_CosThetaStar#e1_e2_Mass"       , 10,  4), 
-        ("e1_t_CosThetaStar#e1_e2_Mass"        , 10,  4),  
-        ("e2_t_CosThetaStar#e1_e2_Mass"        , 10,  4),  
-        ("e1_e2_CosThetaStar#e1_t_CosThetaStar", 10, 10),  
-        ("e1_e2_CosThetaStar#e2_t_CosThetaStar", 10, 10),  
-        ("e1_t_CosThetaStar#e2_t_CosThetaStar" , 10, 10),  
-        ]
-    samples  = [
-        'signal',
-        'charge_fakes',
-        ]
-    for sample in samples:
-        view = signal_region_views[sample]
-        for var, rebinx, rebiny in vars_to_plot:
-            histo = view.Get(var)
-            x,y   = tuple(var.split('#'))
-            histo.GetXaxis().SetTitle(x)
-            histo.GetYaxis().SetTitle(y)
-            histo.Rebin2D(rebinx, rebiny)
-            histo.Draw('colz')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('study-%s-%s' % (var.replace('#', '__'), sample))
+    ## ## ##2D histograms
+    ## signal_region_views = plotter.make_signal_views(1, unblinded=True, qcd_weight_fraction=0.5)
+    ## signal_region_views['signal'] = views.SumView(*[view for sample, view in signal_region_views.iteritems() if 'signal' in sample])
+    ## ROOT.gStyle.SetPalette(53)
+    ## vars_to_plot = [
+    ##     ('type1_pfMetEt#e1_e2_Mass'            ,  5,  4),
+    ##     ("e1_e2_CosThetaStar#e1_e2_Mass"       , 10,  4), 
+    ##     ("e1_t_CosThetaStar#e1_e2_Mass"        , 10,  4),  
+    ##     ("e2_t_CosThetaStar#e1_e2_Mass"        , 10,  4),  
+    ##     ("e1_e2_CosThetaStar#e1_t_CosThetaStar", 10, 10),  
+    ##     ("e1_e2_CosThetaStar#e2_t_CosThetaStar", 10, 10),  
+    ##     ("e1_t_CosThetaStar#e2_t_CosThetaStar" , 10, 10),  
+    ##     ]
+    ## samples  = [
+    ##     'signal',
+    ##     'charge_fakes',
+    ##     ]
+    ## for sample in samples:
+    ##     view = signal_region_views[sample]
+    ##     for var, rebinx, rebiny in vars_to_plot:
+    ##         histo = view.Get(var)
+    ##         x,y   = tuple(var.split('#'))
+    ##         histo.GetXaxis().SetTitle(x)
+    ##         histo.GetYaxis().SetTitle(y)
+    ##         histo.Rebin2D(rebinx, rebiny)
+    ##         histo.Draw('colz')
+    ##         plotter.add_cms_blurb(sqrts)
+    ##         plotter.save('study-%s-%s' % (var.replace('#', '__'), sample))
 
-    vars_to_plot = [
-        ('type1_pfMetEt'     ,  5),
-        ('e1_e2_Mass'        ,  2),
-        ("e1_e2_CosThetaStar", 10), 
-        ("e1_t_CosThetaStar" , 10),  
-        ("e2_t_CosThetaStar" , 10),  
-        ]
+    ## vars_to_plot = [
+    ##     ('type1_pfMetEt'     ,  5),
+    ##     ('e1_e2_Mass'        ,  2),
+    ##     ("e1_e2_CosThetaStar", 10), 
+    ##     ("e1_t_CosThetaStar" , 10),  
+    ##     ("e2_t_CosThetaStar" , 10),  
+    ##     ]
 
-    for var, rebinx in vars_to_plot:
-        signalh = plotter.rebin_view(signal_region_views['signal'], rebinx).Get(var)
-        cfakesh = plotter.rebin_view(signal_region_views['charge_fakes'], rebinx).Get(var)
-        cfakesh.Draw()
-        signalh.Draw('same')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-signalSum-%s' % var)
+    ## for var, rebinx in vars_to_plot:
+    ##     signalh = plotter.rebin_view(signal_region_views['signal'], rebinx).Get(var)
+    ##     cfakesh = plotter.rebin_view(signal_region_views['charge_fakes'], rebinx).Get(var)
+    ##     cfakesh.Draw()
+    ##     signalh.Draw('same')
+    ##     plotter.add_cms_blurb(sqrts)
+    ##     plotter.save('study-signalSum-%s' % var)
 
 
 

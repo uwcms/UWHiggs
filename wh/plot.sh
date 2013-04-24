@@ -5,24 +5,24 @@ set -o nounset
 set -o errexit
 
 source jobid.sh
-export jobid=$jobid7
-rake control_zee 
-rake eet_shapes
-
-rake control_em
-rake emt_shapes
-
-rake control_zmm 
-rake mmt_shapes
-python plots_for_prepp.py 
-
+#export jobid=$jobid7
+#rake plot_zee 
+#rake plot_eet
+#
+#rake plot_em
+#rake plot_emt
+#
+#rake plot_zmm 
+#rake plot_mmt
+#python plots_for_prepp.py 
+#
 export jobid=$jobid8
-rake control_zee 
-rake eet_shapes
+rake plot_zee 
+rake plot_eet
 
-rake control_em
-rake emt_shapes
+rake plot_em
+rake plot_emt
 
-rake control_zmm 
-rake mmt_shapes
+rake plot_zmm 
+rake plot_mmt
 python plots_for_prepp.py 
