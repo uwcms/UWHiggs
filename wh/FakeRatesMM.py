@@ -50,7 +50,8 @@ class FakeRatesMM(MegaBase):
                 self.histograms[denom_key] = denom_histos
 
                 for numerator in ['pfid', 'iso03', 'pfidiso03',
-                                  'pfidiso02', 'pfidiso01', 'h2taucuts']:
+                                  'pfidiso02', 'pfidiso01', 'h2taucuts',
+                                  'h2taucuts020', 'h2taucuts025']:
                     num_key = (region, denom, numerator)
                     num_histos = {}
                     self.histograms[num_key] = num_histos
@@ -82,9 +83,21 @@ class FakeRatesMM(MegaBase):
                     book_histo('muonPt', 'Muon Pt', 16, 10, 50)
                     book_histo('muonJetPt', 'Muon Jet Pt', 200, 0, 200)
                     book_histo('muonAbsEta', 'Muon Abs Eta', 100, -2.5, 2.5)
+                    book_histo('m2JetArea'        , "", 100, 0, 1)
+                    book_histo('m2JetEtaEtaMoment', "", 100, 0, 0.2)
+                    book_histo('m2JetEtaPhiMoment', "", 100, 0, 0.1)
+                    book_histo('m2JetEtaPhiSpread', "", 100, 0, 0.2)
+                    book_histo('m2JetPhiPhiMoment', "", 100, 0, 0.1)
                     #book_histo('metSignificance', 'MET sig.', 100, 0, 10)
                     book_histo('m1MtToMET', 'Muon 1 MT', 100, 0, 200)
                     book_histo('m1m2Mass', 'DiMuon Mass', 100, 0, 200)
+
+
+
+
+
+
+
 
     def process(self):
 
@@ -118,6 +131,12 @@ class FakeRatesMM(MegaBase):
             #the_histos['metSignificance'].Fill(row.metSignificance, weight)
             the_histos['m1MtToMET'].Fill(row.m1MtToMET, weight)
             the_histos['m1m2Mass'].Fill(row.m1_m2_Mass)
+            the_histos['m2JetArea'].Fill(row.m2JetArea)
+            the_histos['m2JetEtaEtaMoment'].Fill( row.m2JetEtaEtaMoment )
+            the_histos['m2JetEtaPhiMoment'].Fill( row.m2JetEtaPhiMoment )
+            the_histos['m2JetEtaPhiSpread'].Fill( row.m2JetEtaPhiSpread )
+            the_histos['m2JetPhiPhiMoment'].Fill( row.m2JetPhiPhiMoment )
+            
             
         histos = self.histograms
         for row in self.tree:
@@ -149,6 +168,12 @@ class FakeRatesMM(MegaBase):
                     if (row.m2RelPFIsoDB < 0.15 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.1:
                         fill(histos[(region, denominator_tag, 'h2taucuts')], row)
 
+                    if (row.m2RelPFIsoDB < 0.20 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.15:
+                        fill(histos[(region, denominator_tag, 'h2taucuts020')], row)
+                    
+                    if (row.m2RelPFIsoDB < 0.25 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.20:
+                        fill(histos[(region, denominator_tag, 'h2taucuts025')], row)
+                        
             fill_denominator('pt10')
 
             # Barrel/forward
