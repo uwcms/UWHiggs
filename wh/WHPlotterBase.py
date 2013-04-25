@@ -517,11 +517,13 @@ class WHPlotterBase(Plotter):
         zz = sig_view['zz'].Get(variable)
         obs = sig_view['data'].Get(variable)
         fakes = sig_view['fakes'].Get(variable)
+        charge_fakes = sig_view['charge_fakes'].Get(variable)
 
         wz.SetName('wz')
         zz.SetName('zz')
         obs.SetName('data_obs')
         fakes.SetName('fakes')
+        charge_fakes.SetName('charge_fakes')
 
         #for mass in [110, 115, 120, 125, 130, 135, 140]:
         for mass in range(110, 165, 5):
@@ -538,6 +540,7 @@ class WHPlotterBase(Plotter):
         zz.Write()
         obs.Write()
         fakes.Write()
+        charge_fakes.Write()
 
     def write_cut_and_count(self, variable, outdir, unblinded=False):
         ''' Version of write_shapes(...) with only one bin.
