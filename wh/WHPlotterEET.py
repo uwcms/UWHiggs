@@ -389,7 +389,11 @@ if __name__ == "__main__":
     shape_file = ROOT.TFile(
         os.path.join(plotter.outputdir, 'eet_shapes_%s.root' % plotter.period), 'RECREATE')
     shape_dir = shape_file.mkdir('eet')
-    plotter.write_shapes('e2_t_Mass', 20, shape_dir)
+    plotter.write_shapes('e2_t_Mass', 20, shape_dir, unblinded=True, qcd_fraction=0.5)
+    shape_dir = shape_file.mkdir('eet_w')
+    plotter.write_shapes('e2_t_Mass', 20, shape_dir, unblinded=True, qcd_fraction=0.0)
+    shape_dir = shape_file.mkdir('eet_q')
+    plotter.write_shapes('e2_t_Mass', 20, shape_dir, unblinded=True, qcd_fraction=1.0)
     shape_file.Close()
 
 

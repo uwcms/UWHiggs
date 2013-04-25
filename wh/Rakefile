@@ -3,6 +3,7 @@ recipes = ENV['CMSSW_BASE'] + '/src/FinalStateAnalysis/PlotTools/rake/recipes.ra
 import recipes
 
 $jobid = ENV['jobid']
+$blind = ENV['blind']
 
 # Figure out what run period we are in
 $period = '8TeV'
@@ -491,24 +492,25 @@ def add_fake_errors(input_file, prefix)
   file output_file => [input_file] do |t|
     sh "add_stat_shapes.py #{input_file} #{output_file} --filter '#{prefix}/fakes' --prefix CMS_vhtt_#{$period}_#{prefix}_fakeshape > #{output_sys_list}"
   end
+  return output_file
 end
 
-add_fake_errors("#{$mmtdir}/mmt_shapes_#{$period}.root", "mmt")
-task :mmt_shapes => ["#{$mmtdir}/mmt_shapes_#{$period}_statshapes.root" ]
+mmt_shape_file = add_fake_errors("#{$mmtdir}/mmt_shapes_#{$period}.root", "mmt")
+task :mmt_shapes => mmt_shape_file
 
-add_fake_errors("#{$emtdir}/emt_shapes_#{$period}.root", "emt")
-task :emt_shapes => ["#{$emtdir}/emt_shapes_#{$period}_statshapes.root" ]
+emt_shape_file = add_fake_errors("#{$emtdir}/emt_shapes_#{$period}.root", "emt")
+task :emt_shapes => emt_shape_file
 
-add_fake_errors("#{$eetdir}/eet_shapes_#{$period}.root", "eet")
-task :eet_shapes => ["#{$eetdir}/eet_shapes_#{$period}_statshapes.root" ]
+eet_shape_file = add_fake_errors("#{$eetdir}/eet_shapes_#{$period}.root", "eet")
+task :eet_shapes => eet_shape_file
 
 $carddir = "results/#{$jobid}/cards"
 
 # Combine all category shape files into the datacard project
 file "#{$carddir}/shapes_unmorphed.root" => [
-  "#{$mmtdir}/mmt_shapes_#{$period}_statshapes.root", 
-  "#{$emtdir}/emt_shapes_#{$period}_statshapes.root",
-  "#{$emtdir}/eet_shapes_#{$period}_statshapes.root"] do |t|
+  mmt_shape_file, 
+  emt_shape_file,
+  eet_shape_file] do |t|
   sh "mkdir -p #{$carddir}"
   sh "hadd -f #{t.name} #{t.prerequisites.join(' ')}"
 end
@@ -517,7 +519,7 @@ end
 file "#{$carddir}/shapes.root" => ["#{$carddir}/shapes_unmorphed.root"] do |t|
   #skip horizontal morphing, no need for it by now this part is removed 
   #after 4e52f2b62d4bb745145d0a5990661738de43709b in case you need it back
-  sh "cp #{t.name} #{t.prerequisites[0]}"
+  sh "cp #{t.prerequisites[0]} #{t.name}"
 end
 
 stat_shape_lists = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.txt")
@@ -550,9 +552,11 @@ file "#{$carddir}/unc.vals" => ["card_config/unc.vals.base.#{$period}",
   stat_shape_lists.each do |list|
     sh "cat #{list} | grep mmt | xargs -n 1 -I {} echo 'mmt fakes {} 1.0' >> #{t.name}"
     sh "cat #{list} | grep emt | xargs -n 1 -I {} echo 'emt fakes {} 1.0' >> #{t.name}"
+    sh "cat #{list} | grep eet | xargs -n 1 -I {} echo 'eet fakes {} 1.0' >> #{t.name}"
   end
   sh "python get_fake_systematic.py #{$carddir}/shapes.root mmt CMS_vhtt_mmt_fakes_#{$period} >> #{t.name}"
   sh "python get_fake_systematic.py #{$carddir}/shapes.root emt CMS_vhtt_emt_fakes_#{$period} >> #{t.name}"
+  sh "python get_fake_systematic.py #{$carddir}/shapes.root eet CMS_vhtt_eet_fakes_#{$period} >> #{t.name}"
   # For testing a full correlated error.
   #sh "echo 'emt fakes CMS_vhtt_llt_fakes 1.3' >> #{t.name}"
   #sh "echo 'mmt fakes CMS_vhtt_llt_fakes 1.3' >> #{t.name}"
@@ -579,6 +583,7 @@ def make_datacard_task(mass, channel, categories)
       else
         sh "create-datacard.py -i shapes.root -o #{channel}/#{mass}/vhtt_#{channel}.txt #{mass} --categories '#{categories}'"
       end
+      sh "touch #{channel}/.creation_timestamp"
     end
   end
   return card
@@ -592,11 +597,102 @@ cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, 
 cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it's really needed but can't harm)
 
 cardmasses.each do |mass|
-  task :cards => make_datacard_task(mass, '2lt', '')
-  task :cards => make_datacard_task(mass, 'emt', 'emt')
   task :cards => make_datacard_task(mass, 'mmt', 'mmt')
+  task :cards => make_datacard_task(mass, 'emt', 'emt')
   task :cards => make_datacard_task(mass, 'eet', 'eet')
+  task :cards => make_datacard_task(mass, 'llt', '')
 end
+
+################################################################################
+# Recipes to make limits
+#  targets:
+#      limit_mmt
+#      limit_emt
+#      limit_eet
+#      limit_llt
+#      limits
+################################################################################
+
+def make_limit_task(channel)
+  limit_timestamp = "#{$carddir}/#{channel}/.limits_computed"
+  file limit_timestamp => "#{$carddir}/#{channel}/.creation_timestamp" do |t|
+    sh "compute_limits.sh #{$carddir}/#{channel} 10 #{$blind}"
+  end
+  return limit_timestamp
+end
+
+task :limit_mmt => make_limit_task('mmt')
+task :limit_emt => make_limit_task('emt')
+task :limit_eet => make_limit_task('eet')
+task :limit_llt => make_limit_task('llt')
+task :limits => Array[:limit_mmt,
+                      :limit_emt,
+                      :limit_eet,
+                      :limit_llt]
+
+################################################################################
+# Recipes to harvest limits
+#  targets:
+#          harvest_limit_mmt
+#          harvest_limit_emt
+#          harvest_limit_eet
+#          harvest_limit_llt
+#          harvest_limits
+################################################################################
+
+def make_json_limit_task(channel)
+  json_stamp = "#{$carddir}/#{channel}/.limit_harvested"
+  file json_stamp => "#{$carddir}/#{channel}/.limits_computed" do |t|
+    sh "harvest_limits.py #{$carddir}/#{channel}"
+    sh "touch #{t.name}"
+  end
+  return json_stamp
+end
+
+task :harvest_limit_mmt => make_json_limit_task('mmt')
+task :harvest_limit_emt => make_json_limit_task('emt')
+task :harvest_limit_eet => make_json_limit_task('eet')
+task :harvest_limit_llt => make_json_limit_task('llt')
+task :harvest_limits => Array[:harvest_limit_mmt,
+                              :harvest_limit_emt,
+                              :harvest_limit_eet,
+                              :harvest_limit_llt]
+
+################################################################################
+# Recipes to harvest limits (for debugging/internal use)
+#  targets:
+#          plot_limit_mmt
+#          plot_limit_emt
+#          plot_limit_eet
+#          plot_limit_llt
+#          compare_limits
+#          plot_limits
+################################################################################
+$limitdir = "results/#{$jobid}/plots/limits/"
+
+def make_plot_limit_task(channel)
+  filename   = "#{$limitdir}/#{channel}_limit"
+  limit_plot = "#{filename}.png"
+  file limit_plot => "#{$carddir}/#{channel}/.limit_harvested" do |t|
+    sh "mkdir -p #{$limitdir}"
+    sh "plot_limit.py #{$carddir}/#{channel}/*.json -o #{filename} --legend-on-the-left"
+  end
+  return limit_plot
+end
+
+task :plot_limit_mmt => make_plot_limit_task('mmt')
+task :plot_limit_emt => make_plot_limit_task('emt')
+task :plot_limit_eet => make_plot_limit_task('eet')
+task :plot_limit_llt => make_plot_limit_task('llt')
+task :plot_limits => Array[:plot_limit_mmt,
+                           :plot_limit_emt,
+                           :plot_limit_eet,
+                           :plot_limit_llt]
+task :compare_limits => :plot_limits do |t|
+  sh "compare_limit.py #{$carddir}/???/*expected*.json -o #{$limitdir}/expected_limit_comparison --name-by=channel --legend-on-the-left"
+end
+
+
 
 #################################################################################
 #### Copying card configuration to official place ###############################
