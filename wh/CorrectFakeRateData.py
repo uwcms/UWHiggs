@@ -88,7 +88,7 @@ if __name__ == "__main__":
         SubtractionView(data, wz_view, zz_view, restrict_positive=True))
 
     log.debug('creating output file')
-    output = io.root_open(args.outputfile, 'RECREATE')
+    output = io.open(args.outputfile, 'RECREATE')
     output.cd()
 
     log.debug('getting from corrected view')
