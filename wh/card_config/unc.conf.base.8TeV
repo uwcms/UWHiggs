@@ -16,6 +16,7 @@ CMS_scale_t             lnN
 
 CMS_vhtt_emt_fakes_8TeV lnN
 CMS_vhtt_mmt_fakes_8TeV lnN
+CMS_vhtt_eet_fakes_8TeV lnN
 
 pdf_qqbar               lnN
 QCDscale_VH             lnN

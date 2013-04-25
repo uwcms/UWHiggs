@@ -7,11 +7,11 @@
 #backgrounds: background
 #data: data_obs
 
-$ GROUP signal WH,WH_hww
-$ GROUP background wz,zz,fakes
-$ GROUP simulated WH,WH_hww,wz,zz
+$ GROUP signal WH #,WH_hww
+$ GROUP background wz,zz,fakes,charge_fakes
+$ GROUP simulated WH,wz,zz #,WH_hww
 
-categories: mmt,emt
+categories: mmt,emt,eet
 signals: signal
 backgrounds: background
 data: data_obs
