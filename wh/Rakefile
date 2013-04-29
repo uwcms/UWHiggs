@@ -25,10 +25,10 @@ end
 #puts get_sample_names('data_DoubleMu')
 
 samples = Hash[
-  "ewk" => Array['Zjets_M50', 'WplusJets_madgraph', 'TTplusJets_madgraph'] + get_sample_names('WZ') + get_sample_names('WW')+ get_sample_names('ZZ'),     #'ZZJetsTo4L_pythia',
+  "ewk" => Array['Zjets_M50', 'WplusJets_madgraph', 'TTplusJets_madgraph'] + get_sample_names('WZ') + get_sample_names('WWJet')+ get_sample_names('ZZ'),     #'ZZJetsTo4L_pythia',
   "wjets" => Array['WplusJets_madgraph'],
   "zjets" => Array['Zjets_M50'],
-  "diboson" => get_sample_names('ZZ')+get_sample_names('WZ') + get_sample_names('WW'), #Array['ZZJetsTo4L_pythia'] + 
+  "diboson" => get_sample_names('ZZ')+get_sample_names('WZ') + get_sample_names('WWJet'), #Array['ZZJetsTo4L_pythia'] + 
   "signal" => get_sample_names('VH') + get_sample_names('WH'),
   # Automagically figure out what data samples we have
   "data_m" =>  get_sample_names("data_SingleMu"),
@@ -206,6 +206,55 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
+
+
+
+  #EE Sample
+  "ee_wjetsNoZmass_pt10_mvaidiso03_electronJetPt" => Hash[
+    "samples" => Array["diboson", "data_ee"],
+    "analyzer" => "FakeRatesEE",
+    "function" => landau,
+    "variables" => landau_vars,
+    #"function" => exponential,
+    #"variables" => exponential_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+  "ee_qcd_pt10_mvaidiso03_electronJetPt" => Hash[
+    "samples" => Array["diboson", "data_ee"],
+    "analyzer" => "FakeRatesEE",
+    "function" => landau,
+    "variables" => landau_vars,
+    #"function" => exponential,
+    #"variables" => exponential_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+
+  "ee_wjetsNoZmass_pt20_mvaidiso03_electronJetPt" => Hash[
+    "samples" => Array["diboson", "data_ee"],
+    "analyzer" => "FakeRatesEE",
+    #"function" => landau,
+    #"variables" => landau_vars,
+    "function" => exponential,
+    "variables" => exponential_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+  "ee_qcd_pt20_mvaidiso03_electronJetPt" => Hash[
+    "samples" => Array["diboson", "data_ee"],
+    "analyzer" => "FakeRatesEE",
+    #"function" => landau,
+    #"variables" => landau_vars,
+    "function" => exponential,
+    "variables" => exponential_vars,
+    "rebin" => fr_binning,
+    "range" => "10 100",
+  ],
+
+
+
+
 
   ################
   ## Muons Func ##
@@ -469,7 +518,6 @@ end
 task :plot_emt => "#{$emtdir}/emt_shapes_#{$period}.root"
 
 file "#{$eetdir}/eet_shapes_#{$period}.root" => ['WHPlotterEET.py', 'WHPlotterBase.py'] do |t|
-  puts t.investigation
   sh "python WHPlotterEET.py"
 end
 task :plot_eet => "#{$eetdir}/eet_shapes_#{$period}.root"
@@ -515,11 +563,18 @@ file "#{$carddir}/shapes_unmorphed.root" => [
   sh "hadd -f #{t.name} #{t.prerequisites.join(' ')}"
 end
 
+cardmasses = get_sample_names('VH') #get all the VH samples available
+cardmasses = cardmasses.select{|x| x.include? "H2Tau"} #get only the H2Tau, to avid repetition
+cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
+cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it's really needed but can't harm)
+
+to_extrapolate = cardmasses.select{|x| x > 140}
 # Now do the horizontal morphing
 file "#{$carddir}/shapes.root" => ["#{$carddir}/shapes_unmorphed.root"] do |t|
   #skip horizontal morphing, no need for it by now this part is removed 
   #after 4e52f2b62d4bb745145d0a5990661738de43709b in case you need it back
   sh "cp #{t.prerequisites[0]} #{t.name}"
+  sh "horizontal-morphing.py --categories='emt,mmt,eet' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 --extrapolate=#{to_extrapolate.join(",")} #{t.name}"
 end
 
 stat_shape_lists = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.txt")
@@ -568,8 +623,9 @@ file "#{$carddir}/cgs.conf" => ["card_config/cgs.conf.#{$period}"] do |t|
 end
 
 def make_datacard_task(mass, channel, categories)
-  card = "#{$carddir}/#{mass}/vhtt_#{channel}.txt"  
+  card = "#{$carddir}/#{channel}/#{mass}/vhtt_#{channel}.txt"  
   file card => ["#{$carddir}/shapes.root", "#{$carddir}/unc.conf", "#{$carddir}/unc.vals", "#{$carddir}/cgs.conf"] do |t|
+    puts t.investigation
     sh "mkdir -p #{$carddir}"
     chdir($carddir) do
       sh "mkdir -p #{channel}/#{mass}"
@@ -590,11 +646,6 @@ def make_datacard_task(mass, channel, categories)
 end
 
 task :cards => []
-
-cardmasses = get_sample_names('VH') #get all the VH samples available
-cardmasses = cardmasses.select{|x| x.include? "H2Tau"} #get only the H2Tau, to avid repetition
-cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
-cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it's really needed but can't harm)
 
 cardmasses.each do |mass|
   task :cards => make_datacard_task(mass, 'mmt', 'mmt')
@@ -675,7 +726,7 @@ def make_plot_limit_task(channel)
   limit_plot = "#{filename}.png"
   file limit_plot => "#{$carddir}/#{channel}/.limit_harvested" do |t|
     sh "mkdir -p #{$limitdir}"
-    sh "plot_limit.py #{$carddir}/#{channel}/*.json -o #{filename} --legend-on-the-left"
+    sh "plot_limit.py #{$carddir}/#{channel}/*.json -o #{filename} --legend-on-the-left --xrange=[110,140]"
   end
   return limit_plot
 end
@@ -689,7 +740,7 @@ task :plot_limits => Array[:plot_limit_mmt,
                            :plot_limit_eet,
                            :plot_limit_llt]
 task :compare_limits => :plot_limits do |t|
-  sh "compare_limit.py #{$carddir}/???/*expected*.json -o #{$limitdir}/expected_limit_comparison --name-by=channel --legend-on-the-left"
+  sh "compare_limit.py #{$carddir}/???/*expected*.json -o #{$limitdir}/expected_limit_comparison --name-by=channel --legend-on-the-left --xrange=[110,140] --ref=llt"
 end
 
 
