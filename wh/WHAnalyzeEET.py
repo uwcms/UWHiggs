@@ -59,13 +59,23 @@ class WHAnalyzeEET(WHAnalyzerBase):
 	self.hfunc["mva_metEt_endc"] = make_both_endcap("mva_metEt")
 	self.hfunc["mva_metEt_mix" ] = make_mixed("mva_metEt")      
 
+
+        self.hfunc["e2RelPFIsoDB_bar"] = lambda row, weight: ( row.e2RelPFIsoDB, weight ) if row.e2AbsEta < 1.48  else (0., 0.)
+        self.hfunc["e1RelPFIsoDB_bar"] = lambda row, weight: ( row.e1RelPFIsoDB, weight ) if row.e1AbsEta < 1.48  else (0., 0.)
+        self.hfunc["e2RelPFIsoDB_end"] = lambda row, weight: ( row.e2RelPFIsoDB, weight ) if row.e2AbsEta >= 1.48 else (0., 0.)
+        self.hfunc["e1RelPFIsoDB_end"] = lambda row, weight: ( row.e1RelPFIsoDB, weight ) if row.e1AbsEta >= 1.48 else (0., 0.)
+
+
         self.hfunc["e1_t_CosThetaStar_barr"] = make_both_barrel("e1_t_CosThetaStar")
         self.hfunc["e1_t_CosThetaStar_endc"] = make_both_endcap("e1_t_CosThetaStar")
         self.hfunc["e1_t_CosThetaStar_mix" ] = make_mixed("e1_t_CosThetaStar")      
 	self.hfunc["e1_e2_Mass_barr"] = make_both_barrel("e1_e2_Mass")
 	self.hfunc["e1_e2_Mass_endc"] = make_both_endcap("e1_e2_Mass")
-	self.hfunc["e1_e2_Mass_mix" ] = make_mixed("e1_e2_Mass")      
-	
+	self.hfunc["e1_e2_Mass_mix" ] = make_mixed("e1_e2_Mass")
+        self.hfunc["electron_rejection_study" ] = self.electron_rejection_study
+	self.hfunc["tau_id_study" ] = self.tau_id_study
+
+        
         ## self.hfunc["e1eta_on_z_peak"] = lambda row, weight: ( row.e1AbsEta, weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
         ## self.hfunc["e1pt_on_z_peak" ] = lambda row, weight: ( row.e1Pt    , weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
         ## self.hfunc["e2eta_on_z_peak"] = lambda row, weight: ( row.e2AbsEta, weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
@@ -93,6 +103,25 @@ class WHAnalyzeEET(WHAnalyzerBase):
 	        else (1.5, weight)
         return (1.5, weight)
 
+    @staticmethod
+    def electron_rejection_study( row, weight):
+        if row.tAntiElectronMVA3VTight:
+            return (4.5, weight)
+        elif row.tAntiElectronMVA3Tight:
+            return (3.5, weight)
+        elif row.tAntiElectronMVA3Medium:
+            return (2.5, weight)
+        elif row.tAntiElectronMVA3Loose:
+            return (1.5, weight)
+        return (0.5, weight)
+
+    @staticmethod
+    def tau_id_study( row, weight):
+        if row.tTightIso3Hits:
+            return (2.5, weight)
+        elif row.tMediumIso3Hits:
+            return (1.5, weight)
+        return (0.5, weight)
 
     @staticmethod
     def fill_id_info(row, weight):
@@ -114,12 +143,21 @@ class WHAnalyzeEET(WHAnalyzerBase):
         self.book(folder, "e1_t_Mass", "leadingMass", 200, 0, 200)
         self.book(folder, "e2_t_Mass", "subleadingMass", 200, 0, 200)
 
-        self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 100, 0, 0.3)
+        self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 30, 0, 0.3)
+        self.book(folder, "e1RelPFIsoDB", "e1RelPFIsoDB", 30, 0, 0.3)
+
+        self.book(folder, "e2RelPFIsoDB_bar", "e2RelPFIsoDB", 30, 0, 0.3)
+        self.book(folder, "e1RelPFIsoDB_bar", "e1RelPFIsoDB", 30, 0, 0.3)
+        self.book(folder, "e2RelPFIsoDB_end", "e2RelPFIsoDB", 30, 0, 0.3)
+        self.book(folder, "e1RelPFIsoDB_end", "e1RelPFIsoDB", 30, 0, 0.3)
+        self.book(folder, "tau_id_study", "tau_id_study", 3, 0, 3)
+
         self.book(folder, "tPt", "tPt", 100, 0,100)
         self.book(folder, "tAbsEta", "tAbsEta", 100, 0, 2.3)
         #self.book(folder, "metSignificance", "MET significance", 100, 0, 15)
         self.book(folder, "LT", "L_T", 100, 0, 300)
-	self.book(folder, "my_selection_info", "my_selection_info", 'e1_e2_Mass:e1AbsEta:e2AbsEta:type1_pfMetEt:e2_t_CosThetaStar:e1_t_CosThetaStar:e1_e2_CosThetaStar:weight', type=ROOT.TNtuple)
+        self.book(folder, "electron_rejection_study", "electron_rejection_study", 5, 0, 5)
+	#self.book(folder, "my_selection_info", "my_selection_info", 'e1_e2_Mass:e1AbsEta:e2AbsEta:type1_pfMetEt:e2_t_CosThetaStar:e1_t_CosThetaStar:e1_e2_CosThetaStar:weight', type=ROOT.TNtuple)
 
         #Charge mis-id special histograms
         if 'c1' in folder:
@@ -188,14 +226,15 @@ class WHAnalyzeEET(WHAnalyzerBase):
         ##     self.book(folder, 'W_LPt'     , "", 100, 0, 100) 
             
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
-    @staticmethod
-    def preselection(row):
+    def preselection(self, row):
         ''' Preselection applied to events.
 
         Excludes FR object IDs and sign cut.
         '''
         #object basic selections
         if not row.doubleEPass:                   return False
+	if not (row.e1MatchesDoubleEPath > 0 and \
+		row.e2MatchesDoubleEPath > 0): return False 
         if row.e1Pt < 20:                         return False
         if not selections.eSelection(row, 'e1'):  return False
         if not selections.eSelection(row, 'e2'):  return False
@@ -206,10 +245,15 @@ class WHAnalyzeEET(WHAnalyzerBase):
             #if row.metSignificance < 2.5: return False
         ## if row.e1_e2_Mass > 81 \
         ##     and row.e1_e2_Mass < 101: return False
-        if row.LT < 80:              return False
+        #if row.LT < 80:              return False
         if not selections.vetos(row): return False #applies mu bjet e additional tau vetoes
 
+        #REMOVE CHARGE FAKES!
+        if self.logic_cut_met(row, 1.) == (0.5,1.): return False
+
         if not row.tAntiMuonLoose:   return False
+
+            #if not row.tAntiElectronMVA3Loose: return False
             #if not row.tAntiElectronMVA3Tight: return False
         return True
 
@@ -222,12 +266,14 @@ class WHAnalyzeEET(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj1_id(row):
-        return selections.h2tau_eid(row, 'e1') #bool(row.e1MVAIDH2TauWP) and bool( row.e1RelPFIsoDB < 0.1 or (row.e1RelPFIsoDB < 0.15 and row.e1AbsEta < 1.479))
+        return selections.electron_id(row, 'e1')
+        #return selections.h2tau_eid(row, 'e1') #bool(row.e1MVAIDH2TauWP) and bool( row.e1RelPFIsoDB < 0.1 or (row.e1RelPFIsoDB < 0.15 and row.e1AbsEta < 1.479))
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj2_id(row):
-        return selections.h2tau_eid(row, 'e2') #bool(row.e2MVAIDH2TauWP) and bool( row.e2RelPFIsoDB < 0.1 or (row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479))
+        return selections.electron_id(row, 'e2')
+        #return selections.h2tau_eid(row, 'e2') #bool(row.e2MVAIDH2TauWP) and bool( row.e2RelPFIsoDB < 0.1 or (row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479))
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
@@ -237,11 +283,16 @@ class WHAnalyzeEET(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def anti_wz(row):
-##         if row.e2_t_Zcompat < 20 or row.e1_t_Zcompat < 20 :
-##             if not row.tAntiElectronMVA3Tight:
-##                 return False
-##         elif not row.tAntiElectronMVA3Medium:
-##             return False
+        return True
+	    #return row.tAntiElectronMVA3Loose
+        if row.e2_t_Zcompat < 10 or row.e1_t_Zcompat < 10 :
+            if not row.tAntiElectronMVA3Tight:
+                return False
+        if row.e2_t_Zcompat < 20 or row.e1_t_Zcompat < 20 :
+            if not row.tAntiElectronMVA3Medium:
+                return False
+        elif not row.tAntiElectronMVA3Loose:
+            return False
         return True
 
     def enhance_wz(self, row):
@@ -264,15 +315,17 @@ class WHAnalyzeEET(WHAnalyzerBase):
         return frfits.highpt_ee_fr(max(row.e1JetPt, row.e1Pt))
 
     def obj2_weight(self, row):
-        return frfits.lowpt_ee_fr(max(row.e2JetPt, row.e2Pt))
+	return frfits.lowpt_ee_fr(max(row.e1JetPt, row.e1Pt))
 
     def obj3_weight(self, row):
         return frfits.tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row):
+	#return frfits.highpt_ee_qcd_fr(max(row.e1JetPt, row.e1Pt))
         return frfits.highpt_ee_qcd_fr(max(row.e1JetPt, row.e1Pt))
 
     def obj2_qcd_weight(self, row):
+	#return frfits.lowpt_ee_qcd_fr(max(row.e2JetPt, row.e2Pt))
         return frfits.lowpt_ee_qcd_fr(max(row.e2JetPt, row.e2Pt))
 
     def obj3_qcd_weight(self, row):

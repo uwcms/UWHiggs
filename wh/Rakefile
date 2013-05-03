@@ -209,8 +209,8 @@ fr_fits = Hash[
 
 
 
-  #EE Sample
-  "ee_wjetsNoZmass_pt10_mvaidiso03_electronJetPt" => Hash[
+  #Tesing
+  "ee_wjetsNoZmass_pt10_h2tau02_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     "function" => landau,
@@ -220,7 +220,7 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "ee_qcd_pt10_mvaidiso03_electronJetPt" => Hash[
+  "ee_qcd_pt10_h2tau02_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     "function" => landau,
@@ -231,7 +231,7 @@ fr_fits = Hash[
     "range" => "10 100",
   ],
 
-  "ee_wjetsNoZmass_pt20_mvaidiso03_electronJetPt" => Hash[
+  "ee_wjetsNoZmass_pt20_h2tau02_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -241,7 +241,7 @@ fr_fits = Hash[
     "rebin" => fr_binning,
     "range" => "10 100",
   ],
-  "ee_qcd_pt20_mvaidiso03_electronJetPt" => Hash[
+  "ee_qcd_pt20_h2tau02_electronJetPt" => Hash[
     "samples" => Array["diboson", "data_ee"],
     "analyzer" => "FakeRatesEE",
     #"function" => landau,
@@ -581,50 +581,55 @@ stat_shape_lists = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.txt")
 # We make these the dependency, since they are always rpoduced w/ the .txt lists
 stat_shapes = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.root")
 
-# We need to build the unc.conf and unc.vals with our stat shapes
-file "#{$carddir}/unc.conf" => ["card_config/unc.conf.base.#{$period}"] + stat_shapes do |t|
-  # Copy the basic template
-  sh "mkdir -p #{$carddir}"
-  sh "cp #{t.prerequisites[0]} #{t.name}"
-  # Append all the stat shape types
-  sh "echo '' >> #{t.name}"
-  sh "echo '# Stat shape uncertainties' >> #{t.name}"
-  stat_shape_lists.each do |list|
-    sh "cat #{list} | xargs -n 1 -I {} echo '{} shape' >> #{t.name}"
+
+def make_cgs_conf_task(channel)
+  ret = "#{$carddir}/#{channel}/cgs.conf"
+  file ret => ["card_config/cgs.conf.#{channel}.#{$period}"] do |t|
+    sh "mkdir -p #{$carddir}/#{channel}"
+    sh "cp #{t.prerequisites[0]} #{t.name}"
+  end
+  return ret
+end
+
+def make_unc_conf_task(channel)
+  ret = "#{$carddir}/#{channel}/unc.conf" 
+  file ret => ["card_config/unc.conf.#{channel}.#{$period}"] + Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.root") do |t|
+    # Copy the basic template
+    sh "mkdir -p #{$carddir}/#{channel}"
+    sh "cp #{t.prerequisites[0]} #{t.name}"
+    # Append all the stat shape types
+    sh "echo '' >> #{t.name}"
+    sh "echo '# Stat shape uncertainties' >> #{t.name}"
+    Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.txt").each do |list|
+      sh "cat #{list} | xargs -n 1 -I {} echo '{} shape' >> #{t.name}"
+    end
+  end
+  return ret
+end
+
+def make_unc_vals_task(channel)
+  ret = "#{$carddir}/#{channel}/unc.vals"
+  file ret => ["card_config/unc.vals.#{channel}.#{$period}", 
+    "#{$carddir}/shapes.root"] + Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.root") do |t|
+    # Copy the basic template
+    sh "mkdir -p #{$carddir}/#{channel}"
+    sh "cp #{t.prerequisites[0]} #{t.name}"
+    # Append all the stat shape types
+    sh "echo '' >> #{t.name}"
+    sh "echo '# Stat shape uncertainties' >> #{t.name}"
+    Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.txt").each do |list|
+      sh "cat #{list} | xargs -n 1 -I {} echo '#{channel} fakes {} 1.0' >> #{t.name}"
+    end
+    sh "python get_fake_systematic.py #{$carddir}/shapes.root #{channel} CMS_vhtt_#{channel}_fakes_#{$period} >> #{t.name}"
   end
 end
 
-file "#{$carddir}/unc.vals" => ["card_config/unc.vals.base.#{$period}", 
-  "#{$carddir}/shapes.root"] + stat_shapes do |t|
-  # Copy the basic template
-  sh "mkdir -p #{$carddir}"
-  puts t.investigation
-  sh "cp #{t.prerequisites[0]} #{t.name}"
-  # Append all the stat shape types
-  sh "echo '' >> #{t.name}"
-  sh "echo '# Stat shape uncertainties' >> #{t.name}"
-  puts stat_shape_lists.join(", ")
-  stat_shape_lists.each do |list|
-    sh "cat #{list} | grep mmt | xargs -n 1 -I {} echo 'mmt fakes {} 1.0' >> #{t.name}"
-    sh "cat #{list} | grep emt | xargs -n 1 -I {} echo 'emt fakes {} 1.0' >> #{t.name}"
-    sh "cat #{list} | grep eet | xargs -n 1 -I {} echo 'eet fakes {} 1.0' >> #{t.name}"
-  end
-  sh "python get_fake_systematic.py #{$carddir}/shapes.root mmt CMS_vhtt_mmt_fakes_#{$period} >> #{t.name}"
-  sh "python get_fake_systematic.py #{$carddir}/shapes.root emt CMS_vhtt_emt_fakes_#{$period} >> #{t.name}"
-  sh "python get_fake_systematic.py #{$carddir}/shapes.root eet CMS_vhtt_eet_fakes_#{$period} >> #{t.name}"
-  # For testing a full correlated error.
-  #sh "echo 'emt fakes CMS_vhtt_llt_fakes 1.3' >> #{t.name}"
-  #sh "echo 'mmt fakes CMS_vhtt_llt_fakes 1.3' >> #{t.name}"
-end
-
-file "#{$carddir}/cgs.conf" => ["card_config/cgs.conf.#{$period}"] do |t|
-  sh "mkdir -p #{$carddir}"
-  sh "cp #{t.prerequisites[0]} #{t.name}"
-end
-
-def make_datacard_task(mass, channel, categories)
+def make_datacard_task(mass, channel)
   card = "#{$carddir}/#{channel}/#{mass}/vhtt_#{channel}.txt"  
-  file card => ["#{$carddir}/shapes.root", "#{$carddir}/unc.conf", "#{$carddir}/unc.vals", "#{$carddir}/cgs.conf"] do |t|
+  file card => ["#{$carddir}/shapes.root",
+                make_unc_conf_task(channel), 
+                make_unc_vals_task(channel), 
+                make_cgs_conf_task(channel)] do |t|
     puts t.investigation
     sh "mkdir -p #{$carddir}"
     chdir($carddir) do
@@ -634,25 +639,58 @@ def make_datacard_task(mass, channel, categories)
         sh "rm -f shapes.root"
         sh "ln -s ../../shapes.root"
       end
-      if categories == ''
-        sh "create-datacard.py -i shapes.root -o #{channel}/#{mass}/vhtt_#{channel}.txt #{mass}"
-      else
-        sh "create-datacard.py -i shapes.root -o #{channel}/#{mass}/vhtt_#{channel}.txt #{mass} --categories '#{categories}'"
+      chdir("#{channel}") do
+        sh "rm -f shapes.root"
+        sh "ln -s ../shapes.root"
+        sh "create-datacard.py -i shapes.root -o #{mass}/vhtt_#{channel}.txt #{mass} --categories '#{channel}'"
       end
-      sh "touch #{channel}/.creation_timestamp"
     end
   end
   return card
 end
 
-task :cards => []
-
-cardmasses.each do |mass|
-  task :cards => make_datacard_task(mass, 'mmt', 'mmt')
-  task :cards => make_datacard_task(mass, 'emt', 'emt')
-  task :cards => make_datacard_task(mass, 'eet', 'eet')
-  task :cards => make_datacard_task(mass, 'llt', '')
+def combine_channels(mass)
+  #makes copy-paste easier
+  channel = 'llt'
+  card = "#{$carddir}/#{channel}/#{mass}/vhtt_#{channel}.txt"
+  file card => ["#{$carddir}/mmt/#{mass}/vhtt_mmt.txt",
+                "#{$carddir}/emt/#{mass}/vhtt_emt.txt",
+                "#{$carddir}/eet/#{mass}/vhtt_eet.txt"] do |t|
+    sh "mkdir -p #{$carddir}/#{channel}/#{mass}"
+    chdir("#{$carddir}/#{channel}/#{mass}") do
+      sh "rm -f shapes.root"
+      sh "ln -s ../../shapes.root"
+      local_paths = t.prerequisites.map{|x| x.sub($carddir,'../..')}
+      sh "combine_cards_with_names.sh #{ local_paths.join(' ')} > vhtt_#{channel}.txt"
+    end
+  end
+  return card
 end
+
+def make_timestamp_task(cardmasses, channel)
+  timestamp = "#{$carddir}/#{channel}/.creation_timestamp"
+  file timestamp => cardmasses.map{|x| make_datacard_task(x, channel)} do |t|
+    sh "touch #{t.name}"
+  end
+end
+
+file "#{$carddir}/llt/.creation_timestamp" => cardmasses.map{|x| combine_channels(x)} do |t|
+  sh "touch #{t.name}"
+end
+
+task :cards => [make_timestamp_task(cardmasses, 'mmt'),
+                make_timestamp_task(cardmasses, 'emt'),
+                make_timestamp_task(cardmasses, 'eet'),
+                "#{$carddir}/llt/.creation_timestamp"
+               ]
+
+## cardmasses.each do |mass|
+##   task :cards => make_datacard_task(mass, 'mmt')
+##   task :cards => make_datacard_task(mass, 'emt')
+##   task :cards => make_datacard_task(mass, 'eet')
+##   task :cards => combine_channels(mass)
+##   #task :cards => make_datacard_task(mass, 'llt', '')
+## end
 
 ################################################################################
 # Recipes to make limits

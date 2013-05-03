@@ -1,4 +1,9 @@
 from FinalStateAnalysis.PlotTools.decorators import memo
+from FinalStateAnalysis.Utilities.struct import struct
+
+currentID = struct()
+currentID.muon     = 'h2taucuts'
+currentID.electron = 'h2taucuts'
 
 @memo
 def getVar(name, var):
@@ -40,6 +45,14 @@ def h2tau_eid(row, name):
     RelPFIsoDB   = getattr(row, getVar(name, 'RelPFIsoDB'))
     AbsEta       = getattr(row, getVar(name, 'AbsEta'))
     return bool(MVAIDH2TauWP) and bool( RelPFIsoDB < 0.1 or (RelPFIsoDB < 0.15 and AbsEta < 1.479))
+
+def h2tau02_eid(row, name):
+    MVAIDH2TauWP = getattr(row, getVar(name, 'MVAIDH2TauWP'))
+    RelPFIsoDB   = getattr(row, getVar(name, 'RelPFIsoDB'))
+    AbsEta       = getattr(row, getVar(name, 'AbsEta'))
+    return bool(MVAIDH2TauWP) and bool( RelPFIsoDB < 0.15 or (RelPFIsoDB < 0.20 and AbsEta < 1.479))
+
+electron_id = h2tau_eid
 
 def control_region_ee(row):
     '''Figure out what control region we are in. Shared among two codes, to avoid mismatching copied here'''

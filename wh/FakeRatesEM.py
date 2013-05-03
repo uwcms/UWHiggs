@@ -47,7 +47,8 @@ class FakeRatesEM(MegaBase):
                 self.histograms[denom_key] = denom_histos
 
                 for numerator in ['mvaid', 'iso03', 'mvaidiso03',
-                                  'mvaidiso02', 'mvaidiso01', 'h2taucuts']:
+                                  'mvaidiso02', 'mvaidiso01', 'h2taucuts',
+                                  'h2taucuts020', 'h2taucuts025']:
                     num_key = (region, denom, numerator)
                     num_histos = {}
                     self.histograms[num_key] = num_histos
@@ -103,6 +104,12 @@ class FakeRatesEM(MegaBase):
 
                 if (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.1:
                     fill(histos[(region, pt_cut, 'h2taucuts')], row)
+
+                if (row.eRelPFIsoDB < 0.20 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.15:
+                    fill(histos[(region, pt_cut, 'h2taucuts020')], row)
+
+                if (row.eRelPFIsoDB < 0.25 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.20:
+                    fill(histos[(region, pt_cut, 'h2taucuts025')], row)
 
         histos = self.histograms
         for row in self.tree:

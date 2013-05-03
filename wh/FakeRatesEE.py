@@ -47,7 +47,9 @@ class FakeRatesEE(MegaBase):
                 self.histograms[denom_key] = denom_histos
 
                 for numerator in ['mvaid', 'iso03', 'mvaidiso03',
-                                  'mvaidiso01','h2taucuts']:
+                                  'mvaidiso01','h2taucuts',
+                                  'h2taucuts020', 'h2taucuts025',
+                                  'mvaidiso02']:
                     num_key = (region, denom, numerator)
                     num_histos = {}
                     self.histograms[num_key] = num_histos
@@ -82,6 +84,8 @@ class FakeRatesEE(MegaBase):
 
         def preselection(row):
             if not row.doubleEPass: return False
+            if not (row.e1MatchesDoubleEPath > 0 and \
+                row.e2MatchesDoubleEPath > 0): return False 
             if not row.e1Pt > 20: return False
             if not selections.eSelection(row, 'e1'): return False
             if not row.e1MVAIDH2TauWP: return False
@@ -135,8 +139,15 @@ class FakeRatesEE(MegaBase):
                     fill(histos[full_region + ( 'mvaidiso03',)], row)
                 if row.e2MVAIDH2TauWP and row.e2RelPFIsoDB < 0.1:
                     fill(histos[full_region + ( 'mvaidiso01',)], row)
+                if row.e2MVAIDH2TauWP and row.e2RelPFIsoDB < 0.2:
+                    fill(histos[full_region + ( 'mvaidiso02',)], row)
                 if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1):
                     fill(histos[full_region + ( 'h2taucuts',)], row)
+                if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.2 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.15):
+                    fill(histos[full_region + ( 'h2taucuts020',)], row)
+                if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.25 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.20):
+                    fill(histos[full_region + ( 'h2taucuts025',)], row)
+                    
 
             make_region_plots((region, 'pt10'))
             if region == 'wjets' and not (row.e1_e2_Mass > 70 and row.e1_e2_Mass < 110):

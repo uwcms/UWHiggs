@@ -6,6 +6,7 @@ import glob
 from TwoDimFakeRate import TwoDimFakeRate
 import fnmatch
 import logging
+from baseSelections import currentID
 data_views.log.setLevel(logging.INFO)
 
 ################################################################################
@@ -74,28 +75,30 @@ highpt_e_fr = build_roofunctor(
 )
 
 highpt_ee_fr = build_roofunctor(
-    frfit_dir + '/ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt.root',
+    frfit_dir + '/ee_wjetsNoZmass_pt20_%s_electronJetPt.root' % currentID.electron,
     'fit_efficiency', # workspace name
     'efficiency'
 )
 
 lowpt_ee_fr = build_roofunctor(
-    frfit_dir + '/ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt.root',
+    frfit_dir + '/ee_wjetsNoZmass_pt10_%s_electronJetPt.root' % currentID.electron,
     'fit_efficiency', # workspace name
     'efficiency'
 )
 
 highpt_ee_qcd_fr = build_roofunctor(
-    frfit_dir + '/ee_qcd_pt20_h2taucuts_electronJetPt.root',
+    frfit_dir + '/ee_qcd_pt20_%s_electronJetPt.root' % currentID.electron,
     'fit_efficiency', # workspace name
     'efficiency'
 )
 
 lowpt_ee_qcd_fr = build_roofunctor(
-    frfit_dir + '/ee_qcd_pt10_h2taucuts_electronJetPt.root',
+    frfit_dir + '/ee_qcd_pt10_%s_electronJetPt.root' % currentID.electron,
     'fit_efficiency', # workspace name
     'efficiency'
 )
+
+
 
 ##################
 ## 1D Taus Func ##

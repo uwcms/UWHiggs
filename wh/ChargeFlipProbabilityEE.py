@@ -74,8 +74,8 @@ class ChargeFlipProbabilityEE(MegaBase):
             if any([ row.muVetoPt5,
                       row.tauVetoPt20,
                       row.eVetoCicTightIso]):        return False
-            if not selections.h2tau_eid(row, 'e1'):  return False
-            if not selections.h2tau_eid(row, 'e2'):  return False
+            if not selections.electron_id(row, 'e1'): return False
+            if not selections.electron_id(row, 'e2'): return False
             if not (row.jetVeto40 >= 1):              return False
             return True
             ## return bool(selections.control_region_ee(row) == 'zee')
