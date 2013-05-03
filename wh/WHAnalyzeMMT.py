@@ -136,10 +136,10 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         if not selections.tauSelection(row, 't'): return False #applies basic selection (eta, pt > 20, DZ)
         if row.m1_m2_SS and row.m1_t_SS         : return False #remove three SS leptons
 
-        if row.m1_m2_Mass < 20:    return False
-        if row.LT < 80:            return False
+        if row.m1_m2_Mass < 20:                    return False
+        if row.LT < selections.lt_lower_threshold: return False
 
-        if not selections.vetos(row): return False #applies mu bjet e additional tau vetoes
+        if not selections.vetos(row):              return False #applies mu bjet e additional tau vetoes
 
         if not row.tAntiElectronMVA3Loose: return False
 
@@ -177,19 +177,14 @@ class WHAnalyzeMMT(WHAnalyzerBase):
 
     @staticmethod
     def obj1_id(row):
-        return bool(row.m1PFIDTight) and (
-            row.m1RelPFIsoDB < 0.1 or
-            (row.m1RelPFIsoDB < 0.15 and row.m1AbsEta < 1.479))
 
     @staticmethod
     def obj2_id(row):
-        return bool(row.m2PFIDTight) and (
-            row.m2RelPFIsoDB < 0.1 or
-            (row.m2RelPFIsoDB < 0.15 and row.m2AbsEta < 1.479))
+        return selections.leading_lepton_id_iso(row, 'm1')
 
     @staticmethod
     def obj3_id(row):
-        return bool(row.tLooseIso3Hits)
+        return selections.subleading_lepton_id_iso(row, 'e2')
 
     @staticmethod
     def anti_wz(row):
