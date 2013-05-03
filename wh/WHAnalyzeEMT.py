@@ -160,17 +160,12 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj1_id( row):
-        #return bool(row.mPFIDTight) and bool(row.mRelPFIsoDB < 0.2)
-        return bool(row.mPFIDTight) and (
-            row.mRelPFIsoDB < 0.1 or
-            (row.mRelPFIsoDB < 0.15 and row.mAbsEta < 1.479))
+        return selections.leading_lepton_id_iso(row, 'm')
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj2_id( row):
-        return bool(row.eMVAIDH2TauWP) and bool(
-            row.eRelPFIsoDB < 0.1 or
-            (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479))
+        return selections.subleading_lepton_id_iso(row, 'e')
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
@@ -219,10 +214,18 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         return frfits.tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row):
-        return frfits.highpt_mu_qcd_fr(max(row.mJetPt, row.mPt))
+        mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
+        if mu17e8:
+            return frfits.highpt_mu_qcd_fr(max(row.mJetPt, row.mPt))
+        else:
+            return frfits.lowpt_mu_qcd_fr(max(row.mJetPt, row.mPt))
 
     def obj2_qcd_weight(self, row):
-        return frfits.lowpt_e_qcd_fr(max(row.eJetPt, row.ePt))
+        mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
+        if mu17e8:
+            return frfits.lowpt_e_qcd_fr(max(row.eJetPt, row.ePt))
+        else:
+            return frfits.highpt_e_qcd_fr(max(row.eJetPt, row.ePt))
 
     def obj3_qcd_weight(self, row):
         return frfits.tau_qcd_fr(row.tPt)

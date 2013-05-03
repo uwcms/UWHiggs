@@ -369,10 +369,10 @@ if __name__ == "__main__":
     shape_file = ROOT.TFile(
         os.path.join(plotter.outputdir, 'mmt_shapes_%s.root' % plotter.period), 'RECREATE')
     shape_dir = shape_file.mkdir('mmt')
-    plotter.write_shapes('m2_t_Mass', 20, shape_dir, unblinded=True, qcd_fraction=0.5)
+    plotter.write_shapes('m2_t_Mass', 20, shape_dir, qcd_fraction=0.5)
     shape_dir = shape_file.mkdir('mmt_w')
-    plotter.write_shapes('m2_t_Mass', 20, shape_dir, unblinded=True, qcd_fraction=0.0)
+    plotter.write_shapes('m2_t_Mass', 20, shape_dir, qcd_fraction=0.0)
     shape_dir = shape_file.mkdir('mmt_q')
-    plotter.write_shapes('m2_t_Mass', 20, shape_dir, unblinded=True, qcd_fraction=1.0)
+    plotter.write_shapes('m2_t_Mass', 20, shape_dir, qcd_fraction=1.0)
     #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
     shape_file.Close()

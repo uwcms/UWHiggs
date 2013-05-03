@@ -25,6 +25,7 @@ class WHPlotterEMT(WHPlotterBase.WHPlotterBase):
 if __name__ == "__main__":
     plotter = WHPlotterEMT()
     sqrts   = plotter.sqrts
+    plotter.defaults['show_charge_fakes'] = True
 
     ###########################################################################
     ##  Zmm control plots #####################################################
@@ -304,10 +305,10 @@ if __name__ == "__main__":
     shape_file = ROOT.TFile(
         os.path.join(plotter.outputdir, 'emt_shapes_%s.root' % plotter.period), 'RECREATE')
     shape_dir = shape_file.mkdir('emt')
-    plotter.write_shapes('subMass', 20, shape_dir, unblinded=True, qcd_fraction=0.5)
+    plotter.write_shapes('subMass', 20, shape_dir, qcd_fraction=0.5)
     shape_dir = shape_file.mkdir('emt_w')
-    plotter.write_shapes('subMass', 20, shape_dir, unblinded=True, qcd_fraction=0.0)
+    plotter.write_shapes('subMass', 20, shape_dir, qcd_fraction=0.0)
     shape_dir = shape_file.mkdir('emt_q')
-    plotter.write_shapes('subMass', 20, shape_dir, unblinded=True, qcd_fraction=1.0)
+    plotter.write_shapes('subMass', 20, shape_dir, qcd_fraction=1.0)
     #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
     shape_file.Close()

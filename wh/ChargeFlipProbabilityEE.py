@@ -9,7 +9,7 @@ Author: M. Verzetti, UZH
 import EETree
 #from EETauTree import EETauTree
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
-import baseSelections as selections
+import optimizer as selections
 import math
 import os
 import ROOT
@@ -74,8 +74,8 @@ class ChargeFlipProbabilityEE(MegaBase):
             if any([ row.muVetoPt5,
                       row.tauVetoPt20,
                       row.eVetoCicTightIso]):        return False
-            if not selections.h2tau_eid(row, 'e1'):  return False
-            if not selections.h2tau_eid(row, 'e2'):  return False
+            if not selections.leading_lepton_id_iso(row, 'e1'):    return False
+            if not selections.subleading_lepton_id_iso(row, 'e2'): return False
             if not (row.jetVeto40 >= 1):              return False
             return True
             ## return bool(selections.control_region_ee(row) == 'zee')
