@@ -46,8 +46,8 @@ class FakeRatesEM(MegaBase):
                 denom_histos = {}
                 self.histograms[denom_key] = denom_histos
 
-                for numerator in ['mvaid', 'iso03', 'mvaidiso03',
-                                  'mvaidiso02', 'mvaidiso01', 'h2taucuts',
+                for numerator in ['id', 'iso03', 'idiso03',
+                                  'idiso02', 'idiso01', 'h2taucuts',
                                   'h2taucuts020', 'h2taucuts025']:
                     num_key = (region, denom, numerator)
                     num_histos = {}
@@ -92,15 +92,15 @@ class FakeRatesEM(MegaBase):
                 fill(histos[(region, pt_cut, 'iso03')], row)
 
             if row.eMVAIDH2TauWP:
-                fill(histos[(region, pt_cut, 'mvaid')], row)
+                fill(histos[(region, pt_cut, 'id')], row)
                 if row.eRelPFIsoDB < 0.3:
-                    fill(histos[(region, pt_cut, 'mvaidiso03')], row)
+                    fill(histos[(region, pt_cut, 'idiso03')], row)
 
                 if row.eRelPFIsoDB < 0.2:
-                    fill(histos[(region, pt_cut, 'mvaidiso02')], row)
+                    fill(histos[(region, pt_cut, 'idiso02')], row)
 
                 if row.eRelPFIsoDB < 0.1:
-                    fill(histos[(region, pt_cut, 'mvaidiso01')], row)
+                    fill(histos[(region, pt_cut, 'idiso01')], row)
 
                 if (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.1:
                     fill(histos[(region, pt_cut, 'h2taucuts')], row)

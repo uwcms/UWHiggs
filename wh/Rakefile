@@ -47,6 +47,10 @@ def get_analyzer_results(analyzer, the_samples)
   return output
 end
 
+file "optimizer.py" => "baseSelections.py" do |t|
+  sh "touch #{t.name}"
+end
+
 ################################################################################
 ## Recipes to measure fake rates 
 ##  targets:
@@ -55,7 +59,7 @@ end
 
 # Map which samples need to be analyzed by which analyzer
 fr_analyzer_sample_map = Hash[
-  "ChargeFlipProbabilityEE" => samples['zjets'],
+  "ChargeFlipProbabilityEE.py" => samples['zjets'],
   "FakeRatesEM.py"  => samples['diboson'] + samples['data_em'],
   "FakeRatesEE.py"  => samples['data_ee'] + samples["zjets"],# + samples['diboson'],
   "FakeRatesMM.py"  => samples['diboson'] + samples['data_mm'],
@@ -70,10 +74,9 @@ task :fakerates => []
 #check if base class or some selections has changed
 fr_analyzer_sample_map.each do |analyzer, the_samples|
   deps = fr_common_dependencies
-  ## if analyzer == "FakeRatesEE.py"
-  ##   deps << "#{$frfit_dir}/charge_flip_prob_map.root"
-  ## end
-  ## puts analyzer
+  if analyzer == "ChargeFlipProbabilityEE.py"
+    deps << "optimizer.py"
+  end
   file analyzer => deps do |t|
     sh "touch #{t.name}"
   end
@@ -114,6 +117,35 @@ fr_binning_tight =  "10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,45,50,60,65
 #fr_binning =  5
 #fr_binning_tight =  2
 
+def make_landau(chan)
+  fr_binning =  "10,12,15,20,25,30,40,50,70,100" #ruby does not seem to see global variables
+  landau = "scale*TMath::Landau(x,mu,sigma,0)+offset"
+  landau_vars =  "scale[0.5, 0, 15],mu[5, 0, 30],sigma[1.9, 0.1, 20],offset[1e-2, 0, 0.5]"
+  return Hash[
+              "samples" => Array["diboson", "data_#{chan.downcase}"],
+              "analyzer" => "FakeRates#{chan.upcase}",
+              "function" => landau,
+              "variables" => landau_vars,
+              "rebin" => fr_binning,
+              "range" => "10 100",
+             ]
+end
+
+def make_exponential(chan)
+  fr_binning =  "10,12,15,20,25,30,40,50,70,100"
+  exponential = "scale*TMath::Exp(x*decay)+offset"
+  exponential_vars =  "scale[0.5, 0, 5],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
+  return Hash[
+              "samples" => Array["diboson", "data_#{chan.downcase}"],
+              "analyzer" => "FakeRates#{chan.upcase}",
+              "function" => exponential,
+              "variables" => exponential_vars,
+              "rebin" => fr_binning,
+              "range" => "10 100",
+             ]
+end
+
+
 # Fake rate fit configurations
 fr_fits = Hash[
   # Format is type_region_denom_num_variable
@@ -121,176 +153,72 @@ fr_fits = Hash[
   ## Electrons Func ##
   ####################
   #EM Sample
-  "e_wjets_pt10_h2taucuts_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "e_qcd_pt10_h2taucuts_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
+  #h2taucuts
+  "e_wjets_pt10_h2taucuts_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_h2taucuts_eJetPt" => make_exponential('em'),
 
-  "e_wjets_pt20_h2taucuts_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "e_qcd_pt20_h2taucuts_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
+  "e_wjets_pt20_h2taucuts_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_h2taucuts_eJetPt" => make_exponential('em'),
 
+  #h2taucuts020
+  "e_wjets_pt10_h2taucuts020_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_h2taucuts020_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_h2taucuts020_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_h2taucuts020_eJetPt" => make_exponential('em'),
+
+  #mvaidiso02
+  "e_wjets_pt10_idiso02_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_idiso02_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_idiso02_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_idiso02_eJetPt" => make_exponential('em'),
 
   #EE Sample
-  "ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    "function" => landau,
-    "variables" => landau_vars,
-    #"function" => exponential,
-    #"variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_qcd_pt10_h2taucuts_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    "function" => landau,
-    "variables" => landau_vars,
-    #"function" => exponential,
-    #"variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
+  #h2taucuts
+  "ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_h2taucuts_electronJetPt" => make_landau('ee'),
 
-  "ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_qcd_pt20_h2taucuts_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
+  "ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_h2taucuts_electronJetPt" => make_exponential('ee'),
 
+  #h2taucuts020
+  "ee_wjetsNoZmass_pt10_h2taucuts020_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_h2taucuts020_electronJetPt" => make_landau('ee'),
 
+  "ee_wjetsNoZmass_pt20_h2taucuts020_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_h2taucuts020_electronJetPt" => make_exponential('ee'),
 
-  #Tesing
-  "ee_wjetsNoZmass_pt10_h2tau02_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    "function" => landau,
-    "variables" => landau_vars,
-    #"function" => exponential,
-    #"variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_qcd_pt10_h2tau02_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    "function" => landau,
-    "variables" => landau_vars,
-    #"function" => exponential,
-    #"variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
+  #idiso02
+  "ee_wjetsNoZmass_pt10_idiso02_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_idiso02_electronJetPt" => make_landau('ee'),
 
-  "ee_wjetsNoZmass_pt20_h2tau02_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_qcd_pt20_h2tau02_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-
-
-
-
+  "ee_wjetsNoZmass_pt20_idiso02_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_idiso02_electronJetPt" => make_exponential('ee'),
 
   ################
   ## Muons Func ##
   ################
-  "m_wjets_pt10_h2taucuts_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt20_h2taucuts_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "m_qcd_pt10_h2taucuts_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_qcd_pt20_h2taucuts_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
+  #h2taucuts
+  "m_wjets_pt10_h2taucuts_muonJetPt" => make_landau('mm'), 
+  "m_wjets_pt20_h2taucuts_muonJetPt" => make_landau('mm'),
+
+  "m_qcd_pt10_h2taucuts_muonJetPt" => make_landau('mm'),
+  "m_qcd_pt20_h2taucuts_muonJetPt" => make_landau('mm'),
+
+  #h2taucuts020
+  "m_wjets_pt10_h2taucuts020_muonJetPt" => make_landau('mm'), 
+  "m_wjets_pt20_h2taucuts020_muonJetPt" => make_landau('mm'),
+
+  "m_qcd_pt10_h2taucuts020_muonJetPt" => make_landau('mm'),
+  "m_qcd_pt20_h2taucuts020_muonJetPt" => make_landau('mm'),
+
+  #idiso02
+  "m_wjets_pt10_idiso02_muonJetPt" => make_landau('mm'), 
+  "m_wjets_pt20_idiso02_muonJetPt" => make_landau('mm'),
+
+  "m_qcd_pt10_idiso02_muonJetPt" => make_landau('mm'),
+  "m_qcd_pt20_idiso02_muonJetPt" => make_landau('mm'),
 
   ################
   ## Taus Func ##
@@ -357,8 +285,6 @@ end
 
 file "#{$frfit_dir}/charge_flip_prob_map.root" => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root", "make_charge_flip_probalility_map.py"] do |t|
   sh "python make_charge_flip_probalility_map.py #{$frfit_dir}/charge_flip_prob_map.root charge/flipped_electrons charge/matched_electrons #{t.prerequisites[0]}"
-  #sh "python make_charge_flip_probalility_map.py #{$frfit_dir}/e1_flip_prob_map.root charge/flipped_e1 charge/matched_e1 #{t.prerequisites[0]}"
-  #sh "python make_charge_flip_probalility_map.py #{$frfit_dir}/e2_flip_prob_map.root charge/flipped_e2 charge/matched_e2 #{t.prerequisites[0]}"
 end
 
 task :charge_fakes => ["#{$frfit_dir}/charge_flip_prob_map.root"]
@@ -373,32 +299,33 @@ task :fits => :charge_fakes
 ##     emcontrol
 ##     eecontrol
 ################################################################################
+fake_rate_files = fr_fits.keys.map{|x| "#{$frfit_dir}/#{x}.root"}
 
+# IF the FR fits change, make sure we re-run the analyses
+file "WHAnalyzeEMT.py" => fake_rate_files.select{|x| x.start_with?('e_')} + \
+               fake_rate_files.select{|x| x.start_with?('m_')} + \
+               fake_rate_files.select{|x| x.start_with?('t_')} + \
+               Array["optimizer.py",
+                "fakerate_functions.py",
+                "mcCorrectors.py"] do |t|
+  sh "touch #{t.name}"
+end
 
-mmt_fake_rates = Array[
-  "#{$frfit_dir}/m_wjets_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_wjets_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",
-]
+file "WHAnalyzeMMT.py" => fake_rate_files.select{|x| x.start_with?('m_')} + \
+               fake_rate_files.select{|x| x.start_with?('t_')} + \
+               ["optimizer.py",
+                "fakerate_functions.py",
+                "mcCorrectors.py"] do |t|
+  sh "touch #{t.name}"
+end
 
-emt_fake_rates = Array[
-  "#{$frfit_dir}/e_wjets_pt10_h2taucuts_eJetPt.root", 
-  "#{$frfit_dir}/e_qcd_pt10_h2taucuts_eJetPt.root", 
-  "#{$frfit_dir}/m_wjets_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",
-]
-
-eet_fake_rates = Array[
-  "#{$frfit_dir}/ee_wjetsNoZmass_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/ee_wjetsNoZmass_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/ee_qcd_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/ee_qcd_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",
-]
-
+file "WHAnalyzeEET.py" => fake_rate_files.select{|x| x.start_with?( 'ee_')} + \
+               fake_rate_files.select{|x| x.start_with?('t_')} + \
+               ["optimizer.py",
+                "fakerate_functions.py",
+                "mcCorrectors.py"] do |t|
+  sh "touch #{t.name}"
+end
 
 mmt_results = get_analyzer_results("WHAnalyzeMMT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
 emt_results = get_analyzer_results("WHAnalyzeEMT.py", samples['ewk'] + samples['data_em'] + samples['signal'])
@@ -407,34 +334,7 @@ eet_results = get_analyzer_results("WHAnalyzeEET.py", samples['ewk'] + samples['
 mmt_debug   = get_analyzer_results("WHAnalyzeMMT.py", Array['Zjets_M50'] )
 task :mmt_dbg => mmt_debug
 eet_data    = get_analyzer_results("WHAnalyzeEET.py", samples['data_ee'])
-task :eet_data => eet_data + eet_fake_rates
-
-# IF the FR fits change, make sure we re-run the analyses
-file "WHAnalyzeEMT.py" => [ 
-  "#{$frfit_dir}/e_wjets_pt10_h2taucuts_eJetPt.root", 
-  "#{$frfit_dir}/m_wjets_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/e_qcd_pt10_h2taucuts_eJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
-  sh "touch #{t.name}"
-end
-file "WHAnalyzeMMT.py" => [ 
-  "#{$frfit_dir}/m_wjets_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_wjets_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
-  sh "touch #{t.name}"
-end
-file "WHAnalyzeEET.py" => [ 
-  "#{$frfit_dir}/ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt.root",
-  "#{$frfit_dir}/ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt.root",
-  "#{$frfit_dir}/ee_qcd_pt20_h2taucuts_electronJetPt.root",
-  "#{$frfit_dir}/ee_qcd_pt10_h2taucuts_electronJetPt.root",
-  "#{$frfit_dir}/charge_flip_prob_map.root",
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root"] do |t|
-  sh "touch #{t.name}"
-end
+task :eet_data => eet_data + fake_rate_files.select{|x| x.start_with?( 'ee_')}
 
 task :mmt => mmt_results
 task :emt => emt_results

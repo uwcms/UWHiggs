@@ -9,9 +9,8 @@ import os
 from WHAnalyzerBase import WHAnalyzerBase, quad, inv_mass
 import ROOT
 import mcCorrectors
-import baseSelections as selections
+import optimizer as selections
 import fakerate_functions as frfits
-import ROOT
 import math
 import array
 
@@ -241,20 +240,14 @@ class WHAnalyzeEET(WHAnalyzerBase):
         if not selections.tauSelection(row, 't'): return False
         if row.e1_e2_SS and row.e1_t_SS         : return False #remove three SS leptons
 
-        if row.e1_e2_Mass < 20:       return False
-            #if row.metSignificance < 2.5: return False
-        ## if row.e1_e2_Mass > 81 \
-        ##     and row.e1_e2_Mass < 101: return False
-        #if row.LT < 80:              return False
-        if not selections.vetos(row): return False #applies mu bjet e additional tau vetoes
+        if row.e1_e2_Mass < 20:                   return False
+        if row.LT < selections.lt_lower_threshold:return False
+        if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
 
         #REMOVE CHARGE FAKES!
         if self.logic_cut_met(row, 1.) == (0.5,1.): return False
 
         if not row.tAntiMuonLoose:   return False
-
-            #if not row.tAntiElectronMVA3Loose: return False
-            #if not row.tAntiElectronMVA3Tight: return False
         return True
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
@@ -266,14 +259,12 @@ class WHAnalyzeEET(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj1_id(row):
-        return selections.electron_id(row, 'e1')
-        #return selections.h2tau_eid(row, 'e1') #bool(row.e1MVAIDH2TauWP) and bool( row.e1RelPFIsoDB < 0.1 or (row.e1RelPFIsoDB < 0.15 and row.e1AbsEta < 1.479))
+        return selections.leading_lepton_id_iso(row, 'e1')
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj2_id(row):
-        return selections.electron_id(row, 'e2')
-        #return selections.h2tau_eid(row, 'e2') #bool(row.e2MVAIDH2TauWP) and bool( row.e2RelPFIsoDB < 0.1 or (row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479))
+        return selections.subleading_lepton_id_iso(row, 'e2')
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
@@ -283,8 +274,6 @@ class WHAnalyzeEET(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def anti_wz(row):
-        return True
-	    #return row.tAntiElectronMVA3Loose
         if row.e2_t_Zcompat < 10 or row.e1_t_Zcompat < 10 :
             if not row.tAntiElectronMVA3Tight:
                 return False
