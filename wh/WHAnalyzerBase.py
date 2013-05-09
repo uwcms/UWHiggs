@@ -65,7 +65,31 @@ def inv_mass(*args):
     for v,i in zip(lorentz_vecs,args):
         v.SetPtEtaPhiM(*i)
     return sum(lorentz_vecs,ROOT.TLorentzVector()).M() #We need to give the staring point otherwise it starts from an int and it does not work
+
+class cut_flow_tracker(object):
+    def __init__(self, hist):
+        self.labels   = [hist.GetXaxis().GetBinLabel(i+1) for i in range(hist.GetNbinsX())]
+        self.cut_flow = dict([ (i, False) for i in self.labels])
+        self.hist     = hist
+        self.evt_info = [-1, -1, -1]
     
+    def Fill(self, label):
+        self.cut_flow[label] = True
+
+    def flush(self):
+        #print "flushing"
+        for i, label in enumerate(self.labels):
+            val = self.cut_flow[label]
+            if val:
+                #print "filling %s" % label
+                self.hist.Fill(i+0.5)
+
+    def new_row(self, *args):
+        if self.evt_info != list(args):
+            #print "New event! %s" % args.__repr__()
+            self.flush()
+            self.evt_info = list(args)
+            self.cut_flow = dict([ (i, False) for i in self.labels])
                         
 class WHAnalyzerBase(MegaBase):
     def __init__(self, tree, outfile, wrapper, **kwargs):
@@ -189,7 +213,7 @@ class WHAnalyzerBase(MegaBase):
             # Each of the weight subfolders
             for weight_folder in weight_folders:
                 self.book_histos("/".join(base_folder + (weight_folder,)))
-           
+
         # Add WZ control region
         self.book_histos('ss/p1p2p3_enhance_wz')
         # Where second light lepton fails
@@ -215,6 +239,21 @@ class WHAnalyzerBase(MegaBase):
             else:
                 self.histo_locations[location] = [name]
 
+        #Makes the cut flow histogram
+        cut_flow_step = ['bare', 'WH Event', 'obj1 GenMatching', 'obj2 GenMatching',
+                         'obj3 GenMatching', 'trigger', 'obj1 Presel', 'obj2 Presel',
+                         'obj3 Presel', 'LT', 'obj1 IDIso', 'obj2 IDIso', 'obj3 IDIso',
+                         'mu veto', 'e veto', 'tau veto', 'bjet veto', 'charge_fakes',
+                          'sign cut', 'anti WZ', 
+                         ]
+        self.book('ss', "CUT_FLOW", "Cut Flow", len(cut_flow_step), 0, len(cut_flow_step))
+        xaxis = self.histograms['ss/CUT_FLOW'].GetXaxis()
+        self.cut_flow_histo = self.histograms['ss/CUT_FLOW']
+        self.cut_flow_map   = {}
+        for i, name in enumerate(cut_flow_step):
+            xaxis.SetBinLabel(i+1, name)
+            self.cut_flow_map[name] = i+0.5
+
     def process(self):
         # For speed, map the result of the region cuts to a folder path
         # string using a dictionary
@@ -230,8 +269,11 @@ class WHAnalyzerBase(MegaBase):
         obj3_id = self.obj3_id
         fill_histos = self.fill_histos
         anti_wz_cut = self.anti_wz
-
+        
         weight_func = self.event_weight
+
+        cut_flow_histo = self.cut_flow_histo
+        cut_flow_trk   = cut_flow_tracker(cut_flow_histo)
 
         # Which weight folders correspond to which weight functions
         weight_map = {
@@ -250,9 +292,18 @@ class WHAnalyzerBase(MegaBase):
             'q23' : (self.obj2_qcd_weight, self.obj3_qcd_weight),
         }
 
-        for row in self.tree:
+        for i, row in enumerate(self.tree):
+            ## if i > 5:
+            ##     raise
+            #print "row %i" % i
+            cut_flow_trk.new_row(row.run,row.lumi,row.evt)
+            cut_flow_trk.Fill('bare')
             # Apply basic preselection
-            if not preselection(row):
+            if row.processID != 26:
+                continue
+
+            cut_flow_trk.Fill('WH Event')
+            if not preselection(row, cut_flow_trk):
                 continue
 
             # Get the generic event weight
@@ -264,6 +315,17 @@ class WHAnalyzerBase(MegaBase):
             obj2_id_result = obj2_id(row)
             obj3_id_result = obj3_id(row)
             anti_wz = anti_wz_cut(row)
+
+            if sign_result:
+                cut_flow_trk.Fill('sign cut')
+                if anti_wz :
+                    cut_flow_trk.Fill('anti WZ')
+                    ## if obj1_id_result:
+                    ##     cut_flow_trk.Fill('obj1 IDIso')
+                    ##     if obj2_id_result:
+                    ##         cut_flow_trk.Fill('obj2 IDIso')
+                    ##         if obj3_id_result:
+                    ##             cut_flow_trk.Fill('obj3 IDIso')
 
             # Figure out which folder/region we are in
             region_result = cut_region_map.get(
@@ -314,6 +376,7 @@ class WHAnalyzerBase(MegaBase):
                         fake_rate_obj2 = self.obj2_weight(row)
                         fake_weight = fake_rate_obj2/(1.-fake_rate_obj2)
                         fill_histos(histos, ('ss/p1f2p3_enhance_wz/w2',), row, event_weight*fake_weight)
+        cut_flow_trk.flush()
 
     def finish(self):
         self.write_histos()
