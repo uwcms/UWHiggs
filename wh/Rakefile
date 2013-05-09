@@ -59,25 +59,29 @@ end
 
 # Map which samples need to be analyzed by which analyzer
 fr_analyzer_sample_map = Hash[
+  "FakeRatesEE.py"  => samples['data_ee'] + samples["zjets"],# + samples['diboson'],
   "ChargeFlipProbabilityEE.py" => samples['zjets'],
   "FakeRatesEM.py"  => samples['diboson'] + samples['data_em'],
-  "FakeRatesEE.py"  => samples['data_ee'] + samples["zjets"],# + samples['diboson'],
   "FakeRatesMM.py"  => samples['diboson'] + samples['data_mm'],
   "FakeRatesMMT.py" => samples['diboson'] + samples['data_mm'],
   "FakeRatesMMM.py" => samples['diboson'] + samples['data_mm'],
 ]
 
+fr_analyzer_dep_map = Hash[
+  "ChargeFlipProbabilityEE.py" => Array["baseSelections.py", "optimizer.py"],
+  "FakeRatesEE.py"  => Array["baseSelections.py"],# + samples['diboson'],
+  "FakeRatesEM.py"  => Array["baseSelections.py"],
+  "FakeRatesMM.py"  => Array["baseSelections.py"],
+  "FakeRatesMMT.py" => Array["baseSelections.py"],
+  "FakeRatesMMM.py" => Array["baseSelections.py"],
+]
 
-fr_common_dependencies = Array["baseSelections.py"]
 # Create an empty placeholder to enable tab-completion
 task :fakerates => []
 #check if base class or some selections has changed
 fr_analyzer_sample_map.each do |analyzer, the_samples|
-  deps = fr_common_dependencies
-  if analyzer == "ChargeFlipProbabilityEE.py"
-    deps << "optimizer.py"
-  end
-  file analyzer => deps do |t|
+  file analyzer => fr_analyzer_dep_map[analyzer] do |t|
+    puts t.investigation
     sh "touch #{t.name}"
   end
 end
@@ -306,14 +310,16 @@ file "WHAnalyzeEMT.py" => fake_rate_files.select{|x| x.start_with?('e_')} + \
                fake_rate_files.select{|x| x.start_with?('m_')} + \
                fake_rate_files.select{|x| x.start_with?('t_')} + \
                Array["optimizer.py",
-                "fakerate_functions.py",
-                "mcCorrectors.py"] do |t|
+                     'WHAnalyzerBase.py',
+                     "fakerate_functions.py",
+                     "mcCorrectors.py"] do |t|
   sh "touch #{t.name}"
 end
 
 file "WHAnalyzeMMT.py" => fake_rate_files.select{|x| x.start_with?('m_')} + \
                fake_rate_files.select{|x| x.start_with?('t_')} + \
                ["optimizer.py",
+                'WHAnalyzerBase.py',
                 "fakerate_functions.py",
                 "mcCorrectors.py"] do |t|
   sh "touch #{t.name}"
@@ -322,6 +328,7 @@ end
 file "WHAnalyzeEET.py" => fake_rate_files.select{|x| x.start_with?( 'ee_')} + \
                fake_rate_files.select{|x| x.start_with?('t_')} + \
                ["optimizer.py",
+                'WHAnalyzerBase.py',
                 "fakerate_functions.py",
                 "mcCorrectors.py"] do |t|
   sh "touch #{t.name}"
@@ -351,6 +358,14 @@ task :run_signal => [
    :mmt_signal,
    :emt_signal,
    :eet_signal]
+
+task :mmt_signal120 => get_analyzer_results("WHAnalyzeMMT.py", samples['signal'].select{|x| x.include? "120"})
+task :emt_signal120 => get_analyzer_results("WHAnalyzeEMT.py", samples['signal'].select{|x| x.include? "120"})
+task :eet_signal120 => get_analyzer_results("WHAnalyzeEET.py", samples['signal'].select{|x| x.include? "120"})
+task :run_signal120 => [
+   :mmt_signal120,
+   :emt_signal120,
+   :eet_signal120]
 
 ################################################################################
 # Recipes to make control plots
