@@ -9,10 +9,10 @@ import ROOT
 import os
 from WHAnalyzerBase import WHAnalyzerBase, quad, inv_mass
 import mcCorrectors
-import optimizer as selections
+import baseSelections as selections
 import fakerate_functions as frfits
 import math
-
+import optimizer
 ################################################################################
 #### Analysis logic ############################################################
 ################################################################################
@@ -40,7 +40,6 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         self.book(folder, "m1AbsEta", "Muon 1 AbsEta", 100, 0, 2.4)
         self.book(folder, "m2AbsEta", "Muon 2 AbsEta", 100, 0, 2.4)
         self.book(folder, "m1_m2_Mass", "Muon 1-2 Mass", 120, 0, 120)
-        self.book(folder, "m2_t_Mass", "subleadingMass", 200, 0, 200)
         self.book(folder, "m1_t_Mass", "leadingMass", 200, 0, 200)
         # Rank muons by less MT to MET, for WZ control region
         self.book(folder, "subMTMass", "subMTMass", 200, 0, 200)
@@ -59,23 +58,20 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
         self.book(folder, "Mass"          , "mass"          , 800, 0, 800 )
         self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
-       
 
-    def preselection(self, row, cut_flow_trk = None):
+        for key in optimizer.grid_search:
+            prefix = key+'$' if key else ''
+            self.book(folder, prefix+"m2_t_Mass", "subleadingMass", 200, 0, 200)
+               
+
+    def preselection(self, row, cut_flow_trk = None, LT_threshold = 80.):
         ''' Preselection applied to events.
 
         Excludes FR object IDs and sign cut.
         '''
-        if not ( abs(row.m1GenMotherPdgId) in [15, 24, 23, 21] ): return False
-        cut_flow_trk.Fill('obj1 GenMatching') 
-        if not ( abs(row.m2GenMotherPdgId) in [15, 24, 23, 21] ): return False
-        cut_flow_trk.Fill('obj2 GenMatching') 
-        if row.tGenDecayMode < 0: return False
-        cut_flow_trk.Fill('obj3 GenMatching') 
-
-        double_mu_pass = row.doubleMuPass and \
-            row.m1MatchesDoubleMu2011Paths > 0 and \
-            row.m2MatchesDoubleMu2011Paths > 0
+        double_mu_pass = row.doubleMuPass #and \
+            ## row.m1MatchesDoubleMu2011Paths > 0 and \
+            ## row.m2MatchesDoubleMu2011Paths > 0
         if not ( double_mu_pass ): return False
         cut_flow_trk.Fill('trigger')
 
@@ -88,35 +84,17 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         cut_flow_trk.Fill('obj2 Presel')
 
         if not selections.tauSelection(row, 't'): return False #applies basic selection (eta, pt > 20, DZ)
-        if not row.tAntiElectronMVA3Loose: return False
+        if not row.tAntiElectronMVA3Loose:        return False
         cut_flow_trk.Fill('obj3 Presel')
 
-        if row.LT < selections.lt_lower_threshold: return False
+        if row.LT < LT_threshold: return False
         cut_flow_trk.Fill('LT')
 
-        if not selections.leading_lepton_id_iso(row, 'm1'): return False
-        cut_flow_trk.Fill('obj1 IDIso')
-        if not selections.subleading_lepton_id_iso(row, 'm2'): return False
-        cut_flow_trk.Fill('obj2 IDIso')
-        if not row.tLooseIso3Hits: return False
-        cut_flow_trk.Fill('obj3 IDIso')
-
-        if row.m1_m2_SS and row.m1_t_SS         : return False #remove three SS leptons
-        if row.m1_m2_Mass < 20:                    return False
-            #if not selections.vetos(row):              return False #applies mu bjet e additional tau vetoes
-        if row.muVetoPt5IsoIdVtx: return False
-        cut_flow_trk.Fill('mu veto')
-        if row.eVetoMVAIsoVtx:    return False
-        cut_flow_trk.Fill('e veto')
-        if row.tauVetoPt20Loose3HitsVtx: return False
-        cut_flow_trk.Fill('tau veto')
-        if row.bjetCSVVeto:       return False
-        cut_flow_trk.Fill('bjet veto')
+        if row.m1_m2_SS and row.m1_t_SS: return False #remove three SS leptons
+        if row.m1_m2_Mass < 20:          return False
+        if not selections.vetos(row):    return False #applies mu bjet e additional tau vetoes
+        cut_flow_trk.Fill('vetos')
         cut_flow_trk.Fill('charge_fakes') #no charge fakes here
-
-                                                          #if abs(row.m1GenPdgId) == 13: return 
-        ## if not self.trigger_match_m1(row): return False
-        ## if not self.trigger_match_m2(row): return False
 
         return True
 
@@ -148,12 +126,12 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         return bool(row.m1_m2_SS)
 
     @staticmethod
-    def obj1_id(row):
-        return selections.leading_lepton_id_iso(row, 'm1')
+    def obj1_id(row, leadleptonId='h2taucuts', subleadleptonId=None):
+        return selections.lepton_ids[leadleptonId](row, 'm1')
 
     @staticmethod
-    def obj2_id(row):
-        return selections.subleading_lepton_id_iso(row, 'm2')
+    def obj2_id(row, leadleptonId=None, subleadleptonId='h2taucuts'):
+        return selections.lepton_ids[subleadleptonId](row, 'm2')
 
     @staticmethod
     def obj3_id(row):
@@ -182,22 +160,22 @@ class WHAnalyzeMMT(WHAnalyzerBase):
             mcCorrectors.get_muon_corrections(row,'m1','m2') * \
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 
-    def obj1_weight(self, row):
-        return frfits.highpt_mu_fr(max(row.m1JetPt, row.m1Pt))
+    def obj1_weight(self, row, ledleptonId='h2taucuts', subledleptonId=None):
+        return frfits.highpt_mu_fr[ledleptonId](max(row.m1JetPt, row.m1Pt))
 
-    def obj2_weight(self, row):
-        return frfits.lowpt_mu_fr(max(row.m2JetPt, row.m2Pt))
+    def obj2_weight(self, row, ledleptonId=None, subledleptonId='h2taucuts'):
+        return frfits.lowpt_mu_fr[subledleptonId](max(row.m2JetPt, row.m2Pt))
 
-    def obj3_weight(self, row):
+    def obj3_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_fr(row.tPt)
 
-    def obj1_qcd_weight(self, row):
-        return frfits.highpt_mu_qcd_fr(max(row.m1JetPt, row.m1Pt))
+    def obj1_qcd_weight(self, row, ledleptonId='h2taucuts', subledleptonId=None):
+        return frfits.highpt_mu_qcd_fr[ledleptonId](max(row.m1JetPt, row.m1Pt))
 
-    def obj2_qcd_weight(self, row):
-        return frfits.lowpt_mu_qcd_fr(max(row.m2JetPt, row.m2Pt))
+    def obj2_qcd_weight(self, row, ledleptonId=None, subledleptonId='h2taucuts'):
+        return frfits.lowpt_mu_qcd_fr[subledleptonId](max(row.m2JetPt, row.m2Pt))
 
-    def obj3_qcd_weight(self, row):
+    def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_qcd_fr(row.tPt)
 
     # For measuring charge flip probability
