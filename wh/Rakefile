@@ -287,8 +287,15 @@ fr_fits.each do |fit, fit_info|
 
 end
 
-file "#{$frfit_dir}/charge_flip_prob_map.root" => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root", "make_charge_flip_probalility_map.py"] do |t|
-  sh "python make_charge_flip_probalility_map.py #{$frfit_dir}/charge_flip_prob_map.root charge/flipped_electrons charge/matched_electrons #{t.prerequisites[0]}"
+task :charge_fakes => []
+isolations = Array['h2taucuts', 'h2taucuts020', 'idiso02']
+
+isolations.each do |iso_label|
+  output = "#{$frfit_dir}/charge_flip_prob_map_#{iso_label}.root"
+  file output => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root", "make_charge_flip_probalility_map.py"] do |t|
+    sh "python make_charge_flip_probalility_map.py #{t.name} #{iso_label}/flipped_electrons #{iso_label}/matched_electrons #{t.prerequisites[0]}"
+  end
+  task :charge_fakes => output
 end
 
 task :charge_fakes => ["#{$frfit_dir}/charge_flip_prob_map.root"]
