@@ -19,8 +19,9 @@ def relative_to_previous(hist):
     previous = ret.GetBinContent(1)
     for i in range(binx):
         current = ret.GetBinContent(i+1)
+        ratio   = current / previous if previous > 0 else 0.
         ret.SetBinContent(i+1,
-                          current / previous)
+                          ratio)
         previous = current
     return ret
 
@@ -47,7 +48,7 @@ for ch, color in zip(channels, ['darkgreen','blue','red']):
                 #                io.open('results/%s/WHAnalyze%s/VH_120_HWW.root' % (jobid, ch.upper()) ),
                 io.open('results/%s/WHAnalyze%s/VH_H2Tau_M-120.root' % (jobid, ch.upper()) )
                 ),
-            drawstyle = 'hist',
+            drawstyle = 'hist TEXT00',
             linecolor = color,
             linewidth = 2,
             fillstyle = 'hollow',
@@ -100,14 +101,14 @@ legend.Draw()
 
 canvas.Print(os.path.join(public,'relative_to_previous_cut_flow.png') )
 
-to_keep  = []
-canvas.SetLogy(True)
-for i, h in enumerate(chan_hists.itervalues()):
-    hist = relative_to(h, 'obj3 GenMatching')
-    to_keep.append(hist)
-    drawattr = '' if i == 0 else 'same'
-    hist.GetYaxis().SetRangeUser(4*10**-2, 1.5)
-    hist.Draw(drawattr)
-legend.Draw()
+## to_keep  = []
+## canvas.SetLogy(True)
+## for i, h in enumerate(chan_hists.itervalues()):
+##     hist = relative_to(h, 'obj3 GenMatching')
+##     to_keep.append(hist)
+##     drawattr = '' if i == 0 else 'same'
+##     hist.GetYaxis().SetRangeUser(4*10**-2, 1.5)
+##     hist.Draw(drawattr)
+## legend.Draw()
 
-canvas.Print(os.path.join(public,'relative_to_MCMatched_cut_flow.png') )
+## canvas.Print(os.path.join(public,'relative_to_MCMatched_cut_flow.png') )
