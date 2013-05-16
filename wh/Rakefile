@@ -298,7 +298,7 @@ isolations.each do |iso_label|
   task :charge_fakes => output
 end
 
-task :charge_fakes => ["#{$frfit_dir}/charge_flip_prob_map.root"]
+#task :charge_fakes => ["#{$frfit_dir}/charge_flip_prob_map.root"]
 task :fits => :charge_fakes
 
 ################################################################################
