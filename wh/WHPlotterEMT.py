@@ -16,7 +16,7 @@ from WHPlotterBase import make_styler
 import rootpy.plotting.views as views
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 class WHPlotterEMT(WHPlotterBase.WHPlotterBase):
     def __init__(self):
@@ -208,6 +208,9 @@ if __name__ == "__main__":
     plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
     plotter.add_cms_blurb(sqrts)
     plotter.save('final-subMass-qweight05')
+    plotter.canvas.SetLogy(True)
+    plotter.save('final-subMass-qweight05-logscale')
+
 
     plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', show_error=True)
     plotter.add_cms_blurb(sqrts)
