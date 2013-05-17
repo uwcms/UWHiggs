@@ -49,8 +49,8 @@ class FakeRatesMM(MegaBase):
                 denom_histos = {}
                 self.histograms[denom_key] = denom_histos
 
-                for numerator in ['id', 'iso03', 'idiso03',
-                                  'idiso02', 'idiso01', 'h2taucuts',
+                for numerator in ['pfid', 'iso03', 'pfidiso03',
+                                  'pfidiso02', 'pfidiso01', 'h2taucuts',
                                   'h2taucuts020', 'h2taucuts025']:
                     num_key = (region, denom, numerator)
                     num_histos = {}
@@ -91,9 +91,18 @@ class FakeRatesMM(MegaBase):
                     #book_histo('metSignificance', 'MET sig.', 100, 0, 10)
                     book_histo('m1MtToMET', 'Muon 1 MT', 100, 0, 200)
                     book_histo('m1m2Mass', 'DiMuon Mass', 100, 0, 200)
+                    book_histo('m2JetptD', "", 200, 0, 1)
+                    book_histo('m2Jetaxis1', "", 200, 0, 1)
+                    book_histo('m2Jetaxis2', "", 200, 0, 1)
+                    book_histo('m2Jetmult', "", 50, 0, 50)
+                    book_histo('m2JetmultMLPQC', "", 50, 0, 50)
+                    book_histo('m2JetmultMLP', "", 50, 0, 50)
+                    book_histo('m2JetQGLikelihoodID', "", 200, 0, 1)
+                    book_histo('m2JetQGMVAID', "", 200, 0, 1)
 
 
-
+                    book_histo('m2JetQGLikelihoodIDvsm2JetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
+                    book_histo('m2JetQGMVAIDvsm2JetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
 
 
 
@@ -136,8 +145,19 @@ class FakeRatesMM(MegaBase):
             the_histos['m2JetEtaPhiMoment'].Fill( row.m2JetEtaPhiMoment )
             the_histos['m2JetEtaPhiSpread'].Fill( row.m2JetEtaPhiSpread )
             the_histos['m2JetPhiPhiMoment'].Fill( row.m2JetPhiPhiMoment )
-            
-            
+            the_histos['m2JetptD'].Fill(row.m2JetptD)
+            the_histos['m2Jetaxis1'].Fill(row.m2Jetaxis1)
+            the_histos['m2Jetaxis2'].Fill(row.m2Jetaxis2)
+            the_histos['m2Jetmult'].Fill(row.m2Jetmult)
+            the_histos['m2JetmultMLPQC'].Fill(row.m2JetmultMLPQC)
+            the_histos['m2JetmultMLP'].Fill(row.m2JetmultMLP)
+            the_histos['m2JetQGLikelihoodID'].Fill(row.m2JetQGLikelihoodID)
+            the_histos['m2JetQGMVAID'].Fill(row.m2JetQGMVAID)
+
+            the_histos['m2JetQGLikelihoodIDvsm2JetPt'].Fill(max(row.m2JetPt, row.m2Pt),row.m2JetQGLikelihoodID)
+            the_histos['m2JetQGMVAIDvsm2JetPt'].Fill(max(row.m2JetPt, row.m2Pt),row.m2JetQGMVAID)
+
+
         histos = self.histograms
         for row in self.tree:
             if not preselection(row):
@@ -154,16 +174,16 @@ class FakeRatesMM(MegaBase):
                     fill(histos[(region, denominator_tag, 'iso03')], row)
 
                 if row.m2PFIDTight:
-                    fill(histos[(region, denominator_tag, 'id')], row)
+                    fill(histos[(region, denominator_tag, 'pfid')], row)
 
                     if row.m2RelPFIsoDB < 0.3:
-                        fill(histos[(region, denominator_tag, 'idiso03')], row)
+                        fill(histos[(region, denominator_tag, 'pfidiso03')], row)
 
                     if row.m2RelPFIsoDB < 0.2:
-                        fill(histos[(region, denominator_tag, 'idiso02')], row)
+                        fill(histos[(region, denominator_tag, 'pfidiso02')], row)
 
                     if row.m2RelPFIsoDB < 0.1:
-                        fill(histos[(region, denominator_tag, 'idiso01')], row)
+                        fill(histos[(region, denominator_tag, 'pfidiso01')], row)
 
                     if (row.m2RelPFIsoDB < 0.15 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.1:
                         fill(histos[(region, denominator_tag, 'h2taucuts')], row)
