@@ -5,12 +5,11 @@ import itertools
 
 RUN_OPTIMIZATION = 'RUN_OPTIMIZATION' in os.environ and bool(os.environ['RUN_OPTIMIZATION'])
 
-print "Running optimization: %s" % RUN_OPTIMIZATION
 lep_id = [
     'h2taucuts',
     'h2taucuts020',
     'idiso02'
-    ] if RUN_OPTIMIZATION else ['h2taucuts']
+    ] if RUN_OPTIMIZATION else ['h2taucuts', 'h2taucuts020']
 
 LT_cut = [60, 70, 80, 90]
 
@@ -29,3 +28,8 @@ else:
         'subleading_iso' : 'h2taucuts',
         'LT'             : 80,
     }
+
+if __name__ == "__main__":
+    print '\n'.join(grid_search.keys())
+else:
+    print "Running optimization: %s" % RUN_OPTIMIZATION
