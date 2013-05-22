@@ -18,10 +18,17 @@ from FinalStateAnalysis.PlotTools.BlindView import BlindView
 from FinalStateAnalysis.PlotTools.PoissonView import PoissonView
 from FinalStateAnalysis.PlotTools.MedianView import MedianView
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
+from optparse import OptionParser
 import os
 import glob
 import math
 import logging
+
+parser = OptionParser(description=__doc__)
+parser.add_option('--dry-run', action='store_true', dest='dry_run', default = False,
+                  help='produces only shape file and minimal histograms')
+parser.add_option('--prefix', metavar='label', type=str, dest='prefix', default = '',
+                  help='prefix to eppend before histogram name o be used to make the shapes' )
 
 
 def quad(*xs):
@@ -597,10 +604,10 @@ class WHPlotterBase(Plotter):
 
         # Fudge factor to go from 120->125 - change in xsec*BR
         vh_10x = views.ScaleView(vh_10x, .783)
-        tostack = [sig_view['wz_3l'], sig_view['zz'], sig_view['wz'], sig_view['fakes'], vh_10x] if stack_higgs else \
+        tostack = [sig_view['wz_3l'], sig_view['zz'], sig_view['wz'], vh_10x] if stack_higgs else \
             [sig_view['wz_3l'], sig_view['zz'], sig_view['wz'], sig_view['fakes']]
         if show_charge_fakes:
-            tostack = tostack+[sig_view['charge_fakes']]
+            tostack = tostack[:2]+[sig_view['charge_fakes']]+tostack[2:]
         stack = views.StackView( *tostack )
         histo = stack.Get(variable)
         
