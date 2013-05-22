@@ -11,6 +11,41 @@ if $jobid.include? '7TeV'
   $period = '7TeV'
 end
 
+def get_lumi(sample)
+  lumifiles = Dir.glob("inputs/#{$jobid}/*.lumicalc.sum").select {|x| x.include? sample}
+  lumifiles = lumifiles.map {|x| Float(File.read(x).strip())*0.001}
+  totLumi   = 0
+  lumifiles.each {|a| totLumi+=a }
+  return totLumi
+end
+
+def check_luminosity(samples)
+  #check that we have the expected lumi
+  target_lumi = Float(ENV.fetch('TARGET_LUMI', -1))
+  tolerance   = Float(ENV.fetch('LUMI_TOLERANCE', 0.1))
+  ingore_err  = Float(ENV.fetch('IGNORE_LUMI_ERRORS', 0))
+  if target_lumi == -1 || ingore_err == 1
+    return nil
+  end
+  $jobid = ENV['jobid']
+  samples.each do |sample|
+    lumifiles = Dir.glob("inputs/#{$jobid}/*.lumicalc.sum").select {|x| x.include? sample}
+    lumifiles = lumifiles.map {|x| Float(File.read(x).strip())*0.001}
+    totLumi   = get_lumi(sample)
+    diff_to_target = totLumi - target_lumi
+    diff_to_target = diff_to_target.abs
+    abs_tolerance  = tolerance*target_lumi
+    if diff_to_target > abs_tolerance
+      raise "For your future mental health the process was stopped! 
+The total lumi I have for the sample #{sample} is #{totLumi} which does not 
+match with the target one (#{target_lumi}) within the tolerance of #{tolerance}. 
+If you want to skip this test set the environmental variable IGNORE_LUMI_ERRORS to 1"
+    end
+  end
+end
+
+check_luminosity(['data_DoubleMu', 'data_DoubleElectron', 'data_MuEG'])
+
 ################################################################################
 ## Sample names ################################################################
 ################################################################################
@@ -627,6 +662,9 @@ task :cards => [make_timestamp_task(cardmasses, 'mmt'),
 def make_limit_task(channel)
   limit_timestamp = "#{$carddir}/#{channel}/.limits_computed"
   file limit_timestamp => "#{$carddir}/#{channel}/.creation_timestamp" do |t|
+    chdir("#{$carddir}/#{channel}") do
+      sh "ls -d [0-9]* | xargs -n 1 -P 10 -I {} compute_significance.sh {} #{$blind}"
+    end
     sh "compute_limits.sh #{$carddir}/#{channel} 10 #{$blind}"
   end
   return limit_timestamp
@@ -651,11 +689,19 @@ task :limits => Array[:limit_mmt,
 #          harvest_limits
 ################################################################################
 
+
 def make_json_limit_task(channel)
+  samples_map = Hash['mmt' => 'data_DoubleMu', 
+                     'eet' => 'data_DoubleElectron', 
+                     'emt' => 'data_MuEG',
+                     'llt' => 'data_DoubleMu',
+                    ]
   json_stamp = "#{$carddir}/#{channel}/.limit_harvested"
   file json_stamp => "#{$carddir}/#{channel}/.limits_computed" do |t|
     sh "harvest_limits.py #{$carddir}/#{channel}"
     sh "touch #{t.name}"
+    sh "add_tag_to_json.py #{$carddir}/#{channel}/*.json -l jobid -t #{$jobid}"
+    sh "add_tag_to_json.py #{$carddir}/#{channel}/*.json -l lumi -t #{get_lumi(samples_map[channel])}"
   end
   return json_stamp
 end
