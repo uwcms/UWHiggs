@@ -11,6 +11,7 @@ source $CMSSW_BASE/src/HiggsAnalysis/HiggsToTauTau/environment.sh
 
 #Is the analysis blinded?
 export blind='YES'
+export TARGET_LUMI=20
 
 #check if dev area is up to date
 check_git_updates.sh
