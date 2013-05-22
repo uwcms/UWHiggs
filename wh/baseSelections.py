@@ -40,6 +40,23 @@ def vetos(row):
     return True
 
 #LEPTON ID-ISO
+def summer_2013_eid(row, name):
+    mva_output = getattr(row, getVar(name, 'MVATrigNoIP'))
+    pT    = getattr(row, getVar(name, 'Pt'))
+    abseta= getattr(row, getVar(name, 'AbsEta'))
+    if pT < 20    and abseta < 0.8:
+        return ( mva_output > -0.5375 )
+    elif pT < 20  and 0.8 < abseta < 1.479:
+        return ( mva_output > -0.375 )
+    elif pT < 20  and abseta > 1.479:
+        return ( mva_output > -0.025 )
+    elif pT > 20  and abseta < 0.8:
+        return ( mva_output > 0.325 )
+    elif pT > 20  and 0.8 < abseta < 1.479:
+        return ( mva_output > 0.775 )
+    elif pT > 20  and abseta > 1.479:
+        return ( mva_output > 0.775 )
+    
 def h2taucuts(row, name):
     LEPTON_ID    = getattr(row, getVar(name, 'MVAIDH2TauWP')) \
         if name[0] == 'e' else \
