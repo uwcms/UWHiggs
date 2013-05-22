@@ -46,10 +46,11 @@ class FakeRatesEE(MegaBase):
                 denom_histos = {}
                 self.histograms[denom_key] = denom_histos
 
-                for numerator in ['id', 'iso03', 'idiso03',
-                                  'idiso01','h2taucuts',
-                                  'h2taucuts020', 'h2taucuts025',
-                                  'idiso02']:
+                for numerator in ['id', 'iso03', 'idiso02', 'idiso03', 'idiso01',
+                                  'h2taucuts', 'h2taucuts020', 'h2taucuts025',
+                                  'id13Iso02',
+                                  'id13h2taucuts', 'id13h2taucuts020',
+                                  ]:
                     num_key = (region, denom, numerator)
                     num_histos = {}
                     self.histograms[num_key] = num_histos
@@ -147,7 +148,14 @@ class FakeRatesEE(MegaBase):
                     fill(histos[full_region + ( 'h2taucuts020',)], row)
                 if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.25 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.20):
                     fill(histos[full_region + ( 'h2taucuts025',)], row)
-                    
+                if selections.summer_2013_eid(row, 'e2') and row.e2RelPFIsoDB < 0.2:
+                    fill(histos[full_region + ( 'id13Iso02',)], row)
+                if selections.summer_2013_eid(row, 'e2') and ((row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1):
+                    fill(histos[full_region + ( 'id13h2taucuts',)], row)
+                if selections.summer_2013_eid(row, 'e2') and ((row.e2RelPFIsoDB < 0.2 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.15):
+                    fill(histos[full_region + ( 'id13h2taucuts020',)], row)
+
+
 
             make_region_plots((region, 'pt10'))
             if region == 'wjets' and not (row.e1_e2_Mass > 70 and row.e1_e2_Mass < 110):
