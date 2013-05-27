@@ -124,80 +124,74 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
     @staticmethod
     def fill_id_info(row, weight):
-	    return array.array("f", [row.e1_e2_Mass, row.e1AbsEta, row.e2AbsEta, row.type1_pfMetEt, row.e2_t_CosThetaStar, row.e1_t_CosThetaStar, row.e1_e2_CosThetaStar, weight] ), None
+	return array.array("f", [row.e1_e2_Mass, row.e1AbsEta, row.e2AbsEta, row.type1_pfMetEt, row.e2_t_CosThetaStar, row.e1_t_CosThetaStar, row.e1_e2_CosThetaStar, weight] ), None
 
     def book_histos(self, folder):
-        self.book(folder, "weight", "Event weight", 100, 0, 5)
-        #self.book(folder, "weight_nopu", "Event weight without PU", 100, 0, 5)
-        self.book(folder, "rho", "Fastjet #rho", 100, 0, 25)
-        self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
-
-        self.book(folder, "e1Pt", "E 1 Pt", 100, 0, 100)
-        self.book(folder, "e2Pt", "E 2 Pt", 100, 0, 100)
-
-        self.book(folder, "e1AbsEta", "Muon 1 AbsEta", 100, 0, 2.5)
-        self.book(folder, "e2AbsEta", "Muon 2 AbsEta", 100, 0, 2.5)
-
-        self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 30, 0, 0.3)
-        self.book(folder, "e1RelPFIsoDB", "e1RelPFIsoDB", 30, 0, 0.3)
-
-        self.book(folder, "e2RelPFIsoDB_bar", "e2RelPFIsoDB", 30, 0, 0.3)
-        self.book(folder, "e1RelPFIsoDB_bar", "e1RelPFIsoDB", 30, 0, 0.3)
-        self.book(folder, "e2RelPFIsoDB_end", "e2RelPFIsoDB", 30, 0, 0.3)
-        self.book(folder, "e1RelPFIsoDB_end", "e1RelPFIsoDB", 30, 0, 0.3)
-        self.book(folder, "tau_id_study", "tau_id_study", 3, 0, 3)
-
-        self.book(folder, "tPt", "tPt", 100, 0,100)
-        self.book(folder, "tAbsEta", "tAbsEta", 100, 0, 2.3)
-        #self.book(folder, "metSignificance", "MET significance", 100, 0, 15)
-        self.book(folder, "LT", "L_T", 100, 0, 300)
-        self.book(folder, "electron_rejection_study", "electron_rejection_study", 5, 0, 5)
-	#self.book(folder, "my_selection_info", "my_selection_info", 'e1_e2_Mass:e1AbsEta:e2AbsEta:type1_pfMetEt:e2_t_CosThetaStar:e1_t_CosThetaStar:e1_e2_CosThetaStar:weight', type=ROOT.TNtuple)
-
-        for key in optimizer.grid_search:
-            prefix = key+'$' if key else ''
-            self.book(folder, prefix+"e1_e2_Mass", "E 1-2 Mass", 120, 0, 120)
-            self.book(folder, prefix+"e1_t_Mass", "leadingMass", 200, 0, 200)
+	#PLOTS TO FILL IN ANY CASE
+	for key in optimizer.grid_search:
+	    prefix = key+'$' if key else ''
+	    self.book(folder, prefix+"LT", "L_T", 100, 0, 300)
             self.book(folder, prefix+"e2_t_Mass", "subleadingMass", 200, 0, 200)
+            self.book(folder, prefix+"e2_t_Pt",   "subleadingPt", 400, 0, 400)
             #Charge mis-id special histograms
-            if 'c1' in folder:
-                self.book(folder, prefix+"e*1_e2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
-                self.book(folder, prefix+"e*1_t_Mass", "leadingMass with misid sclaing correction", 200, 0, 200)
-            elif 'c2' in folder:
-                self.book(folder, prefix+"e1_e*2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
+            if 'c2' in folder:
                 self.book(folder, prefix+"e*2_t_Mass", "subleadingMass with misid sclaing correction", 200, 0, 200)
 
-        #let's look for osme other possible selections
-        self.book(folder, "Mass"          , "Mass"      , 100, 0, 1)
-        self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
-        self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
-        self.book(folder, "e1_e2_Pt"       , "lepRecoil"     , 600, 0, 8000)
-        self.book(folder, "e1_e2_DR"       , "e1_e2_DR"      , 500, 0, 10)
-        self.book(folder, "e1_e2_CosThetaStar", "e1_e2_CosThetaStar", 110, 0., 1.1)
-        self.book(folder, "e1_t_CosThetaStar" , "e1_t_CosThetaStar" , 110, 0., 1.1)
-        self.book(folder, "e2_t_CosThetaStar" , "e2_t_CosThetaStar" , 110, 0., 1.1)
-        self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 300)
-        self.book(folder, "mva_metEt"         , "metEt"         , 300, 0, 300)
+        if len(optimizer.grid_search.keys()) == 1:
+            if 'c1' in folder:
+                self.book(folder, "e*1_e2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
+                self.book(folder, "e*1_t_Mass", "leadingMass with misid sclaing correction", 200, 0, 200)
+            elif 'c2' in folder:
+                self.book(folder, "e1_e*2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
+            self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 30, 0, 0.3)
+            self.book(folder, "e1RelPFIsoDB", "e1RelPFIsoDB", 30, 0, 0.3)
+            self.book(folder, "e1_e2_Mass", "E 1-2 Mass", 120, 0, 120)
+            self.book(folder, "e1_t_Mass", "leadingMass", 200, 0, 200)
+            self.book(folder, "weight", "Event weight", 100, 0, 5)
+            self.book(folder, "rho", "Fastjet #rho", 100, 0, 25)
+            self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
+            self.book(folder, "e1Pt", "E 1 Pt", 100, 0, 100)
+            self.book(folder, "e2Pt", "E 2 Pt", 100, 0, 100)
+            self.book(folder, "e1AbsEta", "Muon 1 AbsEta", 100, 0, 2.5)
+            self.book(folder, "e2AbsEta", "Muon 2 AbsEta", 100, 0, 2.5)
+	    self.book(folder, "tPt", "tPt", 100, 0,100)
+	    self.book(folder, "tAbsEta", "tAbsEta", 100, 0, 2.3)
 
-	#split into both e in barr/endcap/mixed
-	self.book(folder, "type1_pfMetEt_barr", "metEt", 300, 0, 300)
-	self.book(folder, "type1_pfMetEt_endc", "metEt", 300, 0, 300)
-	self.book(folder, "type1_pfMetEt_mix" , "metEt", 300, 0, 300)
+            self.book(folder, "e2RelPFIsoDB_bar", "e2RelPFIsoDB", 30, 0, 0.3)
+            self.book(folder, "e1RelPFIsoDB_bar", "e1RelPFIsoDB", 30, 0, 0.3)
+            self.book(folder, "e2RelPFIsoDB_end", "e2RelPFIsoDB", 30, 0, 0.3)
+            self.book(folder, "e1RelPFIsoDB_end", "e1RelPFIsoDB", 30, 0, 0.3)
+            self.book(folder, "tau_id_study", "tau_id_study", 3, 0, 3)
+            self.book(folder, "electron_rejection_study", "electron_rejection_study", 5, 0, 5)
 
-	self.book(folder, "mva_metEt_barr", "metEt", 300, 0, 300)
-	self.book(folder, "mva_metEt_endc", "metEt", 300, 0, 300)
-	self.book(folder, "mva_metEt_mix" , "metEt", 300, 0, 300)
+            #let's look for osme other possible selections
+            self.book(folder, "Mass"          , "Mass"      , 100, 0, 1)
+            self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
+            self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
+            self.book(folder, "e1_e2_Pt"       , "lepRecoil"     , 600, 0, 8000)
+            self.book(folder, "e1_e2_DR"       , "e1_e2_DR"      , 500, 0, 10)
+            self.book(folder, "e1_e2_CosThetaStar", "e1_e2_CosThetaStar", 110, 0., 1.1)
+            self.book(folder, "e1_t_CosThetaStar" , "e1_t_CosThetaStar" , 110, 0., 1.1)
+            self.book(folder, "e2_t_CosThetaStar" , "e2_t_CosThetaStar" , 110, 0., 1.1)
+            self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 300)
+            self.book(folder, "mva_metEt"         , "metEt"         , 300, 0, 300)
 
-        self.book(folder, "e1_t_CosThetaStar_barr", "e1_t_CosThetaStar" , 110, 0., 1.1)
-        self.book(folder, "e1_t_CosThetaStar_endc", "e1_t_CosThetaStar" , 110, 0., 1.1)
-        self.book(folder, "e1_t_CosThetaStar_mix" , "e1_t_CosThetaStar" , 110, 0., 1.1)
+	    #split into both e in barr/endcap/mixed
+	    self.book(folder, "type1_pfMetEt_barr", "metEt", 300, 0, 300)
+	    self.book(folder, "type1_pfMetEt_endc", "metEt", 300, 0, 300)
+	    self.book(folder, "type1_pfMetEt_mix" , "metEt", 300, 0, 300)
 
-	self.book(folder, "e1_e2_Mass_barr", "E 1-2 Mass", 120, 0, 120)
-	self.book(folder, "e1_e2_Mass_endc", "E 1-2 Mass", 120, 0, 120)
-	self.book(folder, "e1_e2_Mass_mix" , "E 1-2 Mass", 120, 0, 120)
+	    self.book(folder, "mva_metEt_barr", "metEt", 300, 0, 300)
+	    self.book(folder, "mva_metEt_endc", "metEt", 300, 0, 300)
+	    self.book(folder, "mva_metEt_mix" , "metEt", 300, 0, 300)
 
-        #self.book(folder, "logic_cut_met"     , "logic_cut_met"     , 2, 0, 2)
+            self.book(folder, "e1_t_CosThetaStar_barr", "e1_t_CosThetaStar" , 110, 0., 1.1)
+            self.book(folder, "e1_t_CosThetaStar_endc", "e1_t_CosThetaStar" , 110, 0., 1.1)
+            self.book(folder, "e1_t_CosThetaStar_mix" , "e1_t_CosThetaStar" , 110, 0., 1.1)
 
+	    self.book(folder, "e1_e2_Mass_barr", "E 1-2 Mass", 120, 0, 120)
+	    self.book(folder, "e1_e2_Mass_endc", "E 1-2 Mass", 120, 0, 120)
+	    self.book(folder, "e1_e2_Mass_mix" , "E 1-2 Mass", 120, 0, 120)
             
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     def preselection(self, row, cut_flow_trk = None, LT_threshold = 80.):
@@ -243,12 +237,12 @@ class WHAnalyzeEET(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj1_id(row, leadleptonId='h2taucuts', subleadleptonId=None):
-        return selections.lepton_ids[leadleptonId](row, 'e1')
+        return selections.lepton_id_iso(row, 'e1', leadleptonId)
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj2_id(row, leadleptonId=None, subleadleptonId='h2taucuts'):
-        return selections.lepton_ids[subleadleptonId](row, 'e2')
+        return selections.lepton_id_iso(row, 'e2', subleadleptonId)
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod

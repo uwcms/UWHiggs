@@ -261,8 +261,9 @@ class WHAnalyzerBase(MegaBase):
                          ## 'pt requirements', 'eta requirements',
                          ## 'MissingHits', 'HasConversion', 'JetBtag', 'ChargeIdTight', 'DZ',
                          'obj3 Presel',
-                         ## 'obj1 IDIso', 'obj2 IDIso', 'obj3 IDIso',
-                         'LT', 'vetos', 'charge_fakes', 'sign cut', 'anti WZ', 
+                         'LT', 'vetos', 'charge_fakes',
+                         'obj1 ID', 'obj1 Iso', 'obj2 ID', 'obj2 Iso', 'obj3 IDIso',
+                         'sign cut', 'anti WZ', 
                          ]
         self.book('ss', "CUT_FLOW", "Cut Flow", len(cut_flow_step), 0, len(cut_flow_step))
         xaxis = self.histograms['ss/CUT_FLOW'].GetXaxis()

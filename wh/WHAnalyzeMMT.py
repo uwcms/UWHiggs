@@ -27,52 +27,56 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         self.pucorrector = mcCorrectors.make_puCorrector('doublemu')
 
     def book_histos(self, folder):
-        self.book(folder, "weight", "Event weight", 100, 0, 5)
-        #self.book(folder, "weight_nopu", "Event weight without PU", 100, 0, 5) #Booked but not filled??
-        self.book(folder, "rho", "Fastjet #rho", 100, 0, 25)
-        self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
-        self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
-        self.book(folder, "m1Pt", "Muon 1 Pt", 100, 0, 100)
-        self.book(folder, "m1JetPt", "Muon 1 Jet Pt", 100, 0, 200)
-        self.book(folder, "m2Pt", "Muon 2 Pt", 100, 0, 100)
-        self.book(folder, "m2JetBtag", "Muon 2 Pt", 100, -10, 3.3)
-        self.book(folder, "m2JetPt", "Muon 2 Jet Pt", 100, 0, 200)
-        self.book(folder, "m1AbsEta", "Muon 1 AbsEta", 100, 0, 2.4)
-        self.book(folder, "m2AbsEta", "Muon 2 AbsEta", 100, 0, 2.4)
-        self.book(folder, "m1_m2_Mass", "Muon 1-2 Mass", 120, 0, 120)
-        self.book(folder, "m1_t_Mass", "leadingMass", 200, 0, 200)
-        # Rank muons by less MT to MET, for WZ control region
-        self.book(folder, "subMTMass", "subMTMass", 200, 0, 200)
-        self.book(folder, "m2RelPFIsoDB", "m2Iso", 100, 0, 0.3)
-        self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
-        self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
-        #self.book(folder, "tDecayMode", "Tau AbsEta", 15, -0.5, 14.5)
-        self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
-        self.book(folder, "m1DZ",  "m1DZ", 100, 0., 1)
-        self.book(folder, "m2DZ",  "m2DZ", 100, 0., 1)
-        self.book(folder, "tDZ" ,  "tDZ" , 100, 0., 1)
-        self.book(folder, "LT" ,  "LT" , 100, 0., 500)
-
-        #let's look for osme other possible selections
-        self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
-        self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
-        self.book(folder, "Mass"          , "mass"          , 800, 0, 800 )
-        self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
-
         for key in optimizer.grid_search:
             prefix = key+'$' if key else ''
             self.book(folder, prefix+"m2_t_Mass", "subleadingMass", 200, 0, 200)
-               
+            self.book(folder, prefix+"LT" ,  "LT" , 100, 0., 500)
+            self.book(folder, prefix+"m2_t_Pt", "subleadingPt", 400, 0, 400)
+
+        if len(optimizer.grid_search.keys()) == 1:
+            self.book(folder, "m2RelPFIsoDB", "m2Iso", 100, 0, 0.3)
+            self.book(folder, "m1_t_Mass", "leadingMass", 200, 0, 200)
+            self.book(folder, "m1_m2_Mass", "Muon 1-2 Mass", 120, 0, 120)
+
+            self.book(folder, "m2JetBtag", "Muon 2 Pt", 100, -10, 3.3)
+            self.book(folder, "m1JetPt", "Muon 1 Jet Pt", 100, 0, 200)
+            self.book(folder, "m2JetPt", "Muon 2 Jet Pt", 100, 0, 200)
+            # Rank muons by less MT to MET, for WZ control region
+            self.book(folder, "weight", "Event weight", 100, 0, 5)
+            self.book(folder, "rho", "Fastjet #rho", 100, 0, 25)
+            self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
+            self.book(folder, "m1Pt", "Muon 1 Pt", 100, 0, 100)
+            self.book(folder, "m2Pt", "Muon 2 Pt", 100, 0, 100)
+            self.book(folder, "m1AbsEta", "Muon 1 AbsEta", 100, 0, 2.4)
+            self.book(folder, "m2AbsEta", "Muon 2 AbsEta", 100, 0, 2.4)
+            self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
+            self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
+            self.book(folder, "subMTMass", "subMTMass", 200, 0, 200)
+            #self.book(folder, "tDecayMode", "Tau AbsEta", 15, -0.5, 14.5)
+            self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
+            self.book(folder, "m1DZ",  "m1DZ", 100, 0., 1)
+            self.book(folder, "m2DZ",  "m2DZ", 100, 0., 1)
+            self.book(folder, "tDZ" ,  "tDZ" , 100, 0., 1)
+            self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
+
+            #let's look for osme other possible selections
+            self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
+            self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
+            self.book(folder, "Mass"          , "mass"          , 800, 0, 800 )
+            self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
 
     def preselection(self, row, cut_flow_trk = None, LT_threshold = 80.):
         ''' Preselection applied to events.
 
         Excludes FR object IDs and sign cut.
         '''
-        double_mu_pass = row.doubleMuPass #and \
-            ## row.m1MatchesDoubleMu2011Paths > 0 and \
-            ## row.m2MatchesDoubleMu2011Paths > 0
-        if not ( double_mu_pass ): return False
+        double_mu_pass =  row.doubleMuPass and \
+            row.m1MatchesDoubleMuPaths > 0 and \
+            row.m2MatchesDoubleMuPaths > 0
+        double_muTrk_pass = row.doubleMuTrkPass and \
+             row.m1MatchesDoubleMuTrkPaths > 0 and \
+             row.m2MatchesDoubleMuTrkPaths > 0
+        if not ( double_mu_pass or double_muTrk_pass ): return False
         cut_flow_trk.Fill('trigger')
 
         if row.m1Pt < row.m2Pt:                   return False
@@ -99,39 +103,17 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         return True
 
     @staticmethod
-    def trigger_match_m1(row):
-        return True
-        if row.m1DiMuonL3p5PreFiltered8  > 0 or \
-           row.m1DiMuonL3PreFiltered7  > 0 or \
-           row.m1SingleMu13L3Filtered13  > 0 or \
-           row.m1SingleMu13L3Filtered17  > 0 or \
-           row.m1DiMuonMu17Mu8DzFiltered0p2  > 0 or \
-           row.m1L3fL1DoubleMu10MuOpenL1f0L2f10L3Filtered17:
-            return True
-
-    @staticmethod
-    def trigger_match_m2(row):
-        return True
-        if row.m2DiMuonL3p5PreFiltered8  > 0 or \
-           row.m2DiMuonL3PreFiltered7  > 0 or \
-           row.m2SingleMu13L3Filtered13  > 0 or \
-           row.m2SingleMu13L3Filtered17  > 0 or \
-           row.m2DiMuonMu17Mu8DzFiltered0p2  > 0 or \
-           row.m2L3fL1DoubleMu10MuOpenL1f0L2f10L3Filtered17:
-            return True
-
-    @staticmethod
     def sign_cut(row):
         ''' Returns true if muons are SS '''
         return bool(row.m1_m2_SS)
 
     @staticmethod
     def obj1_id(row, leadleptonId='h2taucuts', subleadleptonId=None):
-        return selections.lepton_ids[leadleptonId](row, 'm1')
+        return selections.lepton_id_iso(row, 'm1', leadleptonId)
 
     @staticmethod
     def obj2_id(row, leadleptonId=None, subleadleptonId='h2taucuts'):
-        return selections.lepton_ids[subleadleptonId](row, 'm2')
+        return selections.lepton_id_iso(row, 'm2', subleadleptonId)
 
     @staticmethod
     def obj3_id(row):

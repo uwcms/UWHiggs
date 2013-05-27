@@ -31,47 +31,48 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         self.hfunc['subMass']   = lambda row, weight: (row.e_t_Mass, weight)    if row.ePt < row.mPt else (row.m_t_Mass, weight) 
         self.hfunc['tLeadDR']   = lambda row, weight: (row.m_t_DR,   weight)    if row.ePt < row.mPt else (row.e_t_DR,   weight) 
         self.hfunc['tSubDR']    = lambda row, weight: (row.e_t_DR,   weight)    if row.ePt < row.mPt else (row.m_t_DR,   weight) 
+        self.hfunc["subPt"]     = lambda row, weight: (row.e_t_Pt, weight)      if row.ePt < row.mPt else (row.m_t_Pt, weight) 
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.ePt/row.mPt, weight) if row.ePt < row.mPt else (row.mPt/row.ePt, weight)
         self.hfunc["e*_t_Mass"] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e_t_Mass), weight)
         self.hfunc["e*_m_Mass"] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e_m_Mass), weight)
-        self.hfunc["subMass*" ] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e_t_Mass), weight) if row.ePt < row.mPt else (row.m_t_Mass, weight) 
+        self.hfunc["subMass*" ] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e_t_Mass), weight) if row.ePt < row.mPt else (row.m_t_Mass, weight)
         self.hfunc["_recoilDaught" ] = lambda row, weight: (math.sqrt(row.recoilDaught) , weight)
         self.hfunc["_recoilWithMet"] = lambda row, weight: (math.sqrt(row.recoilWithMet), weight)
 
         self.pucorrector = mcCorrectors.make_puCorrector('mueg')
 
     def book_histos(self, folder):
-        self.book(folder, "mPt", "Muon Pt", 100, 0, 100)
-        self.book(folder, "ePt", "Electron Pt", 100, 0, 100)
-        self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
-        self.book(folder, "mAbsEta", "Muon AbsEta", 100, 0, 2.4)
-        self.book(folder, "eAbsEta", "Electron AbsEta", 100, 0, 2.5)
-        self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
-
-        self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
-        self.book(folder, "e_m_Mass", "Electron-Muon Mass", 200, 0, 200)
-        self.book(folder, "eChargeIdTight", "Elec charge ID tight", 2, -0.5, 1.5)
-        #self.book(folder, "eChargeIdMedium", "Elec charge ID medium", 2, -0.5, 1.5)
-        self.book(folder, "e_t_Mass", "Electron-Tau Mass", 200, 0, 200)
-        #self.book(folder, "bCSVVeto", "BjetCSV", 10, -0.5, 9.5)
-        #self.book(folder, "metSig", "MET significance", 100, 0, 15)
-        self.book(folder, "tLeadDR", "DR between leading lepton and tau", 100, 0, 5)
-        self.book(folder, "tSubDR", "DR between subleading lepton and tau", 100, 0, 5)
-        self.book(folder, "LT", "L_T", 100, 0, 300)
         for key in optimizer.grid_search:
             prefix = key+'$' if key else ''
             self.book(folder, prefix+"subMass", "Subleading Mass", 200, 0, 200)
+            self.book(folder, prefix+"LT", "L_T", 100, 0, 300)
+            self.book(folder, prefix+"subPt"   , "SubLeading Pt", 400, 0, 400)
             #Charge mis-id special histograms
             if 'c1' in folder:
-                self.book(folder, prefix+"e*_t_Mass", "Electron-Tau Mass", 200, 0, 200)
                 self.book(folder, prefix+"subMass*", "Subleading Mass", 200, 0, 200)
-                self.book(folder, prefix+"e*_m_Mass", "Electron-Muon Mass", 200, 0, 200)
+
+        if len(optimizer.grid_search.keys()) == 1:
+            if 'c1' in folder:
+                self.book(folder, "e*_t_Mass", "Electron-Tau Mass", 200, 0, 200)
+                self.book(folder, "e*_m_Mass", "Electron-Muon Mass", 200, 0, 200)
+            self.book(folder, "e_m_Mass", "Electron-Muon Mass", 200, 0, 200)
+            self.book(folder, "e_t_Mass", "Electron-Tau Mass", 200, 0, 200)
+            self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
+            self.book(folder, "mPt", "Muon Pt", 100, 0, 100)
+            self.book(folder, "ePt", "Electron Pt", 100, 0, 100)
+            self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
+            self.book(folder, "mAbsEta", "Muon AbsEta", 100, 0, 2.4)
+            self.book(folder, "eAbsEta", "Electron AbsEta", 100, 0, 2.5)
+            self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
+            self.book(folder, "eChargeIdTight", "Elec charge ID tight", 2, -0.5, 1.5)
+            self.book(folder, "tLeadDR", "DR between leading lepton and tau", 100, 0, 5)
+            self.book(folder, "tSubDR", "DR between subleading lepton and tau", 100, 0, 5)
         
-        #let's look for osme other possible selections
-        self.book(folder, "Mass"          , "mass"          , 800, 0, 800 )
-        self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
-        self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
-        self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
+            #let's look for osme other possible selections
+            self.book(folder, "Mass"          , "mass"          , 800, 0, 800 )
+            self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
+            self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
+            self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
 
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
@@ -80,8 +81,26 @@ class WHAnalyzeEMT(WHAnalyzerBase):
 
         Excludes FR object IDs and sign cut.
         '''
-        mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
-        mu8e17 = (row.mu8ele17isoPass and row.ePt >= 20) #if use_iso_trigger else (row.mu17ele8Pass and row.mPt < 20)
+        mu17e8, mu8e17 = False, False
+        if use_iso_trigger:
+            mu17e8 = row.mu17ele8isoPass and \
+                row.mMatchesMu17Ele8IsoPath > 0 and \
+                row.eMatchesMu17Ele8IsoPath > 0 and \
+                row.mPt >= 20
+            mu8e17 = row.mu8ele17isoPass and \
+                row.mMatchesMu8Ele17IsoPath > 0 and \
+                row.eMatchesMu8Ele17IsoPath > 0 and \
+                row.ePt >= 20
+        else:
+            mu17e8 = row.mu17ele8Pass and \
+                row.mMatchesMu17Ele8Path > 0 and \
+                row.eMatchesMu17Ele8Path > 0 and \
+                row.mPt >= 20
+            mu8e17 = row.mu8ele17Pass and \
+                row.mMatchesMu8Ele17Path > 0 and \
+                row.eMatchesMu8Ele17Path > 0 and \
+                row.ePt >= 20
+            
         if not (mu17e8 or mu8e17):                return False
         cut_flow_trk.Fill('trigger')
 
@@ -115,16 +134,16 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj1_id( row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
-        return selections.lepton_ids[ledleptonId](row, 'm') \
+        return selections.lepton_id_iso(row, 'm', ledleptonId) \
             if row.mPt > row.ePt else \
-            selections.lepton_ids[subledleptonId](row, 'm') 
+            selections.lepton_id_iso(row, 'm', subledleptonId) 
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj2_id( row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
-        return selections.lepton_ids[ledleptonId](row, 'e') \
+        return selections.lepton_id_iso(row, 'e', ledleptonId) \
             if row.mPt > row.ePt else \
-            selections.lepton_ids[subledleptonId](row, 'e') 
+            selections.lepton_id_iso(row, 'e', subledleptonId)
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
