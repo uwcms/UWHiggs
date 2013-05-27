@@ -8,7 +8,7 @@ Author: Evan K. Frii
 
 import logging
 import sys
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 from RecoLuminosity.LumiDB import argparse
 import fnmatch
 from FinalStateAnalysis.PlotTools.RebinView import RebinView
