@@ -604,7 +604,7 @@ class WHPlotterBase(Plotter):
 
         # Fudge factor to go from 120->125 - change in xsec*BR
         vh_10x = views.ScaleView(vh_10x, .783)
-        tostack = [sig_view['wz_3l'], sig_view['zz'], sig_view['wz'], vh_10x] if stack_higgs else \
+        tostack = [sig_view['wz_3l'], sig_view['zz'], sig_view['wz'], sig_view['fakes'], vh_10x] if stack_higgs else \
             [sig_view['wz_3l'], sig_view['zz'], sig_view['wz'], sig_view['fakes']]
         if show_charge_fakes:
             tostack = tostack[:2]+[sig_view['charge_fakes']]+tostack[2:]
