@@ -213,6 +213,28 @@ fr_fits = Hash[
   "e_wjets_pt20_idiso02_eJetPt" => make_exponential('em'),
   "e_qcd_pt20_idiso02_eJetPt" => make_exponential('em'),
 
+  #h2taucuts
+  "e_wjets_pt10_eid13h2taucuts_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_eid13h2taucuts_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_eid13h2taucuts_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_eid13h2taucuts_eJetPt" => make_exponential('em'),
+
+  #h2taucuts020
+  "e_wjets_pt10_eid13h2taucuts020_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_eid13h2taucuts020_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_eid13h2taucuts020_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_eid13h2taucuts020_eJetPt" => make_exponential('em'),
+
+  #mvaidiso02
+  "e_wjets_pt10_eid13idiso02_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_eid13idiso02_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_eid13idiso02_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_eid13idiso02_eJetPt" => make_exponential('em'),
+
+
   #EE Sample
   #h2taucuts
   "ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt" => make_landau('ee'), 
@@ -234,6 +256,27 @@ fr_fits = Hash[
 
   "ee_wjetsNoZmass_pt20_idiso02_electronJetPt" => make_exponential('ee'),
   "ee_qcd_pt20_idiso02_electronJetPt" => make_exponential('ee'),
+
+  #h2taucuts
+  "ee_wjetsNoZmass_pt10_eid13h2taucuts_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_eid13h2taucuts_electronJetPt" => make_landau('ee'),
+
+  "ee_wjetsNoZmass_pt20_eid13h2taucuts_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_eid13h2taucuts_electronJetPt" => make_exponential('ee'),
+
+  #h2taucuts020
+  "ee_wjetsNoZmass_pt10_eid13h2taucuts020_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_eid13h2taucuts020_electronJetPt" => make_landau('ee'),
+
+  "ee_wjetsNoZmass_pt20_eid13h2taucuts020_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_eid13h2taucuts020_electronJetPt" => make_exponential('ee'),
+
+  #idiso02
+  "ee_wjetsNoZmass_pt10_eid13idiso02_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_eid13idiso02_electronJetPt" => make_landau('ee'),
+
+  "ee_wjetsNoZmass_pt20_eid13idiso02_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_eid13idiso02_electronJetPt" => make_exponential('ee'),
 
   ################
   ## Muons Func ##
@@ -323,7 +366,8 @@ fr_fits.each do |fit, fit_info|
 end
 
 task :charge_fakes => []
-isolations = Array['h2taucuts', 'h2taucuts020', 'idiso02']
+isolations = Array['h2taucuts', 'h2taucuts020', 'idiso02', 
+                   'eid13h2taucuts', 'eid13h2taucuts020', 'eid13idiso02']
 
 isolations.each do |iso_label|
   output = "#{$frfit_dir}/charge_flip_prob_map_#{iso_label}.root"
