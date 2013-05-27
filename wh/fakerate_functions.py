@@ -12,11 +12,14 @@ import optimizer
 # Get fitted fake rate functions
 frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
 
-def build_roofunctor_dict(basename, wsname = 'fit_efficiency', functor_name = 'efficiency'):
+def build_roofunctor_dict(basename, wsname = 'fit_efficiency', functor_name = 'efficiency', mapper = {}):
     ret = {}
     for i in optimizer.lep_id:
+        lepid = i
+        for key, val in mapper.iteritems(): #allows us to use different naming
+            lepid = lepid.replace(key, val)
         ret[i] = build_roofunctor(
-            basename % i,
+            basename % lepid,
             wsname, # workspace name
             functor_name
             )
@@ -39,18 +42,12 @@ def make_scaler_dict(filename, mapname):
 ## 1D Muon Func ##
 ##################
 
-highpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt20_%s_muonJetPt.root')
-lowpt_mu_fr = build_roofunctor_dict(
-    frfit_dir + '/m_wjets_pt10_%s_muonJetPt.root'
-)
+#no changes in muonID in 2013
+highpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt20_%s_muonJetPt.root', mapper={'eid13':''})
+lowpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt10_%s_muonJetPt.root', mapper={'eid13':''})
 
-highpt_mu_qcd_fr = build_roofunctor_dict(
-    frfit_dir + '/m_qcd_pt20_%s_muonJetPt.root'
-)
-
-lowpt_mu_qcd_fr = build_roofunctor_dict(
-    frfit_dir + '/m_qcd_pt10_%s_muonJetPt.root'
-)
+highpt_mu_qcd_fr = build_roofunctor_dict(frfit_dir + '/m_qcd_pt20_%s_muonJetPt.root', mapper={'eid13':''})
+lowpt_mu_qcd_fr = build_roofunctor_dict(frfit_dir + '/m_qcd_pt10_%s_muonJetPt.root', mapper={'eid13':''})
 
 #######################
 ## 1D Electrons Func ##
