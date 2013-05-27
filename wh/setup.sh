@@ -20,6 +20,7 @@ for dir in $datasrc; do
     rake "meta:getmeta[inputs/$jobid, mm/metaInfo, 8]"
 done
 
+rm inputs/$jobid/WZJetsTo3LNu_ZToTauTau*
 for file in $(ls inputs/$jobid/WZJetsTo3LNu*); do
     newname=`echo $file | sed 's|WZJetsTo3LNu|WZJetsTo3LNu_ZToTauTau|'`
     cp -uv $file $newname
