@@ -56,45 +56,36 @@ def summer_2013_eid(row, name):
         return ( mva_output > 0.775 )
     elif pT > 20  and abseta > 1.479:
         return ( mva_output > 0.775 )
-    
-def h2taucuts(row, name):
-    LEPTON_ID    = getattr(row, getVar(name, 'MVAIDH2TauWP')) \
-        if name[0] == 'e' else \
-        getattr(row, getVar(name, 'PFIDTight'))
+
+def lepton_id_iso(row, name, label):
+    'One function to rule them all'
+    LEPTON_ID = False
+    isolabel  = label.split('eid13')[-1]
+    if name[0] == 'e':
+        if not label.startswith('eid13'):
+            LEPTON_ID = bool(getattr(row, getVar(name, 'MVAIDH2TauWP')))
+        else:
+            LEPTON_ID = summer_2013_eid(row, name)
+    else:
+        LEPTON_ID = getattr(row, getVar(name, 'PFIDTight'))
+    if not LEPTON_ID:
+        return False
     RelPFIsoDB   = getattr(row, getVar(name, 'RelPFIsoDB'))
     AbsEta       = getattr(row, getVar(name, 'AbsEta'))
-    return bool(LEPTON_ID) and bool( RelPFIsoDB < 0.1 or (RelPFIsoDB < 0.15 and AbsEta < 1.479))
-
-def h2taucuts020(row, name):
-    LEPTON_ID    = getattr(row, getVar(name, 'MVAIDH2TauWP')) \
-        if name[0] == 'e' else \
-        getattr(row, getVar(name, 'PFIDTight'))
-    RelPFIsoDB   = getattr(row, getVar(name, 'RelPFIsoDB'))
-    AbsEta       = getattr(row, getVar(name, 'AbsEta'))
-    return bool(LEPTON_ID) and bool( RelPFIsoDB < 0.15 or (RelPFIsoDB < 0.20 and AbsEta < 1.479))
-
-def idiso02(row, name):
-    LEPTON_ID    = getattr(row, getVar(name, 'MVAIDH2TauWP')) \
-        if name[0] == 'e' else \
-        getattr(row, getVar(name, 'PFIDTight'))
-    RelPFIsoDB   = getattr(row, getVar(name, 'RelPFIsoDB'))
-    AbsEta       = getattr(row, getVar(name, 'AbsEta'))
-    return bool(LEPTON_ID) and bool( RelPFIsoDB < 0.20 )
-
-lepton_ids = {
-    'h2taucuts'    : h2taucuts,
-    'h2taucuts020' : h2taucuts020,
-    'idiso02'      : idiso02,
-    }
-
+    if isolabel == 'h2taucuts':
+        return bool( RelPFIsoDB < 0.1 or (RelPFIsoDB < 0.15 and AbsEta < 1.479))
+    if isolabel == 'h2taucuts020':
+        return bool( RelPFIsoDB < 0.15 or (RelPFIsoDB < 0.20 and AbsEta < 1.479))
+    if isolabel == 'idiso02':
+        return bool( RelPFIsoDB < 0.20 )
 
 def control_region_ee(row):
     '''Figure out what control region we are in. Shared among two codes, to avoid mismatching copied here'''
-    if  row.e1_e2_SS and h2taucuts(row, 'e1') and row.e1MtToMET > 30: # and row.e2MtToMET < 30:# and row.e2MtToMET < 30: #and row.metEt > 30: #row.metSignificance > 3:
+    if  row.e1_e2_SS and lepton_id_iso(row, 'e1', 'h2taucuts') and row.e1MtToMET > 30: # and row.e2MtToMET < 30:# and row.e2MtToMET < 30: #and row.metEt > 30: #row.metSignificance > 3:
         return 'wjets'
     elif row.e1_e2_SS and row.e1RelPFIsoDB > 0.3 and row.type1_pfMetEt < 25: #and row.metSignificance < 3: #
         return 'qcd'
-    elif h2taucuts(row,'e1') and h2taucuts(row,'e2') \
+    elif lepton_id_iso(row,'e1', 'h2taucuts') and lepton_id_iso(row,'e2', 'h2taucuts') \
         and not any([ row.muVetoPt5IsoIdVtx,
                       row.tauVetoPt20Loose3HitsVtx,
                       row.eVetoMVAIsoVtx,
