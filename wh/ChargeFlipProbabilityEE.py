@@ -29,7 +29,10 @@ ptbins       = [10.,30.,50.,130.]
 lep_id = [
     'h2taucuts',
     'h2taucuts020',
-    'idiso02'
+    'idiso02',
+    'eid13h2taucuts',
+    'eid13h2taucuts020',
+    'eid13idiso02',
     ]
 
 class ChargeFlipProbabilityEE(MegaBase):
@@ -83,13 +86,8 @@ class ChargeFlipProbabilityEE(MegaBase):
             if any([ row.muVetoPt5,
                       row.tauVetoPt20,
                       row.eVetoCicTightIso]):        return False
-            ## if not selections.lepton_ids['h2taucuts'](row, 'e1'):    return False
-            ## if not selections.lepton_ids['h2taucuts'](row, 'e2'): return False
             if not (row.jetVeto40 >= 1):              return False
             return True
-            ## return bool(selections.control_region_ee(row) == 'zee')
-
-        #def fill(the_histos, row):
 
         histos = self.histograms
         for row in self.tree:
@@ -97,9 +95,9 @@ class ChargeFlipProbabilityEE(MegaBase):
                 continue
 
             for iso_label in lep_id:
-                if not selections.lepton_ids[iso_label](row, 'e1'):
+                if not selections.lepton_id_iso(row, 'e1', iso_label):
                     continue
-                if not selections.lepton_ids[iso_label](row, 'e2'):
+                if not selections.lepton_id_iso(row, 'e2', iso_label):
                     continue
                 folder = '%s' % iso_label
                 
