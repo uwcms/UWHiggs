@@ -48,8 +48,8 @@ class FakeRatesEE(MegaBase):
 
                 for numerator in ['id', 'iso03', 'idiso02', 'idiso03', 'idiso01',
                                   'h2taucuts', 'h2taucuts020', 'h2taucuts025',
-                                  'id13Iso02',
-                                  'id13h2taucuts', 'id13h2taucuts020',
+                                  'eid13idiso02',
+                                  'eid13h2taucuts', 'eid13h2taucuts020',
                                   ]:
                     num_key = (region, denom, numerator)
                     num_histos = {}
@@ -149,11 +149,11 @@ class FakeRatesEE(MegaBase):
                 if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.25 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.20):
                     fill(histos[full_region + ( 'h2taucuts025',)], row)
                 if selections.summer_2013_eid(row, 'e2') and row.e2RelPFIsoDB < 0.2:
-                    fill(histos[full_region + ( 'id13Iso02',)], row)
+                    fill(histos[full_region + ( 'eid13idiso02',)], row)
                 if selections.summer_2013_eid(row, 'e2') and ((row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1):
-                    fill(histos[full_region + ( 'id13h2taucuts',)], row)
+                    fill(histos[full_region + ( 'eid13h2taucuts',)], row)
                 if selections.summer_2013_eid(row, 'e2') and ((row.e2RelPFIsoDB < 0.2 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.15):
-                    fill(histos[full_region + ( 'id13h2taucuts020',)], row)
+                    fill(histos[full_region + ( 'eid13h2taucuts020',)], row)
 
 
 
