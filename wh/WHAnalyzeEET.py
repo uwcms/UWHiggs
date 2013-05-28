@@ -9,8 +9,9 @@ import os
 from WHAnalyzerBase import WHAnalyzerBase, quad, inv_mass
 import ROOT
 import mcCorrectors
-import optimizer as selections
+import baseSelections as selections
 import fakerate_functions as frfits
+import optimizer
 import math
 import array
 
@@ -44,10 +45,10 @@ class WHAnalyzeEET(WHAnalyzerBase):
 	
 		
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.e2Pt/row.e1Pt, weight)
-        self.hfunc["e*1_e2_Mass"] = lambda row, weight: ( frfits.mass_scaler( row.e1_e2_Mass), weight)
-        self.hfunc["e*1_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler( row.e1_t_Mass ), weight)
-        self.hfunc["e1_e*2_Mass"] = lambda row, weight: ( frfits.mass_scaler( row.e1_e2_Mass), weight)
-        self.hfunc["e*2_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler( row.e2_t_Mass ), weight)
+        self.hfunc["e*1_e2_Mass"] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e1_e2_Mass), weight)
+        self.hfunc["e*1_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e1_t_Mass ), weight)
+        self.hfunc["e1_e*2_Mass"] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e1_e2_Mass), weight)
+        self.hfunc["e*2_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e2_t_Mass ), weight)
         self.hfunc["logic_cut_met" ] = self.logic_cut_met
 	self.hfunc["my_selection_info" ] = self.fill_id_info
 
@@ -74,33 +75,32 @@ class WHAnalyzeEET(WHAnalyzerBase):
         self.hfunc["electron_rejection_study" ] = self.electron_rejection_study
 	self.hfunc["tau_id_study" ] = self.tau_id_study
 
-        
-        ## self.hfunc["e1eta_on_z_peak"] = lambda row, weight: ( row.e1AbsEta, weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
-        ## self.hfunc["e1pt_on_z_peak" ] = lambda row, weight: ( row.e1Pt    , weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
-        ## self.hfunc["e2eta_on_z_peak"] = lambda row, weight: ( row.e2AbsEta, weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
-        ## self.hfunc["e2pt_on_z_peak" ] = lambda row, weight: ( row.e2Pt    , weight) if row.e1_e2_Mass > 80 and row.e1_e2_Mass < 100 else (-10,0.)
         self.pucorrector = mcCorrectors.make_puCorrector('doublee')
 
     
 
     @staticmethod
     def logic_cut_met( row, weight):
+        z_Mass_distance = row.e1_e2_Mass - frfits.mass_scaler['h2taucuts'](91.2) \
+            if row.e1_e2_SS else \
+            row.e1_e2_Mass - 91.2
+        z_Mass_distance = abs(z_Mass_distance)
         if row.e1AbsEta < 1.48 and row.e2AbsEta < 1.48: #both barrel
-            return (0.5, weight) \
-		    if row.type1_pfMetEt < 30 and \
-		    abs(row.e1_e2_Mass - 91.2) < 10 \
-		    else (1.5, weight)
+            return False \
+		    if row.mva_metEt < 25 and \
+		    z_Mass_distance < 10 \
+		    else True
         elif row.e1AbsEta < 1.48 or row.e2AbsEta < 1.48: #at least one in barrel
-            return (0.5, weight) \
-		    if row.type1_pfMetEt < 50 and \
-		    abs(row.e1_e2_Mass - 91.2) < 10 \
-		    else (1.5, weight)
+            return False \
+		    if row.mva_metEt < 40 and \
+		    z_Mass_distance < 10 \
+		    else True
         else: #both in endcap
-            return (0.5, weight) \
-		    if row.type1_pfMetEt < 50 and \
-		    abs(row.e1_e2_Mass - 91.2) < 20 \
-	        else (1.5, weight)
-        return (1.5, weight)
+            return False \
+		    if row.mva_metEt < 40 and \
+		    z_Mass_distance < 20 \
+	        else True
+        return True
 
     @staticmethod
     def electron_rejection_study( row, weight):
@@ -138,10 +138,6 @@ class WHAnalyzeEET(WHAnalyzerBase):
         self.book(folder, "e1AbsEta", "Muon 1 AbsEta", 100, 0, 2.5)
         self.book(folder, "e2AbsEta", "Muon 2 AbsEta", 100, 0, 2.5)
 
-        self.book(folder, "e1_e2_Mass", "E 1-2 Mass", 120, 0, 120)
-        self.book(folder, "e1_t_Mass", "leadingMass", 200, 0, 200)
-        self.book(folder, "e2_t_Mass", "subleadingMass", 200, 0, 200)
-
         self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 30, 0, 0.3)
         self.book(folder, "e1RelPFIsoDB", "e1RelPFIsoDB", 30, 0, 0.3)
 
@@ -158,15 +154,21 @@ class WHAnalyzeEET(WHAnalyzerBase):
         self.book(folder, "electron_rejection_study", "electron_rejection_study", 5, 0, 5)
 	#self.book(folder, "my_selection_info", "my_selection_info", 'e1_e2_Mass:e1AbsEta:e2AbsEta:type1_pfMetEt:e2_t_CosThetaStar:e1_t_CosThetaStar:e1_e2_CosThetaStar:weight', type=ROOT.TNtuple)
 
-        #Charge mis-id special histograms
-        if 'c1' in folder:
-            self.book(folder, "e*1_e2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
-            self.book(folder, "e*1_t_Mass", "leadingMass with misid sclaing correction", 200, 0, 200)
-        elif 'c2' in folder:
-            self.book(folder, "e1_e*2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
-            self.book(folder, "e*2_t_Mass", "subleadingMass with misid sclaing correction", 200, 0, 200)
+        for key in optimizer.grid_search:
+            prefix = key+'$' if key else ''
+            self.book(folder, prefix+"e1_e2_Mass", "E 1-2 Mass", 120, 0, 120)
+            self.book(folder, prefix+"e1_t_Mass", "leadingMass", 200, 0, 200)
+            self.book(folder, prefix+"e2_t_Mass", "subleadingMass", 200, 0, 200)
+            #Charge mis-id special histograms
+            if 'c1' in folder:
+                self.book(folder, prefix+"e*1_e2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
+                self.book(folder, prefix+"e*1_t_Mass", "leadingMass with misid sclaing correction", 200, 0, 200)
+            elif 'c2' in folder:
+                self.book(folder, prefix+"e1_e*2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
+                self.book(folder, prefix+"e*2_t_Mass", "subleadingMass with misid sclaing correction", 200, 0, 200)
 
         #let's look for osme other possible selections
+        self.book(folder, "Mass"          , "Mass"      , 100, 0, 1)
         self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
         self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
         self.book(folder, "e1_e2_Pt"       , "lepRecoil"     , 600, 0, 8000)
@@ -194,60 +196,42 @@ class WHAnalyzeEET(WHAnalyzerBase):
 	self.book(folder, "e1_e2_Mass_endc", "E 1-2 Mass", 120, 0, 120)
 	self.book(folder, "e1_e2_Mass_mix" , "E 1-2 Mass", 120, 0, 120)
 
-        
-        ## self.book(folder, "type1_pfMetEt#e1_e2_Mass", "metEt#e1_e2_Mass", 100, 0, 300, 120, 0, 120, type=ROOT.TH2F)
-        ## self.book(folder, "e1_t_CosThetaStar#type1_pfMetEt" , "e1_t_CosThetaStar#type1_pfMetEt" , 110, 0., 1.1, 100, 0, 300, type=ROOT.TH2F)
-        ## self.book(folder, "e1_e2_CosThetaStar#e1_e2_Mass", "e1_e2_CosThetaStar#e1_e2_Mass", 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
-        ## self.book(folder, "e1_t_CosThetaStar#e1_e2_Mass" , "e1_t_CosThetaStar#e1_e2_Mass" , 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
-        ## self.book(folder, "e2_t_CosThetaStar#e1_e2_Mass" , "e2_t_CosThetaStar#e1_e2_Mass" , 110, 0., 1.1, 120, 0, 120, type=ROOT.TH2F)
+        #self.book(folder, "logic_cut_met"     , "logic_cut_met"     , 2, 0, 2)
 
-        self.book(folder, "logic_cut_met"     , "logic_cut_met"     , 2, 0, 2)
-
-        #self.book(folder, "logic_cut_1" ,"logic_cut_1", 2, 0.,2.)
-
-        #Book additial histograms for signal MC
-        ## if 'VH' in os.environ['megatarget'] and folder == 'ss/p1p2p3' and 'VHTests' in os.environ and os.environ['VHTests'] == 'YES':
-        ##     self.book(folder, "true_mass", "True Mass", 200, 0, 200)
-        ##     self.book(folder, "higgsLPt"        , "p_{T} lepton from higgs vs p_{T} lepton from W", 100, 0, 100, 100, 0, 100, type=ROOT.TH2F)
-        ##     self.book(folder, "higgsLIso"       , "Isolation lepton from higgs vs Isolation lepton from W", 100, 0, 0.3, 100, 0, 0.3, type=ROOT.TH2F)
-        ##     self.book(folder, "higgsLMtToMet"   , "M_{T} lepton from higgs vs M_{T} lepton from W", 100, 0, 200, 100, 0, 200, type=ROOT.TH2F)
-        ##     self.book(folder, 'higgsLMtToMet_1d', "difference between lepton coming from higgs and the one from W", 100, -200, 200)
-        ##     self.book(folder, 'higgsLIso_1d'    , "difference between lepton coming from higgs and the one from W", 100, -0.3, 0.3)
-        ##     self.book(folder, 'higgsLPt_1d'     , "difference between lepton coming from higgs and the one from W", 100, -100, 100)
-        ##     self.book(folder, 'higgsTDR_1d', "", 100, -10, 10)
-        ##     self.book(folder, 'higgsTPt_1d', "", 100, -100, 100)
-        ##     self.book(folder, 'higgsDPhiMet', "", 100, -7,7)
-        ##     self.book(folder, 'H_LMtToMet', "", 100, 0, 200)
-        ##     self.book(folder, 'H_LIso'    , "", 100, 0, 0.3) 
-        ##     self.book(folder, 'H_LPt'     , "", 100, 0, 100) 
-        ##     self.book(folder, 'W_LMtToMet', "", 100, 0, 200)
-        ##     self.book(folder, 'W_LIso'    , "", 100, 0, 0.3) 
-        ##     self.book(folder, 'W_LPt'     , "", 100, 0, 100) 
             
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
-    def preselection(self, row):
+    def preselection(self, row, cut_flow_trk = None, LT_threshold = 80.):
         ''' Preselection applied to events.
 
         Excludes FR object IDs and sign cut.
         '''
-        #object basic selections
         if not row.doubleEPass:                   return False
 	if not (row.e1MatchesDoubleEPath > 0 and \
 		row.e2MatchesDoubleEPath > 0): return False 
-        if row.e1Pt < 20:                         return False
-        if not selections.eSelection(row, 'e1'):  return False
-        if not selections.eSelection(row, 'e2'):  return False
-        if not selections.tauSelection(row, 't'): return False
-        if row.e1_e2_SS and row.e1_t_SS         : return False #remove three SS leptons
+        cut_flow_trk.Fill('trigger')
 
+        if not selections.eSelection(row, 'e1'):  return False
+        cut_flow_trk.Fill('obj1 Presel')
+
+        if not selections.eSelection(row, 'e2'):  return False
+        cut_flow_trk.Fill('obj2 Presel')
+
+        if not selections.tauSelection(row, 't'): return False
+        if not row.tAntiMuonLoose:   return False
+        cut_flow_trk.Fill('obj3 Presel')
+
+        if row.LT < LT_threshold: return False
+        cut_flow_trk.Fill('LT')
+
+        if row.e1_e2_SS and row.e1_t_SS         : return False #remove three SS leptons
         if row.e1_e2_Mass < 20:                   return False
-        if row.LT < selections.lt_lower_threshold:return False
         if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
+        cut_flow_trk.Fill('vetos')
 
         #REMOVE CHARGE FAKES!
-        if self.logic_cut_met(row, 1.) == (0.5,1.): return False
+        if not self.logic_cut_met(row, 1.): return False
+        cut_flow_trk.Fill('charge_fakes')  
 
-        if not row.tAntiMuonLoose:   return False
         return True
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
@@ -258,13 +242,13 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
-    def obj1_id(row):
-        return selections.leading_lepton_id_iso(row, 'e1')
+    def obj1_id(row, leadleptonId='h2taucuts', subleadleptonId=None):
+        return selections.lepton_ids[leadleptonId](row, 'e1')
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
-    def obj2_id(row):
-        return selections.subleading_lepton_id_iso(row, 'e2')
+    def obj2_id(row, leadleptonId=None, subleadleptonId='h2taucuts'):
+        return selections.lepton_ids[subleadleptonId](row, 'e2')
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
@@ -280,9 +264,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
         if row.e2_t_Zcompat < 20 or row.e1_t_Zcompat < 20 :
             if not row.tAntiElectronMVA3Medium:
                 return False
-        elif not row.tAntiElectronMVA3Loose:
-            return False
-        return True
+        return row.tAntiElectronMVA3Loose
 
     def enhance_wz(self, row):
         # Require the "tau" to be a electron, and require the third electron
@@ -300,24 +282,22 @@ class WHAnalyzeEET(WHAnalyzerBase):
             mcCorrectors.get_electron_corrections(row,'e1','e2')
 
    
-    def obj1_weight(self, row):
-        return frfits.highpt_ee_fr(max(row.e1JetPt, row.e1Pt))
+    def obj1_weight(self, row, leadleptonId='h2taucuts', subleadleptonId=None):
+        return frfits.highpt_ee_fr[leadleptonId](max(row.e1JetPt, row.e1Pt))
 
-    def obj2_weight(self, row):
-	return frfits.lowpt_ee_fr(max(row.e1JetPt, row.e1Pt))
+    def obj2_weight(self, row, leadleptonId=None, subleadleptonId='h2taucuts'):
+	return frfits.lowpt_ee_fr[subleadleptonId](max(row.e1JetPt, row.e1Pt))
 
-    def obj3_weight(self, row):
+    def obj3_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_fr(row.tPt)
 
-    def obj1_qcd_weight(self, row):
-	#return frfits.highpt_ee_qcd_fr(max(row.e1JetPt, row.e1Pt))
-        return frfits.highpt_ee_qcd_fr(max(row.e1JetPt, row.e1Pt))
+    def obj1_qcd_weight(self, row, leadleptonId='h2taucuts', subleadleptonId=None):
+        return frfits.highpt_ee_qcd_fr[leadleptonId](max(row.e1JetPt, row.e1Pt))
 
-    def obj2_qcd_weight(self, row):
-	#return frfits.lowpt_ee_qcd_fr(max(row.e2JetPt, row.e2Pt))
-        return frfits.lowpt_ee_qcd_fr(max(row.e2JetPt, row.e2Pt))
+    def obj2_qcd_weight(self, row, leadleptonId=None, subleadleptonId='h2taucuts'):
+        return frfits.lowpt_ee_qcd_fr[subleadleptonId](max(row.e2JetPt, row.e2Pt))
 
-    def obj3_qcd_weight(self, row):
+    def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_qcd_fr(row.tPt)
 
     # For measuring charge flip probability
@@ -325,17 +305,17 @@ class WHAnalyzeEET(WHAnalyzerBase):
     def obj1_obj3_SS(self, row):
         return not row.e1_t_SS
 
-    def obj1_charge_flip(self, row):
-        return frfits.e_charge_flip(row.e1AbsEta,row.e1Pt) #highpt_e_charge_flip
+    def obj1_charge_flip(self, row, leadleptonId='h2taucuts', subleadleptonId=None):
+        return frfits.e_charge_flip[leadleptonId](row.e1AbsEta,row.e1Pt) #highpt_e_charge_flip
 
-    def obj2_charge_flip(self, row):
-        return frfits.e_charge_flip(row.e2AbsEta,row.e2Pt) #lowpt_e_charge_flip
+    def obj2_charge_flip(self, row, leadleptonId=None, subleadleptonId='h2taucuts'):
+        return frfits.e_charge_flip[subleadleptonId](row.e2AbsEta,row.e2Pt) #lowpt_e_charge_flip
 
-    def obj1_charge_flip_sysup(self, row):
-        return frfits.e_charge_flip_up(row.e1AbsEta,row.e1Pt) #highpt_e_charge_flip
+    def obj1_charge_flip_sysup(self, row, leadleptonId='h2taucuts', subleadleptonId=None):
+        return frfits.e_charge_flip_up[leadleptonId](row.e1AbsEta,row.e1Pt) #highpt_e_charge_flip
 
-    def obj2_charge_flip_sysup(self, row):
-        return frfits.e_charge_flip_up(row.e2AbsEta,row.e2Pt) #lowpt_e_charge_flip
+    def obj2_charge_flip_sysup(self, row, leadleptonId=None, subleadleptonId='h2taucuts'):
+        return frfits.e_charge_flip_up[subleadleptonId](row.e2AbsEta,row.e2Pt) #lowpt_e_charge_flip
 
 
 
