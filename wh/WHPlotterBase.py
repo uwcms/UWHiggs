@@ -201,8 +201,12 @@ class WHPlotterBase(Plotter):
     def make_signal_views(self, rebin, unblinded=False, qcd_weight_fraction=0):
         ''' Make signal views with FR background estimation '''
 
-        wz_view = views.SubdirectoryView(
-            self.rebin_view(self.get_view('WZJetsTo3LNu*'), rebin),
+        wz_view_tautau = views.SubdirectoryView(
+            self.rebin_view(self.get_view('WZJetsTo3LNu*ZToTauTau*'), rebin),
+            'ss/p1p2p3/'
+        )
+        wz_view_3l = views.SubdirectoryView(
+            self.rebin_view(self.get_view('WZJetsTo3LNu_pythia'), rebin),
             'ss/p1p2p3/'
         )
         zz_view = views.SubdirectoryView(
@@ -289,7 +293,8 @@ class WHPlotterBase(Plotter):
         charge_fakes = MedianView(highv=charge_fakes_sysup, centv=charge_fakes)
 
         output = {
-            'wz': wz_view,
+            'wz': wz_view_tautau,
+            'wz_3l': wz_view_3l,
             'zz': zz_view,
             'data': data_view,
             'obj1': obj1_view,
@@ -352,7 +357,11 @@ class WHPlotterBase(Plotter):
         ''' Make views when obj3 fails, estimating the bkg in obj1 pass using
             f1p2f3 '''
         wz_view = views.SubdirectoryView(
-            self.rebin_view(self.get_view('WZJetsTo3LNu*'), rebin),
+            self.rebin_view(self.get_view('WZJetsTo3LNu*ZToTauTau*'), rebin),
+            'ss/p1p2f3/'
+        )
+        wz_view_3l = views.SubdirectoryView(
+            self.rebin_view(self.get_view('WZJetsTo3LNu_pythia'), rebin),
             'ss/p1p2f3/'
         )
         zz_view = views.SubdirectoryView(
@@ -450,6 +459,7 @@ class WHPlotterBase(Plotter):
                 
         output = {
             'wz': wz_view,
+            'wz_3l': wz_view_3l,
             'zz': zz_view,
             'data': data_view,
             'obj1': obj1_view,
@@ -522,7 +532,7 @@ class WHPlotterBase(Plotter):
         sig_view = self.make_signal_views(rebin, unblinded=(not self.blind),
                                           qcd_weight_fraction=qcd_fraction)
         outdir.cd()
-        wz = sig_view['wz'].Get(variable)
+        wz = views.SumView(sig_view['wz'], sig_view['wz_3l']).Get(variable)
         zz = sig_view['zz'].Get(variable)
         obs = sig_view['data'].Get(variable)
         fakes = sig_view['fakes'].Get(variable)
@@ -551,8 +561,8 @@ class WHPlotterBase(Plotter):
         if show_charge_fakes:
             logging.info('adding charge fakes shape errors')
             charge_fakes = sig_view['charge_fakes'].Get(variable, sys2stat=False)
-            charge_fakes_sys_up = sig_view['charge_fakes'].Get(variable, shift='up') 
-            charge_fakes_sys_down = sig_view['charge_fakes'].Get(variable, shift='down') 
+            charge_fakes_sys_up = sig_view['charge_fakes'].Get(variable, sys2stat=False) #shift='up') 
+            charge_fakes_sys_down = sig_view['charge_fakes'].Get(variable, sys2stat=False) #shift='down') 
             charge_fakes.SetName('charge_fakes')
             charge_fakes_sys_up.SetName('charge_fakes_CMS_vhtt_%s_chargeFlip_%sTeVUp' % (self.channel.lower(), self.sqrts))
             charge_fakes_sys_down.SetName('charge_fakes_CMS_vhtt_%s_chargeFlip_%sTeVDown' % (self.channel.lower(), self.sqrts))
@@ -587,10 +597,10 @@ class WHPlotterBase(Plotter):
 
         # Fudge factor to go from 120->125 - change in xsec*BR
         vh_10x = views.ScaleView(vh_10x, .783)
-        tostack = [sig_view['wz'], sig_view['zz'], sig_view['fakes'], vh_10x] if stack_higgs else \
-            [sig_view['wz'], sig_view['zz'], sig_view['fakes']]
+        tostack = [sig_view['wz_3l'], sig_view['zz'], sig_view['wz'], sig_view['fakes'], vh_10x] if stack_higgs else \
+            [sig_view['wz_3l'], sig_view['zz'], sig_view['wz'], sig_view['fakes']]
         if show_charge_fakes:
-            tostack = [sig_view['charge_fakes']]+tostack
+            tostack = tostack+[sig_view['charge_fakes']]
         stack = views.StackView( *tostack )
         histo = stack.Get(variable)
         
@@ -670,6 +680,7 @@ class WHPlotterBase(Plotter):
         stack = views.StackView(
             sig_view['zz'],
             sig_view['charge_fakes'],
+            sig_view['wz_3l'],
             sig_view['wz'],
             sig_view['fakes'],
         )

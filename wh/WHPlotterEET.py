@@ -17,7 +17,7 @@ import rootpy.plotting.views as views
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 #from pudb import set_trace; set_trace()
 
-#logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 class WHPlotterEET(WHPlotterBase.WHPlotterBase):
     def __init__(self):
@@ -158,7 +158,6 @@ if __name__ == "__main__":
 
     plotter.plot_final('LT', 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-LT')
 
     rebin=20
@@ -174,127 +173,124 @@ if __name__ == "__main__":
     sign_hist= vh_10x.Get('tToMETDPhi')
     sign_hist.Draw('same')
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-f3-tToMETDPhi')
 
     plotter.plot_final('e1_e2_Mass', 10, qcd_weight_fraction=0.5, stack_higgs=False,
                        maxy='auto', show_error=True, x_range=[20,120], leftside_legend=True,
                        xaxis='M_{ee} (GeV)')
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-e1_e2_Mass')
 
     plotter.plot_final('pt_ratio', 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-pt_ratio')
 
     plotter.plot_final('type1_pfMetEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-metEt')
 
     plotter.plot_final_f3('type1_pfMetEt'    , 5, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-f3-metEt')
+
+    plotter.plot_final('Mass'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', show_error=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-Mass')
+
+    plotter.plot_final_f3('Mass'    , 5, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
+    plotter.add_cms_blurb(sqrts)
+    plotter.save('study-f3-Mass')
+
 
     plotter.plot_final('e1_e2_Pt'    , 1, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,300])
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-e1_e2_Pt')
 
     plotter.plot_final('e1_e2_DR'    , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,6])
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-e1_e2_DR')
 
-    plotter.plot_final('logic_cut_met', 1, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-    plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
-    plotter.save('study-logic_cut_met')
+##     plotter.plot_final('logic_cut_met', 1, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+##     plotter.add_cms_blurb(sqrts)
+##     plotter.save('study-logic_cut_met')
 
     plotter.plot_final("e1_e2_CosThetaStar", 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-e1_e2_CosThetaStar')
     plotter.plot_final("e1_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-e1_t_CosThetaStar')
     plotter.plot_final("e2_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-e2_t_CosThetaStar')
 
     plotter.defaults['show_charge_fakes'] = False
     plotter.plot_final("e1_e2_CosThetaStar", 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-e1_e2_CosThetaStar-nochargefakes')
     plotter.plot_final("e1_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-e1_t_CosThetaStar-nochargefakes')
     plotter.plot_final("e2_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-e2_t_CosThetaStar-nochargefakes')
     plotter.defaults['show_charge_fakes'] = True
 
     plotter.plot_final_f3("e1_e2_CosThetaStar", 10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-f3-e1_e2_CosThetaStar')
     plotter.plot_final_f3("e1_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-f3-e1_t_CosThetaStar')
     plotter.plot_final_f3("e2_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-f3-e2_t_CosThetaStar')
 
     plotter.plot_final_f3('e1_e2_DR',  10, qcd_weight_fraction=0.5, maxy='auto', x_range=[0,6])
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-f3-e1_e2_DR')
 
     plotter.plot_final_f3('e1_e2_Pt',  1, qcd_weight_fraction=0.5, maxy='auto', x_range=[0,300])
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-f3-e1_e2_Pt')
 
     plotter.plot_final_f3('e1Pt',  10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-f3-e1Pt')
 
     plotter.plot_final_f3('e2Pt',  10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-f3-e2Pt')
 
     plotter.plot_final_f3('e1_e2_Mass', 2, qcd_weight_fraction=0.5, show_error=True, maxy=80, x_range=[60,120],xaxis='M_{ee} (GeV)')
     plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetLogy(True)
     plotter.save('study-f3-e1_e2_Mass')
 
     plotter.plot_final_f3('e2_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', show_error=True, maxy='auto')
     plotter.add_cms_blurb(sqrts)
+    plotter.canvas.SetGridx()
+    plotter.canvas.SetGridy()
     plotter.save('study-f3-subMass')
+    plotter.canvas.SetGridx()
+    plotter.canvas.SetGridy()
     plotter.canvas.SetLogy(True)
     plotter.save('study-f3-subMass-logscale')
 
-    plotter.defaults['show_charge_fakes'] = False
-    plotter.plot_final('e2_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
+    plotter.plot_final('e2_t_Mass', 10, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
     plotter.add_cms_blurb(sqrts)
+    plotter.canvas.SetGridx()
+    plotter.canvas.SetGridy()
     plotter.save('study-subMass')
+    plotter.canvas.SetGridx()
+    plotter.canvas.SetGridy()
+    plotter.canvas.SetLogy(True)
+    plotter.save('study-subMass-logscale')
 
-    plotter.plot_final('e1_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
+    plotter.plot_final('e1_t_Mass', 10, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
     plotter.add_cms_blurb(sqrts)
-    plotter.save('study-LeadMass')
-    plotter.defaults['show_charge_fakes'] = True
+    plotter.save('study-leadMass')
+    plotter.canvas.SetLogy(True)
+    plotter.save('study-leadMass-logscale')
 
     plotter.plot_final_f3('e1_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', show_error=True, maxy='auto')
     plotter.add_cms_blurb(sqrts)
