@@ -48,6 +48,11 @@ muon_pog_PFTight_2012 = MuonPOGCorrections.make_muon_pog_PFTight_2012()
 muon_pog_PFRelIsoDB02_2011 = MuonPOGCorrections.make_muon_pog_PFRelIsoDB012_2011()
 muon_pog_PFRelIsoDB02_2012 = MuonPOGCorrections.make_muon_pog_PFRelIsoDB012_2012()
 
+muon_pog_IsoMu24eta2p1_2011 = MuonPOGCorrections.make_muon_pog_IsoMu24eta2p1_2011()
+muon_pog_IsoMu24eta2p1_2012 = MuonPOGCorrections.make_muon_pog_IsoMu24eta2p1_2012()
+
+
+
 # Get object ID and trigger corrector functions
 def mc_corrector_2011(row):
     if row.run > 2:
@@ -56,7 +61,8 @@ def mc_corrector_2011(row):
     #pu = 1
     m1id = muon_pog_PFTight_2011(row.mPt, row.mEta)
     m1iso = muon_pog_PFRelIsoDB02_2011(row.mPt, row.mEta)
-    m_trg = H2TauCorrections.correct_mueg_mu_2011(row.mPt, row.mAbsEta)
+#    m_trg = H2TauCorrections.correct_mueg_mu_2011(row.mPt, row.mAbsEta)
+#    m_trg = muon_pog_IsoMu24eta2p1_2011(row.mPt, row.mAbsEta)     // Figure out  how to fix this ones
     return pu*m1id*m1iso*m_trg
 
 def mc_corrector_2012(row):
@@ -65,7 +71,8 @@ def mc_corrector_2012(row):
     pu = pu_corrector(row.nTruePU)
     m1id = muon_pog_PFTight_2012(row.mPt, row.mEta)
     m1iso = muon_pog_PFRelIsoDB02_2012(row.mPt, row.mEta)
-    m_trg = H2TauCorrections.correct_mueg_mu_2012(row.mPt, row.mAbsEta)
+#    m_trg = H2TauCorrections.correct_mueg_mu_2012(row.mPt, row.mAbsEta)
+    m_trg = muon_pog_IsoMu24eta2p1_2012(row.mPt, row.mAbsEta)
     return pu*m1id*m1iso*m_trg
 
 # Determine which set of corrections to use
