@@ -48,7 +48,7 @@ muon_pog_PFTight_2012 = MuonPOGCorrections.make_muon_pog_PFTight_2012()
 muon_pog_PFRelIsoDB02_2011 = MuonPOGCorrections.make_muon_pog_PFRelIsoDB012_2011()
 muon_pog_PFRelIsoDB02_2012 = MuonPOGCorrections.make_muon_pog_PFRelIsoDB012_2012()
 
-muon_pog_IsoMu24eta2p1_2011 = MuonPOGCorrections.make_muon_pog_IsoMu24eta2p1_2011()
+#muon_pog_IsoMu24eta2p1_2011 = MuonPOGCorrections.make_muon_pog_IsoMu24eta2p1_2011() //  This does not exist,  yet :-)
 muon_pog_IsoMu24eta2p1_2012 = MuonPOGCorrections.make_muon_pog_IsoMu24eta2p1_2012()
 
 
@@ -62,7 +62,7 @@ def mc_corrector_2011(row):
     m1id = muon_pog_PFTight_2011(row.mPt, row.mEta)
     m1iso = muon_pog_PFRelIsoDB02_2011(row.mPt, row.mEta)
 #    m_trg = H2TauCorrections.correct_mueg_mu_2011(row.mPt, row.mAbsEta)
-#    m_trg = muon_pog_IsoMu24eta2p1_2011(row.mPt, row.mAbsEta)     // Figure out  how to fix this ones
+#    m_trg = muon_pog_IsoMu24eta2p1_2011(row.mPt, row.mAbsEta)     // Future: Figure out  how to fix this ones (see comment in FSA/T&P/MuonPOGCorrections
     return pu*m1id*m1iso*m_trg
 
 def mc_corrector_2012(row):
