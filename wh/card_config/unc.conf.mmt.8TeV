@@ -6,7 +6,6 @@
 
 lumi_8TeV               lnN
 
-CMS_eff_e               lnN
 CMS_eff_m               lnN
 CMS_eff_t               lnN
 
@@ -14,13 +13,11 @@ CMS_fake_b_8TeV         lnN
 
 CMS_scale_t             lnN
 
-CMS_vhtt_emt_fakes_8TeV lnN
 CMS_vhtt_mmt_fakes_8TeV lnN
-CMS_vhtt_eet_fakes_8TeV lnN
 
 pdf_qqbar               lnN
 QCDscale_VH             lnN
 QCDscale_VV             lnN
 
 # Only for testing.
-CMS_vhtt_llt_fakes lnN
+#CMS_vhtt_llt_fakes lnN

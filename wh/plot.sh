@@ -5,20 +5,24 @@ set -o nounset
 set -o errexit
 
 source jobid.sh
-export jobid=$jobid7
-python WHPlotterEMT.py
-python WHPlotterMMT.py
-python PlotControlZMM.py
-python PlotControlEM.py
-#DumpMCvsData.py --files results/$jobid/FakeRatesMM/*root --lumifiles inputs/$jobid/*sum  --rebin 1  --outputdir results/$jobid/plots/FakeRatesMM_dump
-#DumpMCvsData.py --files results/$jobid/FakeRatesME/*root --lumifiles inputs/$jobid/*sum  --rebin 1  --outputdir results/$jobid/plots/FakeRatesME_dump
-#DumpMCvsData.py --files results/$jobid/FakeRatesMMM/*root --lumifiles inputs/$jobid/*sum  --rebin 1  --outputdir results/$jobid/plots/FakeRatesMMM_dump
-
+#export jobid=$jobid7
+#rake plot_zee 
+#rake plot_eet
+#
+#rake plot_em
+#rake plot_emt
+#
+#rake plot_zmm 
+#rake plot_mmt
+#python plots_for_prepp.py 
+#
 export jobid=$jobid8
-python WHPlotterEMT.py
-python WHPlotterMMT.py
-python PlotControlZMM.py
-python PlotControlEM.py
-#DumpMCvsData.py --files results/$jobid/FakeRatesMM/*root --lumifiles inputs/$jobid/*sum  --rebin 1  --outputdir results/$jobid/plots/FakeRatesMM_dump
-#DumpMCvsData.py --files results/$jobid/FakeRatesME/*root --lumifiles inputs/$jobid/*sum  --rebin 1  --outputdir results/$jobid/plots/FakeRatesME_dump
-#DumpMCvsData.py --files results/$jobid/FakeRatesMMM/*root --lumifiles inputs/$jobid/*sum  --rebin 1  --outputdir results/$jobid/plots/FakeRatesMMM_dump
+rake plot_zee 
+rake plot_eet
+
+rake plot_em
+rake plot_emt
+
+rake plot_zmm 
+rake plot_mmt
+python plots_for_prepp.py 

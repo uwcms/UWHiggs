@@ -10,72 +10,14 @@ import EMuTree
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 import glob
 import os
-import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
-import FinalStateAnalysis.TagAndProbe.H2TauCorrections as H2TauCorrections
-import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
-from FinalStateAnalysis.StatTools.RooFunctorFromWS import build_roofunctor
-
-###############################################################################
-#### MC-DATA and PU corrections ###############################################
-###############################################################################
+import mcCorrectors
+import baseSelections as selections
+import fakerate_functions as frfits
 
 # Determine MC-DATA corrections
 is7TeV = bool('7TeV' in os.environ['jobid'])
 print "Is 7TeV:", is7TeV
 use_iso_trigger = not is7TeV
-
-mc_pu_tag = 'S6' if is7TeV else 'S10'
-if 'HWW3l' in os.environ['megatarget'] and not is7TeV:
-    print "Using S6_600bins PU weights for HWW3l"
-    mc_pu_tag = 'S6_600bins'
-    use_iso_trigger = False
-
-# Make PU corrector from expected data PU distribution
-# PU corrections .root files from pileupCalc.py
-pu_distributions = glob.glob(os.path.join(
-    'inputs', os.environ['jobid'], 'data_MuEG*pu.root'))
-pu_corrector = PileupWeight.PileupWeight(mc_pu_tag, *pu_distributions)
-
-muon_pog_PFTight_2011 = MuonPOGCorrections.make_muon_pog_PFTight_2011()
-muon_pog_PFRelIsoDB_2011 = MuonPOGCorrections.\
-    make_muon_pog_PFRelIsoDB012_2011()
-
-frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
-lowpt_e_fr = build_roofunctor(
-    #frfit_dir + '/e_qcd_pt10_h2taucuts_ePt.root',
-    frfit_dir + '/e_wjets_pt10_h2taucuts_ePt.root',
-    'fit_efficiency',  # workspace name
-    'efficiency'
-)
-
-
-def mc_corrector_2011(row):
-    # Get object ID and trigger corrector functions
-    if row.run > 2:
-        return 1
-    pu = pu_corrector(row.nTruePU)
-    m1idiso = muon_pog_PFRelIsoDB_2011(row.mPt, row.mAbsEta) * \
-        muon_pog_PFTight_2011(row.mPt, row.mAbsEta)
-    e2idiso = H2TauCorrections.correct_e_idiso_2011(row.ePt, row.eAbsEta)
-    m_trg = H2TauCorrections.correct_mueg_mu_2011(row.mPt, row.mAbsEta)
-    e_trg = H2TauCorrections.correct_mueg_e_2011(row.ePt, row.eAbsEta)
-    return pu * m1idiso * e2idiso * m_trg * e_trg
-
-
-def mc_corrector_2012(row):
-    if row.run > 2:
-        return 1
-    pu = pu_corrector(row.nTruePU)
-    m1idiso = H2TauCorrections.correct_mu_idiso_2012(row.mPt, row.mAbsEta)
-    e2idiso = H2TauCorrections.correct_e_idiso_2012(row.ePt, row.eAbsEta)
-    m_trg = H2TauCorrections.correct_mueg_mu_2012(row.mPt, row.mAbsEta)
-    e_trg = H2TauCorrections.correct_mueg_e_2012(row.ePt, row.eAbsEta)
-    return pu * m1idiso * e2idiso * m_trg * e_trg
-
-# Determine which set of corrections to use
-mc_corrector = mc_corrector_2011
-if not is7TeV:
-    mc_corrector = mc_corrector_2012
 
 
 class ControlEM(MegaBase):
@@ -89,6 +31,7 @@ class ControlEM(MegaBase):
         # Histograms for each category
         self.histograms = {}
         self.is7TeV = '7TeV' in os.environ['jobid']
+        self.pucorrector = mcCorrectors.make_puCorrector('mueg')
 
     def begin(self):
         for folder in ['', '/ss', '/f2', '/f2/w2']:
@@ -130,7 +73,11 @@ class ControlEM(MegaBase):
                       'Number of extra CiC tight electrons', 5, -0.5, 4.5)
 
     def correction(self, row):
-        return mc_corrector(row)
+        return self.pucorrector(row.nTruePU) * \
+            mcCorrectors.get_muon_corrections(row,'m') * \
+            mcCorrectors.get_electron_corrections(row,'e') * \
+            mcCorrectors.correct_mueg_mu(row.mPt, row.mAbsEta) * \
+            mcCorrectors.correct_mueg_e(row.ePt, row.eAbsEta)
 
     def fill_histos(self, row):
         histos = self.histograms
@@ -171,40 +118,12 @@ class ControlEM(MegaBase):
 
         Excludes FR object IDs and sign cut.
         '''
-        if not use_iso_trigger:
-            if not row.mu17ele8Pass:
-                return False
-        elif not row.mu17ele8isoPass:
-            return False
-
-        if row.mPt < 20:
-            return False
-        if row.ePt < 10:
-            return False
-        if row.mAbsEta > 2.4:
-            return False
-        if row.eAbsEta > 2.5:
-            return False
-        if abs(row.eDZ) > 0.2:
-            return False
-        if abs(row.mDZ) > 0.2:
-            return False
-        if row.muVetoPt5:
-            return False
-        if row.bjetVeto:
-            return False
-        if row.tauVetoPt20:
-            return False
-        if row.eVetoCicTightIso:
-            return False
-        if not row.mPixHits:
-            return False
-        if row.eMissingHits:
-            return False
-        if row.eHasConversion:
-            return False
-        if not row.eChargeIdTight:
-            return False
+        mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
+        mu8e17 = (row.mu8ele17isoPass and row.ePt >= 20) #if use_iso_trigger else (row.mu17ele8Pass and row.mPt < 20)
+        if not (mu17e8 or mu8e17):                return False
+        if not selections.muSelection(row, 'm'):  return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
+        if not selections.eSelection(row, 'e'):   return False #applies basic selection (eta, pt > 10, DZ, missingHits, jetBTag, HasConversion and chargedIdTight)
+        if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
         return True
 
     def obj1_id(self, row):
@@ -218,7 +137,12 @@ class ControlEM(MegaBase):
             (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479))
 
     def obj2_weight(self, row):
-        fr = lowpt_e_fr(row.ePt)
+        mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
+        fr = 0.
+        if mu17e8:
+            fr = frfits.lowpt_e_fr(max(row.eJetPt, row.ePt))
+        else:
+            fr = frfits.highpt_e_fr(max(row.eJetPt, row.ePt))
         return fr / (1. - fr)
 
     def process(self):

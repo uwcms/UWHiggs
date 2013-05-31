@@ -42,12 +42,12 @@ class ZHAnalyzerBase(MegaBase):
         jobid = os.environ['jobid']
         zdec  = self.Z_decay_products()
         ch    = (zdec[0][0]+zdec[1][0]).upper()+channel
-        fname = '/'.join(['results',jobid,'ZHAnalyze'+ch,'abdollah_events.txt'])
+        #fname = '/'.join(['results',jobid,'ZHAnalyze'+ch,'abdollah_events.txt'])
         #print fname
-        if os.path.isfile(fname):
-            self.fileLog = open(fname,'a')
-        else:
-            self.fileLog = open(fname,'w')
+        ## if os.path.isfile(fname):
+        ##     self.fileLog = open(fname,'a')
+        ## else:
+        ##     self.fileLog = open(fname,'w')
         self.histograms = {}
         self.channel = channel
         #Special histograms, data member so child classes can add to this keeping

@@ -16,13 +16,14 @@ Author: Evan K. Friis, UW
 
 import EMuTree
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
+import baseSelections as selections
 import os
 
 def control_region(row):
     # Figure out what control region we are in.
     if row.mRelPFIsoDB < 0.15 and row.mMtToMET > 40 and row.eMtToMET < 30:
         return 'wjets'
-    elif row.mRelPFIsoDB > 0.3 and row.metEt < 25:
+    elif row.mRelPFIsoDB > 0.3 and row.type1_pfMetEt < 25:
         return 'qcd'
     else:
         return None
@@ -40,13 +41,14 @@ class FakeRatesEM(MegaBase):
 
     def begin(self):
         for region in ['wjets', 'qcd']:
-            for denom in ['pt10']:
+            for denom in ['pt10','pt20']:
                 denom_key = (region, denom)
                 denom_histos = {}
                 self.histograms[denom_key] = denom_histos
 
-                for numerator in ['mvaid', 'iso03', 'mvaidiso03',
-                                  'mvaidiso02', 'mvaidiso01', 'h2taucuts']:
+                for numerator in ['id', 'iso03', 'idiso03',
+                                  'idiso02', 'idiso01', 'h2taucuts',
+                                  'h2taucuts020', 'h2taucuts025']:
                     num_key = (region, denom, numerator)
                     num_histos = {}
                     self.histograms[num_key] = num_histos
@@ -68,21 +70,10 @@ class FakeRatesEM(MegaBase):
     def process(self):
 
         def preselection(row):
-            if not row.mu17ele8Pass: return False
             if not row.e_m_SS: return False
-            if not row.mPt > 20: return False
-            if not row.ePt > 10: return False
-            if not row.mAbsEta < 2.4: return False
-            if not row.eAbsEta < 2.5: return False
-            if row.muVetoPt5: return False
-            if row.bjetCSVVeto: return False
-            if row.eVetoCicTightIso: return False
-            if not row.eChargeIdTight: return False
-            if row.tauVetoPt20: return False
-            if row.eHasConversion: return False
-            if row.eMissingHits: return False
-            if not abs(row.mDZ) < 0.2: return False
-            if not abs(row.eDZ) < 0.2: return False
+            if not selections.muSelection(row, 'm'):  return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
+            if not selections.eSelection(row, 'e'):   return False #applies basic selection (eta, pt > 10, DZ, missingHits, jetBTag, HasConversion and chargedIdTight)
+            if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
             return True
         #if self.is7TeV:
             #base_selection = 'mu17ele8Pass && ' + base_selection
@@ -94,6 +85,32 @@ class FakeRatesEM(MegaBase):
             #the_histos['metSignificance'].Fill(row.metSignificance)
             the_histos['mMtToMET'].Fill(row.mMtToMET)
 
+        def fill_region(region,pt_cut):
+            fill(histos[(region, pt_cut)], row)
+
+            if row.eRelPFIsoDB < 0.3:
+                fill(histos[(region, pt_cut, 'iso03')], row)
+
+            if row.eMVAIDH2TauWP:
+                fill(histos[(region, pt_cut, 'id')], row)
+                if row.eRelPFIsoDB < 0.3:
+                    fill(histos[(region, pt_cut, 'idiso03')], row)
+
+                if row.eRelPFIsoDB < 0.2:
+                    fill(histos[(region, pt_cut, 'idiso02')], row)
+
+                if row.eRelPFIsoDB < 0.1:
+                    fill(histos[(region, pt_cut, 'idiso01')], row)
+
+                if (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.1:
+                    fill(histos[(region, pt_cut, 'h2taucuts')], row)
+
+                if (row.eRelPFIsoDB < 0.20 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.15:
+                    fill(histos[(region, pt_cut, 'h2taucuts020')], row)
+
+                if (row.eRelPFIsoDB < 0.25 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.20:
+                    fill(histos[(region, pt_cut, 'h2taucuts025')], row)
+
         histos = self.histograms
         for row in self.tree:
             if not preselection(row):
@@ -102,24 +119,14 @@ class FakeRatesEM(MegaBase):
             if region is None:
                 continue
             # This is a QCD or Wjets
-            fill(histos[(region, 'pt10')], row)
-
-            if row.eRelPFIsoDB < 0.3:
-                fill(histos[(region, 'pt10', 'iso03')], row)
-
-            if row.eMVAIDH2TauWP:
-                fill(histos[(region, 'pt10', 'mvaid')], row)
-                if row.eRelPFIsoDB < 0.3:
-                    fill(histos[(region, 'pt10', 'mvaidiso03')], row)
-
-                if row.eRelPFIsoDB < 0.2:
-                    fill(histos[(region, 'pt10', 'mvaidiso02')], row)
-
-                if row.eRelPFIsoDB < 0.1:
-                    fill(histos[(region, 'pt10', 'mvaidiso01')], row)
-
-                if (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.1:
-                    fill(histos[(region, 'pt10', 'h2taucuts')], row)
+            is7TeV = bool('7TeV' in os.environ['jobid'])
+            use_iso_trigger = not is7TeV
+            mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
+            mu8e17 = (row.mu8ele17isoPass and row.ePt >= 20) #if use_iso_trigger else (row.mu17ele8Pass and row.mPt < 20)
+            if mu17e8:
+                fill_region(region,'pt10')
+            if mu8e17:
+                fill_region(region,'pt20')
 
     def finish(self):
         self.write_histos()

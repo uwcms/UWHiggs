@@ -36,8 +36,11 @@ class FakeRatesMMT(MegaBase):
             denom_histos = {}
             self.histograms[denom_key] = denom_histos
 
-            for numerator in ['mvaloose', 'hpsloose', 'mvamedium',
-                              'hpsmedium']:
+            for numerator in ['mvaloose',
+                              'hpsloose',
+                              'mvamedium',
+                              'hpsmedium',
+                              ]:
                 num_key = (region, denom, numerator)
                 num_histos = {}
                 self.histograms[num_key] = num_histos
@@ -73,7 +76,7 @@ class FakeRatesMMT(MegaBase):
             if row.tMuOverlap: return False
             if row.tCiCTightElecOverlap: return False
             if not row.tAntiMuonTight: return False
-            if not row.tAntiElectronMVA: return False
+            if not row.tAntiElectronMVA3Tight: return False
             if not row.tMtToMET < 30: return False
             return True
 
@@ -91,11 +94,11 @@ class FakeRatesMMT(MegaBase):
             fill(pt20, row)
 
             # Fill numerators
-            if row.tLooseIso:
+            if row.tLooseIso3Hits:
                 fill(histos[('ztt', 'pt20', 'hpsloose')], row)
             if row.tLooseMVAIso:
                 fill(histos[('ztt', 'pt20', 'mvaloose')], row)
-            if row.tMediumIso:
+            if row.tMediumIso3Hits:
                 fill(histos[('ztt', 'pt20', 'hpsmedium')], row)
             if row.tMediumMVAIso:
                 fill(histos[('ztt', 'pt20', 'mvamedium')], row)
