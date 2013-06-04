@@ -88,6 +88,15 @@ class FakeRatesMMM(MegaBase):
                     book_histo('m3JetQGLikelihoodIDvsm3JetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
                     book_histo('m3JetQGMVAIDvsm3JetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
 
+                    book_histo('m3Jetmultvsm3JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+                    book_histo('m3JetmultMLPvsm3JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+                    book_histo('m3JetmultMLPQCvsm3JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+
+                    book_histo('m3Jetmultvsm3JetPt', '', 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('m3JetmultMLPvsm3JetPt', '',  200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('m3JetmultMLPQCvsm3JetPt', '' , 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('m3JetptDvsm3JetPt', '' ,  200, 0, 200, 200, 0, 1,type=ROOT.TH2F)
+
 
     def process(self):
 
@@ -144,8 +153,16 @@ class FakeRatesMMM(MegaBase):
             the_histos['m3JetmultMLP'].Fill(row.m3JetmultMLP)
             the_histos['m3JetQGLikelihoodID'].Fill(row.m3JetQGLikelihoodID)
             the_histos['m3JetQGMVAID'].Fill(row.m3JetQGMVAID)
-  
-           the_histos['m3JetQGLikelihoodIDvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetQGLikelihoodID)
+            the_histos['m3Jetmultvsm3JetptD'].Fill(row.m3JetptD,row.m3Jetmult)
+            the_histos['m3JetmultMLPvsm3JetptD'].Fill(row.m3JetptD,row.m3JetmultMLP) 
+            the_histos['m3JetmultMLPQCvsm3JetptD'].Fill(row.m3JetptD,row.m3JetmultMLPQC)
+ 
+            the_histos['m3Jetmultvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3Jetmult)
+            the_histos['m3JetmultMLPvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetmultMLP)
+            the_histos['m3JetmultMLPQCvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetmultMLPQC)
+            the_histos['m3JetptDvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetptD) 
+        
+            the_histos['m3JetQGLikelihoodIDvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetQGLikelihoodID)
             the_histos['m3JetQGMVAIDvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetQGMVAID)
 
         histos = self.histograms

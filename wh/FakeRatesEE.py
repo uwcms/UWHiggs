@@ -97,6 +97,17 @@ class FakeRatesEE(MegaBase):
                     book_histo('e2JetQGLikelihoodIDvse2JetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
                     book_histo('e2JetQGMVAIDvse2JetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
 
+                    book_histo('e2Jetmultvse2JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+                    book_histo('e2JetmultMLPvse2JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+                    book_histo('e2JetmultMLPQCvse2JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+                    
+                    book_histo('e2Jetmultvse2JetPt', '', 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('e2JetmultMLPvse2JetPt', '',  200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('e2JetmultMLPQCvse2JetPt', '' , 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('e2JetptDvse2JetPt', '' ,  200, 0, 200, 200, 0, 1,type=ROOT.TH2F)
+
+
+
     def process(self):
 
         def preselection(row):
@@ -136,6 +147,15 @@ class FakeRatesEE(MegaBase):
 
             the_histos['e2JetQGLikelihoodIDvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2JetQGLikelihoodID)
             the_histos['e2JetQGMVAIDvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2JetQGMVAID)
+
+            the_histos['e2Jetmultvse2JetptD'].Fill(row.e2JetptD,row.e2Jetmult)
+            the_histos['e2JetmultMLPvse2JetptD'].Fill(row.e2JetptD,row.e2JetmultMLP) 
+            the_histos['e2JetmultMLPQCvse2JetptD'].Fill(row.e2JetptD,row.e2JetmultMLPQC)
+
+            the_histos['e2Jetmultvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2Jetmult)
+            the_histos['e2JetmultMLPvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2JetmultMLP)
+            the_histos['e2JetmultMLPQCvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2JetmultMLPQC)
+            the_histos['e2JetptDvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2JetptD) 
 
 
             if row.e1_e2_Mass > 60 and row.e1_e2_Mass < 120 :

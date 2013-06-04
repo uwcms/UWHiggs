@@ -81,7 +81,14 @@ class FakeRatesEM(MegaBase):
                     book_histo('eJetQGMVAID', "", 200, 0, 1)
                     book_histo('eJetQGLikelihoodIDvseJetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
                     book_histo('eJetQGMVAIDvseJetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
-
+                    book_histo('eJetmultvseJetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+                    book_histo('eJetmultMLPvseJetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+                    book_histo('eJetmultMLPQCvseJetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+`
+                    book_histo('eJetmultvseJetPt', '', 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('eJetmultMLPvseJetPt', '',  200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('eJetmultMLPQCvseJetPt', '' , 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('eJetptDvseJetPt', '' ,  200, 0, 200, 200, 0, 1,type=ROOT.TH2F)
 
     def process(self):
 
@@ -116,6 +123,16 @@ class FakeRatesEM(MegaBase):
             the_histos['eJetQGMVAID'].Fill(row.mJetQGMVAID)
             the_histos['eJetQGLikelihoodIDvseJetPt'].Fill(max(row.eJetPt, row.ePt),row.eJetQGLikelihoodID)
             the_histos['eJetQGMVAIDvseJetPt'].Fill(max(row.eJetPt, row.ePt),row.eJetQGMVAID)
+            the_histos['eJetmultvseJetptD'].Fill(row.eJetptD,row.eJetmult)
+            the_histos['eJetmultMLPvseJetptD'].Fill(row.eJetptD,row.eJetmultMLP) 
+            the_histos['eJetmultMLPQCvseJetptD'].Fill(row.eJetptD,row.eJetmultMLPQC)
+
+            the_histos['eJetmultvseJetPt'].Fill(max(row.eJetPt, row.ePt),row.eJetmult)
+            the_histos['eJetmultMLPvseJetPt'].Fill(max(row.eJetPt, row.ePt),row.eJetmultMLP)
+            the_histos['eJetmultMLPQCvseJetPt'].Fill(max(row.eJetPt, row.ePt),row.eJetmultMLPQC)
+            the_histos['eJetptDvseJetPt'].Fill(max(row.eJetPt, row.ePt),row.eJetptD) 
+
+ 
 
         def fill_region(region,pt_cut):
             fill(histos[(region, pt_cut)], row)
