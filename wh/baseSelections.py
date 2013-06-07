@@ -57,6 +57,23 @@ def summer_2013_eid(row, name):
     elif pT > 20  and abseta > 1.479:
         return ( mva_output > 0.775 )
 
+def summer_2013_eid_tight(row, name):
+    mva_output = getattr(row, getVar(name, 'MVATrigNoIP'))
+    pT    = getattr(row, getVar(name, 'Pt'))
+    abseta= getattr(row, getVar(name, 'AbsEta'))
+    if pT < 20 and abseta < 0.8:
+        return ( mva_output > -0.35 )
+    elif pT < 20 and 0.8 < abseta < 1.479:
+        return ( mva_output > 0.0 )
+    elif pT < 20 and abseta > 1.479:
+        return ( mva_output > 0.025 )
+    elif pT > 20 and abseta < 0.8:
+        return ( mva_output > 0.7 )
+    elif pT > 20 and 0.8 < abseta < 1.479:
+        return ( mva_output > 0.9 )
+    elif pT > 20 and abseta > 1.479:
+        return ( mva_output > 0.8375 )
+
 def lepton_id_iso(row, name, label):
     'One function to rule them all'
     LEPTON_ID = False
@@ -64,8 +81,10 @@ def lepton_id_iso(row, name, label):
     if name[0] == 'e':
         if not label.startswith('eid13'):
             LEPTON_ID = bool(getattr(row, getVar(name, 'MVAIDH2TauWP')))
-        else:
+        elif label.startswith('eid13Loose'):
             LEPTON_ID = summer_2013_eid(row, name)
+        elif label.startswith('eid13Tight'):
+            LEPTON_ID = summer_2013_eid_tight(row, name)
     else:
         LEPTON_ID = getattr(row, getVar(name, 'PFIDTight'))
     if not LEPTON_ID:
