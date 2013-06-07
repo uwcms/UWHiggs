@@ -40,7 +40,7 @@ class FakeRatesEE(MegaBase):
         self.is7TeV = '7TeV' in os.environ['jobid']
 
     def begin(self):
-        for region in ['wjets', 'qcd', 'wjetsNoZmass']:
+        for region in ['wjets', 'qcd', 'wjetsNoZmass', 'qcdNoZmass']:
             for denom in ['pt10', 'pt20']:
                 denom_key = (region, denom)
                 denom_histos = {}
@@ -50,6 +50,8 @@ class FakeRatesEE(MegaBase):
                                   'h2taucuts', 'h2taucuts020', 'h2taucuts025',
                                   'eid13idiso02',
                                   'eid13h2taucuts', 'eid13h2taucuts020',
+                                  'eid13Tightidiso02', 'eid13Tighth2taucuts', 'eid13Tighth2taucuts020',
+                                  'eid13Looseidiso02', 'eid13Looseh2taucuts', 'eid13Looseh2taucuts020',
                                   ]:
                     num_key = (region, denom, numerator)
                     num_histos = {}
@@ -149,22 +151,27 @@ class FakeRatesEE(MegaBase):
                 if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.25 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.20):
                     fill(histos[full_region + ( 'h2taucuts025',)], row)
                 if selections.summer_2013_eid(row, 'e2') and row.e2RelPFIsoDB < 0.2:
-                    fill(histos[full_region + ( 'eid13idiso02',)], row)
+                    fill(histos[full_region + ( 'eid13Looseidiso02',)], row)
                 if selections.summer_2013_eid(row, 'e2') and ((row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1):
-                    fill(histos[full_region + ( 'eid13h2taucuts',)], row)
+                    fill(histos[full_region + ( 'eid13Looseh2taucuts',)], row)
                 if selections.summer_2013_eid(row, 'e2') and ((row.e2RelPFIsoDB < 0.2 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.15):
-                    fill(histos[full_region + ( 'eid13h2taucuts020',)], row)
-
+                    fill(histos[full_region + ( 'eid13Looseh2taucuts020',)], row)
+                if selections.summer_2013_eid_tight(row, 'e2') and row.e2RelPFIsoDB < 0.2:
+                    fill(histos[full_region + ( 'eid13Tightidiso02',)], row)
+                if selections.summer_2013_eid_tight(row, 'e2') and ((row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1):
+                    fill(histos[full_region + ( 'eid13Tighth2taucuts',)], row)
+                if selections.summer_2013_eid_tight(row, 'e2') and ((row.e2RelPFIsoDB < 0.2 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.15):
+                    fill(histos[full_region + ( 'eid13Tighth2taucuts020',)], row)
 
 
             make_region_plots((region, 'pt10'))
-            if region == 'wjets' and not (row.e1_e2_Mass > 70 and row.e1_e2_Mass < 110):
-                make_region_plots(('wjetsNoZmass', 'pt10'))
+            if not (row.e1_e2_Mass > 60 and row.e1_e2_Mass < 120):
+                make_region_plots((region+'NoZmass', 'pt10'))
 
             if row.e2Pt > 20:
                 make_region_plots((region, 'pt20'))
-                if region == 'wjets' and not (row.e1_e2_Mass > 70 and row.e1_e2_Mass < 110):
-                    make_region_plots(('wjetsNoZmass', 'pt20'))
+                if not (row.e1_e2_Mass > 60 and row.e1_e2_Mass < 120):
+                    make_region_plots((region+'NoZmass', 'pt20'))
             
 
     def finish(self):
