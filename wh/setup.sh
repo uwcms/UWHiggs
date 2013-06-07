@@ -11,6 +11,7 @@ source jobid.sh
 #    rake "meta:getmeta[inputs/$jobid, mm/metaInfo, 7]"
 #done
 #
+
 export jobid=$jobid8
 export datasrc=$(ls -d /scratch/*/data/$jobid | awk -F$jobid '{print $1}')
 #./make_proxies.sh

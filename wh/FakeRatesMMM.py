@@ -71,6 +71,31 @@ class FakeRatesMMM(MegaBase):
                     #book_histo('metSignificance', 'MET sig.', 100, 0, 10)
                     book_histo('m1MtToMET', 'Muon 1 MT', 100, 0, 200)
                     book_histo('m3MtToMET', 'Muon 3 MT', 100, 0, 200)
+                    
+                    book_histo('m3JetArea'        , "", 100, 0, 1)
+                    book_histo('m3JetEtaEtaMoment', "", 100, 0, 0.2)
+                    book_histo('m3JetEtaPhiMoment', "", 100, 0, 0.1)
+                    book_histo('m3JetEtaPhiSpread', "", 100, 0, 0.2)
+                    book_histo('m3JetPhiPhiMoment', "", 100, 0, 0.1)
+                    book_histo('m3JetptD', "", 200, 0, 1)
+                    book_histo('m3Jetaxis1', "", 200, 0, 1)
+                    book_histo('m3Jetaxis2', "", 200, 0, 1)
+                    book_histo('m3Jetmult', "", 50, 0, 50)
+                    book_histo('m3JetmultMLPQC', "", 50, 0, 50)
+                    book_histo('m3JetmultMLP', "", 50, 0, 50)
+                    book_histo('m3JetQGLikelihoodID', "", 200, 0, 1)
+                    book_histo('m3JetQGMVAID', "", 200, 0, 1)
+                    book_histo('m3JetQGLikelihoodIDvsm3JetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
+                    book_histo('m3JetQGMVAIDvsm3JetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
+
+                    book_histo('m3Jetmultvsm3JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+                    book_histo('m3JetmultMLPvsm3JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+                    book_histo('m3JetmultMLPQCvsm3JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
+
+                    book_histo('m3Jetmultvsm3JetPt', '', 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('m3JetmultMLPvsm3JetPt', '',  200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('m3JetmultMLPQCvsm3JetPt', '' , 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
+                    book_histo('m3JetptDvsm3JetPt', '' ,  200, 0, 200, 200, 0, 1,type=ROOT.TH2F)
 
 
     def process(self):
@@ -114,6 +139,31 @@ class FakeRatesMMM(MegaBase):
             #the_histos['metSignificance'].Fill(row.metSignificance, weight)
             the_histos['m1MtToMET'].Fill(row.m1MtToMET, weight)
             the_histos['m3MtToMET'].Fill(row.m3MtToMET, weight)
+
+            the_histos['m3JetArea'].Fill(row.m3JetArea)
+            the_histos['m3JetEtaEtaMoment'].Fill( row.m3JetEtaEtaMoment )
+            the_histos['m3JetEtaPhiMoment'].Fill( row.m3JetEtaPhiMoment )
+            the_histos['m3JetEtaPhiSpread'].Fill( row.m3JetEtaPhiSpread )
+            the_histos['m3JetPhiPhiMoment'].Fill( row.m3JetPhiPhiMoment )
+            the_histos['m3JetptD'].Fill(row.m3JetptD)
+            the_histos['m3Jetaxis1'].Fill(row.m3Jetaxis1)
+            the_histos['m3Jetaxis2'].Fill(row.m3Jetaxis2)
+            the_histos['m3Jetmult'].Fill(row.m3Jetmult)
+            the_histos['m3JetmultMLPQC'].Fill(row.m3JetmultMLPQC)
+            the_histos['m3JetmultMLP'].Fill(row.m3JetmultMLP)
+            the_histos['m3JetQGLikelihoodID'].Fill(row.m3JetQGLikelihoodID)
+            the_histos['m3JetQGMVAID'].Fill(row.m3JetQGMVAID)
+            the_histos['m3Jetmultvsm3JetptD'].Fill(row.m3JetptD,row.m3Jetmult)
+            the_histos['m3JetmultMLPvsm3JetptD'].Fill(row.m3JetptD,row.m3JetmultMLP) 
+            the_histos['m3JetmultMLPQCvsm3JetptD'].Fill(row.m3JetptD,row.m3JetmultMLPQC)
+ 
+            the_histos['m3Jetmultvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3Jetmult)
+            the_histos['m3JetmultMLPvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetmultMLP)
+            the_histos['m3JetmultMLPQCvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetmultMLPQC)
+            the_histos['m3JetptDvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetptD) 
+        
+            the_histos['m3JetQGLikelihoodIDvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetQGLikelihoodID)
+            the_histos['m3JetQGMVAIDvsm3JetPt'].Fill(max(row.m3JetPt, row.m3Pt),row.m3JetQGMVAID)
 
         histos = self.histograms
         for row in self.tree:
