@@ -14,6 +14,7 @@ import fakerate_functions as frfits
 import optimizer
 import math
 import array
+from anti_charge_flip_cuts import charge_flip_funcs
 
 #mtr = frfits.mt_likelihood_ratio
 ################################################################################
@@ -23,104 +24,61 @@ import array
 class WHAnalyzeEET(WHAnalyzerBase):
     tree = 'eet/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
+        self.channel = 'EET'	
         super(WHAnalyzeEET, self).__init__(tree, outfile, EETauTree, **kwargs)
         self.hfunc['subMTMass'] = lambda row, weight: (row.e2_t_Mass, weight) if row.e1MtToMET > row.e2MtToMET else (row.e1_t_Mass, weight) #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
-	def make_both_barrel(attribute):
+	def make_both_barrel(fcn, negval=(0.,0.)):
 		def f_(row, weight):
-			return ( getattr(row, attribute), weight ) if row.e1AbsEta < 1.48 and row.e2AbsEta < 1.48 else (0., 0.)
+			return fcn(row, weight) if row.e1AbsEta < 1.48 and row.e2AbsEta < 1.48 else negval
 		return f_
 
-	def make_both_endcap(attribute):
+	def make_both_endcap(fcn, negval=(0.,0.)):
 		def f_(row, weight):
-			return ( getattr(row, attribute), weight ) if row.e1AbsEta >= 1.48 and row.e2AbsEta >= 1.48 else (0., 0.)
+			return fcn(row, weight) if row.e1AbsEta >= 1.48 and row.e2AbsEta >= 1.48 else negval
 		return f_
 
-	def make_mixed(attribute):
+	def make_mixed(fcn, negval=(0.,0.)):
 		def f_(row, weight):
-			return ( getattr(row, attribute), weight ) \
+			return fcn(row, weight) \
 			    if (row.e1AbsEta >= 1.48 and row.e2AbsEta < 1.48) or \
 			    (row.e1AbsEta < 1.48 and row.e2AbsEta >= 1.48) \
-		            else (0., 0.)
+		            else negval
 		return f_
-	
-		
+
+	def attr_getter(attribute):
+            def f(row, weight):
+                return (getattr(row,attribute), weight)
+            return f
+
+	def double_attr_getter(attr1, attr2):
+            def f(row, weight):
+                return ( (getattr(row,attr1), getattr(row,attr1)), weight)
+            return f
+
+        def charge_selector(fcn, chargeIds, negval=(0.,0.)):
+            def f(row, weight):
+                ok = all( getattr(row, chid) for chid in chargeIds )
+                return fcn(row, weight) if ok else negval
+            return f
+
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.e2Pt/row.e1Pt, weight)
         self.hfunc["e*1_e2_Mass"] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e1_e2_Mass), weight)
         self.hfunc["e*1_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e1_t_Mass ), weight)
         self.hfunc["e1_e*2_Mass"] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e1_e2_Mass), weight)
         self.hfunc["e*2_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e2_t_Mass ), weight)
-        self.hfunc["logic_cut_met" ] = self.logic_cut_met
 	self.hfunc["my_selection_info" ] = self.fill_id_info
 
-	self.hfunc["type1_pfMetEt_barr"] = make_both_barrel("type1_pfMetEt")
-	self.hfunc["type1_pfMetEt_endc"] = make_both_endcap("type1_pfMetEt")
-	self.hfunc["type1_pfMetEt_mix" ] = make_mixed("type1_pfMetEt")      
-	self.hfunc["mva_metEt_barr"] = make_both_barrel("mva_metEt")
-	self.hfunc["mva_metEt_endc"] = make_both_endcap("mva_metEt")
-	self.hfunc["mva_metEt_mix" ] = make_mixed("mva_metEt")      
-
-
-        self.hfunc["e2RelPFIsoDB_bar"] = lambda row, weight: ( row.e2RelPFIsoDB, weight ) if row.e2AbsEta < 1.48  else (0., 0.)
-        self.hfunc["e1RelPFIsoDB_bar"] = lambda row, weight: ( row.e1RelPFIsoDB, weight ) if row.e1AbsEta < 1.48  else (0., 0.)
-        self.hfunc["e2RelPFIsoDB_end"] = lambda row, weight: ( row.e2RelPFIsoDB, weight ) if row.e2AbsEta >= 1.48 else (0., 0.)
-        self.hfunc["e1RelPFIsoDB_end"] = lambda row, weight: ( row.e1RelPFIsoDB, weight ) if row.e1AbsEta >= 1.48 else (0., 0.)
-
-
-        self.hfunc["e1_t_CosThetaStar_barr"] = make_both_barrel("e1_t_CosThetaStar")
-        self.hfunc["e1_t_CosThetaStar_endc"] = make_both_endcap("e1_t_CosThetaStar")
-        self.hfunc["e1_t_CosThetaStar_mix" ] = make_mixed("e1_t_CosThetaStar")      
-	self.hfunc["e1_e2_Mass_barr"] = make_both_barrel("e1_e2_Mass")
-	self.hfunc["e1_e2_Mass_endc"] = make_both_endcap("e1_e2_Mass")
-	self.hfunc["e1_e2_Mass_mix" ] = make_mixed("e1_e2_Mass")
-        self.hfunc["electron_rejection_study" ] = self.electron_rejection_study
-	self.hfunc["tau_id_study" ] = self.tau_id_study
+	self.hfunc["e1_e2_Mass_barr"] = make_both_barrel( attr_getter("e1_e2_Mass"))
+	self.hfunc["e1_e2_Mass_endc"] = make_both_endcap( attr_getter("e1_e2_Mass"))
+	self.hfunc["e1_e2_Mass_mix" ] = make_mixed( attr_getter("e1_e2_Mass"))
 
         self.pucorrector = mcCorrectors.make_puCorrector('doublee')
 
     
 
     @staticmethod
-    def logic_cut_met( row, weight):
-        z_Mass_distance = row.e1_e2_Mass - frfits.mass_scaler['h2taucuts'](91.2) \
-            if row.e1_e2_SS else \
-            row.e1_e2_Mass - 91.2
-        z_Mass_distance = abs(z_Mass_distance)
-        if row.e1AbsEta < 1.48 and row.e2AbsEta < 1.48: #both barrel
-            return False \
-		    if row.mva_metEt < 25 and \
-		    z_Mass_distance < 10 \
-		    else True
-        elif row.e1AbsEta < 1.48 or row.e2AbsEta < 1.48: #at least one in barrel
-            return False \
-		    if row.mva_metEt < 40 and \
-		    z_Mass_distance < 10 \
-		    else True
-        else: #both in endcap
-            return False \
-		    if row.mva_metEt < 40 and \
-		    z_Mass_distance < 20 \
-	        else True
-        return True
-
-    @staticmethod
-    def electron_rejection_study( row, weight):
-        if row.tAntiElectronMVA3VTight:
-            return (4.5, weight)
-        elif row.tAntiElectronMVA3Tight:
-            return (3.5, weight)
-        elif row.tAntiElectronMVA3Medium:
-            return (2.5, weight)
-        elif row.tAntiElectronMVA3Loose:
-            return (1.5, weight)
-        return (0.5, weight)
-
-    @staticmethod
-    def tau_id_study( row, weight):
-        if row.tTightIso3Hits:
-            return (2.5, weight)
-        elif row.tMediumIso3Hits:
-            return (1.5, weight)
-        return (0.5, weight)
+    def anti_charge_flip(row, rejection_power=80):
+        return charge_flip_funcs[rejection_power](row)
 
     @staticmethod
     def fill_id_info(row, weight):
@@ -157,13 +115,6 @@ class WHAnalyzeEET(WHAnalyzerBase):
 	    self.book(folder, "tPt", "tPt", 100, 0,100)
 	    self.book(folder, "tAbsEta", "tAbsEta", 100, 0, 2.3)
 
-            self.book(folder, "e2RelPFIsoDB_bar", "e2RelPFIsoDB", 30, 0, 0.3)
-            self.book(folder, "e1RelPFIsoDB_bar", "e1RelPFIsoDB", 30, 0, 0.3)
-            self.book(folder, "e2RelPFIsoDB_end", "e2RelPFIsoDB", 30, 0, 0.3)
-            self.book(folder, "e1RelPFIsoDB_end", "e1RelPFIsoDB", 30, 0, 0.3)
-            self.book(folder, "tau_id_study", "tau_id_study", 3, 0, 3)
-            self.book(folder, "electron_rejection_study", "electron_rejection_study", 5, 0, 5)
-
             #let's look for osme other possible selections
             self.book(folder, "Mass"          , "Mass"      , 100, 0, 1)
             self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
@@ -176,25 +127,9 @@ class WHAnalyzeEET(WHAnalyzerBase):
             self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 300)
             self.book(folder, "mva_metEt"         , "metEt"         , 300, 0, 300)
 
-	    #split into both e in barr/endcap/mixed
-	    self.book(folder, "type1_pfMetEt_barr", "metEt", 300, 0, 300)
-	    self.book(folder, "type1_pfMetEt_endc", "metEt", 300, 0, 300)
-	    self.book(folder, "type1_pfMetEt_mix" , "metEt", 300, 0, 300)
-
-	    self.book(folder, "mva_metEt_barr", "metEt", 300, 0, 300)
-	    self.book(folder, "mva_metEt_endc", "metEt", 300, 0, 300)
-	    self.book(folder, "mva_metEt_mix" , "metEt", 300, 0, 300)
-
-            self.book(folder, "e1_t_CosThetaStar_barr", "e1_t_CosThetaStar" , 110, 0., 1.1)
-            self.book(folder, "e1_t_CosThetaStar_endc", "e1_t_CosThetaStar" , 110, 0., 1.1)
-            self.book(folder, "e1_t_CosThetaStar_mix" , "e1_t_CosThetaStar" , 110, 0., 1.1)
-
-	    self.book(folder, "e1_e2_Mass_barr", "E 1-2 Mass", 120, 0, 120)
-	    self.book(folder, "e1_e2_Mass_endc", "E 1-2 Mass", 120, 0, 120)
-	    self.book(folder, "e1_e2_Mass_mix" , "E 1-2 Mass", 120, 0, 120)
             
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
-    def preselection(self, row, cut_flow_trk = None, LT_threshold = 80.):
+    def preselection(self, row, cut_flow_trk = None, LT_threshold = 80., taupt_thr = 0.):
         ''' Preselection applied to events.
 
         Excludes FR object IDs and sign cut.
@@ -204,27 +139,70 @@ class WHAnalyzeEET(WHAnalyzerBase):
 		row.e2MatchesDoubleEPath > 0): return False 
         cut_flow_trk.Fill('trigger')
 
+	if row.e1Pt < 20:           return False
         if not selections.eSelection(row, 'e1'):  return False
-        cut_flow_trk.Fill('obj1 Presel')
+	cut_flow_trk.Fill('obj1 Presel')
+        #FIXME
+    	#if row.e1Pt < 20:           return False
+	#cut_flow_trk.Fill('pt requirements 1')
+    	#if row.e1AbsEta > 2.5:      return False
+	#cut_flow_trk.Fill('eta requirements 1')
+    	#if row.e1MissingHits:       return False
+	#cut_flow_trk.Fill('MissingHits 1')
+    	#if row.e1HasConversion:     return False
+	#cut_flow_trk.Fill('HasConversion 1')
+    	#if row.e1JetBtag > 3.3:     return False
+	#cut_flow_trk.Fill('JetBtag 1')
+    	#if abs(row.e1DZ) > 0.2:     return False
+	#cut_flow_trk.Fill('DZ 1')
 
         if not selections.eSelection(row, 'e2'):  return False
         cut_flow_trk.Fill('obj2 Presel')
+        #FIXME
+    	#if row.e2Pt < 10:           return False
+	#cut_flow_trk.Fill('pt requirements 2')
+    	#if row.e2AbsEta > 2.5:      return False
+	#cut_flow_trk.Fill('eta requirements 2')
+    	#if row.e2MissingHits:       return False
+	#cut_flow_trk.Fill('MissingHits 2')
+    	#if row.e2HasConversion:     return False
+	#cut_flow_trk.Fill('HasConversion 2')
+    	#if row.e2JetBtag > 3.3:     return False
+	#cut_flow_trk.Fill('JetBtag 2')
+    	#if abs(row.e2DZ) > 0.2:     return False
+	#cut_flow_trk.Fill('DZ 2')
 
         if not selections.tauSelection(row, 't'): return False
+        if row.tPt < taupt_thr: return False
         if not row.tAntiMuonLoose:   return False
         cut_flow_trk.Fill('obj3 Presel')
 
         if row.LT < LT_threshold: return False
         cut_flow_trk.Fill('LT')
 
-        if row.e1_e2_SS and row.e1_t_SS         : return False #remove three SS leptons
-        if row.e1_e2_Mass < 20:                   return False
-        if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
+        if row.e1_e2_SS and row.e1_t_SS: return False #remove three SS leptons
+        if row.e1_e2_Mass < 20:          return False
+        if not selections.vetos(row):    return False #applies mu bjet e additional tau vetoes
         cut_flow_trk.Fill('vetos')
 
         #REMOVE CHARGE FAKES!
-        if not self.logic_cut_met(row, 1.): return False
-        cut_flow_trk.Fill('charge_fakes')  
+        #FIXME
+    	#if not row.e1ChargeIdLoose: return False
+    	#if not row.e2ChargeIdLoose: return False
+	#cut_flow_trk.Fill('ChargeIdLoose')
+        #cut_flow_trk.Fill('charge_fakes')  
+
+        #FIXME: ONLY FOR CUT-FLOW PRODUCTION
+        #if not selections.summer_2013_eid(row, 'e1'): return False
+        #cut_flow_trk.Fill('obj1 ID')
+        #if not selections.lepton_id_iso(row, 'e1', 'h2taucuts'): return False
+        #cut_flow_trk.Fill('obj1 Iso')
+        #if not selections.summer_2013_eid(row, 'e2'): return False
+        #cut_flow_trk.Fill('obj2 ID')
+        #if not selections.lepton_id_iso(row, 'e2', 'h2taucuts'): return False
+        #cut_flow_trk.Fill('obj2 Iso')
+        #if not row.tLooseIso3Hits: return False
+        #cut_flow_trk.Fill('obj3 IDIso')
 
         return True
 
@@ -246,8 +224,11 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
-    def obj3_id(row):
-        return bool(row.tLooseIso3Hits)
+    def obj3_id(row, tauId=None, LT_threshold = 80., taupt_thr = 0.):
+        if row.LT >= LT_threshold and row.tPt >= taupt_thr:
+            return bool(row.tLooseIso3Hits)
+        else:
+            return bool( getattr(row, tauId) )
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod

@@ -26,6 +26,7 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     tree = 'emt/final/Ntuple'
 
     def __init__(self, tree, outfile, **kwargs):
+        self.channel = 'EMT'
         super(WHAnalyzeEMT, self).__init__(tree, outfile, EMuTauTree, **kwargs)
         #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
         self.hfunc['subMass']   = lambda row, weight: (row.e_t_Mass, weight)    if row.ePt < row.mPt else (row.m_t_Mass, weight) 
@@ -76,7 +77,7 @@ class WHAnalyzeEMT(WHAnalyzerBase):
 
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
-    def preselection( self, row, cut_flow_trk = None, LT_threshold = 80.):
+    def preselection( self, row, cut_flow_trk = None, LT_threshold = 80., taupt_thr = 0.):
         ''' Preselection applied to events.
 
         Excludes FR object IDs and sign cut.
@@ -105,12 +106,28 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         cut_flow_trk.Fill('trigger')
 
         if not selections.muSelection(row, 'm'):  return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
+        #cut_flow_trk.Fill('pt requirements 1', 'eta requirements 1', 'MissingHits 1', 'HasConversion 1', 'JetBtag 1', 'DZ 1',)
         cut_flow_trk.Fill('obj1 Presel')
 
         if not selections.eSelection(row, 'e'):   return False #applies basic selection (eta, pt > 10, DZ, missingHits, jetBTag, HasConversion and chargedIdTight)
         cut_flow_trk.Fill('obj2 Presel')
+        #FIXME
+        #if row.ePt < 10:           return False
+	#cut_flow_trk.Fill('pt requirements 2')
+    	#if row.eAbsEta > 2.5:      return False
+	#cut_flow_trk.Fill('eta requirements 2')
+    	#if row.eMissingHits:       return False
+	#cut_flow_trk.Fill('MissingHits 2')
+    	#if row.eHasConversion:     return False
+	#cut_flow_trk.Fill('HasConversion 2')
+    	#if row.eJetBtag > 3.3:     return False
+	#cut_flow_trk.Fill('JetBtag 2')
+    	#if abs(row.eDZ) > 0.2:     return False
+	#cut_flow_trk.Fill('DZ 2')
+
 
         if not selections.tauSelection(row, 't'): return False #applies basic selection (eta, pt > 20, DZ)
+        if row.tPt < taupt_thr: return False
         if row.tMuOverlap:         return False
         if not row.tAntiMuonTight: return False
         cut_flow_trk.Fill('obj3 Presel')
@@ -121,7 +138,23 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         if row.e_m_SS and row.e_t_SS: return False #remove three SS leptons
         if not selections.vetos(row): return False #applies mu bjet e additional tau vetoes
         cut_flow_trk.Fill('vetos')
+        #FIXME
+    	if not row.eChargeIdTight: return False
+        #cut_flow_trk.Fill('ChargeIdTight')
+       
         cut_flow_trk.Fill('charge_fakes') #no charge fakes here
+
+        #FIXME: ONLY FOR CUT-FLOW PRODUCTION
+        #if not row.mPFIDTight: return False
+        #cut_flow_trk.Fill('obj1 ID')
+        #if not selections.lepton_id_iso(row, 'm', 'h2taucuts'): return False
+        #cut_flow_trk.Fill('obj1 Iso')
+        #if not selections.summer_2013_eid(row, 'e'): return False
+        #cut_flow_trk.Fill('obj2 ID')
+        #if not selections.lepton_id_iso(row, 'e', 'h2taucuts'): return False
+        #cut_flow_trk.Fill('obj2 Iso')
+        #if not row.tLooseIso3Hits: return False
+        #cut_flow_trk.Fill('obj3 IDIso')
 
         return True
 
@@ -147,8 +180,11 @@ class WHAnalyzeEMT(WHAnalyzerBase):
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
-    def obj3_id( row):
-        return bool(row.tLooseIso3Hits)
+    def obj3_id(row, tauId=None, LT_threshold = 80., taupt_thr = 0.):
+        if row.LT >= LT_threshold and row.tPt >= taupt_thr:
+            return bool(row.tLooseIso3Hits)
+        else:
+            return bool( getattr(row, tauId) )
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod

@@ -20,6 +20,7 @@ import optimizer
 class WHAnalyzeMMT(WHAnalyzerBase):
     tree = 'mmt/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
+        self.channel = 'MMT'
         super(WHAnalyzeMMT, self).__init__(tree, outfile, MuMuTauTree, **kwargs)
         self.hfunc['subMTMass'] = lambda row, weight: (row.m2_t_Mass, weight) if row.m1MtToMET > row.m2MtToMET else (row.m1_t_Mass, weight) #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.m2Pt/row.m1Pt, weight)
@@ -65,7 +66,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
             self.book(folder, "Mass"          , "mass"          , 800, 0, 800 )
             self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
 
-    def preselection(self, row, cut_flow_trk = None, LT_threshold = 80.):
+    def preselection(self, row, cut_flow_trk = None, LT_threshold = 80., taupt_thr = 0.):
         ''' Preselection applied to events.
 
         Excludes FR object IDs and sign cut.
@@ -83,12 +84,16 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         if row.m1Pt < 20:                         return False
         if not selections.muSelection(row, 'm1'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         cut_flow_trk.Fill('obj1 Presel')
+        #cut_flow_trk.Fill('pt requirements 1', 'eta requirements 1', 'MissingHits 1', 'HasConversion 1', 'JetBtag 1', 'DZ 1',)
+
 
         if not selections.muSelection(row, 'm2'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         cut_flow_trk.Fill('obj2 Presel')
+        #cut_flow_trk.Fill('pt requirements 2', 'eta requirements 2', 'MissingHits 2', 'HasConversion 2', 'JetBtag 2', 'DZ 2',)
 
         if not selections.tauSelection(row, 't'): return False #applies basic selection (eta, pt > 20, DZ)
         if not row.tAntiElectronMVA3Loose:        return False
+        if row.tPt < taupt_thr: return False
         cut_flow_trk.Fill('obj3 Presel')
 
         if row.LT < LT_threshold: return False
@@ -98,8 +103,21 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         if row.m1_m2_Mass < 20:          return False
         if not selections.vetos(row):    return False #applies mu bjet e additional tau vetoes
         cut_flow_trk.Fill('vetos')
+        #cut_flow_trk.Fill('ChargeIdTight')
         cut_flow_trk.Fill('charge_fakes') #no charge fakes here
-
+        
+        #FIXME: ONLY FOR CUT-FLOW PRODUCTION
+        #if not row.m1PFIDTight: return False
+        #cut_flow_trk.Fill('obj1 ID')
+        #if not selections.lepton_id_iso(row, 'm1', 'h2taucuts'): return False
+        #cut_flow_trk.Fill('obj1 Iso')
+        #if not row.m2PFIDTight: return False
+        #cut_flow_trk.Fill('obj2 ID')
+        #if not selections.lepton_id_iso(row, 'm2', 'h2taucuts'): return False
+        #cut_flow_trk.Fill('obj2 Iso')
+        #if not row.tLooseIso3Hits: return False
+        #cut_flow_trk.Fill('obj3 IDIso')
+        
         return True
 
     @staticmethod
@@ -116,8 +134,11 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         return selections.lepton_id_iso(row, 'm2', subleadleptonId)
 
     @staticmethod
-    def obj3_id(row):
-        return row.tLooseIso3Hits
+    def obj3_id(row, tauId=None, LT_threshold = 80., taupt_thr = 0.):
+        if row.LT >= LT_threshold and row.tPt >= taupt_thr:
+            return bool(row.tLooseIso3Hits)
+        else:
+            return bool( getattr(row, tauId) )
     
     @staticmethod
     def anti_wz(row):
@@ -170,3 +191,4 @@ class WHAnalyzeMMT(WHAnalyzerBase):
 
     ## def obj2_charge_flip(self, row):
     ##     return 0
+
