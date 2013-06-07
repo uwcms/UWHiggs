@@ -114,9 +114,13 @@ if __name__ == "__main__":
         ## plotter.add_cms_blurb(sqrts)
         ## plotter.save('mcdata-ss-p1f2p3-e1Pt')
 
-        ## plotter.plot_mc_vs_data('ss/p1f2p3', 'e2_t_Mass', rebin=10, xaxis='m_{e2#tau} (GeV)', leftside=False)
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('mcdata-ss-p1f2p3-subMass')
+        plotter.plot_mc_vs_data('ss/p1f2p3', 'e2_t_Mass', rebin=10, xaxis='m_{e2#tau} (GeV)', leftside=False)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-ss-p1f2p3-subMass')
+
+        plotter.plot_mc_vs_data('ss/p1f2p3', 'LT', rebin=10, xaxis='LT (GeV)', leftside=False)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-ss-p1f2p3-LT')
 
         ## plotter.plot_mc_vs_data('ss/p1f2p3/w2', 'e1Pt', rebin=10, xaxis='e_{1} p_{T}', leftside=False)
         ## plotter.add_cms_blurb(sqrts)
@@ -417,36 +421,39 @@ if __name__ == "__main__":
     ###########################################################################
     ##  Making shape file     #################################################
     ###########################################################################
-    prefix = options.prefix+'$' if options.prefix else ''
-    plotter.plot_final_f3(prefix+'e2_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', show_error=True, maxy='auto')
-    plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetGridx()
-    plotter.canvas.SetGridy()
-    plotter.save('final-%s-f3-subMass' % options.prefix)
-    plotter.canvas.SetGridx()
-    plotter.canvas.SetGridy()
-    plotter.canvas.SetLogy(True)
-    plotter.save('final-%s-f3-subMass-logscale' % options.prefix)
+    prefixes = [options.prefix+'$'] if options.prefix else ['']
+    prefixes = [i+'$' for i in options.prefixes.split(',') if i] if options.prefixes else prefixes
+    for prefix in prefixes:
+        plotter.plot_final_f3(prefix+'e2_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', show_error=True, maxy='auto')
+        plotter.add_cms_blurb(sqrts)
+        plotter.canvas.SetGridx()
+        plotter.canvas.SetGridy()
+        plotter.save('final-%s-f3-subMass' % options.prefix)
+        plotter.canvas.SetGridx()
+        plotter.canvas.SetGridy()
+        plotter.canvas.SetLogy(True)
+        plotter.save('final-%s-f3-subMass-logscale' % options.prefix)
 
-    plotter.plot_final(prefix+'e2_t_Mass', 10, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
-    plotter.add_cms_blurb(sqrts)
-    plotter.canvas.SetGridx()
-    plotter.canvas.SetGridy()
-    plotter.save('final-%s-subMass' % options.prefix)
-    plotter.canvas.SetGridx()
-    plotter.canvas.SetGridy()
-    plotter.canvas.SetLogy(True)
-    plotter.save('final-%s-subMass-logscale' % options.prefix)
+        plotter.plot_final(prefix+'e2_t_Mass', 10, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
+        plotter.add_cms_blurb(sqrts)
+        plotter.canvas.SetGridx()
+        plotter.canvas.SetGridy()
+        plotter.save('final-%s-subMass' % options.prefix)
+        plotter.canvas.SetGridx()
+        plotter.canvas.SetGridy()
+        plotter.canvas.SetLogy(True)
+        plotter.save('final-%s-subMass-logscale' % options.prefix)
 
-
-    shape_file = ROOT.TFile(
-        os.path.join(plotter.outputdir, 'eet_shapes_%s.root' % plotter.period), 'RECREATE')
-    shape_dir = shape_file.mkdir('eet')
-    plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=0.5)
-    shape_dir = shape_file.mkdir('eet_w')
-    plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=0.0)
-    shape_dir = shape_file.mkdir('eet_q')
-    plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=1.0)
-    shape_file.Close()
+        shape_prefix = prefix if len(prefixes) > 1 else ''
+        shape_prefix = shape_prefix.replace(':','_').replace('$','_')
+        shape_file = ROOT.TFile(
+            os.path.join(plotter.outputdir, '%seet_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+        shape_dir = shape_file.mkdir('eet')
+        plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=0.5)
+        shape_dir = shape_file.mkdir('eet_w')
+        plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=0.0)
+        shape_dir = shape_file.mkdir('eet_q')
+        plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=1.0)
+        shape_file.Close()
 
 

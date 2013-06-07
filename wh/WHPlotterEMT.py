@@ -130,9 +130,9 @@ if __name__ == "__main__":
         ###########################################################################
 
         #BEGIN - New topologicla variables
-        ## plotter.plot_final('LT', 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('study-LT')
+        plotter.plot_final('LT', 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('study-LT')
         ## sig_view = plotter.make_signal_views(20, unblinded=(not plotter.blind))
         ## vh_10x   = views.StyleView(
         ##     sig_view['signal120'], 
@@ -305,22 +305,26 @@ if __name__ == "__main__":
     ###########################################################################
     ##  Making shape file     #################################################
     ###########################################################################
-    prefix = options.prefix+'$' if options.prefix else ''
-    plotter.plot_final(prefix+'subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('study-%s-subMass-qweight05' % options.prefix)
+    prefixes = [options.prefix+'$'] if options.prefix else ['']
+    prefixes = [i+'$' for i in options.prefixes.split(',') if i] if options.prefixes else prefixes
+    for prefix in prefixes:
+        plotter.plot_final(prefix+'subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('study-%s-subMass-qweight05' % options.prefix)
 
-    plotter.plot_final_f3(prefix+'subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
-    plotter.add_cms_blurb(sqrts)
-    plotter.save('study-%s-f3-qweight05-werror-subMass' % options.prefix)
+        plotter.plot_final_f3(prefix+'subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('study-%s-f3-qweight05-werror-subMass' % options.prefix)
 
-    shape_file = ROOT.TFile(
-        os.path.join(plotter.outputdir, 'emt_shapes_%s.root' % plotter.period), 'RECREATE')
-    shape_dir = shape_file.mkdir('emt')
-    plotter.write_shapes(prefix+'subMass', 20, shape_dir, qcd_fraction=0.5)
-    shape_dir = shape_file.mkdir('emt_w')
-    plotter.write_shapes(prefix+'subMass', 20, shape_dir, qcd_fraction=0.0)
-    shape_dir = shape_file.mkdir('emt_q')
-    plotter.write_shapes(prefix+'subMass', 20, shape_dir, qcd_fraction=1.0)
-    #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
-    shape_file.Close()
+        shape_prefix = prefix if len(prefixes) > 1 else ''
+        shape_prefix = shape_prefix.replace(':','_').replace('$','_')
+        shape_file = ROOT.TFile(
+            os.path.join(plotter.outputdir, '%semt_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+        shape_dir = shape_file.mkdir('emt')
+        plotter.write_shapes(prefix+'subMass', 20, shape_dir, qcd_fraction=0.5)
+        shape_dir = shape_file.mkdir('emt_w')
+        plotter.write_shapes(prefix+'subMass', 20, shape_dir, qcd_fraction=0.0)
+        shape_dir = shape_file.mkdir('emt_q')
+        plotter.write_shapes(prefix+'subMass', 20, shape_dir, qcd_fraction=1.0)
+        #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
+        shape_file.Close()

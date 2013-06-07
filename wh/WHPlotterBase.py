@@ -29,6 +29,8 @@ parser.add_option('--dry-run', action='store_true', dest='dry_run', default = Fa
                   help='produces only shape file and minimal histograms')
 parser.add_option('--prefix', metavar='label', type=str, dest='prefix', default = '',
                   help='prefix to eppend before histogram name o be used to make the shapes' )
+parser.add_option('--prefixes', metavar='label', type=str, dest='prefixes', default = '',
+                  help='prefix to eppend before histogram name o be used to make the shapes' )
 
 
 def quad(*xs):
