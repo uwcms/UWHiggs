@@ -43,11 +43,12 @@ def make_scaler_dict(filename, mapname):
 ##################
 
 #no changes in muonID in 2013
-highpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt20_%s_muonJetPt.root', mapper={'eid13':''})
-lowpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt10_%s_muonJetPt.root', mapper={'eid13':''})
+mapper = {'eid13Loose':'','eid13Tight':''}
+highpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt20_%s_muonJetPt.root', mapper=mapper)
+lowpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt10_%s_muonJetPt.root', mapper=mapper)
 
-highpt_mu_qcd_fr = build_roofunctor_dict(frfit_dir + '/m_qcd_pt20_%s_muonJetPt.root', mapper={'eid13':''})
-lowpt_mu_qcd_fr = build_roofunctor_dict(frfit_dir + '/m_qcd_pt10_%s_muonJetPt.root', mapper={'eid13':''})
+highpt_mu_qcd_fr = build_roofunctor_dict(frfit_dir + '/m_qcd_pt20_%s_muonJetPt.root', mapper=mapper)
+lowpt_mu_qcd_fr = build_roofunctor_dict(frfit_dir + '/m_qcd_pt10_%s_muonJetPt.root', mapper=mapper)
 
 #######################
 ## 1D Electrons Func ##
@@ -104,4 +105,10 @@ e_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.roo
 e_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.root", "efficiency_map_statDown")
 mass_scaler        = make_scaler_dict(frfit_dir+"/charge_flip_prob_map_%s.root", 'mass_scale')
 
+e1_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map")         
+e1_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map_statUp")  
+e1_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map_statDown")
 
+e2_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map")         
+e2_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map_statUp")  
+e2_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map_statDown")
