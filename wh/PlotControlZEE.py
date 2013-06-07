@@ -38,8 +38,8 @@ class ControlZEEPlotter(Plotter):
         super(ControlZEEPlotter, self).__init__(files, lumifiles, self.output_dir)
         self.mc_samples = ['Zjets_M50']
 
-    def get_flip_data(self, rebin=1, xaxis=''):
-        data_view = self.get_view('data')
+    def get_flip_data(self, rebin=1, xaxis='', data_type='data'):
+        data_view = self.get_view(data_type)
         data_view = self.rebin_view(data_view, rebin) if rebin != 1 else data_view
         #Get ss/p1p2 views
         ss_p1p2_view = views.SubdirectoryView( data_view, 'ss/p1p2')
@@ -90,8 +90,8 @@ class ControlZEEPlotter(Plotter):
         os_flip_est_nofake = views.TitleView( views.StyleView(os_flip_est_nofake, **data_styles['WZ*']), 'charge-fakes;%s' % xaxis)
         return ss_p1p2_view, ss_fakes_est, os_flip_est_nofake
             
-    def make_charge_flip_control_plot(self, variable, xaxis='', rebin=1, legend_on_the_left=False):
-        ss_p1p2_view, ss_fakes_est, os_flip_est_nofake = self.get_flip_data(rebin,xaxis)
+    def make_charge_flip_control_plot(self, variable, xaxis='', rebin=1, legend_on_the_left=False, data_type='data', x_range=None):
+        ss_p1p2_view, ss_fakes_est, os_flip_est_nofake = self.get_flip_data(rebin,xaxis,data_type)
         events_estimate = views.StackView( ss_fakes_est,os_flip_est_nofake)
         
         obs_hist       = ss_p1p2_view.Get(variable)
@@ -101,10 +101,16 @@ class ControlZEEPlotter(Plotter):
         estimate_error.SetFillColor(ROOT.EColor.kBlack)
         estimate_error.SetTitle('Error on estimate')
 
-        print variable, estimate_hist.GetMaximum(), max(list(obs_hist)), max( [ estimate_hist.GetMaximum(), max(list(obs_hist)) ] )
+        #from pdb import set_trace; set_trace()
+        sum_stack = sum(estimate_hist.hists)
+        print "variable %s: data integral: %.1f (%.1f/%.1f), estimate: %.1f (%.1f/%.1f) (under/overflow)" % (variable, \
+            obs_hist.Integral(), obs_hist.GetBinContent(0), obs_hist.GetBinContent(obs_hist.GetNbinsX()+1), \
+            sum_stack.Integral(), sum_stack.GetBinContent(0), sum_stack.GetBinContent(sum_stack.GetNbinsX()+1) )
         hmax = max( [ estimate_hist.GetMaximum(), max(list(obs_hist)) ] )
         obs_hist.GetYaxis().SetRangeUser(0,hmax*1.3)
-
+        if x_range:
+            obs_hist.GetXaxis().SetRangeUser(x_range[0],x_range[1])
+        
         obs_hist.Draw()
         estimate_hist.Draw('same')
         self.canvas.Update()
@@ -126,34 +132,31 @@ class ControlZEEPlotter(Plotter):
 
 plotter = ControlZEEPlotter()
 
+#Charge flip control plots
 plotter.make_charge_flip_control_plot('TrkMass','Tracker Inv Mass (GeV)',2)
 plotter.save('EE_Charge_Flip_xcheck_trk_invMass')
+plotter.canvas.SaveAs('test.root')
+#plotter.save('EE_Charge_Flip_xcheck_trk_invMass_log')
 
 plotter.make_charge_flip_control_plot('TrkMass_NOSCALE','Tracker Inv Mass (GeV)',2)
 plotter.save('EE_Charge_Flip_xcheck_trk_invMass_NoScale')
 
-plotter.make_charge_flip_control_plot('SCMass','SuperCluster Inv Mass (GeV)',2)
-plotter.save('EE_Charge_Flip_xcheck_SC_invMass')
-
-plotter.make_charge_flip_control_plot('ePt','electron p_{T}',2)
+plotter.make_charge_flip_control_plot('ePt','electron p_{T}',2,x_range=[0,200])
 plotter.save('EE_Charge_Flip_xcheck_ePt')
 
 plotter.make_charge_flip_control_plot('eAbsEta','electron |#eta|',4, legend_on_the_left=True)
 plotter.save('EE_Charge_Flip_xcheck_eAbsEta')
 
-plotter.make_charge_flip_control_plot('SCDPhi','Super Cluster #Delta#phi', 6)
-plotter.save('EE_Charge_Flip_xcheck_eSCDPhi')
-
 plotter.make_charge_flip_control_plot('SCEnergy','Super cluster energy (GeV)',5)
 plotter.save('EE_Charge_Flip_xcheck_eSCEnergy')
 
-plotter.make_charge_flip_control_plot('e1Pt','electron p_{T}',2)
+plotter.make_charge_flip_control_plot('e1Pt','electron p_{T}',2,x_range=[0,200])
 plotter.save('EE_Charge_Flip_xcheck_e1Pt')
 
 plotter.make_charge_flip_control_plot('e1AbsEta','electron |#eta|',10, legend_on_the_left=True)
 plotter.save('EE_Charge_Flip_xcheck_e1AbsEta')
 
-plotter.make_charge_flip_control_plot('e2Pt','electron p_{T}',2)
+plotter.make_charge_flip_control_plot('e2Pt','electron p_{T}',2,x_range=[0,200])
 plotter.save('EE_Charge_Flip_xcheck_e2Pt')
 
 plotter.make_charge_flip_control_plot('e2AbsEta','electron |#eta|',10, legend_on_the_left=True)
@@ -163,3 +166,13 @@ plotter.make_charge_flip_control_plot('type1_pfMetEt','electron |#eta|',10, lege
 plotter.save('EE_Charge_Flip_xcheck_type1_pfMetEt')
 
 
+#Check same method against DYJets, to see if we screwed the method
+print 'cosure tests'
+plotter.make_charge_flip_control_plot('TrkMass','Tracker Inv Mass (GeV)',2, data_type='Zjets_M50')
+plotter.save('EE_Charge_Flip_closure_trk_invMass')
+
+plotter.make_charge_flip_control_plot('eAbsEta','electron |#eta|',4, legend_on_the_left=True, data_type='Zjets_M50')
+plotter.save('EE_Charge_Flip_closure_absEta')
+
+plotter.make_charge_flip_control_plot('ePt','electron p_{T}',2,x_range=[0,200], data_type='Zjets_M50')
+plotter.save('EE_Charge_Flip_closure_ePt')
