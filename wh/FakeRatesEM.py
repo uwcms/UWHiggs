@@ -49,7 +49,8 @@ class FakeRatesEM(MegaBase):
                 for numerator in ['id', 'iso03', 'idiso03',
                                   'idiso02', 'idiso01', 'h2taucuts',
                                   'h2taucuts020', 'h2taucuts025',
-                                  'eid13idiso02', 'eid13h2taucuts', 'eid13h2taucuts020',
+                                  'eid13Looseidiso02', 'eid13Looseh2taucuts', 'eid13Looseh2taucuts020',
+                                  'eid13Tightidiso02', 'eid13Tighth2taucuts', 'eid13Tighth2taucuts020',
                                   ]:
                     num_key = (region, denom, numerator)
                     num_histos = {}
@@ -75,6 +76,7 @@ class FakeRatesEM(MegaBase):
             if not row.e_m_SS: return False
             if not selections.muSelection(row, 'm'):  return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
             if not selections.eSelection(row, 'e'):   return False #applies basic selection (eta, pt > 10, DZ, missingHits, jetBTag, HasConversion and chargedIdTight)
+            if not row.eChargeIdTight:                return False
             if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
             return True
         #if self.is7TeV:
@@ -115,15 +117,24 @@ class FakeRatesEM(MegaBase):
                     
             if selections.summer_2013_eid(row, 'e'):
                 if row.eRelPFIsoDB < 0.2:
-                    fill(histos[(region, pt_cut, 'eid13idiso02')], row)
+                    fill(histos[(region, pt_cut, 'eid13Looseidiso02')], row)
 
                 if (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.1:
-                    fill(histos[(region, pt_cut, 'eid13h2taucuts')], row)
+                    fill(histos[(region, pt_cut, 'eid13Looseh2taucuts')], row)
 
                 if (row.eRelPFIsoDB < 0.20 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.15:
-                    fill(histos[(region, pt_cut, 'eid13h2taucuts020')], row)
+                    fill(histos[(region, pt_cut, 'eid13Looseh2taucuts020')], row)
+            
+            if selections.summer_2013_eid_tight(row, 'e'):
+                if row.eRelPFIsoDB < 0.2:
+                    fill(histos[(region, pt_cut, 'eid13Tightidiso02')], row)
 
+                if (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.1:
+                    fill(histos[(region, pt_cut, 'eid13Tighth2taucuts')], row)
 
+                if (row.eRelPFIsoDB < 0.20 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.15:
+                    fill(histos[(region, pt_cut, 'eid13Tighth2taucuts020')], row)
+                
         histos = self.histograms
         for row in self.tree:
             if not preselection(row):
