@@ -214,26 +214,46 @@ fr_fits = Hash[
   "e_qcd_pt20_idiso02_eJetPt" => make_exponential('em'),
 
   #h2taucuts
-  "e_wjets_pt10_eid13h2taucuts_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_eid13h2taucuts_eJetPt" => make_exponential('em'),
+  "e_wjets_pt10_eid13Looseh2taucuts_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_eid13Looseh2taucuts_eJetPt" => make_exponential('em'),
 
-  "e_wjets_pt20_eid13h2taucuts_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_eid13h2taucuts_eJetPt" => make_exponential('em'),
+  "e_wjets_pt20_eid13Looseh2taucuts_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_eid13Looseh2taucuts_eJetPt" => make_exponential('em'),
 
   #h2taucuts020
-  "e_wjets_pt10_eid13h2taucuts020_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_eid13h2taucuts020_eJetPt" => make_exponential('em'),
+  "e_wjets_pt10_eid13Looseh2taucuts020_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_eid13Looseh2taucuts020_eJetPt" => make_exponential('em'),
 
-  "e_wjets_pt20_eid13h2taucuts020_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_eid13h2taucuts020_eJetPt" => make_exponential('em'),
+  "e_wjets_pt20_eid13Looseh2taucuts020_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_eid13Looseh2taucuts020_eJetPt" => make_exponential('em'),
 
   #mvaidiso02
-  "e_wjets_pt10_eid13idiso02_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_eid13idiso02_eJetPt" => make_exponential('em'),
+  "e_wjets_pt10_eid13Looseidiso02_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_eid13Looseidiso02_eJetPt" => make_exponential('em'),
 
-  "e_wjets_pt20_eid13idiso02_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_eid13idiso02_eJetPt" => make_exponential('em'),
+  "e_wjets_pt20_eid13Looseidiso02_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_eid13Looseidiso02_eJetPt" => make_exponential('em'),
 
+  #h2taucuts
+  "e_wjets_pt10_eid13Tighth2taucuts_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_eid13Tighth2taucuts_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_eid13Tighth2taucuts_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_eid13Tighth2taucuts_eJetPt" => make_exponential('em'),
+
+  #h2taucuts020
+  "e_wjets_pt10_eid13Tighth2taucuts020_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_eid13Tighth2taucuts020_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_eid13Tighth2taucuts020_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_eid13Tighth2taucuts020_eJetPt" => make_exponential('em'),
+
+  #mvaidiso02
+  "e_wjets_pt10_eid13Tightidiso02_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_eid13Tightidiso02_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_eid13Tightidiso02_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_eid13Tightidiso02_eJetPt" => make_exponential('em'),
 
   #EE Sample
   #h2taucuts
@@ -258,25 +278,46 @@ fr_fits = Hash[
   "ee_qcd_pt20_idiso02_electronJetPt" => make_exponential('ee'),
 
   #h2taucuts
-  "ee_wjetsNoZmass_pt10_eid13h2taucuts_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_eid13h2taucuts_electronJetPt" => make_landau('ee'),
+  "ee_wjetsNoZmass_pt10_eid13Looseh2taucuts_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_eid13Looseh2taucuts_electronJetPt" => make_landau('ee'),
 
-  "ee_wjetsNoZmass_pt20_eid13h2taucuts_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_eid13h2taucuts_electronJetPt" => make_exponential('ee'),
+  "ee_wjetsNoZmass_pt20_eid13Looseh2taucuts_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_eid13Looseh2taucuts_electronJetPt" => make_exponential('ee'),
 
   #h2taucuts020
-  "ee_wjetsNoZmass_pt10_eid13h2taucuts020_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_eid13h2taucuts020_electronJetPt" => make_landau('ee'),
+  "ee_wjetsNoZmass_pt10_eid13Looseh2taucuts020_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_eid13Looseh2taucuts020_electronJetPt" => make_landau('ee'),
 
-  "ee_wjetsNoZmass_pt20_eid13h2taucuts020_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_eid13h2taucuts020_electronJetPt" => make_exponential('ee'),
+  "ee_wjetsNoZmass_pt20_eid13Looseh2taucuts020_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_eid13Looseh2taucuts020_electronJetPt" => make_exponential('ee'),
 
   #idiso02
-  "ee_wjetsNoZmass_pt10_eid13idiso02_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_eid13idiso02_electronJetPt" => make_landau('ee'),
+  "ee_wjetsNoZmass_pt10_eid13Looseidiso02_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_eid13Looseidiso02_electronJetPt" => make_landau('ee'),
 
-  "ee_wjetsNoZmass_pt20_eid13idiso02_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_eid13idiso02_electronJetPt" => make_exponential('ee'),
+  "ee_wjetsNoZmass_pt20_eid13Looseidiso02_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_eid13Looseidiso02_electronJetPt" => make_exponential('ee'),
+
+  #h2taucuts
+  "ee_wjetsNoZmass_pt10_eid13Tighth2taucuts_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_eid13Tighth2taucuts_electronJetPt" => make_landau('ee'),
+
+  "ee_wjetsNoZmass_pt20_eid13Tighth2taucuts_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_eid13Tighth2taucuts_electronJetPt" => make_exponential('ee'),
+
+  #h2taucuts020
+  "ee_wjetsNoZmass_pt10_eid13Tighth2taucuts020_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_eid13Tighth2taucuts020_electronJetPt" => make_landau('ee'),
+
+  "ee_wjetsNoZmass_pt20_eid13Tighth2taucuts020_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_eid13Tighth2taucuts020_electronJetPt" => make_exponential('ee'),
+
+  #idiso02
+  "ee_wjetsNoZmass_pt10_eid13Tightidiso02_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_eid13Tightidiso02_electronJetPt" => make_landau('ee'),
+
+  "ee_wjetsNoZmass_pt20_eid13Tightidiso02_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_eid13Tightidiso02_electronJetPt" => make_exponential('ee'),
 
   ################
   ## Muons Func ##
@@ -367,12 +408,16 @@ end
 
 task :charge_fakes => []
 isolations = Array['h2taucuts', 'h2taucuts020', 'idiso02', 
-                   'eid13h2taucuts', 'eid13h2taucuts020', 'eid13idiso02']
+                   'eid13Tighth2taucuts', 'eid13Tighth2taucuts020', 'eid13Tightidiso02',
+                   'eid13Looseh2taucuts', 'eid13Looseh2taucuts020', 'eid13Looseidiso02'
+]
 
 isolations.each do |iso_label|
   output = "#{$frfit_dir}/charge_flip_prob_map_#{iso_label}.root"
   file output => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root", "make_charge_flip_probalility_map.py"] do |t|
     sh "python make_charge_flip_probalility_map.py #{t.name} #{iso_label}/flipped_electrons #{iso_label}/matched_electrons #{t.prerequisites[0]}"
+    sh "python make_charge_flip_probalility_map.py #{t.name.sub('prob_map_','prob_map_e1_')} #{iso_label}/flipped_e1 #{iso_label}/matched_e1 #{t.prerequisites[0]}"
+    sh "python make_charge_flip_probalility_map.py #{t.name.sub('prob_map_','prob_map_e2_')} #{iso_label}/flipped_e2 #{iso_label}/matched_e2 #{t.prerequisites[0]}"
   end
   task :charge_fakes => output
 end
@@ -435,7 +480,7 @@ task :eet => eet_results
 
 task :mmcontrol => get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm'])
 task :emcontrol => get_analyzer_results("ControlEM.py", samples['ewk'] + samples['data_em'])
-task :eecontrol => get_analyzer_results("ControlZEE.py", samples['data_ee']) + ["#{$frfit_dir}/charge_flip_prob_map.root"] + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") #samples['ewk'] +
+task :eecontrol => get_analyzer_results("ControlZEE.py", samples['data_ee'] + samples["zjets"]) + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") #samples['ewk'] +
 
 task :mmt_signal => get_analyzer_results("WHAnalyzeMMT.py", samples['signal'])
 task :emt_signal => get_analyzer_results("WHAnalyzeEMT.py", samples['signal'])
@@ -572,8 +617,6 @@ cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it'
 to_extrapolate = cardmasses.select{|x| x > 140}
 # Now do the horizontal morphing
 file "#{$carddir}/shapes.root" => ["#{$carddir}/shapes_unmorphed.root"] do |t|
-  #skip horizontal morphing, no need for it by now this part is removed 
-  #after 4e52f2b62d4bb745145d0a5990661738de43709b in case you need it back
   sh "cp #{t.prerequisites[0]} #{t.name}"
   sh "horizontal-morphing.py --categories='emt,mmt,eet' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 --extrapolate=#{to_extrapolate.join(",")} #{t.name}"
 end
