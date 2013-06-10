@@ -77,7 +77,7 @@ def summer_2013_eid_tight(row, name):
 def lepton_id_iso(row, name, label):
     'One function to rule them all'
     LEPTON_ID = False
-    isolabel  = label.split('eid13')[-1]
+    isolabel  = label[len('eid13Loose'):] if label.startswith('eid13') else label 
     if name[0] == 'e':
         if not label.startswith('eid13'):
             LEPTON_ID = bool(getattr(row, getVar(name, 'MVAIDH2TauWP')))
