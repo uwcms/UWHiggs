@@ -14,6 +14,7 @@ Author: Evan K. Friis, UW
 
 '''
 
+import ROOT
 import EMuTree
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 import baseSelections as selections
@@ -55,13 +56,13 @@ class FakeRatesEM(MegaBase):
                     num_histos = {}
                     self.histograms[num_key] = num_histos
 
-                    def book_histo(name, *args):
+                    def book_histo(name, *args, **kwargs):
                         # Helper to book a histogram
                         if name not in denom_histos:
                             denom_histos[name] = self.book(os.path.join(
-                                region, denom), name, *args)
+                                region, denom), name, *args, **kwargs)
                         num_histos[name] = self.book(os.path.join(
-                            region, denom, numerator), name, *args)
+                            region, denom, numerator), name, *args, **kwargs)
 
                     book_histo('ePt', 'e Pt', 100, 0, 100)
                     book_histo('eJetPt', 'e Jet Pt', 100, 0, 100)
@@ -86,7 +87,7 @@ class FakeRatesEM(MegaBase):
                     book_histo('eJetmultvseJetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
                     book_histo('eJetmultMLPvseJetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
                     book_histo('eJetmultMLPQCvseJetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
-`
+
                     book_histo('eJetmultvseJetPt', '', 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
                     book_histo('eJetmultMLPvseJetPt', '',  200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
                     book_histo('eJetmultMLPQCvseJetPt', '' , 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
@@ -144,15 +145,15 @@ class FakeRatesEM(MegaBase):
                 fill(histos[(region, pt_cut, 'iso03')], row)
 
             if row.eMVAIDH2TauWP:
-                fill(histos[(region, pt_cut, 'mvaid')], row)
+                fill(histos[(region, pt_cut, 'id')], row)
                 if row.eRelPFIsoDB < 0.3:
-                    fill(histos[(region, pt_cut, 'mvaidiso03')], row)
+                    fill(histos[(region, pt_cut, 'idiso03')], row)
 
                 if row.eRelPFIsoDB < 0.2:
-                    fill(histos[(region, pt_cut, 'mvaidiso02')], row)
+                    fill(histos[(region, pt_cut, 'idiso02')], row)
 
                 if row.eRelPFIsoDB < 0.1:
-                    fill(histos[(region, pt_cut, 'mvaidiso01')], row)
+                    fill(histos[(region, pt_cut, 'idiso01')], row)
 
                 if (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479) or row.eRelPFIsoDB < 0.1:
                     fill(histos[(region, pt_cut, 'h2taucuts')], row)
