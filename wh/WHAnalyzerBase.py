@@ -81,7 +81,9 @@ class cut_flow_tracker(object):
         self.cut_flow = dict([ (i, False) for i in self.labels])
         self.hist     = hist
         self.evt_info = [-1, -1, -1]
-        self.disabled = 'CutFlow' not in os.environ
+        self.disabled = True #'CutFlow' not in os.environ
+        if not self.disabled:
+            print "running cut flow"
 
     def fill(self, label):
         self.cut_flow[label] = True
@@ -122,12 +124,12 @@ class WHAnalyzerBase(MegaBase):
             'Event_ID': lambda row, weight: (array.array("f", [row.run,row.lumi,int(row.evt)/10**5,int(row.evt)%10**5] ), None),
             }
         #filter out optimizing working point that make no sense (like testing two eid WP in MMT)
-        self.grid_search = dict(
-            (cut_label, cut_settings)
-            for cut_label, cut_settings in optimizer.grid_search.iteritems()
-            if 'eid13Tight' not in cut_label and self.channel == 'MMT' #skip the second eid WP if the channel is MMT
-            if cut_settings['charge_fakes'] != 80 and self.channel != 'EET' #skip charge fakes WP if the channel is not EET
-            ) if len(optimizer.grid_search.keys()) > 1 else optimizer.grid_search
+        self.grid_search = optimizer.grid_search
+        ##     (cut_label, cut_settings)
+        ##     for cut_label, cut_settings in optimizer.grid_search.iteritems()
+        ##     if 'eid13Tight' not in cut_label and self.channel == 'MMT' #skip the second eid WP if the channel is MMT
+        ##     if cut_settings['charge_fakes'] != 80 and self.channel != 'EET' #skip charge fakes WP if the channel is not EET
+        ##     ) if len(optimizer.grid_search.keys()) > 1 else optimizer.grid_search
 
     @staticmethod
     def build_wh_folder_structure():
@@ -273,16 +275,17 @@ class WHAnalyzerBase(MegaBase):
         cut_flow_step = ['bare', 'WH Event',
                          #'obj1 GenMatching', 'obj2 GenMatching', 'obj3 GenMatching',
                          'trigger',
-                         ## 'obj1 Presel', 'obj2 Presel',
-                         'pt requirements 1', 'eta requirements 1',
-                         'MissingHits 1', 'HasConversion 1', 'JetBtag 1', 'DZ 1',
-                         'pt requirements 2', 'eta requirements 2',
-                         'MissingHits 2', 'HasConversion 2', 'JetBtag 2', 'DZ 2',
+                         'obj1 Presel', 'obj2 Presel',
+##                          'pt requirements 1', 'eta requirements 1',
+##                          'MissingHits 1', 'HasConversion 1', 'JetBtag 1', 'DZ 1',
+##                          'pt requirements 2', 'eta requirements 2',
+##                          'MissingHits 2', 'HasConversion 2', 'JetBtag 2', 'DZ 2',
                          'obj3 Presel',
                          'LT', 'vetos',
-                         'ChargeIdLoose',
-                         'charge_fakes',
-                         'obj1 ID', 'obj1 Iso', 'obj2 ID', 'obj2 Iso', 'obj3 IDIso',
+##                          'ChargeIdLoose',
+##                          'charge_fakes',
+                         #'obj1 ID', 'obj1 Iso', 'obj2 ID', 'obj2 Iso',
+                         'obj1 IDIso', 'obj2 IDIso', 'obj3 IDIso',
                          'sign cut', 'anti WZ', 
                          ]
         self.book('ss', "CUT_FLOW", "Cut Flow", len(cut_flow_step), 0, len(cut_flow_step))
@@ -335,9 +338,9 @@ class WHAnalyzerBase(MegaBase):
             'q13' : (self.obj1_qcd_weight, self.obj3_qcd_weight),
             'q23' : (self.obj2_qcd_weight, self.obj3_qcd_weight),
         }
-        grid_search = self.grid_search
+        grid_search = optimizer.grid_search
         for i, row in enumerate(self.tree):
-            ## if i > 0:
+            ## if i > 100:
             ##     raise
 
             for cut_label, cut_settings in grid_search.iteritems():
@@ -352,12 +355,12 @@ class WHAnalyzerBase(MegaBase):
                 cut_flow_trk.new_row(row.run,row.lumi,row.evt)
                 cut_flow_trk.Fill('bare')
                 # Apply basic preselection
+                #
                 if not cut_flow_trk.disabled:
                     if row.processID != 26:
                         continue
 
                 cut_flow_trk.Fill('WH Event')
-                #print cut_label, cut_settings
                 lt_tpt_in_presel = not bool(cut_settings['tauID'])
                 if not preselection(row, cut_flow_trk, cut_settings['LT'] if lt_tpt_in_presel else 0., cut_settings['tauPT'] if lt_tpt_in_presel else 0.):
                     continue
@@ -377,17 +380,17 @@ class WHAnalyzerBase(MegaBase):
                     if not anti_charge_flip_cut else \
                     ('','charge_flip_CR/') if anti_charge_flip else ('charge_flip_CR/',)
 
-                if not cut_flow_trk.disabled:
-                    if obj1_id_result:
-                        cut_flow_trk.Fill('obj1 IDIso')
-                        if obj2_id_result:
-                            cut_flow_trk.Fill('obj2 IDIso')
-                            if obj3_id_result:
-                                cut_flow_trk.Fill('obj3 IDIso')
-                                if sign_result:
-                                    cut_flow_trk.Fill('sign cut')
-                                    if anti_wz :
-                                        cut_flow_trk.Fill('anti WZ')
+                #if not cut_flow_trk.disabled:
+                if obj1_id_result:
+                    cut_flow_trk.Fill('obj1 IDIso')
+                    if obj2_id_result:
+                        cut_flow_trk.Fill('obj2 IDIso')
+                        if obj3_id_result:
+                            cut_flow_trk.Fill('obj3 IDIso')
+                            if sign_result:
+                                cut_flow_trk.Fill('sign cut')
+                                if anti_wz :
+                                    cut_flow_trk.Fill('anti WZ')
 
                 # Figure out which folder/region we are in
                 region_result = cut_region_map.get(
@@ -424,8 +427,12 @@ class WHAnalyzerBase(MegaBase):
                         obj1_obj3_SS     = self.obj1_obj3_SS(row)
                         if (obj1_obj3_SS and obj1_charge_flip) \
                             or ( not obj1_obj3_SS and obj2_charge_flip): #there is the function --> we have to compute it, otherwise skip and save some precious filling time!
-                            charge_flip_prob = obj1_charge_flip(row)       if obj1_obj3_SS else obj2_charge_flip(row)
-                            charge_flip_sysu = obj1_charge_flip_sysup(row) if obj1_obj3_SS else obj2_charge_flip_sysup(row)
+                            charge_flip_prob = obj1_charge_flip(row, cut_settings['leading_iso'], cut_settings['subleading_iso']) \
+                                if obj1_obj3_SS else \
+                                obj2_charge_flip(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
+                            charge_flip_sysu = obj1_charge_flip_sysup(row, cut_settings['leading_iso'], cut_settings['subleading_iso']) \
+                                if obj1_obj3_SS else \
+                                obj2_charge_flip_sysup(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
                             directory        = joinDirs(base_folder,'c1' if obj1_obj3_SS else 'c2')
                             directory_up     = joinDirs(base_folder,'c1_sysup' if obj1_obj3_SS else 'c2_sysup')
                             charge_flip_prob = charge_flip_prob/(1. - charge_flip_prob)
@@ -441,7 +448,7 @@ class WHAnalyzerBase(MegaBase):
                             fill_histos(histos, 'ss/p1p2p3_enhance_wz/', row, event_weight, cut_label)
                         else:
                             fill_histos(histos, 'ss/p1f2p3_enhance_wz/', row, event_weight, cut_label)
-                            fake_rate_obj2 = self.obj2_weight(row)
+                            fake_rate_obj2 = self.obj2_weight(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
                             fake_weight = fake_rate_obj2/(1.-fake_rate_obj2)
                             fill_histos(histos, 'ss/p1f2p3_enhance_wz/w2/', row, event_weight*fake_weight, cut_label)
         cut_flow_trk.flush()
