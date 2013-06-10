@@ -62,10 +62,10 @@ class WHAnalyzeEET(WHAnalyzerBase):
             return f
 
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.e2Pt/row.e1Pt, weight)
-        self.hfunc["e*1_e2_Mass"] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e1_e2_Mass), weight)
-        self.hfunc["e*1_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e1_t_Mass ), weight)
-        self.hfunc["e1_e*2_Mass"] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e1_e2_Mass), weight)
-        self.hfunc["e*2_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e2_t_Mass ), weight)
+        self.hfunc["e*1_e2_Mass"] = lambda row, weight: ( frfits.mass_scaler['eid13Looseh2taucuts']( row.e1_e2_Mass), weight)
+        self.hfunc["e*1_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler['eid13Looseh2taucuts']( row.e1_t_Mass ), weight)
+        self.hfunc["e1_e*2_Mass"] = lambda row, weight: ( frfits.mass_scaler['eid13Looseh2taucuts']( row.e1_e2_Mass), weight)
+        self.hfunc["e*2_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler['eid13Looseh2taucuts']( row.e2_t_Mass ), weight)
 	self.hfunc["my_selection_info" ] = self.fill_id_info
 
 	self.hfunc["e1_e2_Mass_barr"] = make_both_barrel( attr_getter("e1_e2_Mass"))
@@ -195,11 +195,11 @@ class WHAnalyzeEET(WHAnalyzerBase):
         #FIXME: ONLY FOR CUT-FLOW PRODUCTION
         #if not selections.summer_2013_eid(row, 'e1'): return False
         #cut_flow_trk.Fill('obj1 ID')
-        #if not selections.lepton_id_iso(row, 'e1', 'h2taucuts'): return False
+        #if not selections.lepton_id_iso(row, 'e1', 'eid13Looseh2taucuts'): return False
         #cut_flow_trk.Fill('obj1 Iso')
         #if not selections.summer_2013_eid(row, 'e2'): return False
         #cut_flow_trk.Fill('obj2 ID')
-        #if not selections.lepton_id_iso(row, 'e2', 'h2taucuts'): return False
+        #if not selections.lepton_id_iso(row, 'e2', 'eid13Looseh2taucuts'): return False
         #cut_flow_trk.Fill('obj2 Iso')
         #if not row.tLooseIso3Hits: return False
         #cut_flow_trk.Fill('obj3 IDIso')
@@ -214,12 +214,12 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
-    def obj1_id(row, leadleptonId='h2taucuts', subleadleptonId=None):
+    def obj1_id(row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
         return selections.lepton_id_iso(row, 'e1', leadleptonId)
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
-    def obj2_id(row, leadleptonId=None, subleadleptonId='h2taucuts'):
+    def obj2_id(row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
         return selections.lepton_id_iso(row, 'e2', subleadleptonId)
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
@@ -257,19 +257,19 @@ class WHAnalyzeEET(WHAnalyzerBase):
             mcCorrectors.get_electron_corrections(row,'e1','e2')
 
    
-    def obj1_weight(self, row, leadleptonId='h2taucuts', subleadleptonId=None):
+    def obj1_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
         return frfits.highpt_ee_fr[leadleptonId](max(row.e1JetPt, row.e1Pt))
 
-    def obj2_weight(self, row, leadleptonId=None, subleadleptonId='h2taucuts'):
+    def obj2_weight(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
 	return frfits.lowpt_ee_fr[subleadleptonId](max(row.e1JetPt, row.e1Pt))
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_fr(row.tPt)
 
-    def obj1_qcd_weight(self, row, leadleptonId='h2taucuts', subleadleptonId=None):
+    def obj1_qcd_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
         return frfits.highpt_ee_qcd_fr[leadleptonId](max(row.e1JetPt, row.e1Pt))
 
-    def obj2_qcd_weight(self, row, leadleptonId=None, subleadleptonId='h2taucuts'):
+    def obj2_qcd_weight(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
         return frfits.lowpt_ee_qcd_fr[subleadleptonId](max(row.e2JetPt, row.e2Pt))
 
     def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
@@ -280,16 +280,16 @@ class WHAnalyzeEET(WHAnalyzerBase):
     def obj1_obj3_SS(self, row):
         return not row.e1_t_SS
 
-    def obj1_charge_flip(self, row, leadleptonId='h2taucuts', subleadleptonId=None):
+    def obj1_charge_flip(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
         return frfits.e_charge_flip[leadleptonId](row.e1AbsEta,row.e1Pt) #highpt_e_charge_flip
 
-    def obj2_charge_flip(self, row, leadleptonId=None, subleadleptonId='h2taucuts'):
+    def obj2_charge_flip(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
         return frfits.e_charge_flip[subleadleptonId](row.e2AbsEta,row.e2Pt) #lowpt_e_charge_flip
 
-    def obj1_charge_flip_sysup(self, row, leadleptonId='h2taucuts', subleadleptonId=None):
+    def obj1_charge_flip_sysup(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
         return frfits.e_charge_flip_up[leadleptonId](row.e1AbsEta,row.e1Pt) #highpt_e_charge_flip
 
-    def obj2_charge_flip_sysup(self, row, leadleptonId=None, subleadleptonId='h2taucuts'):
+    def obj2_charge_flip_sysup(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
         return frfits.e_charge_flip_up[subleadleptonId](row.e2AbsEta,row.e2Pt) #lowpt_e_charge_flip
 
 
