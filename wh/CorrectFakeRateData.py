@@ -1,3 +1,4 @@
+#! /bin/env python
 '''
 
 Subtract expected WZ and ZZ contamination from FR numerator and denominators.
@@ -8,7 +9,7 @@ Author: Evan K. Frii
 
 import logging
 import sys
-logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
+logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 from RecoLuminosity.LumiDB import argparse
 import fnmatch
 from FinalStateAnalysis.PlotTools.RebinView import RebinView
@@ -55,7 +56,7 @@ if __name__ == "__main__":
         ''' Make a view which rebins histograms '''
         binning = None
         if ',' in args.rebin:
-            binning = tuple(int(x) for x in args.rebin.split(','))
+            binning = tuple(eval(args.rebin))
         else:
             binning = int(args.rebin)
         return RebinView(x, binning)
@@ -64,10 +65,20 @@ if __name__ == "__main__":
         new = x.Clone()
         new.Reset()
         for bin in range(x.GetNbinsX()+1):
-            nentries = ROOT.TMath.Nint(x.GetBinContent(bin))
-            center = x.GetBinLowEdge(bin) + 0.5*x.GetBinWidth(bin)
-            for _ in range(nentries):
-                new.Fill(center)
+            binsy = range(x.GetNbinsX()+1) if isinstance(x, ROOT.TH2) else [-1]
+            for biny in binsy:
+                nentries = ROOT.TMath.Nint(x.GetBinContent(bin, biny)) \
+                    if isinstance(x, ROOT.TH2) else \
+                    ROOT.TMath.Nint(x.GetBinContent(bin))
+                centerx = x.GetXaxis().GetBinCenter(bin)
+                centery = x.GetYaxis().GetBinCenter(bin) \
+                    if isinstance(x, ROOT.TH2) else \
+                    0.
+                for _ in range(nentries):
+                    if isinstance(x, ROOT.TH2):
+                        new.Fill(centerx, centery)
+                    else:
+                        new.Fill(centerx)
         return new
 
     def int_view(x):
@@ -80,6 +91,7 @@ if __name__ == "__main__":
         raise KeyError("I can't find a view that matches %s, I have: %s" % (
             sample_pattern, " ".join(the_views.keys())))
 
+            #from pdb import set_trace; set_trace()
     wz_view = get_view('WZ*')
     zz_view = get_view('ZZ*')
     data = rebin_view(the_views['data']['view'])
@@ -105,12 +117,23 @@ if __name__ == "__main__":
     uncorr_numerator = data.Get(args.numerator)
     uncorr_denominator = data.Get(args.denom)
 
+    wz_integral = wz_view.Get(args.numerator).Integral()
+    zz_integral = zz_view.Get(args.numerator).Integral()
+
+    log.info("Numerator integrals data: %.2f WZ: %.2f, ZZ: %.2f. Corrected numerator: %.2f",
+             uncorr_numerator.Integral(),
+             wz_integral,
+             zz_integral,
+             corr_numerator.Integral()
+            )
+
     log.info("Uncorrected: %0.2f/%0.2f = %0.1f%%",
              uncorr_numerator.Integral(),
              uncorr_denominator.Integral(),
              100*uncorr_numerator.Integral()/uncorr_denominator.Integral()
              if uncorr_denominator.Integral() else 0
             )
+
 
     corr_numerator.SetName('numerator')
     corr_denominator.SetName('denominator')
