@@ -454,6 +454,6 @@ if __name__ == "__main__":
         plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=0.0)
         shape_dir = shape_file.mkdir('eet_q')
         plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=1.0)
+        logging.warning('shape file %s created' % shape_file.GetName()) 
         shape_file.Close()
-
 
