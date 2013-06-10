@@ -43,7 +43,7 @@ def make_scaler_dict(filename, mapname):
 ##################
 
 #no changes in muonID in 2013
-mapper = {'eid13Loose':'','eid13Tight':''}
+mapper = {'eid13Loose':'','eid13Tight':'', 'idiso' : 'pfidiso'}
 highpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt20_%s_muonJetPt.root', mapper=mapper)
 lowpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt10_%s_muonJetPt.root', mapper=mapper)
 
