@@ -1,7 +1,7 @@
 import fakerate_functions as frfits
 
 def anti_charge_flip_70(row):
-    z_Mass_distance = row.e1_e2_Mass - frfits.mass_scaler['h2taucuts'](91.2) \
+    z_Mass_distance = row.e1_e2_Mass - frfits.mass_scaler['eid13Looseh2taucuts'](91.2) \
         if row.e1_e2_SS else \
         row.e1_e2_Mass - 91.2
     z_Mass_distance = abs(z_Mass_distance)
@@ -16,7 +16,7 @@ def anti_charge_flip_70(row):
 
 
 def anti_charge_flip_80(row):
-    z_Mass_distance = row.e1_e2_Mass - frfits.mass_scaler['h2taucuts'](91.2) \
+    z_Mass_distance = row.e1_e2_Mass - frfits.mass_scaler['eid13Looseh2taucuts'](91.2) \
         if row.e1_e2_SS else \
         row.e1_e2_Mass - 91.2
     z_Mass_distance = abs(z_Mass_distance)
@@ -30,7 +30,7 @@ def anti_charge_flip_80(row):
 
 
 def anti_charge_flip_90(row):
-    z_Mass_distance = row.e1_e2_Mass - frfits.mass_scaler['h2taucuts'](91.2) \
+    z_Mass_distance = row.e1_e2_Mass - frfits.mass_scaler['eid13Looseh2taucuts'](91.2) \
         if row.e1_e2_SS else \
         row.e1_e2_Mass - 91.2
     z_Mass_distance = abs(z_Mass_distance)
