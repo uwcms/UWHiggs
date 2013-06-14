@@ -74,7 +74,7 @@ class ZHAnalyzeMMEM(ZHAnalyzerBase.ZHAnalyzerBase):
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row):
-        return fr_fcn.e_loose_fr( row.ePt )
+        return fr_fcn.e_loose_fr( row.ePt ) / (1 - fr_fcn.e_loose_fr( row.ePt ))
 
     def obj2_weight(self, row):
-        return fr_fcn.mu_loose_fr( row.m3Pt)
+        return fr_fcn.mu_loose_fr( row.m3Pt) / (1 -  fr_fcn.mu_loose_fr( row.m3Pt));

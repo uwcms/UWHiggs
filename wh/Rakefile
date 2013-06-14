@@ -3,11 +3,12 @@ recipes = ENV['CMSSW_BASE'] + '/src/FinalStateAnalysis/PlotTools/rake/recipes.ra
 import recipes
 
 $jobid = ENV['jobid']
+$blind = ENV['blind']
 
 # Figure out what run period we are in
-$period = '7TeV'
-if $jobid.include? '8TeV'
-  $period = '8TeV'
+$period = '8TeV'
+if $jobid.include? '7TeV'
+  $period = '7TeV'
 end
 
 ################################################################################
@@ -24,10 +25,10 @@ end
 #puts get_sample_names('data_DoubleMu')
 
 samples = Hash[
-  "ewk" => Array['Zjets_M50', 'WplusJets_madgraph', 'TTplusJets_madgraph'] + get_sample_names('WZ') + get_sample_names('WW')+ get_sample_names('ZZ'),     #'ZZJetsTo4L_pythia',
+  "ewk" => Array['Zjets_M50', 'WplusJets_madgraph', 'TTplusJets_madgraph'] + get_sample_names('WZ') + get_sample_names('WWJet')+ get_sample_names('ZZ'),     #'ZZJetsTo4L_pythia',
   "wjets" => Array['WplusJets_madgraph'],
   "zjets" => Array['Zjets_M50'],
-  "diboson" => get_sample_names('ZZ')+get_sample_names('WZ') + get_sample_names('WW'), #Array['ZZJetsTo4L_pythia'] + 
+  "diboson" => get_sample_names('ZZ')+get_sample_names('WZ') + get_sample_names('WWJet'), #Array['ZZJetsTo4L_pythia'] + 
   "signal" => get_sample_names('VH') + get_sample_names('WH'),
   # Automagically figure out what data samples we have
   "data_m" =>  get_sample_names("data_SingleMu"),
@@ -46,6 +47,10 @@ def get_analyzer_results(analyzer, the_samples)
   return output
 end
 
+file "optimizer.py" => "baseSelections.py" do |t|
+  sh "touch #{t.name}"
+end
+
 ################################################################################
 ## Recipes to measure fake rates 
 ##  targets:
@@ -55,25 +60,29 @@ end
 # Map which samples need to be analyzed by which analyzer
 fr_analyzer_sample_map = Hash[
   "FakeRatesEE.py"  => samples['data_ee'] + samples["zjets"],# + samples['diboson'],
-  "FakeRatesMM.py"  => samples['diboson'] + samples['data_mm'],
+  "ChargeFlipProbabilityEE.py" => samples['zjets'],
   "FakeRatesEM.py"  => samples['diboson'] + samples['data_em'],
+  "FakeRatesMM.py"  => samples['diboson'] + samples['data_mm'],
   "FakeRatesMMT.py" => samples['diboson'] + samples['data_mm'],
   "FakeRatesMMM.py" => samples['diboson'] + samples['data_mm'],
-  "ChargeFlipProbabilityEE" => samples['zjets'],
 ]
 
+fr_analyzer_dep_map = Hash[
+  "ChargeFlipProbabilityEE.py" => Array["baseSelections.py", "optimizer.py"],
+  "FakeRatesEE.py"  => Array["baseSelections.py"],# + samples['diboson'],
+  "FakeRatesEM.py"  => Array["baseSelections.py"],
+  "FakeRatesMM.py"  => Array["baseSelections.py"],
+  "FakeRatesMMT.py" => Array["baseSelections.py"],
+  "FakeRatesMMM.py" => Array["baseSelections.py"],
+]
 
-fr_common_dependencies = Array["baseSelections.py"]
 # Create an empty placeholder to enable tab-completion
 task :fakerates => []
 #check if base class or some selections has changed
 fr_analyzer_sample_map.each do |analyzer, the_samples|
-  deps = fr_common_dependencies
-  ## if analyzer == "FakeRatesEE.py"
-  ##   deps << "#{$frfit_dir}/charge_flip_prob_map.root"
-  ## end
-  ## puts analyzer
-  file analyzer => deps do |t|
+  file analyzer => fr_analyzer_dep_map[analyzer] do |t|
+    puts t.investigation
+    sh "touch #{t.name}"
   end
 end
 
@@ -112,6 +121,35 @@ fr_binning_tight =  "10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,45,50,60,65
 #fr_binning =  5
 #fr_binning_tight =  2
 
+def make_landau(chan)
+  fr_binning =  "10,12,15,20,25,30,40,50,70,100" #ruby does not seem to see global variables
+  landau = "scale*TMath::Landau(x,mu,sigma,0)+offset"
+  landau_vars =  "scale[0.5, 0, 15],mu[5, 0, 30],sigma[1.9, 0.1, 20],offset[1e-2, 0, 0.5]"
+  return Hash[
+              "samples" => Array["diboson", "data_#{chan.downcase}"],
+              "analyzer" => "FakeRates#{chan.upcase}",
+              "function" => landau,
+              "variables" => landau_vars,
+              "rebin" => fr_binning,
+              "range" => "10 100",
+             ]
+end
+
+def make_exponential(chan)
+  fr_binning =  "10,12,15,20,25,30,40,50,70,100"
+  exponential = "scale*TMath::Exp(x*decay)+offset"
+  exponential_vars =  "scale[0.5, 0, 5],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
+  return Hash[
+              "samples" => Array["diboson", "data_#{chan.downcase}"],
+              "analyzer" => "FakeRates#{chan.upcase}",
+              "function" => exponential,
+              "variables" => exponential_vars,
+              "rebin" => fr_binning,
+              "range" => "10 100",
+             ]
+end
+
+
 # Fake rate fit configurations
 fr_fits = Hash[
   # Format is type_region_denom_num_variable
@@ -119,340 +157,76 @@ fr_fits = Hash[
   ## Electrons Func ##
   ####################
   #EM Sample
-  "e_wjets_pt10_mvaidiso03_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "e_qcd_pt10_mvaidiso03_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "e_wjets_pt10_h2taucuts_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "e_wjets_pt10_h2taucuts_ePt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "e_qcd_pt10_h2taucuts_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "e_wjets_pt10_mvaidiso02_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "e_wjets_pt10_mvaidiso01_eJetPt" => Hash[
-    "samples" => Array["diboson", "data_em"],
-    "analyzer" => "FakeRatesEM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
+  #h2taucuts
+  "e_wjets_pt10_h2taucuts_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_h2taucuts_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_h2taucuts_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_h2taucuts_eJetPt" => make_exponential('em'),
+
+  #h2taucuts020
+  "e_wjets_pt10_h2taucuts020_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_h2taucuts020_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_h2taucuts020_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_h2taucuts020_eJetPt" => make_exponential('em'),
+
+  #mvaidiso02
+  "e_wjets_pt10_idiso02_eJetPt" => make_exponential('em'),
+  "e_qcd_pt10_idiso02_eJetPt" => make_exponential('em'),
+
+  "e_wjets_pt20_idiso02_eJetPt" => make_exponential('em'),
+  "e_qcd_pt20_idiso02_eJetPt" => make_exponential('em'),
 
   #EE Sample
-  "ee_wjetsNoZmass_pt10_mvaidiso03_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_qcd_pt10_mvaidiso03_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_wjetsNoZmass_pt10_h2taucuts_electronPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_qcd_pt10_h2taucuts_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
+  #h2taucuts
+  "ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_h2taucuts_electronJetPt" => make_landau('ee'),
 
-  "ee_wjetsNoZmass_pt20_mvaidiso03_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_qcd_pt20_mvaidiso03_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_wjetsNoZmass_pt20_h2taucuts_electronPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "ee_qcd_pt20_h2taucuts_electronJetPt" => Hash[
-    "samples" => Array["diboson", "data_ee"],
-    "analyzer" => "FakeRatesEE",
-    #"function" => landau,
-    #"variables" => landau_vars,
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
+  "ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_h2taucuts_electronJetPt" => make_exponential('ee'),
+
+  #h2taucuts020
+  "ee_wjetsNoZmass_pt10_h2taucuts020_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_h2taucuts020_electronJetPt" => make_landau('ee'),
+
+  "ee_wjetsNoZmass_pt20_h2taucuts020_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_h2taucuts020_electronJetPt" => make_exponential('ee'),
+
+  #idiso02
+  "ee_wjetsNoZmass_pt10_idiso02_electronJetPt" => make_landau('ee'), 
+  "ee_qcd_pt10_idiso02_electronJetPt" => make_landau('ee'),
+
+  "ee_wjetsNoZmass_pt20_idiso02_electronJetPt" => make_exponential('ee'),
+  "ee_qcd_pt20_idiso02_electronJetPt" => make_exponential('ee'),
 
   ################
   ## Muons Func ##
   ################
-  "m_wjets_pt10_pfidiso01_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt10_pfidiso03_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt20_pfidiso03_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "m_wjets_pt10_h2taucuts_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt20_h2taucuts_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "m_qcd_pt10_h2taucuts_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_qcd_pt20_h2taucuts_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "m_wjets_pt10_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt10t_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt10b_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_wjets_pt10f_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_qcd_pt10_pfidiso01_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning_tight,
-    "range" => "10 100",
-  ],
-  "m_qcd_pt10_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning_tight,
-    "range" => "10 100",
-  ],
-  "m_qcd_pt20_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning_tight,
-    "range" => "20 100",
-  ],
-  "m_zmm_pt10_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
-  "m_zmm_pt20_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "m_wjets_pt20_pfidiso02_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "m_wjets_pt20_pfidiso01_muonJetPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => landau,
-    "variables" => landau_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  # Versus regular pt
-  "m_zmm_pt10_pfidiso02_muonPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMMM",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "20 100",
-  ],
-  "m_wjets_pt10_pfidiso02_muonPt" => Hash[
-    "samples" => Array["diboson", "data_mm"],
-    "analyzer" => "FakeRatesMM",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => fr_binning,
-    "range" => "10 100",
-  ],
+  #h2taucuts
+  "m_wjets_pt10_h2taucuts_muonJetPt" => make_landau('mm'), 
+  "m_wjets_pt20_h2taucuts_muonJetPt" => make_landau('mm'),
+
+  "m_qcd_pt10_h2taucuts_muonJetPt" => make_landau('mm'),
+  "m_qcd_pt20_h2taucuts_muonJetPt" => make_landau('mm'),
+
+  #h2taucuts020
+  "m_wjets_pt10_h2taucuts020_muonJetPt" => make_landau('mm'), 
+  "m_wjets_pt20_h2taucuts020_muonJetPt" => make_landau('mm'),
+
+  "m_qcd_pt10_h2taucuts020_muonJetPt" => make_landau('mm'),
+  "m_qcd_pt20_h2taucuts020_muonJetPt" => make_landau('mm'),
+
+  #idiso02
+  "m_wjets_pt10_idiso02_muonJetPt" => make_landau('mm'), 
+  "m_wjets_pt20_idiso02_muonJetPt" => make_landau('mm'),
+
+  "m_qcd_pt10_idiso02_muonJetPt" => make_landau('mm'),
+  "m_qcd_pt20_idiso02_muonJetPt" => make_landau('mm'),
+
+  ################
+  ## Taus Func ##
+  ################
   "t_ztt_pt20_mvaloose_tauPt" => Hash[
     "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMT",
@@ -513,11 +287,19 @@ fr_fits.each do |fit, fit_info|
 
 end
 
-file "#{$frfit_dir}/charge_flip_prob_map.root" => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root", "make_charge_flip_probalility_map.py"] do |t|
-  sh "python make_charge_flip_probalility_map.py #{$frfit_dir}/charge_flip_prob_map.root charge/flipped_electrons charge/matched_electrons #{t.prerequisites[0]}"
+task :charge_fakes => []
+isolations = Array['h2taucuts', 'h2taucuts020', 'idiso02']
+
+isolations.each do |iso_label|
+  output = "#{$frfit_dir}/charge_flip_prob_map_#{iso_label}.root"
+  file output => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root", "make_charge_flip_probalility_map.py"] do |t|
+    sh "python make_charge_flip_probalility_map.py #{t.name} #{iso_label}/flipped_electrons #{iso_label}/matched_electrons #{t.prerequisites[0]}"
+  end
+  task :charge_fakes => output
 end
 
-task :fits => ["#{$frfit_dir}/charge_flip_prob_map.root"]
+#task :charge_fakes => ["#{$frfit_dir}/charge_flip_prob_map.root"]
+task :fits => :charge_fakes
 
 ################################################################################
 ## Recipes to analyze WH
@@ -526,33 +308,38 @@ task :fits => ["#{$frfit_dir}/charge_flip_prob_map.root"]
 ##     emt
 ##     mmcontrol
 ##     emcontrol
+##     eecontrol
 ################################################################################
+fake_rate_files = fr_fits.keys.map{|x| "#{$frfit_dir}/#{x}.root"}
 
+# IF the FR fits change, make sure we re-run the analyses
+file "WHAnalyzeEMT.py" => fake_rate_files.select{|x| x.start_with?('e_')} + \
+               fake_rate_files.select{|x| x.start_with?('m_')} + \
+               fake_rate_files.select{|x| x.start_with?('t_')} + \
+               Array["optimizer.py",
+                     'WHAnalyzerBase.py',
+                     "fakerate_functions.py",
+                     "mcCorrectors.py"] do |t|
+  sh "touch #{t.name}"
+end
 
-mmt_fake_rates = Array[
-  "#{$frfit_dir}/m_wjets_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_wjets_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",
-]
+file "WHAnalyzeMMT.py" => fake_rate_files.select{|x| x.start_with?('m_')} + \
+               fake_rate_files.select{|x| x.start_with?('t_')} + \
+               ["optimizer.py",
+                'WHAnalyzerBase.py',
+                "fakerate_functions.py",
+                "mcCorrectors.py"] do |t|
+  sh "touch #{t.name}"
+end
 
-emt_fake_rates = Array[
-  "#{$frfit_dir}/e_wjets_pt10_h2taucuts_eJetPt.root", 
-  "#{$frfit_dir}/e_qcd_pt10_h2taucuts_eJetPt.root", 
-  "#{$frfit_dir}/m_wjets_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",
-]
-
-eet_fake_rates = Array[
-  "#{$frfit_dir}/ee_wjetsNoZmass_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/ee_wjetsNoZmass_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/ee_qcd_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/ee_qcd_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",
-]
-
+file "WHAnalyzeEET.py" => fake_rate_files.select{|x| x.start_with?( 'ee_')} + \
+               fake_rate_files.select{|x| x.start_with?('t_')} + \
+               ["optimizer.py",
+                'WHAnalyzerBase.py',
+                "fakerate_functions.py",
+                "mcCorrectors.py"] do |t|
+  sh "touch #{t.name}"
+end
 
 mmt_results = get_analyzer_results("WHAnalyzeMMT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
 emt_results = get_analyzer_results("WHAnalyzeEMT.py", samples['ewk'] + samples['data_em'] + samples['signal'])
@@ -561,34 +348,7 @@ eet_results = get_analyzer_results("WHAnalyzeEET.py", samples['ewk'] + samples['
 mmt_debug   = get_analyzer_results("WHAnalyzeMMT.py", Array['Zjets_M50'] )
 task :mmt_dbg => mmt_debug
 eet_data    = get_analyzer_results("WHAnalyzeEET.py", samples['data_ee'])
-task :eet_data => eet_data + eet_fake_rates
-
-# IF the FR fits change, make sure we re-run the analyses
-file "WHAnalyzeEMT.py" => [ 
-  "#{$frfit_dir}/e_wjets_pt10_h2taucuts_eJetPt.root", 
-  "#{$frfit_dir}/m_wjets_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/e_qcd_pt10_h2taucuts_eJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
-  sh "touch #{t.name}"
-end
-file "WHAnalyzeMMT.py" => [ 
-  "#{$frfit_dir}/m_wjets_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_wjets_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt20_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/m_qcd_pt10_h2taucuts_muonJetPt.root", 
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root",] do |t|
-  sh "touch #{t.name}"
-end
-file "WHAnalyzeEET.py" => [ 
-  "#{$frfit_dir}/ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt.root",
-  "#{$frfit_dir}/ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt.root",
-  "#{$frfit_dir}/ee_qcd_pt20_h2taucuts_electronJetPt.root",
-  "#{$frfit_dir}/ee_qcd_pt10_h2taucuts_electronJetPt.root",
-  "#{$frfit_dir}/charge_flip_prob_map.root",
-  "#{$frfit_dir}/t_ztt_pt20_mvaloose_tauPt.root"] do |t|
-  sh "touch #{t.name}"
-end
+task :eet_data => eet_data + fake_rate_files.select{|x| x.start_with?( 'ee_')}
 
 task :mmt => mmt_results
 task :emt => emt_results
@@ -596,7 +356,7 @@ task :eet => eet_results
 
 task :mmcontrol => get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm'])
 task :emcontrol => get_analyzer_results("ControlEM.py", samples['ewk'] + samples['data_em'])
-task :eecontrol => get_analyzer_results("ControlZEE.py", samples['ewk'] + samples['data_ee']) + ["#{$frfit_dir}/charge_flip_prob_map.root"] + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") 
+task :eecontrol => get_analyzer_results("ControlZEE.py", samples['data_ee']) + ["#{$frfit_dir}/charge_flip_prob_map.root"] + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") #samples['ewk'] +
 
 task :mmt_signal => get_analyzer_results("WHAnalyzeMMT.py", samples['signal'])
 task :emt_signal => get_analyzer_results("WHAnalyzeEMT.py", samples['signal'])
@@ -604,7 +364,85 @@ task :eet_signal => get_analyzer_results("WHAnalyzeEET.py", samples['signal'])
 task :run_signal => [
    :mmt_signal,
    :emt_signal,
-   :eet_signal,]
+   :eet_signal]
+
+task :mmt_signal120 => get_analyzer_results("WHAnalyzeMMT.py", samples['signal'].select{|x| x.include? "120"})
+task :emt_signal120 => get_analyzer_results("WHAnalyzeEMT.py", samples['signal'].select{|x| x.include? "120"})
+task :eet_signal120 => get_analyzer_results("WHAnalyzeEET.py", samples['signal'].select{|x| x.include? "120"})
+task :run_signal120 => [
+   :mmt_signal120,
+   :emt_signal120,
+   :eet_signal120]
+
+################################################################################
+# Recipes to make control plots
+#  targets:
+#      plot_zmm
+#      plot_zee
+#      plot_em
+################################################################################
+
+# Output directories
+
+$zmmdir = "results/#{$jobid}/plots/zmm/"
+directory $zmmdir
+
+file "#{$zmmdir}/.plot_timestamp" => Array["PlotControlZMM.py"]+get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm']) do |t|
+  sh "python PlotControlZMM.py"
+  sh "touch #{t.name}"
+end
+task :plot_zmm => "#{$zmmdir}/.plot_timestamp"
+
+$emdir  = "results/#{$jobid}/plots/em/"
+directory $emdir 
+
+file "#{$emdir}/.plot_timestamp" => Array["PlotControlZMM.py"]+get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm']) do |t|
+  sh "python PlotControlEM.py"
+  sh "touch #{t.name}"
+end
+task :plot_em  => "#{$emdir}/.plot_timestamp"
+
+$zeedir = "results/#{$jobid}/plots/zee/"
+directory $zeedir
+
+file "#{$zeedir}/.plot_timestamp" => Array["PlotControlZEE.py"]+get_analyzer_results("ControlZEE.py", samples['data_ee']) do |t|
+  t.investigation
+  sh "python PlotControlZEE.py"
+  sh "touch #{t.name}"
+end
+task :plot_zee => "#{$zeedir}/.plot_timestamp"
+
+################################################################################
+# Recipes to make signal plots
+#  targets:
+#      plot_mmt
+#      plot_eet
+#      plot_emt
+################################################################################
+# Output directories
+$mmtdir = "results/#{$jobid}/plots/mmt/"
+$emtdir = "results/#{$jobid}/plots/emt/"
+$eetdir = "results/#{$jobid}/plots/eet/"
+
+directory $mmtdir
+directory $eetdir
+directory $emtdir
+
+# The .root files with the shapes
+file "#{$mmtdir}/mmt_shapes_#{$period}.root" => ['WHPlotterMMT.py', 'WHPlotterBase.py'] do |t|
+  sh "python WHPlotterMMT.py"
+end
+task :plot_mmt => "#{$mmtdir}/mmt_shapes_#{$period}.root"
+
+file "#{$emtdir}/emt_shapes_#{$period}.root" => ['WHPlotterEMT.py', 'WHPlotterBase.py'] do |t|
+  sh "python WHPlotterEMT.py"
+end
+task :plot_emt => "#{$emtdir}/emt_shapes_#{$period}.root"
+
+file "#{$eetdir}/eet_shapes_#{$period}.root" => ['WHPlotterEET.py', 'WHPlotterBase.py'] do |t|
+  sh "python WHPlotterEET.py"
+end
+task :plot_eet => "#{$eetdir}/eet_shapes_#{$period}.root"
 
 ################################################################################
 # Recipes to make data cards (plots come for free)
@@ -616,16 +454,6 @@ task :run_signal => [
 #      copycards -> move cards to official HTT CVS area
 ################################################################################
 
-
-# Output directories
-$mmtdir = "results/#{$jobid}/plots/mmt/"
-$emtdir = "results/#{$jobid}/plots/emt/"
-$eetdir = "results/#{$jobid}/plots/eet/"
-
-directory $mmtdir
-directory $eetdir
-directory $emtdir
-
 # Recipes for adding stat. error shapes.  Makes a new file task:
 # input_file_stat_errors.root => input_file.root
 def add_fake_errors(input_file, prefix)
@@ -634,94 +462,97 @@ def add_fake_errors(input_file, prefix)
   file output_file => [input_file] do |t|
     sh "add_stat_shapes.py #{input_file} #{output_file} --filter '#{prefix}/fakes' --prefix CMS_vhtt_#{$period}_#{prefix}_fakeshape > #{output_sys_list}"
   end
+  return output_file
 end
 
-# The .root files with the shapes
-file "#{$mmtdir}/mmt_shapes_#{$period}.root" => ['WHPlotterMMT.py', 'WHPlotterBase.py'] do |t|
-  sh "python WHPlotterMMT.py"
-end
-add_fake_errors("#{$mmtdir}/mmt_shapes_#{$period}.root", "mmt")
-task :mmt_shapes => ["#{$mmtdir}/mmt_shapes_#{$period}_statshapes.root" ]
+mmt_shape_file = add_fake_errors("#{$mmtdir}/mmt_shapes_#{$period}.root", "mmt")
+task :mmt_shapes => mmt_shape_file
 
-file "#{$emtdir}/emt_shapes_#{$period}.root" => ['WHPlotterEMT.py', 'WHPlotterBase.py'] do |t|
-  sh "python WHPlotterEMT.py"
-end
-add_fake_errors("#{$emtdir}/emt_shapes_#{$period}.root", "emt")
-task :emt_shapes => ["#{$emtdir}/emt_shapes_#{$period}_statshapes.root" ]
+emt_shape_file = add_fake_errors("#{$emtdir}/emt_shapes_#{$period}.root", "emt")
+task :emt_shapes => emt_shape_file
 
-file "#{$eetdir}/eet_shapes_#{$period}.root" => ['WHPlotterEET.py', 'WHPlotterBase.py'] do |t|
-  sh "python WHPlotterEET.py"
-end
-add_fake_errors("#{$eetdir}/eet_shapes_#{$period}.root", "eet")
-task :eet_shapes => ["#{$eetdir}/eet_shapes_#{$period}_statshapes.root" ]
+eet_shape_file = add_fake_errors("#{$eetdir}/eet_shapes_#{$period}.root", "eet")
+task :eet_shapes => eet_shape_file
 
 $carddir = "results/#{$jobid}/cards"
 
 # Combine all category shape files into the datacard project
 file "#{$carddir}/shapes_unmorphed.root" => [
-  "#{$mmtdir}/mmt_shapes_#{$period}_statshapes.root", 
-  "#{$emtdir}/emt_shapes_#{$period}_statshapes.root"] do |t|
+  mmt_shape_file, 
+  emt_shape_file,
+  eet_shape_file] do |t|
   sh "mkdir -p #{$carddir}"
   sh "hadd -f #{t.name} #{t.prerequisites.join(' ')}"
 end
 
-# Masses where actually have signal samples
-pivot_masses = "120,130,140"
+cardmasses = get_sample_names('VH') #get all the VH samples available
+cardmasses = cardmasses.select{|x| x.include? "H2Tau"} #get only the H2Tau, to avid repetition
+cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
+cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it's really needed but can't harm)
 
+to_extrapolate = cardmasses.select{|x| x > 140}
 # Now do the horizontal morphing
 file "#{$carddir}/shapes.root" => ["#{$carddir}/shapes_unmorphed.root"] do |t|
-  puts "Doing horizontal morphing"
-  sh "mkdir -p #{$carddir}"
+  #skip horizontal morphing, no need for it by now this part is removed 
+  #after 4e52f2b62d4bb745145d0a5990661738de43709b in case you need it back
   sh "cp #{t.prerequisites[0]} #{t.name}"
-  sh "horizontal-morphing.py --categories='emt,mmt' --samples='WH{MASS},WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=1 -i #{t.name}"
+  sh "horizontal-morphing.py --categories='emt,mmt,eet' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 --extrapolate=#{to_extrapolate.join(",")} #{t.name}"
 end
 
 stat_shape_lists = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.txt")
 # We make these the dependency, since they are always rpoduced w/ the .txt lists
 stat_shapes = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.root")
 
-# We need to build the unc.conf and unc.vals with our stat shapes
-file "#{$carddir}/unc.conf" => ["card_config/unc.conf.base.#{$period}"] + stat_shapes do |t|
-  # Copy the basic template
-  sh "mkdir -p #{$carddir}"
-  sh "cp #{t.prerequisites[0]} #{t.name}"
-  # Append all the stat shape types
-  sh "echo '' >> #{t.name}"
-  sh "echo '# Stat shape uncertainties' >> #{t.name}"
-  stat_shape_lists.each do |list|
-    sh "cat #{list} | xargs -n 1 -I {} echo '{} shape' >> #{t.name}"
+
+def make_cgs_conf_task(channel)
+  ret = "#{$carddir}/#{channel}/cgs.conf"
+  file ret => ["card_config/cgs.conf.#{channel}.#{$period}"] do |t|
+    sh "mkdir -p #{$carddir}/#{channel}"
+    sh "cp #{t.prerequisites[0]} #{t.name}"
+  end
+  return ret
+end
+
+def make_unc_conf_task(channel)
+  ret = "#{$carddir}/#{channel}/unc.conf" 
+  file ret => ["card_config/unc.conf.#{channel}.#{$period}"] + Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.root") do |t|
+    # Copy the basic template
+    sh "mkdir -p #{$carddir}/#{channel}"
+    sh "cp #{t.prerequisites[0]} #{t.name}"
+    # Append all the stat shape types
+    sh "echo '' >> #{t.name}"
+    sh "echo '# Stat shape uncertainties' >> #{t.name}"
+    Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.txt").each do |list|
+      sh "cat #{list} | xargs -n 1 -I {} echo '{} shape' >> #{t.name}"
+    end
+  end
+  return ret
+end
+
+def make_unc_vals_task(channel)
+  ret = "#{$carddir}/#{channel}/unc.vals"
+  file ret => ["card_config/unc.vals.#{channel}.#{$period}", 
+    "#{$carddir}/shapes.root"] + Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.root") do |t|
+    # Copy the basic template
+    sh "mkdir -p #{$carddir}/#{channel}"
+    sh "cp #{t.prerequisites[0]} #{t.name}"
+    # Append all the stat shape types
+    sh "echo '' >> #{t.name}"
+    sh "echo '# Stat shape uncertainties' >> #{t.name}"
+    Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.txt").each do |list|
+      sh "cat #{list} | xargs -n 1 -I {} echo '#{channel} fakes {} 1.0' >> #{t.name}"
+    end
+    sh "python get_fake_systematic.py #{$carddir}/shapes.root #{channel} CMS_vhtt_#{channel}_fakes_#{$period} >> #{t.name}"
   end
 end
 
-file "#{$carddir}/unc.vals" => ["card_config/unc.vals.base.#{$period}", 
-  "#{$carddir}/shapes.root"] + stat_shapes do |t|
-  # Copy the basic template
-  sh "mkdir -p #{$carddir}"
-  puts t.investigation
-  sh "cp #{t.prerequisites[0]} #{t.name}"
-  # Append all the stat shape types
-  sh "echo '' >> #{t.name}"
-  sh "echo '# Stat shape uncertainties' >> #{t.name}"
-  puts stat_shape_lists.join(", ")
-  stat_shape_lists.each do |list|
-    sh "cat #{list} | grep mmt | xargs -n 1 -I {} echo 'mmt fakes {} 1.0' >> #{t.name}"
-    sh "cat #{list} | grep emt | xargs -n 1 -I {} echo 'emt fakes {} 1.0' >> #{t.name}"
-  end
-  sh "python get_fake_systematic.py #{$carddir}/shapes.root mmt CMS_vhtt_mmt_fakes_#{$period} >> #{t.name}"
-  sh "python get_fake_systematic.py #{$carddir}/shapes.root emt CMS_vhtt_emt_fakes_#{$period} >> #{t.name}"
-  # For testing a full correlated error.
-  #sh "echo 'emt fakes CMS_vhtt_llt_fakes 1.3' >> #{t.name}"
-  #sh "echo 'mmt fakes CMS_vhtt_llt_fakes 1.3' >> #{t.name}"
-end
-
-file "#{$carddir}/cgs.conf" => ["card_config/cgs.conf.#{$period}"] do |t|
-  sh "mkdir -p #{$carddir}"
-  sh "cp #{t.prerequisites[0]} #{t.name}"
-end
-
-def make_datacard_task(mass, channel, categories)
-  card = "#{$carddir}/#{mass}/vhtt_#{channel}.txt"  
-  file card => ["#{$carddir}/shapes.root", "#{$carddir}/unc.conf", "#{$carddir}/unc.vals", "#{$carddir}/cgs.conf"] do |t|
+def make_datacard_task(mass, channel)
+  card = "#{$carddir}/#{channel}/#{mass}/vhtt_#{channel}.txt"  
+  file card => ["#{$carddir}/shapes.root",
+                make_unc_conf_task(channel), 
+                make_unc_vals_task(channel), 
+                make_cgs_conf_task(channel)] do |t|
+    puts t.investigation
     sh "mkdir -p #{$carddir}"
     chdir($carddir) do
       sh "mkdir -p #{channel}/#{mass}"
@@ -730,54 +561,178 @@ def make_datacard_task(mass, channel, categories)
         sh "rm -f shapes.root"
         sh "ln -s ../../shapes.root"
       end
-      if categories == ''
-        sh "create-datacard.py -i shapes.root -o #{channel}/#{mass}/vhtt_#{channel}.txt #{mass}"
-      else
-        sh "create-datacard.py -i shapes.root -o #{channel}/#{mass}/vhtt_#{channel}.txt #{mass} --categories '#{categories}'"
+      chdir("#{channel}") do
+        sh "rm -f shapes.root"
+        sh "ln -s ../shapes.root"
+        sh "create-datacard.py -i shapes.root -o #{mass}/vhtt_#{channel}.txt #{mass} --categories '#{channel}'"
       end
     end
   end
   return card
 end
 
-task :cards => []
-
-cardmasses = Array[110, 120, 125, 130, 135, 140]
-
-cardmasses.each do |mass|
-  task :cards => make_datacard_task(mass, '2lt', '')
-  task :cards => make_datacard_task(mass, 'emt', 'emt')
-  task :cards => make_datacard_task(mass, 'mmt', 'mmt')
-end
-
-################################################################################
-### Copying card configuration to official place ###############################
-################################################################################
-
-#$httcombodir="/afs/hep.wisc.edu/cms/efriis/HIG-12-051/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
-$httcombodir="/afs/cern.ch/work/f/friis/HttLimits/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
-
-file "#{$httcombodir}/cgs-sm-#{$period}-00.conf" => ["#{$carddir}/cgs.conf"] do |t|
-    puts t.investigation
-  sh "cp -v #{t.prerequisites[0]} #{t.name}"
-end
-
-file "#{$httcombodir}/unc-sm-#{$period}-00.conf" => ["#{$carddir}/unc.conf"] do |t|
-  sh "cp -v #{t.prerequisites[0]} #{t.name}"
-end
-
-file "#{$httcombodir}/unc-sm-#{$period}-00.vals" => ["#{$carddir}/unc.vals"] do |t|
-  sh "cp -v #{t.prerequisites[0]} #{t.name}"
-end
-
-file "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root" => ["#{$carddir}/shapes.root"] do |t|
-  sh "cp -v #{t.prerequisites[0]} #{t.name}"
-end
-
-task :copycards => [
-  "#{$httcombodir}/cgs-sm-#{$period}-00.conf",
-  "#{$httcombodir}/unc-sm-#{$period}-00.conf",
-  "#{$httcombodir}/unc-sm-#{$period}-00.vals",
-  "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root"]  do |t|
-    puts t.investigation
+def combine_channels(mass)
+  #makes copy-paste easier
+  channel = 'llt'
+  card = "#{$carddir}/#{channel}/#{mass}/vhtt_#{channel}.txt"
+  file card => ["#{$carddir}/mmt/#{mass}/vhtt_mmt.txt",
+                "#{$carddir}/emt/#{mass}/vhtt_emt.txt",
+                "#{$carddir}/eet/#{mass}/vhtt_eet.txt"] do |t|
+    sh "mkdir -p #{$carddir}/#{channel}/#{mass}"
+    chdir("#{$carddir}/#{channel}/#{mass}") do
+      sh "rm -f shapes.root"
+      sh "ln -s ../../shapes.root"
+      local_paths = t.prerequisites.map{|x| x.sub($carddir,'../..')}
+      sh "combine_cards_with_names.sh #{ local_paths.join(' ')} > vhtt_#{channel}.txt"
+    end
   end
+  return card
+end
+
+def make_timestamp_task(cardmasses, channel)
+  timestamp = "#{$carddir}/#{channel}/.creation_timestamp"
+  file timestamp => cardmasses.map{|x| make_datacard_task(x, channel)} do |t|
+    sh "touch #{t.name}"
+  end
+end
+
+file "#{$carddir}/llt/.creation_timestamp" => cardmasses.map{|x| combine_channels(x)} do |t|
+  sh "touch #{t.name}"
+end
+
+task :cards => [make_timestamp_task(cardmasses, 'mmt'),
+                make_timestamp_task(cardmasses, 'emt'),
+                make_timestamp_task(cardmasses, 'eet'),
+                "#{$carddir}/llt/.creation_timestamp"
+               ]
+
+## cardmasses.each do |mass|
+##   task :cards => make_datacard_task(mass, 'mmt')
+##   task :cards => make_datacard_task(mass, 'emt')
+##   task :cards => make_datacard_task(mass, 'eet')
+##   task :cards => combine_channels(mass)
+##   #task :cards => make_datacard_task(mass, 'llt', '')
+## end
+
+################################################################################
+# Recipes to make limits
+#  targets:
+#      limit_mmt
+#      limit_emt
+#      limit_eet
+#      limit_llt
+#      limits
+################################################################################
+
+def make_limit_task(channel)
+  limit_timestamp = "#{$carddir}/#{channel}/.limits_computed"
+  file limit_timestamp => "#{$carddir}/#{channel}/.creation_timestamp" do |t|
+    sh "compute_limits.sh #{$carddir}/#{channel} 10 #{$blind}"
+  end
+  return limit_timestamp
+end
+
+task :limit_mmt => make_limit_task('mmt')
+task :limit_emt => make_limit_task('emt')
+task :limit_eet => make_limit_task('eet')
+task :limit_llt => make_limit_task('llt')
+task :limits => Array[:limit_mmt,
+                      :limit_emt,
+                      :limit_eet,
+                      :limit_llt]
+
+################################################################################
+# Recipes to harvest limits
+#  targets:
+#          harvest_limit_mmt
+#          harvest_limit_emt
+#          harvest_limit_eet
+#          harvest_limit_llt
+#          harvest_limits
+################################################################################
+
+def make_json_limit_task(channel)
+  json_stamp = "#{$carddir}/#{channel}/.limit_harvested"
+  file json_stamp => "#{$carddir}/#{channel}/.limits_computed" do |t|
+    sh "harvest_limits.py #{$carddir}/#{channel}"
+    sh "touch #{t.name}"
+  end
+  return json_stamp
+end
+
+task :harvest_limit_mmt => make_json_limit_task('mmt')
+task :harvest_limit_emt => make_json_limit_task('emt')
+task :harvest_limit_eet => make_json_limit_task('eet')
+task :harvest_limit_llt => make_json_limit_task('llt')
+task :harvest_limits => Array[:harvest_limit_mmt,
+                              :harvest_limit_emt,
+                              :harvest_limit_eet,
+                              :harvest_limit_llt]
+
+################################################################################
+# Recipes to harvest limits (for debugging/internal use)
+#  targets:
+#          plot_limit_mmt
+#          plot_limit_emt
+#          plot_limit_eet
+#          plot_limit_llt
+#          compare_limits
+#          plot_limits
+################################################################################
+$limitdir = "results/#{$jobid}/plots/limits/"
+
+def make_plot_limit_task(channel)
+  filename   = "#{$limitdir}/#{channel}_limit"
+  limit_plot = "#{filename}.png"
+  file limit_plot => "#{$carddir}/#{channel}/.limit_harvested" do |t|
+    sh "mkdir -p #{$limitdir}"
+    sh "plot_limit.py #{$carddir}/#{channel}/*.json -o #{filename} --legend-on-the-left --xrange=[110,140]"
+  end
+  return limit_plot
+end
+
+task :plot_limit_mmt => make_plot_limit_task('mmt')
+task :plot_limit_emt => make_plot_limit_task('emt')
+task :plot_limit_eet => make_plot_limit_task('eet')
+task :plot_limit_llt => make_plot_limit_task('llt')
+task :plot_limits => Array[:plot_limit_mmt,
+                           :plot_limit_emt,
+                           :plot_limit_eet,
+                           :plot_limit_llt]
+task :compare_limits => :plot_limits do |t|
+  sh "compare_limit.py #{$carddir}/???/*expected*.json -o #{$limitdir}/expected_limit_comparison --name-by=channel --legend-on-the-left --xrange=[110,140] --ref=llt"
+end
+
+
+
+#################################################################################
+#### Copying card configuration to official place ###############################
+#################################################################################
+# 
+# #$httcombodir="/afs/hep.wisc.edu/cms/efriis/HIG-12-051/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
+# $httcombodir="/afs/cern.ch/work/f/friis/HttLimits/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
+# 
+# file "#{$httcombodir}/cgs-sm-#{$period}-00.conf" => ["#{$carddir}/cgs.conf"] do |t|
+#     puts t.investigation
+#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
+# end
+# 
+# file "#{$httcombodir}/unc-sm-#{$period}-00.conf" => ["#{$carddir}/unc.conf"] do |t|
+#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
+# end
+# 
+# file "#{$httcombodir}/unc-sm-#{$period}-00.vals" => ["#{$carddir}/unc.vals"] do |t|
+#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
+# end
+# 
+# file "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root" => ["#{$carddir}/shapes.root"] do |t|
+#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
+# end
+# 
+# task :copycards => [
+#                     "#{$httcombodir}/cgs-sm-#{$period}-00.conf",
+#                     "#{$httcombodir}/unc-sm-#{$period}-00.conf",
+#                     "#{$httcombodir}/unc-sm-#{$period}-00.vals",
+#                     "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root"]  do |t|
+#   puts t.investigation
+# end

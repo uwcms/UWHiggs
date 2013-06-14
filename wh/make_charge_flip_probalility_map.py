@@ -17,6 +17,7 @@ from FinalStateAnalysis.PlotTools.RebinView import RebinView
 from FinalStateAnalysis.PlotTools.THBin import zipBins
 import logging
 import sys
+import os
 args = sys.argv[:]
 sys.argv = [sys.argv[0]]
 from FinalStateAnalysis.Utilities.rootbindings import ROOT
@@ -128,9 +129,10 @@ if __name__ == "__main__":
     eff_map_statUp.Write()
     eff_map_statDown.Write()
     worse_rel_err.Write()
+    base_dir   = os.path.dirname(args.num)
 
     m          = ROOT.RooRealVar('m', 'm', 55,55,200)
-    os_trkMass = ROOT.RooDataHist('higgs_data','higgs_data',ROOT.RooArgList(m),input_view.Get('charge/os_trkMass'))
+    os_trkMass = ROOT.RooDataHist('higgs_data','higgs_data',ROOT.RooArgList(m),input_view.Get(os.path.join(base_dir,'os_trkMass')))
     mean       = ROOT.RooRealVar('mean', 'mean', 90,80,110)
     sigmaL     = ROOT.RooRealVar('sigmaL' ,'sigmaL' ,30 ,0 ,100)
     sigmaR     = ROOT.RooRealVar('sigmaR' ,'sigmaR' ,25 ,0 ,100)
@@ -152,7 +154,8 @@ if __name__ == "__main__":
     )
     os_func.plotOn(frame, ROOT.RooFit.LineColor(ROOT.EColor.kAzure))
     frame.Draw()
-    canvas.Print("/afs/hep.wisc.edu/home/mverzett/public_html/mytests/eet/os_trkMass.png")
+    canvas.Print(args.output.replace(".root","os_trkMass.png"))
+    canvas.Print(args.output.replace(".root","os_trkMass.pdf"))
 
     #Fizin all the parameters
     #mean.setVal(0)
@@ -163,7 +166,7 @@ if __name__ == "__main__":
     alphaR.setConstant(True)
 
     m.setBins(10000,"cache")
-    ss_trkMass = ROOT.RooDataHist('ss_trkMass','ss_trkMass',ROOT.RooArgList(m), input_view.Get('charge/ss_trkMass'))
+    ss_trkMass = ROOT.RooDataHist('ss_trkMass','ss_trkMass',ROOT.RooArgList(m), input_view.Get(os.path.join(base_dir,'ss_trkMass')))
     mass_scale = ROOT.RooRealVar('mass_scale' ,'mass_scale', 1, 0.8,1.2)
     loss_fcn   = ROOT.RooFormulaVar('loss_fcn' ,'fake_width' , '@0 * @1', ROOT.RooArgList(mass_scale,m))
     ss_func    = ROOT.RooCruijff( 'ss_func', 'ss_func', loss_fcn, mean, sigmaL, sigmaR, alphaL, alphaR)
@@ -183,7 +186,8 @@ if __name__ == "__main__":
     
     ss_func.plotOn(frame, ROOT.RooFit.LineColor(ROOT.EColor.kAzure))
     frame.Draw()
-    canvas.Print("/afs/hep.wisc.edu/home/mverzett/public_html/mytests/eet/ss_trkMass.png")
+    canvas.Print(args.output.replace(".root","ss_trkMass.png"))
+    canvas.Print(args.output.replace(".root","ss_trkMass.pdf"))
 
     mass_scale.Write()
     outFile.Close()

@@ -6,7 +6,7 @@ Contains final plotting/analysis code for UW Higgs analyses.
 Installation
 ------------
 
-Start from a CMSSW 5_3_3 or greater working area.
+Start from a CMSSW 5_3_7 or greater working area.
 Clone the code from the remote repository::
 
    git clone --recursive https://github.com/uwcms/UWHiggs.git

@@ -6,17 +6,17 @@ Author: Evan K. Frii
 
 '''
 
+import logging
+import sys
+logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 from RecoLuminosity.LumiDB import argparse
 import fnmatch
 from FinalStateAnalysis.PlotTools.RebinView import RebinView
 from FinalStateAnalysis.PlotTools.SubtractionView import SubtractionView
-import logging
 import glob
 import os
-import sys
 
 log = logging.getLogger("CorrectFakeRateData")
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--files', nargs='+')
@@ -33,8 +33,6 @@ if __name__ == "__main__":
     import rootpy.plotting.views as views
     import rootpy.plotting as plotting
     from FinalStateAnalysis.MetaData.data_views import data_views
-
-    logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
     files = []
     for pattern in args.files:
@@ -85,13 +83,15 @@ if __name__ == "__main__":
     wz_view = get_view('WZ*')
     zz_view = get_view('ZZ*')
     data = rebin_view(the_views['data']['view'])
-
+    
     corrected_view = int_view(
         SubtractionView(data, wz_view, zz_view, restrict_positive=True))
 
+    log.debug('creating output file')
     output = io.open(args.outputfile, 'RECREATE')
     output.cd()
 
+    log.debug('getting from corrected view')
     corr_numerator = corrected_view.Get(args.numerator)
     corr_denominator = corrected_view.Get(args.denom)
 
