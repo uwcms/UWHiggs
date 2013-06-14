@@ -55,10 +55,16 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_H_histos(folder)
         self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
 
-    def probe1_id(self, row):
+    def leg1_id(self, row):
+        return bool(row.m1PFIDTight) and selections.muIsoLoose(row, 'm1')
+
+    def leg2_id(self, row):
+        return bool(row.m2PFIDTight) and selections.muIsoLoose(row, 'm2')
+
+    def leg3_id(self, row):
         return bool(row.m3PFIDTight) and selections.muIsoTight(row, 'm3') ##THIS SEEMS too low
 
-    def probe2_id(self, row):
+    def leg4_id(self, row):
         return bool(row.tMediumIso) ##Why not tMediumMVAIso
 
     def preselection(self, row):
@@ -84,11 +90,17 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
             mcCorrectors.get_muon_corrections(row,'m1','m2','m3') * \
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 
-    def obj1_weight(self, row):
+    def leg1_weight(self, row):
+        return fr_fcn.mu_loose_fr( row.m1Pt) / (1 -  fr_fcn.mu_loose_fr( row.m1Pt));
+
+    def leg2_weight(self, row):
+        return fr_fcn.mu_loose_fr( row.m2Pt) / (1 -  fr_fcn.mu_loose_fr( row.m2Pt));
+
+    def leg3_weight(self, row):
         #return fr_fcn.mu_tight_jetpt_fr( row.m3JetPt)
         return fr_fcn.mu_tight_fr( row.m3Pt)/(1 - fr_fcn.mu_tight_fr( row.m3Pt))
 
-    def obj2_weight(self, row):
+    def leg4_weight(self, row):
         return fr_fcn.tau_medium_fr(row.tPt)/(1 - fr_fcn.tau_medium_fr(row.tPt))
 
 
