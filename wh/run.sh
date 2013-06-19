@@ -8,15 +8,15 @@ source jobid.sh
 
 export jobid=$jobid8
 rake fakerates
-#rake fits
+rake fits
 
 #rake mmcontrol
 #rake emcontrol
-#rake eecontrol
+rake eecontrol
 
-#rake mmt
-#rake emt
-#rake eet
+rake mmt
+rake emt
+rake eet
 
 #export jobid=$jobid7
 #rake fakerates

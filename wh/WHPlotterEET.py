@@ -138,232 +138,9 @@ if __name__ == "__main__":
         ## plotter.add_cms_blurb(sqrts)
         ## plotter.save('mcdata-ss-p1p2f3-e1e2Mass')
 
-
-
         ###########################################################################
         ##  Signal region plots    ################################################
         ###########################################################################
-
-        #BEGIN - New topologicla variables
-        ## sig_view = plotter.make_signal_views(20, unblinded=(not plotter.blind))
-        ## vh_10x   = views.StyleView(
-        ##     sig_view['signal120'], 
-        ##     **data_styles['VH*']
-        ##     )
-        ## subm_hist= vh_10x.Get('e2_t_Mass')
-        ## subm_hist.SetTitle('subleading Mass')
-        ## subm_hist.Draw()
-        ## true_hist= vh_10x.Get('true_mass')
-        ## true_hist.SetTitle('true Mass')
-        ## true_hist.SetLineColor(2)
-        ## true_hist.Draw('same')
-        ## subm_hist.GetYaxis().SetRangeUser(0,max([subm_hist.GetMaximum(),true_hist.GetMaximum()])*1.2)
-        ## legend = plotter.add_legend([subm_hist,true_hist], leftside=False)
-        ## legend.Draw()
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('study-trueMass')
-
-        plotter.plot_final('LT', 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-LT')
-
-        rebin=20
-        plotter.plot_final_f3('tToMETDPhi',  rebin, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
-        sig_view = plotter.make_signal_views(rebin, unblinded=(not plotter.blind))
-        vh_10x   = views.TitleView(
-            views.StyleView(
-                views.ScaleView(sig_view['signal120'], 120),
-                **remove_name_entry(data_styles['VH*'])
-                ),
-                "(20#times) m_{H} = 125"
-            )
-        sign_hist= vh_10x.Get('tToMETDPhi')
-        sign_hist.Draw('same')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-tToMETDPhi')
-
-        plotter.plot_final('e1_e2_Mass', 10, qcd_weight_fraction=0.5, stack_higgs=False,
-                           maxy='auto', show_error=True, x_range=[20,120], leftside_legend=True,
-                           xaxis='M_{ee} (GeV)')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e1_e2_Mass')
-
-        plotter.plot_final('pt_ratio', 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-pt_ratio')
-
-        plotter.plot_final('type1_pfMetEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-metEt')
-
-        plotter.plot_final_f3('type1_pfMetEt'    , 5, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-metEt')
-
-        plotter.plot_final('Mass'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-Mass')
-
-        plotter.plot_final_f3('Mass'    , 5, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-Mass')
-
-
-        plotter.plot_final('e1_e2_Pt'    , 1, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,300])
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e1_e2_Pt')
-
-        plotter.plot_final('e1_e2_DR'    , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,6])
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e1_e2_DR')
-
-        plotter.plot_final("e1_e2_CosThetaStar", 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e1_e2_CosThetaStar')
-        plotter.plot_final("e1_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e1_t_CosThetaStar')
-        plotter.plot_final("e2_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e2_t_CosThetaStar')
-
-        plotter.defaults['show_charge_fakes'] = False
-        plotter.plot_final("e1_e2_CosThetaStar", 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e1_e2_CosThetaStar-nochargefakes')
-        plotter.plot_final("e1_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e1_t_CosThetaStar-nochargefakes')
-        plotter.plot_final("e2_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e2_t_CosThetaStar-nochargefakes')
-        plotter.defaults['show_charge_fakes'] = True
-
-        plotter.plot_final_f3("e1_e2_CosThetaStar", 10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-e1_e2_CosThetaStar')
-        plotter.plot_final_f3("e1_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-e1_t_CosThetaStar')
-        plotter.plot_final_f3("e2_t_CosThetaStar" , 10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-e2_t_CosThetaStar')
-
-        plotter.plot_final_f3('e1_e2_DR',  10, qcd_weight_fraction=0.5, maxy='auto', x_range=[0,6])
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-e1_e2_DR')
-
-        plotter.plot_final_f3('e1_e2_Pt',  1, qcd_weight_fraction=0.5, maxy='auto', x_range=[0,300])
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-e1_e2_Pt')
-
-        plotter.plot_final_f3('e1Pt',  10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-e1Pt')
-
-        plotter.plot_final_f3('e2Pt',  10, qcd_weight_fraction=0.5, maxy='auto', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-e2Pt')
-
-        plotter.plot_final_f3('e1_e2_Mass', 2, qcd_weight_fraction=0.5, show_error=True, maxy=80, x_range=[60,120],xaxis='M_{ee} (GeV)')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-e1_e2_Mass')
-
-        plotter.plot_final_f3('e2_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', show_error=True, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.canvas.SetGridx()
-        plotter.canvas.SetGridy()
-        plotter.save('study-f3-subMass')
-        plotter.canvas.SetGridx()
-        plotter.canvas.SetGridy()
-        plotter.canvas.SetLogy(True)
-        plotter.save('study-f3-subMass-logscale')
-
-        plotter.plot_final('e2_t_Mass', 10, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.canvas.SetGridx()
-        plotter.canvas.SetGridy()
-        plotter.save('study-subMass')
-        plotter.canvas.SetGridx()
-        plotter.canvas.SetGridy()
-        plotter.canvas.SetLogy(True)
-        plotter.save('study-subMass-logscale')
-
-        plotter.plot_final('e1_t_Mass', 10, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-leadMass')
-        plotter.canvas.SetLogy(True)
-        plotter.save('study-leadMass-logscale')
-
-        plotter.plot_final_f3('e1_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', show_error=True, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-leadMass')
-        plotter.canvas.SetLogy(True)
-        plotter.save('study-f3-leadMass-logscale')
-
-        plotter.plot_final('e2RelPFIsoDB', 5, qcd_weight_fraction=0.5, stack_higgs=False, xaxis='e2RelPFIsoDB', maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e2RelPFIsoDB')
-
-        plotter.plot_final('e1RelPFIsoDB', 5, qcd_weight_fraction=0.5, xaxis='e1RelPFIsoDB', stack_higgs=False, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-e1RelPFIsoDB')
-
-        plotter.plot_final_f3('e2RelPFIsoDB', 5, qcd_weight_fraction=0.5, xaxis='e2RelPFIsoDB', show_error=True, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-e2RelPFIsoDB')
-
-        plotter.plot_final_f3('e1RelPFIsoDB', 5, qcd_weight_fraction=0.5, xaxis='e2RelPFIsoDB', show_error=True, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-e1RelPFIsoDB')    
-        ## ## ##2D histograms
-        ## signal_region_views = plotter.make_signal_views(1, unblinded=True, qcd_weight_fraction=0.5)
-        ## signal_region_views['signal'] = views.SumView(*[view for sample, view in signal_region_views.iteritems() if 'signal' in sample])
-        ## ROOT.gStyle.SetPalette(53)
-        ## vars_to_plot = [
-        ##     ('type1_pfMetEt#e1_e2_Mass'            ,  5,  4),
-        ##     ("e1_e2_CosThetaStar#e1_e2_Mass"       , 10,  4), 
-        ##     ("e1_t_CosThetaStar#e1_e2_Mass"        , 10,  4),  
-        ##     ("e2_t_CosThetaStar#e1_e2_Mass"        , 10,  4),  
-        ##     ("e1_e2_CosThetaStar#e1_t_CosThetaStar", 10, 10),  
-        ##     ("e1_e2_CosThetaStar#e2_t_CosThetaStar", 10, 10),  
-        ##     ("e1_t_CosThetaStar#e2_t_CosThetaStar" , 10, 10),  
-        ##     ]
-        ## samples  = [
-        ##     'signal',
-        ##     'charge_fakes',
-        ##     ]
-        ## for sample in samples:
-        ##     view = signal_region_views[sample]
-        ##     for var, rebinx, rebiny in vars_to_plot:
-        ##         histo = view.Get(var)
-        ##         x,y   = tuple(var.split('#'))
-        ##         histo.GetXaxis().SetTitle(x)
-        ##         histo.GetYaxis().SetTitle(y)
-        ##         histo.Rebin2D(rebinx, rebiny)
-        ##         histo.Draw('colz')
-        ##         plotter.add_cms_blurb(sqrts)
-        ##         plotter.save('study-%s-%s' % (var.replace('#', '__'), sample))
-
-        ## vars_to_plot = [
-        ##     ('type1_pfMetEt'     ,  5),
-        ##     ('e1_e2_Mass'        ,  2),
-        ##     ("e1_e2_CosThetaStar", 10), 
-        ##     ("e1_t_CosThetaStar" , 10),  
-        ##     ("e2_t_CosThetaStar" , 10),  
-        ##     ]
-
-        ## for var, rebinx in vars_to_plot:
-        ##     signalh = plotter.rebin_view(signal_region_views['signal'], rebinx).Get(var)
-        ##     cfakesh = plotter.rebin_view(signal_region_views['charge_fakes'], rebinx).Get(var)
-        ##     cfakesh.Draw()
-        ##     signalh.Draw('same')
-        ##     plotter.add_cms_blurb(sqrts)
-        ##     plotter.save('study-signalSum-%s' % var)
-
-
-
-        ## #END
 
         plotter.plot_final('e1Pt', 10)
         plotter.add_cms_blurb(sqrts)
@@ -417,6 +194,38 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-LT')
 
+        ###########################################################################
+        ##  f3 region plots        ################################################
+        ###########################################################################
+        
+        plotter.plot_final_f3('e2_t_Mass', 20, xaxis='m_{e_{2}#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass')
+
+        plotter.plot_final_f3('e1_t_Mass', 20, xaxis='m_{e_{1}#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-e1tMass')
+
+        plotter.plot_final_f3('e1_e2_Mass', 20, xaxis='m_{ee} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-e1e2Mass')
+
+        ###########################################################################
+        ##  charge flip region plots        #######################################
+        ###########################################################################
+
+        plotter.plot_final_f3('charge_flip_CR/e2_t_Mass', 20, xaxis='m_{e_{2}#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-chargeFlip-subMass')
+
+        plotter.plot_final_f3('charge_flip_CR/e1_t_Mass', 20, xaxis='m_{e_{1}#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-chargeFlip-e1tMass')
+
+        plotter.plot_final_f3('charge_flip_CR/e1_e2_Mass', 5, xaxis='m_{ee} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-chargeFlip-e1e2Mass')
+        
         #END OF if not options.dry_run:
     ###########################################################################
     ##  Making shape file     #################################################
@@ -424,28 +233,29 @@ if __name__ == "__main__":
     prefixes = [options.prefix+'$'] if options.prefix else ['']
     prefixes = [i+'$' for i in options.prefixes.split(',') if i] if options.prefixes else prefixes
     for prefix in prefixes:
+        shape_prefix = prefix if len(prefixes) > 1 else ''
+        shape_prefix = shape_prefix.replace(':','_').replace('$','_')
+
         plotter.plot_final_f3(prefix+'e2_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', show_error=True, maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.canvas.SetGridx()
         plotter.canvas.SetGridy()
-        plotter.save('final-%s-f3-subMass' % options.prefix)
-        plotter.canvas.SetGridx()
-        plotter.canvas.SetGridy()
-        plotter.canvas.SetLogy(True)
-        plotter.save('final-%s-f3-subMass-logscale' % options.prefix)
+        plotter.save('final-%s-f3-subMass' % shape_prefix)
 
         plotter.plot_final(prefix+'e2_t_Mass', 10, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.canvas.SetGridx()
         plotter.canvas.SetGridy()
-        plotter.save('final-%s-subMass' % options.prefix)
+        plotter.save('final-%s-subMass' % shape_prefix)
+
+        plotter.plot_final(prefix+'LT', 5, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
+        plotter.add_cms_blurb(sqrts)
         plotter.canvas.SetGridx()
         plotter.canvas.SetGridy()
-        plotter.canvas.SetLogy(True)
-        plotter.save('final-%s-subMass-logscale' % options.prefix)
+        plotter.save('final-%s-LT' % shape_prefix)
 
-        shape_prefix = prefix if len(prefixes) > 1 else ''
-        shape_prefix = shape_prefix.replace(':','_').replace('$','_')
+
+
         shape_file = ROOT.TFile(
             os.path.join(plotter.outputdir, '%seet_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
         shape_dir = shape_file.mkdir('eet')

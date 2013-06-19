@@ -62,10 +62,10 @@ class WHAnalyzeEET(WHAnalyzerBase):
             return f
 
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.e2Pt/row.e1Pt, weight)
-        self.hfunc["e*1_e2_Mass"] = lambda row, weight: ( frfits.mass_scaler['eid13Looseh2taucuts']( row.e1_e2_Mass), weight)
-        self.hfunc["e*1_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler['eid13Looseh2taucuts']( row.e1_t_Mass ), weight)
-        self.hfunc["e1_e*2_Mass"] = lambda row, weight: ( frfits.mass_scaler['eid13Looseh2taucuts']( row.e1_e2_Mass), weight)
-        self.hfunc["e*2_t_Mass" ] = lambda row, weight: ( frfits.mass_scaler['eid13Looseh2taucuts']( row.e2_t_Mass ), weight)
+        self.hfunc["e*1_e2_Mass"] = lambda row, weight: ( frfits.default_scaler( row.e1_e2_Mass), weight)
+        self.hfunc["e*1_t_Mass" ] = lambda row, weight: ( frfits.default_scaler( row.e1_t_Mass ), weight)
+        self.hfunc["e1_e*2_Mass"] = lambda row, weight: ( frfits.default_scaler( row.e1_e2_Mass), weight)
+        self.hfunc["e*2_t_Mass" ] = lambda row, weight: ( frfits.default_scaler( row.e2_t_Mass ), weight)
 	self.hfunc["my_selection_info" ] = self.fill_id_info
 
 	self.hfunc["e1_e2_Mass_barr"] = make_both_barrel( attr_getter("e1_e2_Mass"))
@@ -86,7 +86,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
     def book_histos(self, folder):
 	#PLOTS TO FILL IN ANY CASE
-	for key in optimizer.grid_search:
+	for key in self.grid_search:
 	    prefix = key+'$' if key else ''
 	    self.book(folder, prefix+"LT", "L_T", 100, 0, 300)
             self.book(folder, prefix+"e2_t_Mass", "subleadingMass", 200, 0, 200)
@@ -95,7 +95,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
             if 'c2' in folder:
                 self.book(folder, prefix+"e*2_t_Mass", "subleadingMass with misid sclaing correction", 200, 0, 200)
 
-        if len(optimizer.grid_search.keys()) == 1:
+        if len(self.grid_search.keys()) == 1:
             if 'c1' in folder:
                 self.book(folder, "e*1_e2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
                 self.book(folder, "e*1_t_Mass", "leadingMass with misid sclaing correction", 200, 0, 200)

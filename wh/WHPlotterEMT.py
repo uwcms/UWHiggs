@@ -308,16 +308,22 @@ if __name__ == "__main__":
     prefixes = [options.prefix+'$'] if options.prefix else ['']
     prefixes = [i+'$' for i in options.prefixes.split(',') if i] if options.prefixes else prefixes
     for prefix in prefixes:
+        shape_prefix = prefix if len(prefixes) > 1 else ''
+        shape_prefix = shape_prefix.replace(':','_').replace('$','_')
+        
+        plotter.plot_final(prefix+'LT', 5, xaxis='LT (GeV)', qcd_weight_fraction=0.5)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('study-%s-LT-qweight05' % shape_prefix)
+
         plotter.plot_final(prefix+'subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
         plotter.add_cms_blurb(sqrts)
-        plotter.save('study-%s-subMass-qweight05' % options.prefix)
+        plotter.save('study-%s-subMass-qweight05' % shape_prefix)
 
         plotter.plot_final_f3(prefix+'subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
-        plotter.save('study-%s-f3-qweight05-werror-subMass' % options.prefix)
+        plotter.save('study-%s-f3-qweight05-werror-subMass' % shape_prefix)
 
-        shape_prefix = prefix if len(prefixes) > 1 else ''
-        shape_prefix = shape_prefix.replace(':','_').replace('$','_')
+        print "saving shape file %s" % ('%semt_shapes_%s.root' % (shape_prefix, plotter.period))
         shape_file = ROOT.TFile(
             os.path.join(plotter.outputdir, '%semt_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
         shape_dir = shape_file.mkdir('emt')

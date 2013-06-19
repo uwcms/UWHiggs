@@ -28,16 +28,12 @@ binsEndcap   = 5
 binsBarrel   = 4
 ptbins       = [10.,30.,50.,130.]
 etabins      = [0.0, 0.35, 0.70, 1., 1.25, 1.48, 1.6, 1.7, 1.8, 1.9, 2.10, 2.30, 2.5]
-lep_id = [
-    'h2taucuts',
-    'h2taucuts020',
-    'idiso02',
-    'eid13Looseh2taucuts',
-    'eid13Looseh2taucuts020',
-    'eid13Looseidiso02',
-    'eid13Tighth2taucuts',
-    'eid13Tighth2taucuts020',
-    'eid13Tightidiso02',
+defined_eids = selections.electronIds.keys()
+iso_points   = ['iso02', 'h2taucuts', 'h2taucuts020']
+lep_id       = [
+    '_'.join([i,j])
+    for i in defined_eids
+    for j in iso_points
     ]
 
 class ChargeFlipProbabilityEE(MegaBase):

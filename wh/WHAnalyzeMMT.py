@@ -28,13 +28,13 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         self.pucorrector = mcCorrectors.make_puCorrector('doublemu')
 
     def book_histos(self, folder):
-        for key in optimizer.grid_search:
+        for key in self.grid_search:
             prefix = key+'$' if key else ''
             self.book(folder, prefix+"m2_t_Mass", "subleadingMass", 200, 0, 200)
             self.book(folder, prefix+"LT" ,  "LT" , 100, 0., 500)
             self.book(folder, prefix+"m2_t_Pt", "subleadingPt", 400, 0, 400)
 
-        if len(optimizer.grid_search.keys()) == 1:
+        if len(self.grid_search.keys()) == 1:
             self.book(folder, "m2RelPFIsoDB", "m2Iso", 100, 0, 0.3)
             self.book(folder, "m1_t_Mass", "leadingMass", 200, 0, 200)
             self.book(folder, "m1_m2_Mass", "Muon 1-2 Mass", 120, 0, 120)

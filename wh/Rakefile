@@ -103,7 +103,7 @@ fr_analyzer_sample_map = Hash[
 ]
 
 fr_analyzer_dep_map = Hash[
-  "ChargeFlipProbabilityEE.py" => Array["baseSelections.py", "optimizer.py"],
+  "ChargeFlipProbabilityEE.py" => Array["baseSelections.py"], # "optimizer.py"],
   "FakeRatesEE.py"  => Array["baseSelections.py"],# + samples['diboson'],
   "FakeRatesEM.py"  => Array["baseSelections.py"],
   "FakeRatesMM.py"  => Array["baseSelections.py"],
@@ -184,185 +184,74 @@ def make_exponential(chan)
              ]
 end
 
+iso_points   = ['iso02', 'h2taucuts', 'h2taucuts020']
+electronIds  = ['eid12Loose', 'eid12Medium', 'eid12Tight'] #, 'eid13Loose', 'eid13Tight']
+elewps       = electronIds.product(iso_points)
+elewps       = elewps.map{|x,y| "#{x}_#{y}"}
+pt_regions   = ['pt10', 'pt20']
+muonwps      = ['h2taucuts', 'h2taucuts020', 'pfidiso02']
+fr_fits      = Hash.new
 
-# Fake rate fit configurations
-fr_fits = Hash[
-  # Format is type_region_denom_num_variable
-  ####################
-  ## Electrons Func ##
-  ####################
-  #EM Sample
-  #h2taucuts
-  "e_wjets_pt10_h2taucuts_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_h2taucuts_eJetPt" => make_exponential('em'),
+#############
+#  EM datas
+#############
+emcrs = ['qcd', 'wjets']
+elewps.each do |ele_wp|
+  emcrs.each do |cr|
+    pt_regions.each do |ptr|
+      key = "e_#{cr}_#{ptr}_#{ele_wp}_eJetPt"
+      fr_fits[key] =  make_exponential('em') #fit EVERYTHING with exponential, in case change afterwards
+    end
+  end
+end
 
-  "e_wjets_pt20_h2taucuts_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_h2taucuts_eJetPt" => make_exponential('em'),
+#############
+#  EE datas
+#############
+eecrs = ['qcd', 'wjetsNoZmass']
+elewps.each do |ele_wp|
+  eecrs.each do |cr|
+    key = "ee_#{cr}_pt10_#{ele_wp}_electronJetPt"
+    fr_fits[key] =  make_landau('ee') #fit pt10 with landau
 
-  #h2taucuts020
-  "e_wjets_pt10_h2taucuts020_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_h2taucuts020_eJetPt" => make_exponential('em'),
+    key = "ee_#{cr}_pt20_#{ele_wp}_electronJetPt"
+    fr_fits[key] =  make_exponential('ee') #fit pt20 with expo
+  end
+end
 
-  "e_wjets_pt20_h2taucuts020_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_h2taucuts020_eJetPt" => make_exponential('em'),
 
-  #mvaidiso02
-  "e_wjets_pt10_idiso02_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_idiso02_eJetPt" => make_exponential('em'),
+#############
+#  MM datas
+#############
+mmcrs = ['qcd', 'wjets']
+muonwps.each do |mu_wp|
+  mmcrs.each do |cr|
+    pt_regions.each do |ptr|
+      key = "m_#{cr}_#{ptr}_#{mu_wp}_muonJetPt"
+      fr_fits[key] =  make_landau('mm') #fit EVERYTHING with exponential, in case change afterwards
+    end
+  end
+end
 
-  "e_wjets_pt20_idiso02_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_idiso02_eJetPt" => make_exponential('em'),
 
-  #h2taucuts
-  "e_wjets_pt10_eid13Looseh2taucuts_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_eid13Looseh2taucuts_eJetPt" => make_exponential('em'),
-
-  "e_wjets_pt20_eid13Looseh2taucuts_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_eid13Looseh2taucuts_eJetPt" => make_exponential('em'),
-
-  #h2taucuts020
-  "e_wjets_pt10_eid13Looseh2taucuts020_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_eid13Looseh2taucuts020_eJetPt" => make_exponential('em'),
-
-  "e_wjets_pt20_eid13Looseh2taucuts020_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_eid13Looseh2taucuts020_eJetPt" => make_exponential('em'),
-
-  #mvaidiso02
-  "e_wjets_pt10_eid13Looseidiso02_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_eid13Looseidiso02_eJetPt" => make_exponential('em'),
-
-  "e_wjets_pt20_eid13Looseidiso02_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_eid13Looseidiso02_eJetPt" => make_exponential('em'),
-
-  #h2taucuts
-  "e_wjets_pt10_eid13Tighth2taucuts_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_eid13Tighth2taucuts_eJetPt" => make_exponential('em'),
-
-  "e_wjets_pt20_eid13Tighth2taucuts_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_eid13Tighth2taucuts_eJetPt" => make_exponential('em'),
-
-  #h2taucuts020
-  "e_wjets_pt10_eid13Tighth2taucuts020_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_eid13Tighth2taucuts020_eJetPt" => make_exponential('em'),
-
-  "e_wjets_pt20_eid13Tighth2taucuts020_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_eid13Tighth2taucuts020_eJetPt" => make_exponential('em'),
-
-  #mvaidiso02
-  "e_wjets_pt10_eid13Tightidiso02_eJetPt" => make_exponential('em'),
-  "e_qcd_pt10_eid13Tightidiso02_eJetPt" => make_exponential('em'),
-
-  "e_wjets_pt20_eid13Tightidiso02_eJetPt" => make_exponential('em'),
-  "e_qcd_pt20_eid13Tightidiso02_eJetPt" => make_exponential('em'),
-
-  #EE Sample
-  #h2taucuts
-  "ee_wjetsNoZmass_pt10_h2taucuts_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_h2taucuts_electronJetPt" => make_landau('ee'),
-
-  "ee_wjetsNoZmass_pt20_h2taucuts_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_h2taucuts_electronJetPt" => make_exponential('ee'),
-
-  #h2taucuts020
-  "ee_wjetsNoZmass_pt10_h2taucuts020_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_h2taucuts020_electronJetPt" => make_landau('ee'),
-
-  "ee_wjetsNoZmass_pt20_h2taucuts020_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_h2taucuts020_electronJetPt" => make_exponential('ee'),
-
-  #idiso02
-  "ee_wjetsNoZmass_pt10_idiso02_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_idiso02_electronJetPt" => make_landau('ee'),
-
-  "ee_wjetsNoZmass_pt20_idiso02_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_idiso02_electronJetPt" => make_exponential('ee'),
-
-  #h2taucuts
-  "ee_wjetsNoZmass_pt10_eid13Looseh2taucuts_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_eid13Looseh2taucuts_electronJetPt" => make_landau('ee'),
-
-  "ee_wjetsNoZmass_pt20_eid13Looseh2taucuts_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_eid13Looseh2taucuts_electronJetPt" => make_exponential('ee'),
-
-  #h2taucuts020
-  "ee_wjetsNoZmass_pt10_eid13Looseh2taucuts020_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_eid13Looseh2taucuts020_electronJetPt" => make_landau('ee'),
-
-  "ee_wjetsNoZmass_pt20_eid13Looseh2taucuts020_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_eid13Looseh2taucuts020_electronJetPt" => make_exponential('ee'),
-
-  #idiso02
-  "ee_wjetsNoZmass_pt10_eid13Looseidiso02_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_eid13Looseidiso02_electronJetPt" => make_landau('ee'),
-
-  "ee_wjetsNoZmass_pt20_eid13Looseidiso02_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_eid13Looseidiso02_electronJetPt" => make_exponential('ee'),
-
-  #h2taucuts
-  "ee_wjetsNoZmass_pt10_eid13Tighth2taucuts_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_eid13Tighth2taucuts_electronJetPt" => make_landau('ee'),
-
-  "ee_wjetsNoZmass_pt20_eid13Tighth2taucuts_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_eid13Tighth2taucuts_electronJetPt" => make_exponential('ee'),
-
-  #h2taucuts020
-  "ee_wjetsNoZmass_pt10_eid13Tighth2taucuts020_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_eid13Tighth2taucuts020_electronJetPt" => make_landau('ee'),
-
-  "ee_wjetsNoZmass_pt20_eid13Tighth2taucuts020_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_eid13Tighth2taucuts020_electronJetPt" => make_exponential('ee'),
-
-  #idiso02
-  "ee_wjetsNoZmass_pt10_eid13Tightidiso02_electronJetPt" => make_landau('ee'), 
-  "ee_qcd_pt10_eid13Tightidiso02_electronJetPt" => make_landau('ee'),
-
-  "ee_wjetsNoZmass_pt20_eid13Tightidiso02_electronJetPt" => make_exponential('ee'),
-  "ee_qcd_pt20_eid13Tightidiso02_electronJetPt" => make_exponential('ee'),
-
-  ################
-  ## Muons Func ##
-  ################
-  #h2taucuts
-  "m_wjets_pt10_h2taucuts_muonJetPt" => make_landau('mm'), 
-  "m_wjets_pt20_h2taucuts_muonJetPt" => make_landau('mm'),
-
-  "m_qcd_pt10_h2taucuts_muonJetPt" => make_landau('mm'),
-  "m_qcd_pt20_h2taucuts_muonJetPt" => make_landau('mm'),
-
-  #h2taucuts020
-  "m_wjets_pt10_h2taucuts020_muonJetPt" => make_landau('mm'), 
-  "m_wjets_pt20_h2taucuts020_muonJetPt" => make_landau('mm'),
-
-  "m_qcd_pt10_h2taucuts020_muonJetPt" => make_landau('mm'),
-  "m_qcd_pt20_h2taucuts020_muonJetPt" => make_landau('mm'),
-
-  #idiso02
-  "m_wjets_pt10_idiso02_muonJetPt" => make_landau('mm'), 
-  "m_wjets_pt20_idiso02_muonJetPt" => make_landau('mm'),
-
-  "m_qcd_pt10_idiso02_muonJetPt" => make_landau('mm'),
-  "m_qcd_pt20_idiso02_muonJetPt" => make_landau('mm'),
-
-  ################
-  ## Taus Func ##
-  ################
-  "t_ztt_pt20_mvaloose_tauPt" => Hash[
+#Tau stuff (by hand, they are just 2)
+fr_fits["t_ztt_pt20_mvaloose_tauPt"] = Hash[
     "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMT",
     "function" => exponential,
     "variables" => exponential_vars,
     "rebin" => 5,
     "range" => "20 100",
-  ],
-  "t_ztt_pt20_hpsloose_tauPt" => Hash[
+  ]
+
+fr_fits["t_ztt_pt20_hpsloose_tauPt"] = Hash[
     "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMT",
     "function" => exponential,
     "variables" => exponential_vars,
     "rebin" => 5,
     "range" => "20 100",
-  ],
-]
+  ]
 
 # Placeholder
 task :fits => []
@@ -370,10 +259,22 @@ task :fits => []
 # Create tasks for all the fr_fits
 fr_fits.each do |fit, fit_info|
   fit_configuration = fit.split("_")
-  region = fit_configuration[1]
-  denom = fit_configuration[2]
-  num = fit_configuration[3]
-  var = fit_configuration[4]
+  region = ''
+  denom  = ''
+  num    = ''
+  var    = ''
+
+  if fit_configuration.size() == 6 #check if we have an idIso with _ separation
+    region = fit_configuration[1]
+    denom = fit_configuration[2]
+    num = "#{fit_configuration[3]}_#{fit_configuration[4]}"
+    var = fit_configuration[5]
+  else #otherwise as usual
+    region = fit_configuration[1]
+    denom = fit_configuration[2]
+    num = fit_configuration[3]
+    var = fit_configuration[4]
+  end
 
   # Expand sample list
   subsample_inputs = []
@@ -407,12 +308,7 @@ fr_fits.each do |fit, fit_info|
 end
 
 task :charge_fakes => []
-isolations = Array['h2taucuts', 'h2taucuts020', 'idiso02', 
-                   'eid13Tighth2taucuts', 'eid13Tighth2taucuts020', 'eid13Tightidiso02',
-                   'eid13Looseh2taucuts', 'eid13Looseh2taucuts020', 'eid13Looseidiso02'
-]
-
-isolations.each do |iso_label|
+elewps.each do |iso_label|
   output = "#{$frfit_dir}/charge_flip_prob_map_#{iso_label}.root"
   file output => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root", "make_charge_flip_probalility_map.py"] do |t|
     sh "python make_charge_flip_probalility_map.py #{t.name} #{iso_label}/flipped_electrons #{iso_label}/matched_electrons #{t.prerequisites[0]}"

@@ -6,13 +6,23 @@ import itertools
 RUN_OPTIMIZATION = ('RUN_OPTIMIZATION' in os.environ) and eval(os.environ['RUN_OPTIMIZATION'])
 
 lep_id = [
-    'eid13Looseh2taucuts',
-    'eid13Looseh2taucuts020',
-    'eid13Looseidiso02',
-    'eid13Tighth2taucuts',
-    'eid13Tighth2taucuts020',
-    'eid13Tightidiso02',
-    ] if RUN_OPTIMIZATION else ['h2taucuts', 'h2taucuts020']
+    'eid12Tight_iso02', 
+    'eid12Tight_h2taucuts', 
+    'eid12Tight_h2taucuts020', 
+    'eid12Loose_iso02', 
+    'eid12Loose_h2taucuts', 
+    'eid12Loose_h2taucuts020', 
+    'eid12Medium_iso02', 
+    'eid12Medium_h2taucuts', 
+    'eid12Medium_h2taucuts020'
+    ] \
+    if RUN_OPTIMIZATION else \
+    [
+    'eid12Loose_h2taucuts', 
+    'eid12Loose_h2taucuts020', 
+    'eid12Tight_h2taucuts',
+    'eid12Medium_h2taucuts020',
+    ]
 
 LT_cut = [
     0,
@@ -66,16 +76,31 @@ if RUN_OPTIMIZATION:
             'charge_fakes' : charge_fakes,
         }
 else:
-    grid_search[''] = {
-        'leading_iso'    : 'h2taucuts',
-        'subleading_iso' : 'h2taucuts',
-        'LT'             : 80,
+    grid_search['MMT'] = {
+        'leading_iso'    : 'eid12Loose_h2taucuts',
+        'subleading_iso' : 'eid12Loose_h2taucuts020',
+        'LT'             : 90,
         'tauID': None,
         'tauPT': 0,
         'charge_fakes' : 80,
     }
+    grid_search['EMT'] = {
+        'leading_iso'    : 'lead4muon_eid12Loose_h2taucuts020',
+        'subleading_iso' : 'eid12Loose_h2taucuts',
+        'LT'             : 120,
+        'tauID': None,
+        'tauPT': 0,
+        'charge_fakes' : 80,
+    }
+    grid_search['EET'] = {
+        'leading_iso'    : 'eid12Tight_h2taucuts',
+        'subleading_iso' : 'eid12Medium_h2taucuts020',
+        'LT'             : 150, 
+        'tauID'          : None,
+        'tauPT'          : 0,
+        'charge_fakes'   : 80,
+    }
 
-    #print counter_1, counter_2, counter_3, counter_4
 
 if __name__ == "__main__":
     print '\n'.join(grid_search.keys())

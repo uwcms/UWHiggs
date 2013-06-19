@@ -43,7 +43,7 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         self.pucorrector = mcCorrectors.make_puCorrector('mueg')
 
     def book_histos(self, folder):
-        for key in optimizer.grid_search:
+        for key in self.grid_search:
             prefix = key+'$' if key else ''
             self.book(folder, prefix+"subMass", "Subleading Mass", 200, 0, 200)
             self.book(folder, prefix+"LT", "L_T", 100, 0, 300)
@@ -52,7 +52,7 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             if 'c1' in folder:
                 self.book(folder, prefix+"subMass*", "Subleading Mass", 200, 0, 200)
 
-        if len(optimizer.grid_search.keys()) == 1:
+        if len(self.grid_search.keys()) == 1:
             if 'c1' in folder:
                 self.book(folder, "e*_t_Mass", "Electron-Tau Mass", 200, 0, 200)
                 self.book(folder, "e*_m_Mass", "Electron-Muon Mass", 200, 0, 200)
@@ -167,6 +167,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj1_id( row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
+        if ledleptonId.startswith('lead4muon_'):
+            ledleptonId = ledleptonId[len('lead4muon_'):]
+            subledleptonId = ledleptonId
         return selections.lepton_id_iso(row, 'm', ledleptonId) \
             if row.mPt > row.ePt else \
             selections.lepton_id_iso(row, 'm', subledleptonId) 
@@ -174,6 +177,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def obj2_id( row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
+        if ledleptonId.startswith('lead4muon_'):
+            ledleptonId = subledleptonId
+            subledleptonId = subledleptonId 
         return selections.lepton_id_iso(row, 'e', ledleptonId) \
             if row.mPt > row.ePt else \
             selections.lepton_id_iso(row, 'e', subledleptonId)
@@ -211,6 +217,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             mcCorrectors.correct_mueg_e(row.ePt, row.eAbsEta)
 
     def obj1_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
+        if ledleptonId.startswith('lead4muon_'):
+            ledleptonId = ledleptonId[len('lead4muon_'):]
+            subledleptonId = ledleptonId
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         if mu17e8:
             return frfits.highpt_mu_fr[ledleptonId](max(row.mJetPt, row.mPt)) \
@@ -222,6 +231,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
                 frfits.lowpt_mu_fr[subledleptonId](max(row.mJetPt, row.mPt)) 
 
     def obj2_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
+        if ledleptonId.startswith('lead4muon_'):
+            ledleptonId = subledleptonId
+            subledleptonId = subledleptonId 
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         if mu17e8:
             return frfits.lowpt_e_fr[ledleptonId](max(row.eJetPt, row.ePt)) \
@@ -236,6 +248,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         return frfits.tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
+        if ledleptonId.startswith('lead4muon_'):
+            ledleptonId = ledleptonId[len('lead4muon_'):]
+            subledleptonId = ledleptonId
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         if mu17e8:
             return frfits.highpt_mu_qcd_fr[ledleptonId](max(row.mJetPt, row.mPt)) \
@@ -247,6 +262,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
                 frfits.lowpt_mu_qcd_fr[subledleptonId](max(row.mJetPt, row.mPt)) 
 
     def obj2_qcd_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
+        if ledleptonId.startswith('lead4muon_'):
+            ledleptonId = subledleptonId
+            subledleptonId = subledleptonId 
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         if mu17e8:
             return frfits.lowpt_e_qcd_fr[ledleptonId](max(row.eJetPt, row.ePt)) \
@@ -269,11 +287,17 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     ##     return 0
 
     def obj2_charge_flip(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
+        if ledleptonId.startswith('lead4muon_'):
+            ledleptonId = subledleptonId
+            subledleptonId = subledleptonId 
         return frfits.e_charge_flip[ledleptonId](row.eAbsEta,row.ePt) \
             if row.ePt > row.mPt else \
             frfits.e_charge_flip[subledleptonId](row.eAbsEta,row.ePt)
 
     def obj2_charge_flip_sysup(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
+        if ledleptonId.startswith('lead4muon_'):
+            ledleptonId = subledleptonId
+            subledleptonId = subledleptonId 
         return frfits.e_charge_flip_up[ledleptonId](row.eAbsEta,row.ePt) \
             if row.ePt > row.mPt else \
             frfits.e_charge_flip_up[subledleptonId](row.eAbsEta,row.ePt) \

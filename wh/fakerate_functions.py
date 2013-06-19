@@ -3,6 +3,7 @@ from FinalStateAnalysis.StatTools.RooFunctorFromWS import build_roofunctor, make
 from FinalStateAnalysis.StatTools.VariableScaler import make_scaler
 import itertools
 import optimizer
+import re
 #from optimizer import leading_lepton_iso_tag, subleading_lepton_iso_tag
 
 ################################################################################
@@ -12,12 +13,29 @@ import optimizer
 # Get fitted fake rate functions
 frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
 
-def build_roofunctor_dict(basename, wsname = 'fit_efficiency', functor_name = 'efficiency', mapper = {}):
+def make_simple_mapper(tomap):
+    def f_(string):
+        ret = string
+        for key, val in tomap.iteritems():
+            ret = ret.replace(key, val)
+        return ret
+    return f_
+
+def make_regex_mapper(tomap):
+    def f_(string):
+        ret = string
+        for key, val in tomap.iteritems():
+            ret = re.sub(key, val, ret)
+        return ret
+    return f_
+
+
+def build_roofunctor_dict(basename, wsname = 'fit_efficiency', functor_name = 'efficiency', mapper = None):
     ret = {}
     for i in optimizer.lep_id:
         lepid = i
-        for key, val in mapper.iteritems(): #allows us to use different naming
-            lepid = lepid.replace(key, val)
+        if mapper:
+            lepid = mapper(lepid)
         ret[i] = build_roofunctor(
             basename % lepid,
             wsname, # workspace name
@@ -43,12 +61,12 @@ def make_scaler_dict(filename, mapname):
 ##################
 
 #no changes in muonID in 2013
-mapper = {'eid13Loose':'','eid13Tight':'', 'idiso' : 'pfidiso'}
-highpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt20_%s_muonJetPt.root', mapper=mapper)
-lowpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt10_%s_muonJetPt.root', mapper=mapper)
+mapper = {'eid1[0-9][A-Z][a-z]+_':'', 'iso02' : 'pfidiso02'}
+highpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt20_%s_muonJetPt.root', mapper=make_regex_mapper(mapper) )
+lowpt_mu_fr = build_roofunctor_dict(frfit_dir + '/m_wjets_pt10_%s_muonJetPt.root', mapper=make_regex_mapper(mapper) ) 
 
-highpt_mu_qcd_fr = build_roofunctor_dict(frfit_dir + '/m_qcd_pt20_%s_muonJetPt.root', mapper=mapper)
-lowpt_mu_qcd_fr = build_roofunctor_dict(frfit_dir + '/m_qcd_pt10_%s_muonJetPt.root', mapper=mapper)
+highpt_mu_qcd_fr = build_roofunctor_dict(frfit_dir + '/m_qcd_pt20_%s_muonJetPt.root', mapper=make_regex_mapper(mapper) )
+lowpt_mu_qcd_fr = build_roofunctor_dict(frfit_dir + '/m_qcd_pt10_%s_muonJetPt.root', mapper=make_regex_mapper(mapper) ) 
 
 #######################
 ## 1D Electrons Func ##
@@ -104,6 +122,8 @@ e_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.roo
 e_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.root", "efficiency_map_statUp")  
 e_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.root", "efficiency_map_statDown")
 mass_scaler        = make_scaler_dict(frfit_dir+"/charge_flip_prob_map_%s.root", 'mass_scale')
+default_scaler     = mass_scaler[mass_scaler.keys()[0]]
+
 
 e1_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map")         
 e1_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map_statUp")  

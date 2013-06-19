@@ -45,13 +45,11 @@ class FakeRatesEE(MegaBase):
                 denom_key = (region, denom)
                 denom_histos = {}
                 self.histograms[denom_key] = denom_histos
-                for numerator in ['id', 'iso03', 'idiso02', 'idiso03', 'idiso01',
-                                  'h2taucuts', 'h2taucuts020', 'h2taucuts025',
-                                  'eid13idiso02',
-                                  'eid13h2taucuts', 'eid13h2taucuts020',
-                                  'eid13Tightidiso02', 'eid13Tighth2taucuts', 'eid13Tighth2taucuts020',
-                                  'eid13Looseidiso02', 'eid13Looseh2taucuts', 'eid13Looseh2taucuts020',
-                                  ]:
+                defined_eids = selections.electronIds.keys()
+                iso_points   = ['iso02', 'h2taucuts', 'h2taucuts020']
+                for numerator in [ '_'.join([i,j])
+                                   for i in defined_eids
+                                   for j in iso_points]:
                     num_key = (region, denom, numerator)
                     num_histos = {}
                     self.histograms[num_key] = num_histos
@@ -70,42 +68,16 @@ class FakeRatesEE(MegaBase):
                     #book_histo('metSignificance', 'MET sig.', 100, 0, 10)
                     book_histo('e1MtToMET', 'e1 MT', 100, 0, 200)
                     book_histo('e2MtToMET', 'e2 MT', 100, 0, 200)
-                    book_histo('e1MtToMET_Z', 'e1 MT', 100, 0, 200)
-                    book_histo('e2MtToMET_Z', 'e2 MT', 100, 0, 200)
-                    book_histo('e1MtToMET_NoZ', 'e1 MT', 100, 0, 200)
-                    book_histo('e2MtToMET_NoZ', 'e2 MT', 100, 0, 200)
                     book_histo('MET', 'MET', 100, 0, 400)
-                    book_histo('MET_Z', 'MET, Z Events', 100, 0, 400)
-                    book_histo('MET_NoZ', 'MET, No Z Events', 100, 0, 400)
                     book_histo('OSS', 'SS to OS', 2, 0, 2)
-                    book_histo('OSS_Z', 'SS to OS, Z events', 2, 0, 2)
                     book_histo('e1e2Mass', 'DiElectron Mass', 100, 0, 200)
                     book_histo('doubleEPrescale', 'prescale', 10, -0.5, 9.5)
 
                     book_histo('e2JetArea'        , "", 100, 0, 1)
-                    book_histo('e2JetEtaEtaMoment', "", 100, 0, 0.2)
-                    book_histo('e2JetEtaPhiMoment', "", 100, 0, 0.1)
-                    book_histo('e2JetEtaPhiSpread', "", 100, 0, 0.2)
-                    book_histo('e2JetPhiPhiMoment', "", 100, 0, 0.1)
                     book_histo('e2JetptD', "", 200, 0, 1)
-                    book_histo('e2Jetaxis1', "", 200, 0, 1)
-                    book_histo('e2Jetaxis2', "", 200, 0, 1)
                     book_histo('e2Jetmult', "", 50, 0, 50)
-                    book_histo('e2JetmultMLPQC', "", 50, 0, 50)
-                    book_histo('e2JetmultMLP', "", 50, 0, 50)
-                    book_histo('e2JetQGLikelihoodID', "", 200, 0, 1)
-                    book_histo('e2JetQGMVAID', "", 200, 0, 1)
 
-                    book_histo('e2JetQGLikelihoodIDvse2JetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
-                    book_histo('e2JetQGMVAIDvse2JetPt'," ", 100, 0,100, 200, 0, 1, type=ROOT.TH2F)
-
-                    book_histo('e2Jetmultvse2JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
-                    book_histo('e2JetmultMLPvse2JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
-                    book_histo('e2JetmultMLPQCvse2JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
-                    
                     book_histo('e2Jetmultvse2JetPt', '', 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
-                    book_histo('e2JetmultMLPvse2JetPt', '',  200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
-                    book_histo('e2JetmultMLPQCvse2JetPt', '' , 200, 0, 200, 50, 0, 50,type=ROOT.TH2F)
                     book_histo('e2JetptDvse2JetPt', '' ,  200, 0, 200, 200, 0, 1,type=ROOT.TH2F)
 
 
@@ -133,42 +105,11 @@ class FakeRatesEE(MegaBase):
             the_histos['MET'].Fill(row.type1_pfMetEt)
             the_histos['OSS'].Fill(int(row.e1_e2_SS))
 
-            the_histos['e2JetArea'].Fill(row.e2JetArea)
-            the_histos['e2JetEtaEtaMoment'].Fill( row.e2JetEtaEtaMoment )
-            the_histos['e2JetEtaPhiMoment'].Fill( row.e2JetEtaPhiMoment )
-            the_histos['e2JetEtaPhiSpread'].Fill( row.e2JetEtaPhiSpread )
-            the_histos['e2JetPhiPhiMoment'].Fill( row.e2JetPhiPhiMoment )
             the_histos['e2JetptD'].Fill(row.e2JetptD)
-            the_histos['e2Jetaxis1'].Fill(row.e2Jetaxis1)
-            the_histos['e2Jetaxis2'].Fill(row.e2Jetaxis2)
             the_histos['e2Jetmult'].Fill(row.e2Jetmult)
-            the_histos['e2JetmultMLPQC'].Fill(row.e2JetmultMLPQC)
-            the_histos['e2JetmultMLP'].Fill(row.e2JetmultMLP)
-            the_histos['e2JetQGLikelihoodID'].Fill(row.e2JetQGLikelihoodID)
-            the_histos['e2JetQGMVAID'].Fill(row.e2JetQGMVAID)
-
-            the_histos['e2JetQGLikelihoodIDvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2JetQGLikelihoodID)
-            the_histos['e2JetQGMVAIDvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2JetQGMVAID)
-
-            the_histos['e2Jetmultvse2JetptD'].Fill(row.e2JetptD,row.e2Jetmult)
-            the_histos['e2JetmultMLPvse2JetptD'].Fill(row.e2JetptD,row.e2JetmultMLP) 
-            the_histos['e2JetmultMLPQCvse2JetptD'].Fill(row.e2JetptD,row.e2JetmultMLPQC)
 
             the_histos['e2Jetmultvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2Jetmult)
-            the_histos['e2JetmultMLPvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2JetmultMLP)
-            the_histos['e2JetmultMLPQCvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2JetmultMLPQC)
             the_histos['e2JetptDvse2JetPt'].Fill(max(row.e2JetPt, row.e2Pt),row.e2JetptD) 
-
-
-            if row.e1_e2_Mass > 60 and row.e1_e2_Mass < 120 :
-                the_histos['MET_Z'].Fill(row.type1_pfMetEt)
-                the_histos['OSS_Z'].Fill(int(row.e1_e2_SS))
-                the_histos['e1MtToMET_Z'].Fill(row.e1MtToMET)
-                the_histos['e2MtToMET_Z'].Fill(row.e2MtToMET)
-            else:
-                the_histos['MET_NoZ'].Fill(row.type1_pfMetEt)
-                the_histos['e1MtToMET_NoZ'].Fill(row.e1MtToMET)
-                the_histos['e2MtToMET_NoZ'].Fill(row.e2MtToMET)
                 
             the_histos['e1e2Mass'].Fill(row.e1_e2_Mass)
             the_histos['doubleEPrescale'].Fill(row.doubleEPrescale)
@@ -189,34 +130,16 @@ class FakeRatesEE(MegaBase):
 
             def make_region_plots(full_region):
                 fill(histos[full_region], row)
-                if row.e2MVAIDH2TauWP:
-                    fill(histos[full_region + ( 'id',)], row)
-                if row.e2RelPFIsoDB < 0.3:
-                    fill(histos[full_region + ( 'iso03',)], row)
-                if row.e2MVAIDH2TauWP and row.e2RelPFIsoDB < 0.3:
-                    fill(histos[full_region + ( 'idiso03',)], row)
-                if row.e2MVAIDH2TauWP and row.e2RelPFIsoDB < 0.1:
-                    fill(histos[full_region + ( 'idiso01',)], row)
-                if row.e2MVAIDH2TauWP and row.e2RelPFIsoDB < 0.2:
-                    fill(histos[full_region + ( 'idiso02',)], row)
-                if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1):
-                    fill(histos[full_region + ( 'h2taucuts',)], row)
-                if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.2 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.15):
-                    fill(histos[full_region + ( 'h2taucuts020',)], row)
-                if row.e2MVAIDH2TauWP and ((row.e2RelPFIsoDB < 0.25 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.20):
-                    fill(histos[full_region + ( 'h2taucuts025',)], row)
-                if selections.summer_2013_eid(row, 'e2') and row.e2RelPFIsoDB < 0.2:
-                    fill(histos[full_region + ( 'eid13Looseidiso02',)], row)
-                if selections.summer_2013_eid(row, 'e2') and ((row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1):
-                    fill(histos[full_region + ( 'eid13Looseh2taucuts',)], row)
-                if selections.summer_2013_eid(row, 'e2') and ((row.e2RelPFIsoDB < 0.2 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.15):
-                    fill(histos[full_region + ( 'eid13Looseh2taucuts020',)], row)
-                if selections.summer_2013_eid_tight(row, 'e2') and row.e2RelPFIsoDB < 0.2:
-                    fill(histos[full_region + ( 'eid13Tightidiso02',)], row)
-                if selections.summer_2013_eid_tight(row, 'e2') and ((row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1):
-                    fill(histos[full_region + ( 'eid13Tighth2taucuts',)], row)
-                if selections.summer_2013_eid_tight(row, 'e2') and ((row.e2RelPFIsoDB < 0.2 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.15):
-                    fill(histos[full_region + ( 'eid13Tighth2taucuts020',)], row)
+
+                for idlabel, idfcn in selections.electronIds.iteritems():                
+                    if not idfcn(row, 'e2'): #if it does not pass id skip!
+                        continue
+                    if row.e2RelPFIsoDB < 0.2:
+                        fill(histos[full_region + ( idlabel+'_iso02',)], row)
+                    if (row.e2RelPFIsoDB < 0.15 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.1:
+                        fill(histos[full_region + ( idlabel+'_h2taucuts',)], row)
+                    if (row.e2RelPFIsoDB < 0.20 and row.e2AbsEta < 1.479) or row.e2RelPFIsoDB < 0.15:
+                        fill(histos[full_region + ( idlabel+'_h2taucuts020',)], row)
 
 
             make_region_plots((region, 'pt10'))

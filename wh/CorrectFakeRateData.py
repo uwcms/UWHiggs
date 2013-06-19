@@ -65,13 +65,13 @@ if __name__ == "__main__":
         new = x.Clone()
         new.Reset()
         for bin in range(x.GetNbinsX()+1):
-            binsy = range(x.GetNbinsX()+1) if isinstance(x, ROOT.TH2) else [-1]
+            binsy = range(x.GetNbinsY()+1) if isinstance(x, ROOT.TH2) else [-1]
             for biny in binsy:
                 nentries = ROOT.TMath.Nint(x.GetBinContent(bin, biny)) \
                     if isinstance(x, ROOT.TH2) else \
                     ROOT.TMath.Nint(x.GetBinContent(bin))
                 centerx = x.GetXaxis().GetBinCenter(bin)
-                centery = x.GetYaxis().GetBinCenter(bin) \
+                centery = x.GetYaxis().GetBinCenter(biny) \
                     if isinstance(x, ROOT.TH2) else \
                     0.
                 for _ in range(nentries):

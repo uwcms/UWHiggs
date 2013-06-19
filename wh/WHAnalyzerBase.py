@@ -123,13 +123,15 @@ class WHAnalyzerBase(MegaBase):
             'weight'  : lambda row, weight: (weight,None) if weight is not None else (1.,None),
             'Event_ID': lambda row, weight: (array.array("f", [row.run,row.lumi,int(row.evt)/10**5,int(row.evt)%10**5] ), None),
             }
-        #filter out optimizing working point that make no sense (like testing two eid WP in MMT)
-        self.grid_search = optimizer.grid_search
-        ##     (cut_label, cut_settings)
-        ##     for cut_label, cut_settings in optimizer.grid_search.iteritems()
-        ##     if 'eid13Tight' not in cut_label and self.channel == 'MMT' #skip the second eid WP if the channel is MMT
-        ##     if cut_settings['charge_fakes'] != 80 and self.channel != 'EET' #skip charge fakes WP if the channel is not EET
-        ##     ) if len(optimizer.grid_search.keys()) > 1 else optimizer.grid_search
+        #Filter out keys that we are not interested in
+        optimizer_keys   = [ i for i in optimizer.grid_search.keys() if i.startswith(self.channel) ]
+        self.grid_search = {}
+        if len(optimizer_keys) > 1:
+            for key in optimizer_keys:
+                self.grid_search[key] = optimizer.grid_search[key]
+        else:
+            self.grid_search[''] = optimizer.grid_search[optimizer_keys[0]]
+
 
     @staticmethod
     def build_wh_folder_structure():
@@ -338,7 +340,10 @@ class WHAnalyzerBase(MegaBase):
             'q13' : (self.obj1_qcd_weight, self.obj3_qcd_weight),
             'q23' : (self.obj2_qcd_weight, self.obj3_qcd_weight),
         }
-        grid_search = optimizer.grid_search
+
+        grid_search = self.grid_search
+        #print grid_search
+
         for i, row in enumerate(self.tree):
             ## if i > 100:
             ##     raise

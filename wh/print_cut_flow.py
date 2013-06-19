@@ -41,11 +41,12 @@ def relative_to(hist, bin_label):
                           content)
     return ret
 
-postfix = '_chargeIDLoose_'
+postfix = '_TEST_'
 
 ROOT.gStyle.SetPaintTextFormat('.2g')
 jobid    = os.environ['jobid']
-channels = ['eet'] #'emt', 'mmt', 
+channels = ['eet', 'emt', 'mmt']
+
 public   = os.environ['pub']
 chan_hists = {}
 for ch, color in zip(channels, ['darkgreen','blue','red']):

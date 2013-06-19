@@ -4,8 +4,8 @@ import fnmatch
 import glob
 #from argparse import OptionParser
 
-channels = 'emt,mmt'.split(',')
-batch_id = 'Batch_Optimization'
+channels = 'emt,mmt,eet'.split(',')
+batch_id = 'Batch_Optimization3'
 input_hdfs= '/hdfs/store/user/mverzett/2013-May-14-8TeV'
 channel_deps = {
     'mmt' : 'DoubleMu',
