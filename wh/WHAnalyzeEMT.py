@@ -32,7 +32,10 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         self.hfunc['subMass']   = lambda row, weight: (row.e_t_Mass, weight)    if row.ePt < row.mPt else (row.m_t_Mass, weight) 
         self.hfunc['tLeadDR']   = lambda row, weight: (row.m_t_DR,   weight)    if row.ePt < row.mPt else (row.e_t_DR,   weight) 
         self.hfunc['tSubDR']    = lambda row, weight: (row.e_t_DR,   weight)    if row.ePt < row.mPt else (row.m_t_DR,   weight) 
-        self.hfunc["subPt"]     = lambda row, weight: (row.e_t_Pt, weight)      if row.ePt < row.mPt else (row.m_t_Pt, weight) 
+        self.hfunc["subPt"]     = lambda row, weight: (row.ePt, weight)         if row.ePt < row.mPt else (row.mPt, weight) 
+        self.hfunc["leadPt"]    = lambda row, weight: (row.mPt, weight)         if row.ePt < row.mPt else (row.ePt, weight)         
+        self.hfunc["subJetPt"]  = lambda row, weight: (row.eJetPt, weight)      if row.ePt < row.mPt else (row.mJetPt, weight) 
+        self.hfunc["leadJetPt"] = lambda row, weight: (row.mJetPt, weight)      if row.ePt < row.mPt else (row.eJetPt, weight)         
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.ePt/row.mPt, weight) if row.ePt < row.mPt else (row.mPt/row.ePt, weight)
         self.hfunc["e*_t_Mass"] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e_t_Mass), weight)
         self.hfunc["e*_m_Mass"] = lambda row, weight: ( frfits.mass_scaler['h2taucuts']( row.e_m_Mass), weight)
@@ -47,7 +50,6 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             prefix = key+'$' if key else ''
             self.book(folder, prefix+"subMass", "Subleading Mass", 200, 0, 200)
             self.book(folder, prefix+"LT", "L_T", 100, 0, 300)
-            self.book(folder, prefix+"subPt"   , "SubLeading Pt", 400, 0, 400)
             #Charge mis-id special histograms
             if 'c1' in folder:
                 self.book(folder, prefix+"subMass*", "Subleading Mass", 200, 0, 200)
@@ -56,11 +58,18 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             if 'c1' in folder:
                 self.book(folder, "e*_t_Mass", "Electron-Tau Mass", 200, 0, 200)
                 self.book(folder, "e*_m_Mass", "Electron-Muon Mass", 200, 0, 200)
+            self.book(folder, "subPt"   , "SubLeading Pt", 100, 0, 100)
+            self.book(folder, "leadPt"  , "Leading Pt"   , 100, 0, 100)
+            self.book(folder, "subJetPt"   , "SubLeading Pt", 100, 0, 100)
+            self.book(folder, "leadJetPt"  , "Leading Pt"   , 100, 0, 100)
             self.book(folder, "e_m_Mass", "Electron-Muon Mass", 200, 0, 200)
+            self.book(folder, "m_t_Mass", "Electron-Muon Mass", 200, 0, 200)
             self.book(folder, "e_t_Mass", "Electron-Tau Mass", 200, 0, 200)
             self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
             self.book(folder, "mPt", "Muon Pt", 100, 0, 100)
             self.book(folder, "ePt", "Electron Pt", 100, 0, 100)
+            self.book(folder, "mJetPt", "Muon Pt", 100, 0, 100)
+            self.book(folder, "eJetPt", "Electron Pt", 100, 0, 100)
             self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
             self.book(folder, "mAbsEta", "Muon AbsEta", 100, 0, 2.4)
             self.book(folder, "eAbsEta", "Electron AbsEta", 100, 0, 2.5)
@@ -68,6 +77,10 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             self.book(folder, "eChargeIdTight", "Elec charge ID tight", 2, -0.5, 1.5)
             self.book(folder, "tLeadDR", "DR between leading lepton and tau", 100, 0, 5)
             self.book(folder, "tSubDR", "DR between subleading lepton and tau", 100, 0, 5)
+            self.book(folder, "e_m_DR", "", 200, 0, 5)
+            self.book(folder, "m_t_DR", "", 200, 0, 5)
+            self.book(folder, "e_t_DR", "", 200, 0, 5)
+
         
             #let's look for osme other possible selections
             self.book(folder, "Mass"          , "mass"          , 800, 0, 800 )
@@ -222,13 +235,13 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             subledleptonId = ledleptonId
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         if mu17e8:
-            return frfits.highpt_mu_fr[ledleptonId](max(row.mJetPt, row.mPt)) \
+            return frfits.highpt_mu_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt) \
                 if row.mPt > row.ePt else \
-                frfits.highpt_mu_fr[subledleptonId](max(row.mJetPt, row.mPt))
+                frfits.highpt_mu_fr[subledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt)
         else:
-            return frfits.lowpt_mu_fr[ledleptonId](max(row.mJetPt, row.mPt)) \
+            return frfits.lowpt_mu_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt) \
                 if row.mPt > row.ePt else \
-                frfits.lowpt_mu_fr[subledleptonId](max(row.mJetPt, row.mPt)) 
+                frfits.lowpt_mu_fr[subledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt) 
 
     def obj2_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
         if ledleptonId.startswith('lead4muon_'):
@@ -236,13 +249,13 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             subledleptonId = subledleptonId 
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         if mu17e8:
-            return frfits.lowpt_e_fr[ledleptonId](max(row.eJetPt, row.ePt)) \
+            return frfits.lowpt_e_fr[ledleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt) \
                 if row.ePt > row.mPt else \
-                frfits.lowpt_e_fr[subledleptonId](max(row.eJetPt, row.ePt)) 
+                frfits.lowpt_e_fr[subledleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt) 
         else:
-            return frfits.highpt_e_fr[ledleptonId](max(row.eJetPt, row.ePt)) \
+            return frfits.highpt_e_fr[ledleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt) \
                 if row.ePt > row.mPt else \
-                frfits.highpt_e_fr[subledleptonId](max(row.eJetPt, row.ePt))
+                frfits.highpt_e_fr[subledleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt)
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_fr(row.tPt)
@@ -253,13 +266,13 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             subledleptonId = ledleptonId
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         if mu17e8:
-            return frfits.highpt_mu_qcd_fr[ledleptonId](max(row.mJetPt, row.mPt)) \
+            return frfits.highpt_mu_qcd_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt) \
                 if row.mPt > row.ePt else \
-                frfits.highpt_mu_qcd_fr[subledleptonId](max(row.mJetPt, row.mPt))
+                frfits.highpt_mu_qcd_fr[subledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt)
         else:
-            return frfits.lowpt_mu_qcd_fr[ledleptonId](max(row.mJetPt, row.mPt)) \
+            return frfits.lowpt_mu_qcd_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt) \
                 if row.mPt > row.ePt else \
-                frfits.lowpt_mu_qcd_fr[subledleptonId](max(row.mJetPt, row.mPt)) 
+                frfits.lowpt_mu_qcd_fr[subledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt)
 
     def obj2_qcd_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
         if ledleptonId.startswith('lead4muon_'):
@@ -267,13 +280,13 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             subledleptonId = subledleptonId 
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         if mu17e8:
-            return frfits.lowpt_e_qcd_fr[ledleptonId](max(row.eJetPt, row.ePt)) \
+            return frfits.lowpt_e_qcd_fr[ledleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt) \
                 if row.ePt > row.mPt else \
-                frfits.lowpt_e_qcd_fr[subledleptonId](max(row.eJetPt, row.ePt)) 
+                frfits.lowpt_e_qcd_fr[subledleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt)
         else:
-            return frfits.highpt_e_qcd_fr[ledleptonId](max(row.eJetPt, row.ePt)) \
+            return frfits.highpt_e_qcd_fr[ledleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt) \
                 if row.ePt > row.mPt else \
-                frfits.highpt_e_qcd_fr[subledleptonId](max(row.eJetPt, row.ePt))
+                frfits.highpt_e_qcd_fr[subledleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt)
 
     def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_qcd_fr(row.tPt)

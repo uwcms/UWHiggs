@@ -38,6 +38,8 @@ class WHAnalyzeMMT(WHAnalyzerBase):
             self.book(folder, "m2RelPFIsoDB", "m2Iso", 100, 0, 0.3)
             self.book(folder, "m1_t_Mass", "leadingMass", 200, 0, 200)
             self.book(folder, "m1_m2_Mass", "Muon 1-2 Mass", 120, 0, 120)
+            self.book(folder, "m2_t_DR", "m2_t_DR", 100, 0, 5)
+            self.book(folder, "m1_t_DR", "m1_t_DR", 100, 0, 5)
 
             self.book(folder, "m2JetBtag", "Muon 2 Pt", 100, -10, 3.3)
             self.book(folder, "m1JetPt", "Muon 1 Jet Pt", 100, 0, 200)
@@ -164,19 +166,19 @@ class WHAnalyzeMMT(WHAnalyzerBase):
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row, ledleptonId='h2taucuts', subledleptonId=None):
-        return frfits.highpt_mu_fr[ledleptonId](max(row.m1JetPt, row.m1Pt))
+        return frfits.highpt_mu_fr[ledleptonId](muonJetPt=max(row.m1JetPt, row.m1Pt), muonPt=row.m1Pt)
 
     def obj2_weight(self, row, ledleptonId=None, subledleptonId='h2taucuts'):
-        return frfits.lowpt_mu_fr[subledleptonId](max(row.m2JetPt, row.m2Pt))
+        return frfits.lowpt_mu_fr[subledleptonId](muonJetPt=max(row.m2JetPt, row.m2Pt), muonPt=row.m2Pt)
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row, ledleptonId='h2taucuts', subledleptonId=None):
-        return frfits.highpt_mu_qcd_fr[ledleptonId](max(row.m1JetPt, row.m1Pt))
+        return frfits.highpt_mu_qcd_fr[ledleptonId](muonJetPt=max(row.m1JetPt, row.m1Pt), muonPt=row.m1Pt)
 
     def obj2_qcd_weight(self, row, ledleptonId=None, subledleptonId='h2taucuts'):
-        return frfits.lowpt_mu_qcd_fr[subledleptonId](max(row.m2JetPt, row.m2Pt))
+        return frfits.lowpt_mu_qcd_fr[subledleptonId](muonJetPt=max(row.m2JetPt, row.m2Pt), muonPt=row.m2Pt)
 
     def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_qcd_fr(row.tPt)
