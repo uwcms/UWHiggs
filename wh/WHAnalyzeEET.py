@@ -110,17 +110,21 @@ class WHAnalyzeEET(WHAnalyzerBase):
             self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
             self.book(folder, "e1Pt", "E 1 Pt", 100, 0, 100)
             self.book(folder, "e2Pt", "E 2 Pt", 100, 0, 100)
+            self.book(folder, "e1JetPt", "E 1 Pt", 100, 0, 100)
+            self.book(folder, "e2JetPt", "E 2 Pt", 100, 0, 100)
             self.book(folder, "e1AbsEta", "Muon 1 AbsEta", 100, 0, 2.5)
             self.book(folder, "e2AbsEta", "Muon 2 AbsEta", 100, 0, 2.5)
 	    self.book(folder, "tPt", "tPt", 100, 0,100)
 	    self.book(folder, "tAbsEta", "tAbsEta", 100, 0, 2.3)
+            self.book(folder, "e1_e2_DR" , "e1_e2_DR" , 500, 0, 10)
+            self.book(folder, "e1_t_DR"  , "e1_e2_DR" , 500, 0, 10)
+            self.book(folder, "e2_t_DR"  , "e1_e2_DR" , 500, 0, 10)
 
             #let's look for osme other possible selections
             self.book(folder, "Mass"          , "Mass"      , 100, 0, 1)
             self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
             self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
             self.book(folder, "e1_e2_Pt"       , "lepRecoil"     , 600, 0, 8000)
-            self.book(folder, "e1_e2_DR"       , "e1_e2_DR"      , 500, 0, 10)
             self.book(folder, "e1_e2_CosThetaStar", "e1_e2_CosThetaStar", 110, 0., 1.1)
             self.book(folder, "e1_t_CosThetaStar" , "e1_t_CosThetaStar" , 110, 0., 1.1)
             self.book(folder, "e2_t_CosThetaStar" , "e2_t_CosThetaStar" , 110, 0., 1.1)
@@ -258,19 +262,19 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
    
     def obj1_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
-        return frfits.highpt_ee_fr[leadleptonId](max(row.e1JetPt, row.e1Pt))
+        return frfits.highpt_ee_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt)
 
     def obj2_weight(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
-	return frfits.lowpt_ee_fr[subleadleptonId](max(row.e1JetPt, row.e1Pt))
+	return frfits.lowpt_ee_fr[subleadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e2Pt)
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
-        return frfits.highpt_ee_qcd_fr[leadleptonId](max(row.e1JetPt, row.e1Pt))
+        return frfits.highpt_ee_qcd_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt)
 
     def obj2_qcd_weight(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
-        return frfits.lowpt_ee_qcd_fr[subleadleptonId](max(row.e2JetPt, row.e2Pt))
+        return frfits.lowpt_ee_qcd_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt)
 
     def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_qcd_fr(row.tPt)
