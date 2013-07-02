@@ -20,6 +20,7 @@ from FinalStateAnalysis.PlotTools.MedianView import MedianView
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 from optparse import OptionParser
 import os
+import ROOT
 import glob
 import math
 import logging
@@ -32,6 +33,19 @@ parser.add_option('--prefix', metavar='label', type=str, dest='prefix', default 
 parser.add_option('--prefixes', metavar='label', type=str, dest='prefixes', default = '',
                   help='prefix to eppend before histogram name o be used to make the shapes' )
 
+def get_chi_square(hdata, hexp):
+    chi2  = 0.
+    nbins = 0.
+    for i in xrange(1, hdata.GetNbinsX()+1):
+        data  = hdata.GetBinContent(i)
+        edata = hdata.GetBinError(i)
+        exp   = hexp.GetBinContent(i)
+        eexp  = hexp.GetBinError(i)
+        if data > 0:
+            chi2  += (data - exp)**2/(edata**2 + eexp**2)
+            nbins += 1
+    return chi2, nbins
+        
 
 def quad(*xs):
     return math.sqrt(sum(x * x for x in xs))
@@ -50,7 +64,7 @@ def remove_name_entry(dictionary):
 class BackgroundErrorView(object):
     ''' Compute the total background error in each bin. '''
     def __init__(self, fakes, wz, zz, charge_fake, wz_error=0.1, zz_error=0.04,
-                 fake_error=0.3):
+                 fake_error=0.):
         self.fakes = fakes
         self.wz = wz
         self.zz = zz
@@ -190,6 +204,7 @@ class WHPlotterBase(Plotter):
             lumifiles.extend(glob.glob('inputs/%s/%s.lumicalc.sum' % (jobid, x)))
 
         self.outputdir = 'results/%s/plots/%s' % (jobid, channel.lower())
+        self.base_out_dir = self.outputdir
         if not os.path.exists(self.outputdir):
             os.makedirs(self.outputdir)
 
@@ -206,6 +221,9 @@ class WHPlotterBase(Plotter):
                                             blinder)
         self.defaults = {} #allows to set some options and avoid repeating them each function call
         os.chdir( cwd )
+
+    def set_subdir(self, folder):
+        self.outputdir = '/'.join([self.base_out_dir, folder])
 
     def make_signal_views(self, rebin, unblinded=False, qcd_weight_fraction=0):
         ''' Make signal views with FR background estimation '''
@@ -627,9 +645,31 @@ class WHPlotterBase(Plotter):
         legend = self.add_legend(histo, leftside=leftside_legend, entries=4)
 
         if show_error:
+            correct_qcd_view = None
+            if qcd_weight_fraction == 0:
+                fakes05 = self.make_signal_views(
+                    rebin, 
+                    unblinded=(not self.blind), 
+                    qcd_weight_fraction=0.5)['fakes']
+                correct_qcd_view = MedianView(highv=fakes05, centv=sig_view['fakes'])
+
+            elif qcd_weight_fraction == 0.5:
+                fakes1 = self.make_signal_views(
+                    rebin, 
+                    unblinded=(not self.blind), 
+                    qcd_weight_fraction=1)['fakes']
+                correct_qcd_view = MedianView(highv=fakes1, centv=sig_view['fakes'])
+
+            elif qcd_weight_fraction == 1:
+                fakes05 = self.make_signal_views(
+                    rebin, 
+                    unblinded=(not self.blind), 
+                    qcd_weight_fraction=0.5)['fakes']
+                correct_qcd_view = MedianView(lowv=fakes05, centv=sig_view['fakes'])
+
             bkg_error_view = BackgroundErrorView(
-                sig_view['fakes'],
-                sig_view['wz'],
+                correct_qcd_view, #sig_view['fakes'],
+                views.SumView( sig_view['wz'], sig_view['wz_3l']),
                 sig_view['zz'],
                 sig_view['charge_fakes'],
                 **kwargs
@@ -680,9 +720,11 @@ class WHPlotterBase(Plotter):
         self.add_legend(histo, leftside=False, entries=4)
 
     def plot_final_f3(self, variable, rebin=1, xaxis='', maxy=None,
-                      show_error=False, qcd_correction=False,
-                      qcd_weight_fraction=0, x_range=None, **kwargs):
+                      show_error=True, qcd_correction=False,
+                      qcd_weight_fraction=0.5, x_range=None, #):
+                      show_chi2=False, **kwargs):
         ''' Plot the final F3 control region - with bkg. estimation '''
+
         sig_view = self.make_obj3_fail_cr_views(
             rebin, qcd_correction, qcd_weight_fraction)
 
@@ -699,13 +741,37 @@ class WHPlotterBase(Plotter):
         if x_range:
             histo.GetHistogram().GetXaxis().SetRangeUser(x_range[0], x_range[1])
 
-        # Add legend
-        legend = self.add_legend(histo, leftside=False, entries=4)
+        data = sig_view['data'].Get(variable)
 
+        # Add legend
+        legend  = self.add_legend(histo, leftside=False, entries=4)
+        latex   = ROOT.TLatex(0.01, 0.9, "")
+        pad     = ROOT.TPad('da','fuq',0.1,0.8,0.5,0.9)
+        self.canvas.cd()
+        latexit = ''
         if show_error:
+            correct_qcd_view = None
+            if qcd_weight_fraction == 0. or qcd_weight_fraction == 0:
+                fakes05 = self.make_obj3_fail_cr_views(
+                    rebin, 
+                    qcd_weight_fraction=0.5)['fakes']
+                correct_qcd_view = MedianView(highv=fakes05, centv=sig_view['fakes'])
+
+            elif qcd_weight_fraction == 0.5:
+                fakes1 = self.make_obj3_fail_cr_views(
+                    rebin, 
+                    qcd_weight_fraction=1)['fakes']
+                correct_qcd_view = MedianView(highv=fakes1, centv=sig_view['fakes'])
+
+            elif qcd_weight_fraction == 1 or qcd_weight_fraction == 1.:
+                fakes05 = self.make_obj3_fail_cr_views(
+                    rebin, 
+                    qcd_weight_fraction=0.5)['fakes']
+                correct_qcd_view = MedianView(lowv=fakes05, centv=sig_view['fakes'])
+
             bkg_error_view = BackgroundErrorView(
-                views.SumView(sig_view['fakes']),
-                sig_view['wz'],
+                correct_qcd_view, #sig_view['fakes'],
+                views.SumView(sig_view['wz'], sig_view['wz_3l']),
                 sig_view['zz'],
                 sig_view['charge_fakes'],
                 **kwargs
@@ -714,8 +780,10 @@ class WHPlotterBase(Plotter):
             self.keep.append(bkg_error)
             bkg_error.Draw('pe2,same')
             legend.AddEntry(bkg_error)
-
-        data = sig_view['data'].Get(variable)
+            if show_chi2:
+                chival  = get_chi_square(data, bkg_error)
+                latexit = '#chi^{2}/#bins = %.2f / %i' % chival 
+                
         data.Draw('same')
         if isinstance(maxy, (int, long, float)):
             histo.SetMaximum(maxy)
@@ -725,7 +793,13 @@ class WHPlotterBase(Plotter):
             histo.SetMaximum(2 * data.GetMaximum())
         self.keep.append(data)
         self.keep.append(histo)
-
+        if latexit:
+            pad.cd()
+            latex.DrawLatex(0.01, 0.01, latexit)
+            self.canvas.cd()
+            pad.Draw()
+        self.keep.append(latex)
+        self.keep.append(pad)
         #legend.AddEntry(data)
         legend.Draw()
 
