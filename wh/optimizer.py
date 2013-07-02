@@ -6,22 +6,26 @@ import itertools
 RUN_OPTIMIZATION = ('RUN_OPTIMIZATION' in os.environ) and eval(os.environ['RUN_OPTIMIZATION'])
 
 lep_id = [
-    'eid12Tight_iso02', 
+    'eid12Tight_idiso02', 
     'eid12Tight_h2taucuts', 
     'eid12Tight_h2taucuts020', 
-    'eid12Loose_iso02', 
+    'eid12Loose_idiso02', 
     'eid12Loose_h2taucuts', 
     'eid12Loose_h2taucuts020', 
-    'eid12Medium_iso02', 
+    'eid12Medium_idiso02', 
     'eid12Medium_h2taucuts', 
     'eid12Medium_h2taucuts020'
     ] \
     if RUN_OPTIMIZATION else \
     [
+    'eid12Medium_idiso02', 
+    'eid12Loose_idiso02', 
+    'eid12Tight_idiso02', 
     'eid12Loose_h2taucuts', 
     'eid12Loose_h2taucuts020', 
     'eid12Tight_h2taucuts',
     'eid12Medium_h2taucuts020',
+    'eid12Medium_h2taucuts'
     ]
 
 LT_cut = [
@@ -79,26 +83,26 @@ else:
     grid_search['MMT'] = {
         'leading_iso'    : 'eid12Loose_h2taucuts',
         'subleading_iso' : 'eid12Loose_h2taucuts020',
-        'LT'             : 90,
-        'tauID': None,
-        'tauPT': 0,
-        'charge_fakes' : 80,
+        'LT'             : 80,
+        'tauID'          : None,
+        'tauPT'          : 0,
+        'charge_fakes'   : 80,
     }
     grid_search['EMT'] = {
-        'leading_iso'    : 'lead4muon_eid12Loose_h2taucuts020',
-        'subleading_iso' : 'eid12Loose_h2taucuts',
-        'LT'             : 120,
-        'tauID': None,
-        'tauPT': 0,
-        'charge_fakes' : 80,
+        'leading_iso'    : 'lead4muon_eid12Medium_h2taucuts',
+        'subleading_iso' : 'eid12Medium_h2taucuts',
+        'LT'             : 100,
+        'tauID'          : None,
+        'tauPT'          : 0,
+        'charge_fakes'   : 80,
     }
     grid_search['EET'] = {
         'leading_iso'    : 'eid12Tight_h2taucuts',
         'subleading_iso' : 'eid12Medium_h2taucuts020',
-        'LT'             : 150, 
+        'LT'             : 140, 
         'tauID'          : None,
         'tauPT'          : 0,
-        'charge_fakes'   : 80,
+        'charge_fakes'   : 100,
     }
 
 
