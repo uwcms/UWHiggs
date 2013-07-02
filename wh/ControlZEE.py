@@ -19,8 +19,8 @@ import optimizer
 from functools import wraps
 
 math = ROOT.TMath
-leading_iso = optimizer.grid_search[optimizer.grid_search.keys()[0]]['leading_iso']
-subleading_iso = optimizer.grid_search[optimizer.grid_search.keys()[0]]['subleading_iso']
+leading_iso    = optimizer.grid_search['EET']['leading_iso']
+subleading_iso = optimizer.grid_search['EET']['subleading_iso']
 
 
 def sc_inv_mass(row):
@@ -31,12 +31,9 @@ def sc_inv_mass(row):
 #@decorator
 def make_weight(fcn):
     #@wraps(fcn)
-    def f_(*args):
-        prob = fcn(*args)
-        if prob:
-            return prob / (1-prob)
-        else:
-            raise Exception("error in calulating weight")
+    def f_(*args,**kargs):
+        prob = fcn(*args,**kargs)
+        return prob / (1-prob)
     return f_
 
 #SUMMED PROBABILITIES
@@ -68,9 +65,9 @@ def assign_id_weight(dir_, row):
         return 1
     leading_fr = leading_e_fr_wjets if 'wjet_w' in dir_ else leading_e_fr_qcd
     sublead_fr = subleading_e_fr_wjets if 'wjet_w' in dir_ else subleading_e_fr_qcd
-    if "f1f2"  in dir_: return leading_fr( max(row.e1JetPt, row.e1Pt) ) * sublead_fr( max(row.e2JetPt, row.e2Pt) )
-    if "f2"    in dir_: return sublead_fr( max(row.e2JetPt, row.e2Pt) )
-    if "f1"    in dir_: return leading_fr( max(row.e1JetPt, row.e1Pt) )
+    if "f1f2"  in dir_: return leading_fr( electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt) * sublead_fr( electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt )
+    if "f2"    in dir_: return sublead_fr( electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt)
+    if "f1"    in dir_: return leading_fr( electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt)
 
 class ControlZEE(MegaBase):
     tree = 'ee/final/Ntuple'
@@ -151,9 +148,16 @@ class ControlZEE(MegaBase):
     def obj2_id(self, row):
         return selections.lepton_id_iso(row, 'e2', subleading_iso)
 
+    def mc_weight(self, row):
+        if row.run > 2:
+            return 1.
+        return self.pucorrector(row.nTruePU) * \
+            mcCorrectors.get_electron_corrections(row,'e1','e2')
+
     def process(self):
 
-        histos = self.dir_based_histograms
+        histos    = self.dir_based_histograms
+        mc_weight = self.mc_weight
         def fill_histos(dirname, row, weight):
             mass = frfits.mass_scaler[leading_iso](row.e1_e2_Mass) if "charge_weight" in dirname else row.e1_e2_Mass
             histos[dirname]['ePt'     ].Fill(row.e1Pt,weight)
@@ -171,7 +175,7 @@ class ControlZEE(MegaBase):
             histos[dirname]['TrkMass_NOSCALE'].Fill(row.e1_e2_Mass, weight)
             histos[dirname]['type1_pfMetEt'].Fill(row.type1_pfMetEt, weight)
             histos[dirname]['mva_metEt'].Fill(row.mva_metEt, weight)
-            
+        
         for row in self.tree:
             if not self.preselection(row):
                 continue
@@ -181,7 +185,7 @@ class ControlZEE(MegaBase):
             to_match  = pair_sign+'/'+id1+id2
             matchingd = (i for i in self.dirs if i.startswith(to_match)) # filter(lambda x: x.startswith(pair_sign+'/'+id1+id2), self.dirs)
             for dir_ in matchingd:
-                weight = 1
+                weight = mc_weight(row)
                 weight *= assign_id_weight(dir_, row)
                 weight *= assign_charge_weight(dir_, row)
                 fill_histos(dir_, row, weight)
