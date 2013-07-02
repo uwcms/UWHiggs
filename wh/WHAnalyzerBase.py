@@ -378,7 +378,7 @@ class WHAnalyzerBase(MegaBase):
                 obj2_id_result = obj2_id(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
                 obj3_id_result = obj3_id(row, cut_settings['tauID'], cut_settings['LT'], cut_settings['tauPT'])
                 anti_wz = anti_wz_cut(row)
-                anti_charge_flip = anti_charge_flip_cut(row) if anti_charge_flip_cut else True
+                anti_charge_flip = anti_charge_flip_cut(row, cut_settings['charge_fakes']) if anti_charge_flip_cut else True
                 #if there is no anti charge flip always fill the base selestion otherwise fill the base ONLY if passes,
                 #otherwise fill the CR
                 to_fill = ('',) \
