@@ -52,7 +52,8 @@ check_luminosity(['data_DoubleMu', 'data_DoubleElectron', 'data_MuEG'])
 #
 # Get sample names containing a substring
 def get_sample_names(substring)
-  inputs = Dir.glob("inputs/#{$jobid}/*.txt").select {|x| x.include? substring}
+  inputs = Dir.glob("inputs/#{$jobid}/*.txt")
+  inputs = inputs.select {|x| x.include? substring}
   inputs = inputs.map{|x| File.basename(x).sub(".txt", "")}
   return inputs
 end
@@ -63,7 +64,7 @@ samples = Hash[
   "ewk" => Array['Zjets_M50', 'WplusJets_madgraph', 'TTplusJets_madgraph'] + get_sample_names('WZ') + get_sample_names('WWJet')+ get_sample_names('ZZ'),     #'ZZJetsTo4L_pythia',
   "wjets" => Array['WplusJets_madgraph'],
   "zjets" => Array['Zjets_M50'],
-  "diboson" => get_sample_names('ZZ')+get_sample_names('WZ') + get_sample_names('WWJet'), #Array['ZZJetsTo4L_pythia'] + 
+  "diboson" => get_sample_names('ZZ')+get_sample_names('WZ') + get_sample_names('WWJet'),
   "signal" => get_sample_names('VH') + get_sample_names('WH'),
   # Automagically figure out what data samples we have
   "data_m" =>  get_sample_names("data_SingleMu"),
@@ -94,9 +95,10 @@ end
 
 # Map which samples need to be analyzed by which analyzer
 fr_analyzer_sample_map = Hash[
-  "FakeRatesEE.py"  => samples['data_ee'] + samples["zjets"],# + samples['diboson'],
+  "FakeRatesEE.py"  => samples['data_ee'] + samples["zjets"] + samples['diboson'],
   "ChargeFlipProbabilityEE.py" => samples['zjets'],
   "FakeRatesEM.py"  => samples['diboson'] + samples['data_em'],
+  "FakeRatesEMT.py" => samples['diboson'] + samples['data_em'],
   "FakeRatesMM.py"  => samples['diboson'] + samples['data_mm'],
   "FakeRatesMMT.py" => samples['diboson'] + samples['data_mm'],
   "FakeRatesMMM.py" => samples['diboson'] + samples['data_mm'],
@@ -106,6 +108,7 @@ fr_analyzer_dep_map = Hash[
   "ChargeFlipProbabilityEE.py" => Array["baseSelections.py"], # "optimizer.py"],
   "FakeRatesEE.py"  => Array["baseSelections.py"],# + samples['diboson'],
   "FakeRatesEM.py"  => Array["baseSelections.py"],
+  "FakeRatesEMT.py" => Array["baseSelections.py"],
   "FakeRatesMM.py"  => Array["baseSelections.py"],
   "FakeRatesMMT.py" => Array["baseSelections.py"],
   "FakeRatesMMM.py" => Array["baseSelections.py"],
@@ -156,41 +159,82 @@ fr_binning_tight =  "10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,45,50,60,65
 #fr_binning =  5
 #fr_binning_tight =  2
 
-def make_landau(chan)
+def make_landau(chan, datas)
   fr_binning =  "10,12,15,20,25,30,40,50,70,100" #ruby does not seem to see global variables
   landau = "scale*TMath::Landau(x,mu,sigma,0)+offset"
   landau_vars =  "scale[0.5, 0, 15],mu[5, 0, 30],sigma[1.9, 0.1, 20],offset[1e-2, 0, 0.5]"
   return Hash[
-              "samples" => Array["diboson", "data_#{chan.downcase}"],
+              "samples" => Array["diboson", "data_#{datas.downcase}"],
               "analyzer" => "FakeRates#{chan.upcase}",
               "function" => landau,
               "variables" => landau_vars,
               "rebin" => fr_binning,
               "range" => "10 100",
+              'fitter' => 'fit_efficiency_chi2.py',
              ]
 end
 
-def make_exponential(chan)
+def make_exponential(chan, datas)
   fr_binning =  "10,12,15,20,25,30,40,50,70,100"
   exponential = "scale*TMath::Exp(x*decay)+offset"
   exponential_vars =  "scale[0.5, 0, 5],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
   return Hash[
-              "samples" => Array["diboson", "data_#{chan.downcase}"],
+              "samples" => Array["diboson", "data_#{datas.downcase}"],
               "analyzer" => "FakeRates#{chan.upcase}",
               "function" => exponential,
               "variables" => exponential_vars,
               "rebin" => fr_binning,
               "range" => "10 100",
+              'fitter' => 'fit_efficiency_chi2.py',
              ]
 end
 
-iso_points   = ['iso02', 'h2taucuts', 'h2taucuts020']
+def make_cruijff(chan, datas)
+  fr_binning =  "10,12,15,20,25,30,40,50,70,100" #ruby does not seem to see global variables
+  landau = "scale*RooCruijffFcn(x,mu, sigmaL, sigmaR, alphaL, alphaR)" #+offset"
+  landau_vars =  "scale[0.5, 0, 15],mu[5, 0, 20],sigmaR[1.9, 0.1, 20],sigmaL[1e-5], alphaL[1e-5], alphaR[3,0,100]" #,offset[1e-2, 0, 0.5]"
+  return Hash[
+              "samples" => Array["diboson", "data_#{datas.downcase}"],
+              "analyzer" => "FakeRates#{chan.upcase}",
+              "function" => landau,
+              "variables" => landau_vars,
+              "rebin" => fr_binning,
+              "range" => "10 100",
+              'fitter' => 'fit_efficiency_chi2.py',
+             ]
+end
+
+def make_constant(chan, datas)
+  fr_binning =  "10,12,15,20,25,30,40,50,70,100" #ruby does not seem to see global variables
+  landau = "offset"
+  landau_vars =  "offset[1e-2, 0, 0.5]"
+  return Hash[
+              "samples" => Array["diboson", "data_#{datas.downcase}"],
+              "analyzer" => "FakeRates#{chan.upcase}",
+              "function" => landau,
+              "variables" => landau_vars,
+              "rebin" => fr_binning,
+              "range" => "10 100",
+              'fitter' => 'fit_efficiency_chi2.py',
+             ]
+end
+
+def make_kNN(chan, datas)
+  return Hash[
+              "samples" => Array["diboson", "data_#{datas.downcase}"],
+              "analyzer" => "FakeRates#{chan.upcase}",
+              'fitter' => 'train_kNN.py',
+             ]
+end
+
+iso_points   = ['idiso02', 'h2taucuts', 'h2taucuts020']
 electronIds  = ['eid12Loose', 'eid12Medium', 'eid12Tight'] #, 'eid13Loose', 'eid13Tight']
 elewps       = electronIds.product(iso_points)
 elewps       = elewps.map{|x,y| "#{x}_#{y}"}
 pt_regions   = ['pt10', 'pt20']
 muonwps      = ['h2taucuts', 'h2taucuts020', 'pfidiso02']
 fr_fits      = Hash.new
+kNN_trains   = Hash.new
 
 #############
 #  EM datas
@@ -200,7 +244,11 @@ elewps.each do |ele_wp|
   emcrs.each do |cr|
     pt_regions.each do |ptr|
       key = "e_#{cr}_#{ptr}_#{ele_wp}_eJetPt"
-      fr_fits[key] =  make_exponential('em') #fit EVERYTHING with exponential, in case change afterwards
+      fr_fits[key] =  make_exponential('em', 'em') #fit EVERYTHING with exponential, in case change afterwards
+
+      key = "e_#{cr}_#{ptr}_#{ele_wp}_electronInfo"
+      kNN_trains[key] =  make_kNN('em', 'em') 
+      kNN_trains[key]['vars'] = ['electronJetPt', 'electronPt']
     end
   end
 end
@@ -212,13 +260,19 @@ eecrs = ['qcd', 'wjetsNoZmass']
 elewps.each do |ele_wp|
   eecrs.each do |cr|
     key = "ee_#{cr}_pt10_#{ele_wp}_electronJetPt"
-    fr_fits[key] =  make_landau('ee') #fit pt10 with landau
-
+    fr_fits[key] =  make_landau('ee', 'ee') #fit pt10 with landau
     key = "ee_#{cr}_pt20_#{ele_wp}_electronJetPt"
-    fr_fits[key] =  make_exponential('ee') #fit pt20 with expo
+    fr_fits[key] =  make_exponential('ee', 'ee') #fit pt20 with expo
+
+    key = "ee_#{cr}_pt10_#{ele_wp}_electronInfo"
+    kNN_trains[key] =  make_kNN('ee', 'ee')
+    kNN_trains[key]['vars'] = ['electronJetPt', 'electronPt']
+    key = "ee_#{cr}_pt20_#{ele_wp}_electronInfo"
+    kNN_trains[key] =  make_kNN('ee', 'ee')
+    kNN_trains[key]['vars'] = ['electronJetPt', 'electronPt']
   end
 end
-
+fr_fits["ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronJetPt"] = make_constant('ee', 'ee')
 
 #############
 #  MM datas
@@ -228,10 +282,16 @@ muonwps.each do |mu_wp|
   mmcrs.each do |cr|
     pt_regions.each do |ptr|
       key = "m_#{cr}_#{ptr}_#{mu_wp}_muonJetPt"
-      fr_fits[key] =  make_landau('mm') #fit EVERYTHING with exponential, in case change afterwards
+      fr_fits[key] =  make_landau('mm', 'mm')
+
+      key = "m_#{cr}_#{ptr}_#{mu_wp}_muonInfo"
+      kNN_trains[key] =  make_kNN('mm', 'mm')
+      kNN_trains[key]['vars'] = ['muonJetPt', 'muonPt']
     end
   end
 end
+fr_fits["m_qcd_pt20_h2taucuts_muonJetPt"] = make_cruijff('mm', 'mm')
+fr_fits["m_qcd_pt20_h2taucuts020_muonJetPt"] = make_cruijff('mm', 'mm')
 
 
 #Tau stuff (by hand, they are just 2)
@@ -306,6 +366,53 @@ fr_fits.each do |fit, fit_info|
   task :fits => fit_output
 
 end
+
+
+
+#create tasks for running kNN
+kNN_trains.each do |kNN, info|
+  kNN_configuration = kNN.split("_")
+  region = ''
+  denom  = ''
+  cut    = ''
+  var    = ''
+
+  if kNN_configuration.size() == 6 #check if we have an idIso with _ separation
+    region = kNN_configuration[1]
+    denom = kNN_configuration[2]
+    cut = "#{kNN_configuration[3]}_#{kNN_configuration[4]}"
+    var = kNN_configuration[5]
+  else #otherwise as usual
+    region = kNN_configuration[1]
+    denom = kNN_configuration[2]
+    cut = kNN_configuration[3]
+    var = kNN_configuration[4]
+  end
+
+  knn_output = $frfit_dir + "/#{kNN}.kNN.root"
+
+  # Expand sample list
+  subsample_inputs = []
+  info['samples'].each do |sample|
+    subsample_inputs += samples[sample]
+  end
+  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{info['analyzer']}/#{x}.root"}
+  subsample_input_list = subsamples_inputs_result_list.join(" ")
+
+  # Path to tree in root files
+  tree_path = Array[region, denom, var].join("/")
+  vars_str  = info['vars'].join(" ")
+
+  file knn_output => subsamples_inputs_result_list + [info['analyzer'] + '.py',] do |t|
+    sh "mkdir -p #{$frfit_dir}"
+    sh "train_kNN.py --files #{subsample_input_list} --outputfile #{knn_output} --tree #{tree_path} --cut #{cut} --variables #{vars_str}"
+  end
+  task :fits => knn_output
+
+end
+
+
+
 
 task :charge_fakes => []
 elewps.each do |iso_label|
