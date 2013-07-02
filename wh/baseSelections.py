@@ -39,6 +39,7 @@ def tauSelection(row, name):
 #VETOS
 def vetos(row):
     if row.muVetoPt5IsoIdVtx: return False
+    if row.bjetCSVVetoZHLike: return False
         #if row.bjetCSVVeto:       return False
     if row.eVetoMVAIsoVtx:    return False
     if row.tauVetoPt20Loose3HitsVtx: return False
