@@ -29,7 +29,7 @@ binsBarrel   = 4
 ptbins       = [10.,30.,50.,130.]
 etabins      = [0.0, 0.35, 0.70, 1., 1.25, 1.48, 1.6, 1.7, 1.8, 1.9, 2.10, 2.30, 2.5]
 defined_eids = selections.electronIds.keys()
-iso_points   = ['iso02', 'h2taucuts', 'h2taucuts020']
+iso_points   = ['idiso02', 'h2taucuts', 'h2taucuts020']
 lep_id       = [
     '_'.join([i,j])
     for i in defined_eids
