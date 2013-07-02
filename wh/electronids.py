@@ -75,6 +75,6 @@ electronIds = {
     'eid12Loose' : zh_loose_2012eid,
     'eid12Medium': h2tau_2012_LooseId,
     'eid12Tight' : h2tau_2012_tightId,
-    'eid13Loose' : summer_2013_eid,
-    'eid13Tight' : summer_2013_eid_tight,
+#    'eid13Loose' : summer_2013_eid,
+#    'eid13Tight' : summer_2013_eid_tight,
 }
