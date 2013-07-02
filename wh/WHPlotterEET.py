@@ -36,7 +36,7 @@ if __name__ == "__main__":
         ###########################################################################
         ##  Zmm control plots #####################################################
         ###########################################################################
-
+        plotter.set_subdir('mc_data')
         ## # Control Z->mumu + jet region
         ## plotter.plot_mc_vs_data('os/p1p2f3', 'e1_e2_Mass', xaxis='m_{ee} (GeV)', xrange=(60, 120))
         ## plotter.add_cms_blurb(sqrts)
@@ -110,10 +110,6 @@ if __name__ == "__main__":
         ## ##  FR sideband MC-vs-Data ################################################
         ## ###########################################################################
 
-        ## plotter.plot_mc_vs_data('ss/p1f2p3', 'e1Pt', rebin=10, xaxis='e_{1} p_{T} (GeV)', leftside=False)
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('mcdata-ss-p1f2p3-e1Pt')
-
         plotter.plot_mc_vs_data('ss/p1f2p3', 'e2_t_Mass', rebin=10, xaxis='m_{e2#tau} (GeV)', leftside=False)
         plotter.add_cms_blurb(sqrts)
         plotter.save('mcdata-ss-p1f2p3-subMass')
@@ -122,25 +118,10 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('mcdata-ss-p1f2p3-LT')
 
-        ## plotter.plot_mc_vs_data('ss/p1f2p3/w2', 'e1Pt', rebin=10, xaxis='e_{1} p_{T}', leftside=False)
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('mcdata-ss-p1f2p3-w2-e1Pt')
-
-        ## plotter.plot_mc_vs_data('ss/f1p2p3', 'e2_t_Mass', rebin=20, xaxis='m_{e2#tau} (GeV)', leftside=False)
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('mcdata-ss-f1p2p3-subMass')
-
-        ## plotter.plot_mc_vs_data('ss/f1p2p3/w1', 'e2_t_Mass', rebin=20, xaxis='m_{e2#tau} (GeV)', leftside=False)
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('mcdata-ss-f1p2p3-w1-subMass')
-
-        ## plotter.plot_mc_vs_data('ss/p1p2f3', 'e1_e2_Mass', rebin=10, xaxis='m_{ee} (GeV)', leftside=False)
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('mcdata-ss-p1p2f3-e1e2Mass')
-
         ###########################################################################
         ##  Signal region plots    ################################################
         ###########################################################################
+        plotter.set_subdir('')
 
         plotter.plot_final('e1Pt', 10)
         plotter.add_cms_blurb(sqrts)
@@ -154,13 +135,13 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-tPt')
 
-        #plotter.plot_final('e1AbsEta', 10)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-e1AbsEta')
+        plotter.plot_final('e1AbsEta', 10)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-e1AbsEta')
 
-        #plotter.plot_final('e2AbsEta', 10)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-e2AbsEta')
+        plotter.plot_final('e2AbsEta', 10)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-e2AbsEta')
 
         plotter.plot_final('tAbsEta', 10)
         plotter.add_cms_blurb(sqrts)
@@ -197,10 +178,23 @@ if __name__ == "__main__":
         ###########################################################################
         ##  f3 region plots        ################################################
         ###########################################################################
-        
+        plotter.set_subdir('f3')
+
         plotter.plot_final_f3('e2_t_Mass', 20, xaxis='m_{e_{2}#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-subMass')
+
+        plotter.plot_final_f3('e2_t_Mass', 200, xaxis='m_{e_{2}#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-counting-like')
+
+        plotter.plot_final_f3('e2_t_Mass', 20, xaxis='m_{e_{2}#tau} (GeV)', qcd_weight_fraction=0, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-wjetfake-subMass')
+
+        plotter.plot_final_f3('e2_t_Mass', 20, xaxis='m_{e_{2}#tau} (GeV)', qcd_weight_fraction=1, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-qcdfake-subMass')
 
         plotter.plot_final_f3('e1_t_Mass', 20, xaxis='m_{e_{1}#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
@@ -210,9 +204,50 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-e1e2Mass')
 
+        plotter.plot_final_f3('e1Pt', 10, qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-e1Pt')
+
+        plotter.plot_final_f3('e2Pt', 10, qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-e2Pt')
+
+        plotter.plot_final_f3('e2JetPt', 10, qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-e2JetPt')
+
+        plotter.plot_final_f3('tPt', 10, qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-tPt')
+
+        plotter.plot_final_f3('e1AbsEta', 10, qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-e1AbsEta')
+
+        plotter.plot_final_f3('e2AbsEta', 10, qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-e2AbsEta')
+
+        plotter.plot_final_f3('tAbsEta', 10, qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-tAbsEta')
+
+        plotter.plot_final_f3('LT', 5, qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-LT')
+
+        plotter.plot_final_f3('e1_t_DR', 20, xaxis='#DeltaR_{e_{1}#tau}', x_range=[0,5])
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-e1_t_DR')
+
+        plotter.plot_final_f3('e2_t_DR', 20, xaxis='#DeltaR_{e_{2}#tau}', x_range=[0,5])
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-e2_t_DR')
+
         ###########################################################################
         ##  charge flip region plots        #######################################
         ###########################################################################
+        plotter.set_subdir('charge_flip_CR_f3')
 
         plotter.plot_final_f3('charge_flip_CR/e2_t_Mass', 20, xaxis='m_{e_{2}#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
@@ -230,6 +265,7 @@ if __name__ == "__main__":
     ###########################################################################
     ##  Making shape file     #################################################
     ###########################################################################
+    plotter.set_subdir('')
     prefixes = [options.prefix+'$'] if options.prefix else ['']
     prefixes = [i+'$' for i in options.prefixes.split(',') if i] if options.prefixes else prefixes
     for prefix in prefixes:
@@ -242,13 +278,13 @@ if __name__ == "__main__":
         plotter.canvas.SetGridy()
         plotter.save('final-%s-f3-subMass' % shape_prefix)
 
-        plotter.plot_final(prefix+'e2_t_Mass', 10, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
+        plotter.plot_final(prefix+'e2_t_Mass', 20, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.canvas.SetGridx()
         plotter.canvas.SetGridy()
         plotter.save('final-%s-subMass' % shape_prefix)
 
-        plotter.plot_final(prefix+'LT', 5, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
+        plotter.plot_final(prefix+'LT', 10, qcd_weight_fraction=0.5, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.canvas.SetGridx()
         plotter.canvas.SetGridy()

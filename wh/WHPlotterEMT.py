@@ -31,6 +31,7 @@ if __name__ == "__main__":
         ###########################################################################
         ##  Zmm control plots #####################################################
         ###########################################################################
+        plotter.set_subdir('mc_data')
 
         # Control Z->tautau + jet region
         plotter.plot_mc_vs_data('os/p1p2f3', 'e_m_Mass', rebin=10, xaxis='m_{e#mu} (GeV)', leftside=False)
@@ -128,61 +129,7 @@ if __name__ == "__main__":
         ###########################################################################
         ##  Signal region plots    ################################################
         ###########################################################################
-
-        #BEGIN - New topologicla variables
-        plotter.plot_final('LT', 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-LT')
-        ## sig_view = plotter.make_signal_views(20, unblinded=(not plotter.blind))
-        ## vh_10x   = views.StyleView(
-        ##     sig_view['signal120'], 
-        ##     **data_styles['VH*']
-        ##     )
-        ## subm_hist= vh_10x.Get('subMass')
-        ## subm_hist.SetTitle('subleading Mass')
-        ## subm_hist.Draw()
-        ## true_hist= vh_10x.Get('true_mass')
-        ## true_hist.SetTitle('true Mass')
-        ## true_hist.SetLineColor(2)
-        ## true_hist.Draw('same')
-        ## subm_hist.GetYaxis().SetRangeUser(0,max([subm_hist.GetMaximum(),true_hist.GetMaximum()])*1.2)
-        ## legend = plotter.add_legend([subm_hist,true_hist], leftside=False)
-        ## legend.Draw()
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('study-trueMass')
-
-        plotter.plot_final('tToMETDPhi', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-tToMETDPhi')
-
-        ##   plotter.plot_final('_recoilDaught', 20, qcd_weight_fraction=0.5, maxy='auto', stack_higgs=False)
-        ##   plotter.add_cms_blurb(sqrts)
-        ##   plotter.save('study-recoilDaught')
-        ##
-        ##   plotter.plot_final('_recoilWithMet', 20, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        ##   plotter.add_cms_blurb(sqrts)
-        ##   plotter.save('study-recoilWithMet')
-        ##
-        ##   plotter.plot_final('lepRecoil_wMET', 5,  x_range=[0,300], qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        ##   plotter.add_cms_blurb(sqrts)
-        ##   plotter.save('study-lepRecoilwMET')
-        ##
-        ##   plotter.plot_final('lepRecoil', 5,  x_range=[0,300], qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto')
-        ##   plotter.add_cms_blurb(sqrts)
-        ##   plotter.save('study-lepRecoil')
-
-        plotter.plot_final('type1_pfMetEt'    , 5, qcd_weight_fraction=0.5, stack_higgs=False, maxy='auto', x_range=[0,500])
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-metEt')
-
-        plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-subMass-qweight05')
-
-        plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('study-f3-qweight05-werror-subMass')
-        #END
+        plotter.set_subdir('')
 
         plotter.plot_final('mPt', 10)
         plotter.save('final-mPt')
@@ -233,6 +180,11 @@ if __name__ == "__main__":
         plotter.plot_final('e_t_Mass', 10)
         plotter.save('final-etMass')
 
+        ###########################################################################
+        ##  WZ enhanced region plots    ###########################################
+        ###########################################################################
+        plotter.set_subdir('WZ_enhanced')
+
         plotter.plot_final_wz('e_t_Mass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-wz-etMass')
@@ -245,66 +197,92 @@ if __name__ == "__main__":
         #plotter.add_cms_blurb(sqrts)
         #plotter.save('final-wz-mJetPt')
 
-        plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)')
+        ###########################################################################
+        ##  F3 enhanced region plots    ###########################################
+        ###########################################################################
+        plotter.set_subdir('f3')
+
+        plotter.plot_final_f3('LT', 5, xaxis='LT (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-LT')
+
+        plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{2}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-subMass')
 
-        plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5)
+        plotter.plot_final_f3('subMass', 200, xaxis='m_{l_{2}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-qweight05-subMass')
+        plotter.save('final-f3-subMass-counting-like')
 
-        plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{2}#tau_{#mu}} (GeV)', qcd_weight_fraction=1, show_error=True)
         plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-qweight05-werror-subMass')
+        plotter.save('final-f3-qcdfake-subMass')
 
-        plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', show_error=True,
-                           fake_error=0, wz_error=0, zz_error=0)
+        plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{2}#tau_{#mu}} (GeV)', qcd_weight_fraction=0, show_error=True)
         plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-wshaperror-subMass')
+        plotter.save('final-f3-wjetfake-subMass')
 
-        plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{1}#tau_{#mu}} (GeV)', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-werror-subMass')
-
-        plotter.plot_final_f3('e_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+        plotter.plot_final_f3('e_t_Mass', 20, xaxis='m_{e#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-etMass')
 
-        plotter.plot_final_f3('e_m_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+        plotter.plot_final_f3('e_m_Mass', 20, xaxis='m_{e#mu} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-emMass')
 
-        #plotter.plot_final_f3('subMass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=True)
+        #plotter.plot_final_f3('m_t_Mass', 20, xaxis='m_{#mu#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-f3q-subMass')
+        #plotter.save('final-f3-emMass')
 
-        plotter.plot_final_f3('subMass', 20, xaxis='m_{#l_{1}#tau_{#mu}} (GeV)', show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-subMass-werror')
-
-        plotter.plot_final_f3('mPt', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+        plotter.plot_final_f3('mPt', 10, xaxis='p_{T#mu} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-mPt')
 
-        plotter.plot_final_f3('ePt', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+        plotter.plot_final_f3('ePt', 10, xaxis='p_{Te} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-ePt')
 
-        ## plotter.plot_final_f3('eChargeIdMedium', 1, xaxis='Charge ID Med', maxy=None)
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('final-f3-eChargeIdMedium')
+        plotter.plot_final_f3('tPt', 10, xaxis='p_{T#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-tPt')
+
+        plotter.plot_final_f3('tSubDR', 10, xaxis='#DeltaR_{l_{2}#tau}', show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-tSubDR')
+
+        plotter.plot_final_f3('tLeadDR', 10, xaxis='#DeltaR_{l_{1}#tau}', show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-tLeadDR')
+
+        plotter.plot_final_f3('e_t_DR', 10, xaxis='#DeltaR_{e#tau}', show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-etDR')
+
+        plotter.plot_final_f3('m_t_DR', 10, xaxis='#DeltaR_{#mu#tau}', show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-mtDR')
+
+        plotter.plot_final_f3('subPt', 10, xaxis='p_{Tl_{2}} (GeV)', show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subPt')
+
+        plotter.plot_final_f3('subJetPt', 10, xaxis='p_{TJetl_{2}} (GeV)', show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subJetPt')
+
+        plotter.plot_final_f3('leadPt', 10, xaxis='p_{Tl_{1}} (GeV)', show_error=True)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-leadPt')
 
         plotter.plot_final_f3('eChargeIdTight', 1, xaxis='Charge ID Tight', maxy=None)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-eChargeIdTight')
 
-        #plotter.plot_final_f3('mJetPt', 5, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-f3-mJetPt')
         #END OF if not options.dry_run:
     ###########################################################################
     ##  Making shape file     #################################################
     ###########################################################################
+    plotter.set_subdir('')
     prefixes = [options.prefix+'$'] if options.prefix else ['']
     prefixes = [i+'$' for i in options.prefixes.split(',') if i] if options.prefixes else prefixes
     for prefix in prefixes:
