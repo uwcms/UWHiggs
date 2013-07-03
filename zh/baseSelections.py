@@ -48,8 +48,8 @@ def Vetos(row):
     '''
     applies b-tag, muon, electron and tau veto
     '''
-    #if bool(row.bjetCSVVeto):      return False
-    if bool(row.bjetCSVVetoZHLikeNoJetId): return False
+    if bool(row.bjetCSVVeto):      return False
+    #if bool(row.bjetCSVVetoZHLikeNoJetId): return False
     if bool(row.muGlbIsoVetoPt10): return False
     if bool(row.tauHpsVetoPt20):   return False
     if bool(row.eVetoMVAIso):      return False
@@ -78,11 +78,11 @@ def ZMuMuSelectionNoVetos(row):
     if row.m2AbsEta > 2.4:                             return False
     if abs(row.m1DZ) > 0.1:                            return False
     if abs(row.m2DZ) > 0.1:                            return False
-    if not bool(row.m1PFIDTight):                      return False
-    if not muIsoLoose(row,'m1'):                       return False
-    if not bool(row.m2PFIDTight):                      return False
-    if not muIsoLoose(row,'m2'):                       return False
-    if bool(row.m1_m2_SS):                             return False
+    #if not bool(row.m1PFIDTight):                      return False
+    #if not muIsoLoose(row,'m1'):                       return False
+    #if not bool(row.m2PFIDTight):                      return False
+    #if not muIsoLoose(row,'m2'):                       return False
+    #if bool(row.m1_m2_SS):                             return False
     if row.m1_m2_Mass < 60 or row.m1_m2_Mass > 120 :   return False
     return True
 #return MuTriggerMatching(row)
@@ -102,11 +102,11 @@ def ZEESelectionNoVetos(row):
     if row.e2AbsEta > 2.5:                           return False
     if abs(row.e1DZ) > 0.1:                          return False
     if abs(row.e2DZ) > 0.1:                          return False
-    if not eleID(row, 'e1'):                         return False
-    if not elIsoLoose(row, 'e1'):                    return False
-    if not eleID(row, 'e2'):                         return False
-    if not elIsoLoose(row, 'e1'):                    return False
-    if bool(row.e1_e2_SS):                           return False
+    #if not eleID(row, 'e1'):                         return False
+    #if not elIsoLoose(row, 'e1'):                    return False
+    #if not eleID(row, 'e2'):                         return False
+    #if not elIsoLoose(row, 'e1'):                    return False
+    #if bool(row.e1_e2_SS):                           return False
     if row.e1_e2_Mass < 60 or row.e1_e2_Mass > 120 : return False
     return True
 #return ElTriggerMatching(row)
