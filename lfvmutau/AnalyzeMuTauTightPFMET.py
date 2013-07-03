@@ -34,10 +34,10 @@ def fullMT(met,mupt,taupt, metphi, muphi, tauphi):
         mety=met*math.sin(metphi)
         taux=taupt*math.cos(tauphi)
         tauy=taupt*math.sin(tauphi)
-	full_pt=met+mupt+taupt
+	full_et=met+mupt+taupt   # for muon and tau I am approximating pt~et (M<<P)
 	full_x=metx+mux+taux
         full_y=mety+muy+tauy
-	full_mt_2 = full_pt*full_pt-full_x*full_x-full_y*full_y
+	full_mt_2 = full_et*full_et-full_x*full_x-full_y*full_y
 	full_mt=0
 	if (full_mt_2>0):
 		full_mt= math.sqrt(full_mt_2)
