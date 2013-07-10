@@ -10,10 +10,9 @@ import MuMuTree
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 import glob
 import os
-import FinalStateAnalysis.TagAndProbe.H2TauCorrections as H2TauCorrections
-import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
-import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
+import baseSelections as selections
 import mcCorrectors
+import optimizer
 import ROOT
 
 ################################################################################
@@ -23,6 +22,9 @@ import ROOT
 # Determine MC-DATA corrections
 is7TeV = bool('7TeV' in os.environ['jobid'])
 print "Is 7TeV:", is7TeV
+
+leadleptonId = optimizer.grid_search['MMT']['leading_iso']
+subleptonId  = optimizer.grid_search['MMT']['subleading_iso']
 
 class ControlZMM(MegaBase):
     tree = 'mm/final/Ntuple'
@@ -97,35 +99,28 @@ class ControlZMM(MegaBase):
 
         Excludes FR object IDs and sign cut.
         '''
-        if not row.doubleMuPass:
-            return False
-        if row.m1_m2_SS:
-            return False
-        if row.m1Pt < row.m2Pt:
-            return False
-        if row.m1_m2_Mass < 60:
-            return False
-        if row.m1_m2_Mass > 120:
-            return False
-        if row.m1Pt < 20:
-            return False
-        if row.m2Pt < 10:
-            return False
-        if row.m1AbsEta > 2.4:
-            return False
-        if row.m2AbsEta > 2.4:
-            return False
-        if abs(row.m1DZ) > 0.2:
-            return False
-        if abs(row.m2DZ) > 0.2:
-            return False
+        double_mu_pass =  row.doubleMuPass and \
+            row.m1MatchesDoubleMuPaths > 0 and \
+            row.m2MatchesDoubleMuPaths > 0
+        double_muTrk_pass = row.doubleMuTrkPass and \
+             row.m1MatchesDoubleMuTrkPaths > 0 and \
+             row.m2MatchesDoubleMuTrkPaths > 0
+        if not ( double_mu_pass or double_muTrk_pass ): return False
+        if row.m1_m2_SS:         return False
+        if row.m1Pt < row.m2Pt:  return False
+        if row.m1_m2_Mass < 60:  return False
+        if row.m1_m2_Mass > 120: return False
+        if not selections.muSelection(row, 'm1'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
+        if not selections.muSelection(row, 'm2'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         return True
 
     def obj1_id(self, row):
-        return bool(row.m1PFIDTight) and bool(row.m1RelPFIsoDB < 0.2)
+        return selections.lepton_id_iso(row, 'm1', leadleptonId) 
+        #bool(row.m1PFIDTight) and bool(row.m1RelPFIsoDB < 0.2)
 
     def obj2_id(self, row):
-        return bool(row.m2PFIDTight) and bool(row.m2RelPFIsoDB < 0.2)
+        return selections.lepton_id_iso(row, 'm2', subleptonId )
+        #bool(row.m2PFIDTight) and bool(row.m2RelPFIsoDB < 0.2)
 
     def process(self):
         for row in self.tree:
