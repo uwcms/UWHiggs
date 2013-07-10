@@ -21,13 +21,12 @@ end
 
 def check_luminosity(samples)
   #check that we have the expected lumi
-  target_lumi = Float(ENV.fetch('TARGET_LUMI', -1))
+  target_lumi = Float(ENV.fetch("TARGET_LUMI_#{$period}", -1))
   tolerance   = Float(ENV.fetch('LUMI_TOLERANCE', 0.1))
   ingore_err  = Float(ENV.fetch('IGNORE_LUMI_ERRORS', 0))
   if target_lumi == -1 || ingore_err == 1
     return nil
   end
-  $jobid = ENV['jobid']
   samples.each do |sample|
     lumifiles = Dir.glob("inputs/#{$jobid}/*.lumicalc.sum").select {|x| x.include? sample}
     lumifiles = lumifiles.map {|x| Float(File.read(x).strip())*0.001}
@@ -315,6 +314,7 @@ fr_fits["t_ztt_pt20_hpsloose_tauPt"] = Hash[
 
 # Placeholder
 task :fits => []
+task :kNN  => []
 
 # Create tasks for all the fr_fits
 fr_fits.each do |fit, fit_info|
@@ -407,7 +407,7 @@ kNN_trains.each do |kNN, info|
     sh "mkdir -p #{$frfit_dir}"
     sh "train_kNN.py --files #{subsample_input_list} --outputfile #{knn_output} --tree #{tree_path} --cut #{cut} --variables #{vars_str}"
   end
-  task :fits => knn_output
+  task :kNN => knn_output
 
 end
 
@@ -617,12 +617,27 @@ cardmasses = cardmasses.select{|x| x.include? "H2Tau"} #get only the H2Tau, to a
 cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
 cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it's really needed but can't harm)
 
-to_extrapolate = cardmasses.select{|x| x > 140}
-# Now do the horizontal morphing
-file "#{$carddir}/shapes.root" => ["#{$carddir}/shapes_unmorphed.root"] do |t|
-  sh "cp #{t.prerequisites[0]} #{t.name}"
-  sh "horizontal-morphing.py --categories='emt,mmt,eet' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 --extrapolate=#{to_extrapolate.join(",")} #{t.name}"
+$to_extrapolate = cardmasses.select{|x| x > 140}
+
+def make_morphing_task(channel, shapefile)
+  ret = "#{$carddir}/#{channel}/shapes.root"
+  file ret => [shapefile] do |t|
+    sh "mkdir -p `dirname #{t.name}`"
+    sh "cp #{t.prerequisites[0]} #{t.name}"
+    sh "horizontal-morphing.py --categories='#{channel}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 --extrapolate=#{$to_extrapolate.join(",")} #{t.name}"
+  end
+  return ret
 end
+
+mmt_morphed_shape_file = make_morphing_task('mmt', mmt_shape_file)
+task :mmt_morphed_shapes => mmt_morphed_shape_file
+
+emt_morphed_shape_file = make_morphing_task('emt', emt_shape_file)
+task :mmt_morphed_shapes => emt_morphed_shape_file
+
+eet_morphed_shape_file = make_morphing_task('eet', eet_shape_file)
+task :mmt_morphed_shapes => eet_morphed_shape_file
+
 
 stat_shape_lists = Dir.glob("results/#{$jobid}/plots/*/*_statshapes.txt")
 # We make these the dependency, since they are always rpoduced w/ the .txt lists
@@ -657,7 +672,7 @@ end
 def make_unc_vals_task(channel)
   ret = "#{$carddir}/#{channel}/unc.vals"
   file ret => ["card_config/unc.vals.#{channel}.#{$period}", 
-    "#{$carddir}/shapes.root"] + Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.root") do |t|
+    "#{$carddir}/#{channel}/shapes.root"] + Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.root") do |t|
     # Copy the basic template
     sh "mkdir -p #{$carddir}/#{channel}"
     sh "cp #{t.prerequisites[0]} #{t.name}"
@@ -667,16 +682,16 @@ def make_unc_vals_task(channel)
     Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.txt").each do |list|
       sh "cat #{list} | xargs -n 1 -I {} echo '#{channel} fakes {} 1.0' >> #{t.name}"
     end
-    sh "python get_fake_systematic.py #{$carddir}/shapes.root #{channel} CMS_vhtt_#{channel}_fakes_#{$period} >> #{t.name}"
+    sh "python get_fake_systematic.py #{$carddir}/#{channel}/shapes.root #{channel} CMS_vhtt_#{channel}_fakes_#{$period} >> #{t.name}"
   end
 end
 
 def make_datacard_task(mass, channel)
   card = "#{$carddir}/#{channel}/#{mass}/vhtt_#{channel}.txt"  
-  file card => ["#{$carddir}/shapes.root",
-                make_unc_conf_task(channel), 
-                make_unc_vals_task(channel), 
-                make_cgs_conf_task(channel)] do |t|
+  file card => ["#{$carddir}/#{channel}/shapes.root",
+                "#{$carddir}/#{channel}/unc.conf", 
+                "#{$carddir}/#{channel}/unc.vals", 
+                "#{$carddir}/#{channel}/cgs.conf"] do |t|
     puts t.investigation
     sh "mkdir -p #{$carddir}"
     chdir($carddir) do
@@ -684,11 +699,9 @@ def make_datacard_task(mass, channel)
       # Link the shape file in the card directory so combine can run from anywhere
       chdir("#{channel}/#{mass}") do
         sh "rm -f shapes.root"
-        sh "ln -s ../../shapes.root"
+        sh "ln -s ../shapes.root"
       end
       chdir("#{channel}") do
-        sh "rm -f shapes.root"
-        sh "ln -s ../shapes.root"
         sh "create-datacard.py -i shapes.root -o #{mass}/vhtt_#{channel}.txt #{mass} --categories '#{channel}'"
       end
     end
@@ -704,9 +717,10 @@ def combine_channels(mass)
                 "#{$carddir}/emt/#{mass}/vhtt_emt.txt",
                 "#{$carddir}/eet/#{mass}/vhtt_eet.txt"] do |t|
     sh "mkdir -p #{$carddir}/#{channel}/#{mass}"
+    sh "hadd  -f #{$carddir}/#{channel}/shapes.root #{$carddir}/?mt/shapes.root  #{$carddir}/eet/shapes.root "
     chdir("#{$carddir}/#{channel}/#{mass}") do
       sh "rm -f shapes.root"
-      sh "ln -s ../../shapes.root"
+      sh "ln -s ../shapes.root"
       local_paths = t.prerequisites.map{|x| x.sub($carddir,'../..')}
       sh "combine_cards_with_names.sh #{ local_paths.join(' ')} > vhtt_#{channel}.txt"
     end
@@ -716,6 +730,10 @@ end
 
 def make_timestamp_task(cardmasses, channel)
   timestamp = "#{$carddir}/#{channel}/.creation_timestamp"
+  #creates the tasks
+  make_unc_conf_task(channel)
+  make_unc_vals_task(channel)
+  make_cgs_conf_task(channel)
   file timestamp => cardmasses.map{|x| make_datacard_task(x, channel)} do |t|
     sh "touch #{t.name}"
   end
@@ -844,31 +862,44 @@ end
 #################################################################################
 #### Copying card configuration to official place ###############################
 #################################################################################
-# 
-# #$httcombodir="/afs/hep.wisc.edu/cms/efriis/HIG-12-051/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
-# $httcombodir="/afs/cern.ch/work/f/friis/HttLimits/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt"
-# 
-# file "#{$httcombodir}/cgs-sm-#{$period}-00.conf" => ["#{$carddir}/cgs.conf"] do |t|
-#     puts t.investigation
-#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
-# end
-# 
-# file "#{$httcombodir}/unc-sm-#{$period}-00.conf" => ["#{$carddir}/unc.conf"] do |t|
-#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
-# end
-# 
-# file "#{$httcombodir}/unc-sm-#{$period}-00.vals" => ["#{$carddir}/unc.vals"] do |t|
-#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
-# end
-# 
-# file "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root" => ["#{$carddir}/shapes.root"] do |t|
-#   sh "cp -v #{t.prerequisites[0]} #{t.name}"
-# end
-# 
-# task :copycards => [
-#                     "#{$httcombodir}/cgs-sm-#{$period}-00.conf",
-#                     "#{$httcombodir}/unc-sm-#{$period}-00.conf",
-#                     "#{$httcombodir}/unc-sm-#{$period}-00.vals",
-#                     "#{$httcombodir}/vhtt_llt.inputs-sm-#{$period}.root"]  do |t|
-#   puts t.investigation
-# end
+$httcombodir = "#{ENV['CMSSW_BASE']}/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt/"
+$auxdir      = "#{ENV['CMSSW_BASE']}/src/auxiliaries/datacards/collected/vhtt/"
+
+def copy_file(source, target)
+  file target => [source] do |t|
+    sh "cp -v #{t.prerequisites[0]} #{t.name}"
+  end
+end
+
+def copy_configs(channel, vhtt_number)
+  dir    = "#{$carddir}/#{channel}"
+  htt_id = "sm-#{$period}-#{vhtt_number}"
+
+  #copies cgs.conf
+  copy_file("#{dir}/cgs.conf", "#{$httcombodir}/cgs-#{htt_id}.conf")
+
+  #copies unc.conf
+  copy_file("#{dir}/unc.conf", "#{$httcombodir}/unc-#{htt_id}.conf")
+
+  #copies unc.vals
+  copy_file("#{dir}/unc.vals", "#{$httcombodir}/unc-#{htt_id}.vals")
+
+  return ["#{$httcombodir}/cgs-#{htt_id}.conf", "#{$httcombodir}/unc-#{htt_id}.conf", "#{$httcombodir}/unc-#{htt_id}.vals"]
+end
+
+
+mmt_cfg = copy_configs('mmt', '00')
+emt_cfg = copy_configs('emt', '01')
+eet_cfg = copy_configs('eet', '02')
+
+file "#{$auxdir}/vhtt_llt.inputs-sm-#{$period}.root" => ["#{$carddir}/mmt/shapes.root",
+                                                        "#{$carddir}/emt/shapes.root",
+                                                        "#{$carddir}/eet/shapes.root"] do |t|
+  sh "hadd -f #{t.name} #{t.prerequisites.join(' ')}"
+end
+
+task :copycards => ["#{$auxdir}/vhtt_llt.inputs-sm-#{$period}.root"] +
+    mmt_cfg + emt_cfg + eet_cfg do |t|
+    puts t.investigation
+end
+
