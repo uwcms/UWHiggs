@@ -581,24 +581,40 @@ task :plot_eet => "#{$eetdir}/eet_shapes_#{$period}.root"
 #      copycards -> move cards to official HTT CVS area
 ################################################################################
 
+#categories
+$categories_map = Hash[
+   'eet' => File.open("card_config/cgs.conf.eet.#{$period}").select {|x| x.start_with? 'categories'}[0].split(':')[1].split(',').map{|x| x.strip},
+   'emt' => File.open("card_config/cgs.conf.emt.#{$period}").select {|x| x.start_with? 'categories'}[0].split(':')[1].split(',').map{|x| x.strip},
+   'mmt' => File.open("card_config/cgs.conf.mmt.#{$period}").select {|x| x.start_with? 'categories'}[0].split(':')[1].split(',').map{|x| x.strip},
+]
+
 # Recipes for adding stat. error shapes.  Makes a new file task:
 # input_file_stat_errors.root => input_file.root
-def add_fake_errors(input_file, prefix)
-  output_file = input_file.sub('.root', '_statshapes.root')
-  output_sys_list = input_file.sub('.root', '_statshapes.txt')
+def add_fake_errors(input_file, channel, prefix)
+  output_file =  "#{File.dirname(input_file)}/#{channel}_shapes_#{prefix}_statshapes.root"
+  output_sys_list = output_file.sub('.root', ".txt")
   file output_file => [input_file] do |t|
     sh "add_stat_shapes.py #{input_file} #{output_file} --filter '#{prefix}/fakes' --prefix CMS_vhtt_#{$period}_#{prefix}_fakeshape > #{output_sys_list}"
   end
   return output_file
 end
 
-mmt_shape_file = add_fake_errors("#{$mmtdir}/mmt_shapes_#{$period}.root", "mmt")
+mmt_shape_file = "#{$mmtdir}/mmt_shapes_#{$period}.root"
+$categories_map['mmt'].each do |category|
+  mmt_shape_file = add_fake_errors(mmt_shape_file, "mmt", category)
+end
 task :mmt_shapes => mmt_shape_file
 
-emt_shape_file = add_fake_errors("#{$emtdir}/emt_shapes_#{$period}.root", "emt")
+emt_shape_file = "#{$emtdir}/emt_shapes_#{$period}.root"
+$categories_map['emt'].each do |category|
+  emt_shape_file = add_fake_errors(emt_shape_file, "emt", category)
+end
 task :emt_shapes => emt_shape_file
 
-eet_shape_file = add_fake_errors("#{$eetdir}/eet_shapes_#{$period}.root", "eet")
+eet_shape_file = "#{$eetdir}/eet_shapes_#{$period}.root"
+$categories_map['eet'].each do |category|
+  eet_shape_file = add_fake_errors(eet_shape_file, "eet", category)
+end
 task :eet_shapes => eet_shape_file
 
 $carddir = "results/#{$jobid}/cards"
@@ -624,7 +640,7 @@ def make_morphing_task(channel, shapefile)
   file ret => [shapefile] do |t|
     sh "mkdir -p `dirname #{t.name}`"
     sh "cp #{t.prerequisites[0]} #{t.name}"
-    sh "horizontal-morphing.py --categories='#{channel}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 --extrapolate=#{$to_extrapolate.join(",")} #{t.name}"
+    sh "horizontal-morphing.py --categories='#{$categories_map[channel].join(',')}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 --extrapolate=#{$to_extrapolate.join(",")} #{t.name}"
   end
   return ret
 end
@@ -680,9 +696,12 @@ def make_unc_vals_task(channel)
     sh "echo '' >> #{t.name}"
     sh "echo '# Stat shape uncertainties' >> #{t.name}"
     Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.txt").each do |list|
-      sh "cat #{list} | xargs -n 1 -I {} echo '#{channel} fakes {} 1.0' >> #{t.name}"
+      category = list.split('/')[-1].split('_')[-2]
+      puts category
+      puts list
+      sh "cat #{list} | xargs -n 1 -I {} echo '#{category} fakes {} 1.0' >> #{t.name}"
+      sh "python get_fake_systematic.py #{$carddir}/#{channel}/shapes.root #{category} CMS_vhtt_#{category}_fakes_#{$period} >> #{t.name}"
     end
-    sh "python get_fake_systematic.py #{$carddir}/#{channel}/shapes.root #{channel} CMS_vhtt_#{channel}_fakes_#{$period} >> #{t.name}"
   end
 end
 
@@ -702,7 +721,7 @@ def make_datacard_task(mass, channel)
         sh "ln -s ../shapes.root"
       end
       chdir("#{channel}") do
-        sh "create-datacard.py -i shapes.root -o #{mass}/vhtt_#{channel}.txt #{mass} --categories '#{channel}'"
+        sh "create-datacard.py -i shapes.root -o #{mass}/vhtt_#{channel}.txt #{mass} --categories '#{$categories_map[channel].join(',')}'"
       end
     end
   end
