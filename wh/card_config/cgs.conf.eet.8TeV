@@ -11,7 +11,7 @@ $ GROUP signal WH,WH_hww
 $ GROUP all_background wz,zz,fakes,charge_fakes
 $ GROUP simulated WH,wz,zz,WH_hww
 
-categories: eet
+categories: eetCatHigh,eetCatLow
 signals: signal
 backgrounds: all_background
 data: data_obs

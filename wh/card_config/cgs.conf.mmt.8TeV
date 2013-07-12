@@ -11,7 +11,7 @@ $ GROUP signal WH,WH_hww
 $ GROUP background wz,zz,fakes
 $ GROUP simulated WH,wz,zz,WH_hww
 
-categories: mmt
+categories: mmtCatHigh,mmtCatLow
 signals: signal
 backgrounds: background
 data: data_obs
