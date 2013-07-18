@@ -28,6 +28,7 @@ import array
 #import abdollah
 import os
 import pprint
+import baseSelections as selections
 #import debug
 #from debug import debugRow
 
@@ -73,19 +74,19 @@ class ZHAnalyzerBase(MegaBase):
         #print channel
         flag_map = {}
         for sign in ['ss', 'os']:
-            for failing_objs in [(), (1,2), (1,), (2,), (3,), (4,), (3,4), (1,2,3,4)]:
+            #for failing_objs in [(), (1,2), (1,), (2,), (3,), (4,), (3,4), (1,2,3,4)]:
+             for failing_objs in [(), (3,), (4,), (3,4)]:
                 region_label = '_'.join(['Leg%iFailed' % obj for obj in failing_objs]) if len(failing_objs) else 'All_Passed'
                 weightsAvail = [None, self.leg1_weight, self.leg2_weight, self.leg3_weight, self.leg4_weight]
                 flag_map[(sign,region_label)] = {
                     'selection' : {
                         self.sign_cut  : (sign == 'os'), 
-                        self.leg1_id : (not (1 in failing_objs) ),
-                        self.leg2_id : (not (2 in failing_objs) ),
                         self.leg3_id : (not (3 in failing_objs) ),
                         self.leg4_id : (not (4 in failing_objs) ),
                         },
                     'weights'   : [weightsAvail[i] for i in failing_objs], 
                     }
+            # look for events with leg3 fake to estimate WZ background not accounted by w4*PPPF 
         #print flag_map.keys()
         return flag_map
 
@@ -182,8 +183,12 @@ class ZHAnalyzerBase(MegaBase):
             
             # Apply basic preselection
             if not preselection(row):
+                #print "Event " + str(row.evt) + " failed preselection for row " + str(row)
                 continue
+            #if not selections.is2l2tauANPassed(row):
+            #    continue
             counter += 1
+            #print "passed preselection!"
             #if counter < 200: print "passed preselection!"
             #map id results
             row_id_map = dict( [ (f, f( row) )  for f in id_functions] )
@@ -215,8 +220,8 @@ class ZHAnalyzerBase(MegaBase):
         #self.book(folder, "weight_nopu", "Event weight without PU", 100, 0, 5)
         self.book(folder, "rho", "Fastjet #rho", 100, 0, 25)
         self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
-        self.book(folder, "kinematicDiscriminant1", "pT(ZH)/(pT(Z) + pT(H))", 5, 0, 1)
-        self.book(folder, "kinematicDiscriminant2", "pT(H)/(pT(Tau1) + pT(Tau2))", 5, 0, 1)
+        self.book(folder, "kinematicDiscriminant1", "pT(ZH)/(pT(Z) + pT(H))", 10, 0, 1)
+        self.book(folder, "kinematicDiscriminant2", "pT(H)/(pT(Tau1) + pT(Tau2))", 10, 0, 1)
         return None
 
     def book_kin_histos(self, folder, Id):
