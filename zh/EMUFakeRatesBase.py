@@ -3,6 +3,7 @@ Base analyzer for hadronic tau fake-rate estimation
 '''
 
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
+import baseSelections as selections
 import os
 
 class EMUFakeRatesBase(MegaBase):
@@ -53,10 +54,12 @@ class EMUFakeRatesBase(MegaBase):
 
         def preselection(self, row):
             if not self.zSelection(row):    return False
-            if row.metEt > 20:                            return False
+            #if row.pfMet_mes_Et > 20:                            return False
+            #if row.mva_metEt > 20: return False
             if getattr(row,self.branchId+'MtToMET') > 30: return False #AN --> 30
-            ## if not getattr(row,self.branchId+'_t_SS'):    return False
-        
+            #if row.jetVeto30 < 0.5: return False
+            if not getattr(row,self.branchId+'_t_SS'):    return False
+            #if not selections.signalTauSelection(row, 't'): return False        
             ## if row.tAbsEta  > 2.3:                return False
             ## if abs(row.tDZ) > 0.1:                return False    
             ## if not bool(row.tDecayFinding):       return False
