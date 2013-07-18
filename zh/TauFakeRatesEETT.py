@@ -13,7 +13,7 @@ class TauFakeRatesEETT(TauFakeRatesBase.TauFakeRatesBase):
         
     def zSelection(self, row):
         if not selections.ZEESelection(row): return False
-        return (not selections.overlap(row, 'e1','e2','e','t'))
+        return (not selections.overlap(row, 'e1','e2','t1','t2'))
 
 
         

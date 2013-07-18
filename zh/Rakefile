@@ -61,12 +61,12 @@ end
 
 # Map which samples need to be analyzed by which analyzer
 fr_analyzer_sample_map = Hash[
-  "EFakeRateEEET.py"    => samples['data_ee'] + samples["diboson"] + samples["zjets"],# + samples["wjets"] + Array["TTplusJets_madgraph"], # 
-  "EFakeRateMMET.py"    => samples['data_mm'] + samples["diboson"] + samples["zjets"],# + samples["wjets"] + Array["TTplusJets_madgraph"], # 
-  "MUFakeRateEEMT.py"   => samples['data_ee'] + samples["diboson"] + samples["zjets"],# + samples["wjets"] + Array["TTplusJets_madgraph"], # 
-  "MUFakeRateMMMT.py"   => samples['data_mm'] + samples["diboson"] + samples["zjets"],# + samples["wjets"] + Array["TTplusJets_madgraph"], # 
-  "TauFakeRatesEETT.py" => samples["diboson"] + samples['data_ee'] + samples["zjets"],# + samples["wjets"] + Array["TTplusJets_madgraph"],
-  "TauFakeRatesMMTT.py" => samples["diboson"] + samples['data_mm'] + samples["zjets"],# + samples["wjets"] + Array["TTplusJets_madgraph"],
+  "EFakeRateEEET.py"    => samples['data_ee'] + samples["diboson"] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"], # 
+  "EFakeRateMMET.py"    => samples['data_mm'] + samples["diboson"] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"], # 
+  "MUFakeRateEEMT.py"   => samples['data_ee'] + samples["diboson"] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"], # 
+  "MUFakeRateMMMT.py"   => samples['data_mm'] + samples["diboson"] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"], # 
+  "TauFakeRatesEETT.py" => samples["diboson"] + samples['data_ee'] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"],
+  "TauFakeRatesMMTT.py" => samples["diboson"] + samples['data_mm'] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"],
  ]
 
 fr_analyzer_dependencies = Hash[
@@ -177,24 +177,24 @@ fr_fits = Hash[
   #],
   #
   # E/MU LOOSE ID JETPT
-  #
+  #####
   "m_zlt_pt10_looseId_muonJetPt" => Hash[
     "samples" => Array["data_mm", "data_ee", "diboson"], #],#"ewk", 
     "analyzer" => "MUFakeRate??MT",
     "function" => rise,
     "variables" => rise_vars,
-   # "corr"      => "--noCorrection true",
+    #"corr"      => "--noCorrection true",
     "rebin" => 10,
-    "range" => "10 100",
+    "range" => "10 60",
   ],
   "e_zlt_pt10_looseId_electronJetPt" => Hash[
     "samples" => Array["data_mm", "data_ee", "diboson"], #],#"ewk", 
     "analyzer" => "EFakeRate??ET",
     "function" => rise,
     "variables" => rise_vars,
-   # "corr"      => "--noCorrection true",
+    #"corr"      => "--noCorrection true",
     "rebin" => 10,
-    "range" => "10 100",
+    "range" => "10 60",
   ],
   ##
   ## E/MU TIGHT ID JETPT
@@ -204,18 +204,18 @@ fr_fits = Hash[
     "analyzer" => "MUFakeRate??MT",
     "function" => rise,
     "variables" => rise_vars,
-   # "corr"      => "--noCorrection true",
+    #"corr"      => "--noCorrection true",
     "rebin" => 10,
-    "range" => "10 100",
+    "range" => "10 60",
   ],
   "e_zlt_pt10_tightId_electronJetPt" => Hash[
     "samples" => Array["data_mm", "data_ee", "diboson"], #],#"ewk", 
     "analyzer" => "EFakeRate??ET",
     "function" => rise,
     "variables" => rise_vars,
-   # "corr"      => "--noCorrection true",
+    #"corr"      => "--noCorrection true",
     "rebin" => 10,
-    "range" => "10 100",
+    "range" => "10 60",
   ],
   #
   # TAUS
@@ -262,13 +262,29 @@ fr_fits = Hash[
   #  "rebin" => 5,
   #  "range" => "10 100",
   #],
+  "t_ztt_pt10_LooseIso3Hits_tauPt" =>  Hash[
+    "samples" => Array["diboson", "data_mm", "data_ee"],
+    "analyzer" => "TauFakeRates??TT",
+    "function" => exponential,
+    "variables" => exponential_vars,
+    "rebin" => 5,
+    "range" => "15 100",
+  ],
+  "t_ztt_pt10_LooseIso3Hits_tauJetPt" =>  Hash[
+    "samples" => Array["diboson", "data_mm", "data_ee"],
+    "analyzer" => "TauFakeRates??TT",
+    "function" => exponential,
+    "variables" => exponential_vars,
+    "rebin" => 5,
+    "range" => "15 100",
+  ],
   "t_ztt_pt10_MediumIso_tauJetPt" =>  Hash[
     "samples" => Array["diboson", "data_mm", "data_ee"],
     "analyzer" => "TauFakeRates??TT",
     "function" => exponential,
     "variables" => exponential_vars,
     "rebin" => 5,
-    "range" => "10 100",
+    "range" => "15 100",
   ],
   #"t_ztt_pt10_TightMVAIso_tauPt" =>  Hash[
   #  "samples" => Array["diboson", "data_mm", "data_ee"],
@@ -278,63 +294,40 @@ fr_fits = Hash[
   #  "rebin" => 5,
   #  "range" => "10 100",
   #],
-  "t_ztt_pt10_TightIso_tauJetPt" =>  Hash[
-    "samples" => Array["diboson", "data_mm", "data_ee"],
-    "analyzer" => "TauFakeRates??TT",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => 5,
-    "range" => "10 100",
-  ],
+  #"t_ztt_pt10_TightIso_tauJetPt" =>  Hash[
+  #  "samples" => Array["diboson", "data_mm", "data_ee"],
+  #  "analyzer" => "TauFakeRates??TT",
+  #  "function" => exponential,
+  #  "variables" => exponential_vars,
+  #  "rebin" => 5,
+  #  "range" => "10 100",
+  #],
   # taus
-  "t_ztt_pt10-antiElMed-antiMuMed_MediumIso_tauJetPt" =>  Hash[
-    "samples" => Array["diboson", "data_mm", "data_ee"],
-    "analyzer" => "TauFakeRates??TT",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => 5,
-    "range" => "10 100",
-  ],
-  "t_ztt_pt10-antiElTight-antiMuLoose_MediumIso_tauJetPt" =>  Hash[
-    "samples" => Array["diboson", "data_mm", "data_ee"],
-    "analyzer" => "TauFakeRates??TT",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => 5,
-    "range" => "10 100",
-  ],  
-  "t_ztt_pt10-antiElLoose-antiMuTight_MediumIso_tauJetPt" =>  Hash[
-    "samples" => Array["diboson", "data_mm", "data_ee"],
-    "analyzer" => "TauFakeRates??TT",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => 5,
-    "range" => "10 100",
-  ],
-  "t_ztt_pt10-antiElMed-antiMuMed_TightIso_tauJetPt" =>  Hash[
-    "samples" => Array["diboson", "data_mm", "data_ee"],
-    "analyzer" => "TauFakeRates??TT",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => 5,
-    "range" => "10 100",
-  ],
-  "t_ztt_pt10-antiElTight-antiMuLoose_TightIso_tauJetPt" =>  Hash[
-    "samples" => Array["diboson", "data_mm", "data_ee"],
-    "analyzer" => "TauFakeRates??TT",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => 5,
-    "range" => "10 100",
-  ],  
-  "t_ztt_pt10-antiElLoose-antiMuTight_TightIso_tauJetPt" =>  Hash[
-    "samples" => Array["diboson", "data_mm", "data_ee"],
-    "analyzer" => "TauFakeRates??TT",
-    "function" => exponential,
-    "variables" => exponential_vars,
-    "rebin" => 5,
-    "range" => "10 100",
-  ],
+  #"t_ztt_pt10-antiElMVATight-antiMuLoose_MediumIso_tauJetPt" =>  Hash[
+  #  "samples" => Array["diboson", "data_mm", "data_ee"],
+  #  "analyzer" => "TauFakeRates??TT",
+  #  "function" => exponential,
+  #  "variables" => exponential_vars,
+  #  "rebin" => 5,
+  #  "range" => "10 100",
+  #],
+  #"t_ztt_pt10-antiElMed-antiMuMed_TightIso_tauJetPt" =>  Hash[
+  #  "samples" => Array["diboson", "data_mm", "data_ee"],
+  #  "analyzer" => "TauFakeRates??TT",
+  #  "function" => exponential,
+  #  "variables" => exponential_vars,
+  #  "rebin" => 5,
+  #  "range" => "10 100",
+  #],  
+  #"t_ztt_pt10-antiElLoose-antiMuTight_MediumIso_tauJetPt" =>  Hash[
+  #  "samples" => Array["diboson", "data_mm", "data_ee"],
+  #  "analyzer" => "TauFakeRates??TT",
+  #  "function" => exponential,
+  #  "variables" => exponential_vars,
+  #  "rebin" => 5,
+  #  "range" => "10 100",
+  #]
+ 
   
 ]
 
@@ -424,6 +417,15 @@ analyzer_dependencies.each do |analyzer, deps|
   end
 end
 
+task :mmmt_signal_only => get_analyzer_results("ZHAnalyzeMMMT", samples['signal'])
+task :eemt_signal_only => get_analyzer_results("ZHAnalyzeEEMT", samples['signal'])
+task :mmet_signal_only => get_analyzer_results("ZHAnalyzeMMET", samples['signal'])
+task :eeet_signal_only => get_analyzer_results("ZHAnalyzeEEET", samples['signal'])
+task :mmem_signal_only => get_analyzer_results("ZHAnalyzeMMEM", samples['signal'])
+task :eeem_signal_only => get_analyzer_results("ZHAnalyzeEEEM", samples['signal'])
+task :mmtt_signal_only => get_analyzer_results("ZHAnalyzeMMTT", samples['signal'])
+task :eett_signal_only => get_analyzer_results("ZHAnalyzeEETT", samples['signal'])
+
 task :mmmt => get_analyzer_results("ZHAnalyzeMMMT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
 task :eemt => get_analyzer_results("ZHAnalyzeEEMT.py", samples['ewk'] + samples['data_ee'] + samples['signal'])
 task :mmet => get_analyzer_results("ZHAnalyzeMMET.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
@@ -457,6 +459,7 @@ task :abdollah_sync_eett => ["results/#{$jobid}/ZHAnalyzeEETT/ZH_AbdollahSync.ro
 
 #A Task to dominate all...
 task :analyzezh => [:mmmt, :eemt, :mmet, :eeet, :mmem, :eeem, :mmtt, :eett] do
+#task :analyzezh => [:mmmt, :eemt, :eeet, :eeem, :mmtt, :eett] do
 #task :analyzezh => [:eeem, :mmtt, :eett] do
   puts "called analyzezh task from local rakefile"
 end
@@ -466,6 +469,10 @@ task :analyzezh_data => [ :data_only_mmmt, :data_only_eemt, :data_only_mmet, :da
 end
 
 task :abdollah_sync => [:abdollah_sync_mmmt, :abdollah_sync_eemt, :abdollah_sync_mmet, :abdollah_sync_eeet,  :abdollah_sync_mmem, :abdollah_sync_eeem,  :abdollah_sync_mmtt, :abdollah_sync_eett] do
+end
+
+task :analyzezh_signal => [:mmmt_signal_only, :eemt_signal_only, :mmet_signal_only, :eeet_signal_only, :mmem_signal_only, :eeem_signal_only, :mmtt_signal_only, :eett_signal_only] do
+  puts "called analyzezh_signal task from local rakefile"
 end
 
 ################################################################################
