@@ -3,6 +3,7 @@ Base analyzer for hadronic tau fake-rate estimation
 '''
 
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
+import baseSelections as selections
 import os
 
 class TauFakeRatesBase(MegaBase):
@@ -14,7 +15,7 @@ class TauFakeRatesBase(MegaBase):
         # Histograms for each category
         self.histograms = {}
         self.is7TeV = '7TeV' in os.environ['jobid']
-        self.numerators = ['LooseMVAIso', 'LooseIso', 'MediumMVAIso', 'MediumIso', 'TightIso', 'TightMVAIso']
+        self.numerators = ['LooseIso3Hits', 'MediumIso']
 
     def begin(self):
         # Book histograms
@@ -52,40 +53,62 @@ class TauFakeRatesBase(MegaBase):
 
         def preselection(self, row):
             if not self.zSelection(row):     return False
-            if not row.t1Pt > 10:            return False #in the analysis this value is 20, but the fake rate plot is shown/fitted up to 10
-            if not row.t2Pt > 10:            return False
-            if not row.t1AbsEta < 2.3:       return False
-            if not row.t2AbsEta < 2.3:       return False
-            if abs(row.t1DZ) > 0.2:          return False    
-            if abs(row.t2DZ) > 0.2:          return False    
-            if not bool(row.t1DecayFinding): return False
-            if not bool(row.t2DecayFinding): return False
+            if not selections.signalTauSelection(row, 't1'): return False
+            if not selections.signalTauSelection(row, 't2'): return False
+            if not bool(row.t1AntiMuonLoose2): return False
+            if not bool(row.t1AntiElectronLoose): return False
+            if not bool(row.t2AntiMuonLoose2): return False
+            if not bool(row.t2AntiElectronLoose): return False
+            if row.t1Pt < row.t2Pt: return False #Avoid double counting
+            if row.LT < 75: return False
             if not bool(row.t1_t2_SS):       return False
-            if not row.t1AntiElectronMedium: return False #in the AN is not specified but seems reasonable
-            if not row.t2AntiElectronMedium: return False
-            if not row.t1AntiMuonTight:      return False #in the AN is not specified but seems reasonable
-            if not row.t2AntiMuonTight:      return False
             return True
 
         histos = self.histograms
 
         # Denominator regions (dicts of histograms)
         pt10 = histos[('ztt', 'pt10')]
+        #pt10_antiElMVATight_antiMuLoose = histos[('ztt', 'pt10-antiElMVATight-antiMuLoose')]
+        #pt10_antiElMed_antiMuMed = histos[('ztt','pt10-antiElMed-antiMuMed')]
+        #pt10_antiElLoose_antiMuTight = histos[('ztt','pt10-antiElLoose-antiMuTight')]
 
         # Analyze data.  Select events with a good Z.
         for row in self.tree:
             if not preselection(self, row):
                 continue
 
-            # Fill denominator
             fill(pt10, row, 't1')
             fill(pt10, row, 't2')
-            pt10['tauTauInvMass'].Fill( row.t1_t2_Mass, 1.)
-
             for t in ['t1','t2']:
-                for num in self.numerators:
+                  for num in self.numerators:
                     if bool( getattr(row,t+num) ):
                         fill(histos[('ztt', 'pt10', num)], row, t)
+            pt10['tauTauInvMass'].Fill( row.t1_t2_Mass, 1.)
+
+            # Fill denominator
+         #   if row.t1AntiElectronLoose and row.t2AntiElectronLoose and row.t1AntiMuonTight2 and row.t2AntiMuonTight2: 
+         #       fill(pt10_antiElLoose_antiMuTight, row, 't1')
+         #       fill(pt10_antiElLoose_antiMuTight, row, 't2')
+         #       for t in ['t1','t2']:
+         #         for num in self.numerators:
+         #           if bool( getattr(row,t+num) ):
+         #               fill(histos[('ztt', 'pt10-antiElLoose-antiMuTight', num)], row, t)
+
+         #   if row.t1AntiElectronMVA2Tight and row.t2AntiElectronMVA2Tight and row.t1AntiMuonLoose and row.t2AntiMuonLoose:
+         #       fill(pt10_antiElMVATight_antiMuLoose, row, 't1')
+         #       fill(pt10_antiElMVATight_antiMuLoose, row, 't2')
+         #       for t in ['t1','t2']:
+         #         for num in self.numerators:
+          #          if bool( getattr(row,t+num) ):
+          #              fill(histos[('ztt','pt10-antiElMVATight-antiMuLoose', num)], row, t)
+
+          #  if row.t1AntiElectronMedium and row.t2AntiElectronMedium and row.t1AntiMuonMedium2 and row.t2AntiMuonMedium2:
+          #      fill(pt10_antiElMed_antiMuMed, row, 't1')
+          #      fill(pt10_antiElMed_antiMuMed, row, 't2')
+          #      for t in ['t1','t2']:
+          #        for num in self.numerators:
+          #          if bool( getattr(row,t+num) ):
+          #              fill(histos[('ztt','pt10-antiElMed-antiMuMed', num,)], row, t)
 
 
     def finish(self):
