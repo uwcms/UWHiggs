@@ -103,7 +103,7 @@ class FakeRatesEE(MegaBase):
             if not selections.eSelection(row, 'e1'): return False
             if not row.e1MVAIDH2TauWP: return False
             if not selections.eSelection(row, 'e2'): return False
-            if not (row.jetVeto40 >= 1):             return False
+            if not (row.jetVeto40_DR05 >= 1):             return False
             if not selections.vetos(row): return False
             return True
 

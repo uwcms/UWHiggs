@@ -120,7 +120,7 @@ class FakeRatesMM(MegaBase):
             if not selections.muSelection(row, 'm1'):  return False
             if not selections.muSelection(row, 'm2'):  return False
             if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
-            if not (row.jetVeto40 >= 1): return False
+            if not (row.jetVeto40_DR05 >= 1): return False
             return True
             #if not row.m2Pt > 10: return False
             #if not row.m1AbsEta < 2.4: return False
