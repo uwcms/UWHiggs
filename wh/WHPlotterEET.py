@@ -361,90 +361,27 @@ if __name__ == "__main__":
         plotter.write_shapes(prefix+'e2_t_Mass#LT', 20, shape_dir, qcd_fraction=0.0, project=[80, 650], project_axis='X')
         shape_dir = shape_file.mkdir('eetCatHigh_q')
         plotter.write_shapes(prefix+'e2_t_Mass#LT', 20, shape_dir, qcd_fraction=1.0, project=[80, 650], project_axis='X')
+        logging.warning('shape file %s created' % shape_file.GetName())
         shape_file.Close()
 
-        rebin = rebin_slim
+
         shape_file = ROOT.TFile(
-            os.path.join(plotter.outputdir, 'LTCut_RebinSmart_eet_shapes_%s.root' % ( plotter.period) ), 'RECREATE')
+            os.path.join(plotter.outputdir, '%seet_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+        
+        shape_dir = shape_file.mkdir('eetCatLow')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[0, 100], project_axis='X')
+        shape_dir = shape_file.mkdir('eetCatLow_w')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[0, 100], project_axis='X')
+        shape_dir = shape_file.mkdir('eetCatLow_q')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[0, 100], project_axis='X')
+        
         shape_dir = shape_file.mkdir('eetCatHigh')
-        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.5, project=[80, 650], project_axis='X')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[100, 650], project_axis='X')
         shape_dir = shape_file.mkdir('eetCatHigh_w')
-        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.0, project=[80, 650], project_axis='X')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[100, 650], project_axis='X')
         shape_dir = shape_file.mkdir('eetCatHigh_q')
-        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=1.0, project=[80, 650], project_axis='X')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[100, 650], project_axis='X')
+        
+        logging.warning('shape file %s created' % shape_file.GetName()) 
         shape_file.Close()
 
-        low = 0
-        rebin_fat  = range(0, 80, 20)+[110,200]
-        for mid in range(70, 140, 10):
-            for name, rebin in zip(['slim', 'fat'],[rebin_slim, rebin_fat]):
-                shape_prefix = "Rebin%s_LT_CAT_%i_%i_inf_" % (name, low, mid)
-                
-                shape_file = ROOT.TFile(
-                    os.path.join(plotter.outputdir, '%seet_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
-        
-                shape_dir = shape_file.mkdir('eetCatLow')
-                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.5, project=[low, mid], project_axis='X')
-                shape_dir = shape_file.mkdir('eetCatLow_w')
-                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.0, project=[low, mid], project_axis='X')
-                shape_dir = shape_file.mkdir('eetCatLow_q')
-                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=1.0, project=[low, mid], project_axis='X')
-        
-                shape_dir = shape_file.mkdir('eetCatHigh')
-                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.5, project=[mid, 650], project_axis='X')
-                shape_dir = shape_file.mkdir('eetCatHigh_w')
-                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.0, project=[mid, 650], project_axis='X')
-                shape_dir = shape_file.mkdir('eetCatHigh_q')
-                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=1.0, project=[mid, 650], project_axis='X')
-        
-                logging.warning('shape file %s created' % shape_file.GetName()) 
-                shape_file.Close()
-
-        #special ones
-        mid = 70
-        for mid in [70, 80]:
-            shape_prefix = "Rebin%s_LT_CAT_%i_%i_inf_" % ('smart', low, mid)
-            shape_file = ROOT.TFile(
-                os.path.join(plotter.outputdir, '%seet_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
-            
-            shape_dir = shape_file.mkdir('eetCatLow')
-            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_fat, shape_dir, qcd_fraction=0.5, project=[low, mid], project_axis='X')
-            shape_dir = shape_file.mkdir('eetCatLow_w')
-            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_fat, shape_dir, qcd_fraction=0.0, project=[low, mid], project_axis='X')
-            shape_dir = shape_file.mkdir('eetCatLow_q')
-            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_fat, shape_dir, qcd_fraction=1.0, project=[low, mid], project_axis='X')
-        
-            shape_dir = shape_file.mkdir('eetCatHigh')
-            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[mid, 650], project_axis='X')
-            shape_dir = shape_file.mkdir('eetCatHigh_w')
-            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[mid, 650], project_axis='X')
-            shape_dir = shape_file.mkdir('eetCatHigh_q')
-            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[mid, 650], project_axis='X')
-        
-            logging.warning('shape file %s created' % shape_file.GetName()) 
-            shape_file.Close()
-
-
-        #low = 10
-        #for mid in range(25, 42, 5):
-        #    shape_prefix = "TPT_CAT_%i_%i_inf_" % (20, mid)
-        #    
-        #    shape_file = ROOT.TFile(
-        #        os.path.join(plotter.outputdir, '%seet_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
-        #    
-        #    shape_dir = shape_file.mkdir('eetCatLow')
-        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=0.5, project=[low, mid], project_axis='Y')
-        #    shape_dir = shape_file.mkdir('eetCatLow_w')
-        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=0.0, project=[low, mid], project_axis='Y')
-        #    shape_dir = shape_file.mkdir('eetCatLow_q')
-        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=1.0, project=[low, mid], project_axis='Y')
-        #
-        #    shape_dir = shape_file.mkdir('eetCatHigh')
-        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=0.5, project=[mid, 200], project_axis='Y')
-        #    shape_dir = shape_file.mkdir('eetCatHigh_w')
-        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=0.0, project=[mid, 200], project_axis='Y')
-        #    shape_dir = shape_file.mkdir('eetCatHigh_q')
-        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=1.0, project=[mid, 200], project_axis='Y')
-        #
-        #    logging.warning('shape file %s created' % shape_file.GetName()) 
-        #    shape_file.Close()
