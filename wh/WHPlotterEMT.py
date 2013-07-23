@@ -20,7 +20,13 @@ logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 class WHPlotterEMT(WHPlotterBase.WHPlotterBase):
     def __init__(self):
-        super(WHPlotterEMT, self).__init__('EMT')
+        obj2_charge_mapper={
+            "subMass#LT"          : "subMass*#LT"         ,
+            "subMass#tPt"         : "subMass*#tPt"        ,
+            "e_t_Mass"            : "e*_t_Mass"           ,
+            "e_m_Mass"            : "e*_m_Mass"           ,
+            "subMass"             : "subMass*"            ,} 
+        super(WHPlotterEMT, self).__init__('EMT', {}, obj2_charge_mapper)
 
 if __name__ == "__main__":
     plotter = WHPlotterEMT()
@@ -130,6 +136,27 @@ if __name__ == "__main__":
         ##  Signal region plots    ################################################
         ###########################################################################
         plotter.set_subdir('')
+        rebin_slim = [0,20]+range(30, 81, 10)+[100,130,200]
+
+        plotter.plot_final('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[0, 130], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTLow')
+
+        plotter.plot_final('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[130, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTHigh')
+
+        plotter.plot_final('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[80, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTCut')
+
+        plotter.plot_final('subMass#LT', 20, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[80, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTCut-flatbin')
+
+        plotter.plot_final('LT', 5, xaxis='LT (GeV)', maxy=15)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-LT')
 
         plotter.plot_final('mPt', 10)
         plotter.save('final-mPt')
@@ -149,23 +176,23 @@ if __name__ == "__main__":
         plotter.plot_final('tAbsEta', 10)
         plotter.save('final-tAbsEta')
 
-        plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)')
+        plotter.plot_final('subMass', 20, xaxis='m_{l_{2}#tau} (GeV)')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-subMass')
 
-        plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
+        plotter.plot_final('subMass', 20, xaxis='m_{l_{2}#tau} (GeV)', qcd_weight_fraction=0.5)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-subMass-qweight05')
         plotter.canvas.SetLogy(True)
         plotter.save('final-subMass-qweight05-logscale')
 
 
-        plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', show_error=True)
+        plotter.plot_final('subMass', 20, xaxis='m_{l_{2}#tau} (GeV)', show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-subMass-werror')
 
         # Shape only
-        plotter.plot_final('subMass', 20, xaxis='m_{#l_{2}#tau} (GeV)', show_error=True,
+        plotter.plot_final('subMass', 20, xaxis='m_{l_{2}#tau} (GeV)', show_error=True,
                            fake_error=0, wz_error=0, zz_error=0)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-subMass-wshapeerror')
@@ -179,6 +206,18 @@ if __name__ == "__main__":
 
         plotter.plot_final('e_t_Mass', 10)
         plotter.save('final-etMass')
+
+        plotter.plot_final('subMass#LT', 20, xaxis='subleading mass from projection', maxy=None, project=[0, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMassProj')
+
+        plotter.plot_final('subMass#LT', 20, xaxis='M_{l_{2}#tau} (GeV)', maxy=None, project=[0, 90], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTLo')
+
+        plotter.plot_final('subMass#LT', 20, xaxis='M_{l_{2}#tau} (GeV)', maxy=None, project=[90, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTHi')
 
         ###########################################################################
         ##  WZ enhanced region plots    ###########################################
@@ -201,6 +240,22 @@ if __name__ == "__main__":
         ##  F3 enhanced region plots    ###########################################
         ###########################################################################
         plotter.set_subdir('f3')
+
+        plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[0, 130], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTLow')
+
+        plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[130, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTHigh')
+
+        plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[80, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTCut')
+
+        plotter.plot_final_f3('subMass#LT', 20, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[80, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTCut-flatbin')
 
         plotter.plot_final_f3('LT', 5, xaxis='LT (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
@@ -278,6 +333,18 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-eChargeIdTight')
 
+        plotter.plot_final_f3('subMass#LT', 20, xaxis='subleading mass from projection', maxy=None, project=[0, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMassProj')
+
+        plotter.plot_final_f3('subMass#LT', 20, xaxis='M_{l_{2}#tau} (GeV)', maxy=None, project=[0, 90], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTLo')
+
+        plotter.plot_final_f3('subMass#LT', 20, xaxis='M_{l_{2}#tau} (GeV)', maxy=None, project=[90, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTHi')
+
         #END OF if not options.dry_run:
     ###########################################################################
     ##  Making shape file     #################################################
@@ -301,14 +368,97 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('study-%s-f3-qweight05-werror-subMass' % shape_prefix)
 
-        print "saving shape file %s" % ('%semt_shapes_%s.root' % (shape_prefix, plotter.period))
         shape_file = ROOT.TFile(
-            os.path.join(plotter.outputdir, '%semt_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
-        shape_dir = shape_file.mkdir('emt')
-        plotter.write_shapes(prefix+'subMass', 20, shape_dir, qcd_fraction=0.5)
-        shape_dir = shape_file.mkdir('emt_w')
-        plotter.write_shapes(prefix+'subMass', 20, shape_dir, qcd_fraction=0.0)
-        shape_dir = shape_file.mkdir('emt_q')
-        plotter.write_shapes(prefix+'subMass', 20, shape_dir, qcd_fraction=1.0)
-        #plotter.write_cut_and_count('subMass', shape_dir, unblinded=True)
+            os.path.join(plotter.outputdir, 'LTCut_emt_shapes_%s.root' % ( plotter.period) ), 'RECREATE')
+        shape_dir = shape_file.mkdir('emtCatHigh')
+        plotter.write_shapes(prefix+'subMass#LT', 20, shape_dir, qcd_fraction=0.5, project=[80, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatHigh_w')
+        plotter.write_shapes(prefix+'subMass#LT', 20, shape_dir, qcd_fraction=0.0, project=[80, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatHigh_q')
+        plotter.write_shapes(prefix+'subMass#LT', 20, shape_dir, qcd_fraction=1.0, project=[80, 650], project_axis='X')
         shape_file.Close()
+
+        rebin = rebin_slim
+        shape_file = ROOT.TFile(
+            os.path.join(plotter.outputdir, 'LTCut_RebinSmart_emt_shapes_%s.root' % ( plotter.period) ), 'RECREATE')
+        shape_dir = shape_file.mkdir('emtCatHigh')
+        plotter.write_shapes(prefix+'subMass#LT', rebin, shape_dir, qcd_fraction=0.5, project=[80, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatHigh_w')
+        plotter.write_shapes(prefix+'subMass#LT', rebin, shape_dir, qcd_fraction=0.0, project=[80, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatHigh_q')
+        plotter.write_shapes(prefix+'subMass#LT', rebin, shape_dir, qcd_fraction=1.0, project=[80, 650], project_axis='X')
+        shape_file.Close()
+
+        low = 0
+        rebin_fat  = range(0, 80, 20)+[110,200]
+        for mid in range(70, 140, 10):
+            for name, rebin in zip(['slim', 'fat'],[rebin_slim, rebin_fat]):
+                shape_prefix = "Rebin%s_LT_CAT_%i_%i_inf_" % (name, low, mid)
+                
+                shape_file = ROOT.TFile(
+                    os.path.join(plotter.outputdir, '%semt_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+        
+                shape_dir = shape_file.mkdir('emtCatLow')
+                plotter.write_shapes(prefix+'subMass#LT', rebin, shape_dir, qcd_fraction=0.5, project=[low, mid], project_axis='X')
+                shape_dir = shape_file.mkdir('emtCatLow_w')
+                plotter.write_shapes(prefix+'subMass#LT', rebin, shape_dir, qcd_fraction=0.0, project=[low, mid], project_axis='X')
+                shape_dir = shape_file.mkdir('emtCatLow_q')
+                plotter.write_shapes(prefix+'subMass#LT', rebin, shape_dir, qcd_fraction=1.0, project=[low, mid], project_axis='X')
+        
+                shape_dir = shape_file.mkdir('emtCatHigh')
+                plotter.write_shapes(prefix+'subMass#LT', rebin, shape_dir, qcd_fraction=0.5, project=[mid, 650], project_axis='X')
+                shape_dir = shape_file.mkdir('emtCatHigh_w')
+                plotter.write_shapes(prefix+'subMass#LT', rebin, shape_dir, qcd_fraction=0.0, project=[mid, 650], project_axis='X')
+                shape_dir = shape_file.mkdir('emtCatHigh_q')
+                plotter.write_shapes(prefix+'subMass#LT', rebin, shape_dir, qcd_fraction=1.0, project=[mid, 650], project_axis='X')
+        
+                logging.warning('shape file %s created' % shape_file.GetName()) 
+                shape_file.Close()
+
+
+        for mid in [70, 80]:
+            shape_prefix = "Rebin%s_LT_CAT_%i_%i_inf_" % ('smart', low, mid)
+            shape_file = ROOT.TFile(
+                os.path.join(plotter.outputdir, '%semt_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+            
+            shape_dir = shape_file.mkdir('emtCatLow')
+            plotter.write_shapes(prefix+'subMass#LT', rebin_fat, shape_dir, qcd_fraction=0.5, project=[low, mid], project_axis='X')
+            shape_dir = shape_file.mkdir('emtCatLow_w')
+            plotter.write_shapes(prefix+'subMass#LT', rebin_fat, shape_dir, qcd_fraction=0.0, project=[low, mid], project_axis='X')
+            shape_dir = shape_file.mkdir('emtCatLow_q')
+            plotter.write_shapes(prefix+'subMass#LT', rebin_fat, shape_dir, qcd_fraction=1.0, project=[low, mid], project_axis='X')
+        
+            shape_dir = shape_file.mkdir('emtCatHigh')
+            plotter.write_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[mid, 650], project_axis='X')
+            shape_dir = shape_file.mkdir('emtCatHigh_w')
+            plotter.write_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[mid, 650], project_axis='X')
+            shape_dir = shape_file.mkdir('emtCatHigh_q')
+            plotter.write_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[mid, 650], project_axis='X')
+        
+            logging.warning('shape file %s created' % shape_file.GetName()) 
+            shape_file.Close()
+
+
+        #low = 10
+        #for mid in range(25, 42, 5):
+        #    shape_prefix = "TPT_CAT_%i_%i_inf_" % (20, mid)
+        #    
+        #    shape_file = ROOT.TFile(
+        #        os.path.join(plotter.outputdir, '%semt_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+        #    
+        #    shape_dir = shape_file.mkdir('emtCatLow')
+        #    plotter.write_shapes(prefix+'subMass#tPt', 20, shape_dir, qcd_fraction=0.5, project=[low, mid], project_axis='Y')
+        #    shape_dir = shape_file.mkdir('emtCatLow_w')
+        #    plotter.write_shapes(prefix+'subMass#tPt', 20, shape_dir, qcd_fraction=0.0, project=[low, mid], project_axis='Y')
+        #    shape_dir = shape_file.mkdir('emtCatLow_q')
+        #    plotter.write_shapes(prefix+'subMass#tPt', 20, shape_dir, qcd_fraction=1.0, project=[low, mid], project_axis='Y')
+        #
+        #    shape_dir = shape_file.mkdir('emtCatHigh')
+        #    plotter.write_shapes(prefix+'subMass#tPt', 20, shape_dir, qcd_fraction=0.5, project=[mid, 200], project_axis='Y')
+        #    shape_dir = shape_file.mkdir('emtCatHigh_w')
+        #    plotter.write_shapes(prefix+'subMass#tPt', 20, shape_dir, qcd_fraction=0.0, project=[mid, 200], project_axis='Y')
+        #    shape_dir = shape_file.mkdir('emtCatHigh_q')
+        #    plotter.write_shapes(prefix+'subMass#tPt', 20, shape_dir, qcd_fraction=1.0, project=[mid, 200], project_axis='Y')
+        #
+        #    logging.warning('shape file %s created' % shape_file.GetName()) 
+        #    shape_file.Close()

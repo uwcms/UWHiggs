@@ -23,7 +23,14 @@ logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 class WHPlotterEET(WHPlotterBase.WHPlotterBase):
     def __init__(self):
         obj1_charge_mapper={"e1_e2_Mass":"e*1_e2_Mass","e1_t_Mass":"e*1_t_Mass"}
-        obj2_charge_mapper={"e1_e2_Mass":"e1_e*2_Mass","e2_t_Mass":"e*2_t_Mass"}
+        obj2_charge_mapper={
+            "e1_e2_Mass" : "e1_e*2_Mass",
+            "e2_t_Mass"  : "e*2_t_Mass",
+            "e2_t_Mass#faking_prob" : "e*2_t_Mass#faking_prob",
+            "e2_t_Mass#log_prob"    : "e*2_t_Mass#log_prob"   ,
+            "e2_t_Mass#LT"          : "e*2_t_Mass#LT"         ,
+            "e2_t_Mass#tPt"         : "e*2_t_Mass#tPt"        ,}
+
         super(WHPlotterEET, self).__init__('EET', obj1_charge_mapper, obj2_charge_mapper)
 
 if __name__ == "__main__":
@@ -122,48 +129,65 @@ if __name__ == "__main__":
         ##  Signal region plots    ################################################
         ###########################################################################
         plotter.set_subdir('')
+        rebin_slim = [0,20]+range(30, 81, 10)+[100, 200]
 
-        plotter.plot_final('e1Pt', 10)
+        plotter.plot_final('e2_t_Mass#LT', rebin_slim, xaxis='m_{e_{2}#tau} (GeV)', maxy=None, project=[0, 130], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTLow')
+
+        plotter.plot_final('e2_t_Mass#LT', rebin_slim, xaxis='m_{e_{2}#tau} (GeV)', maxy=None, project=[130, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTHigh')
+
+        plotter.plot_final('e2_t_Mass#LT', rebin_slim, xaxis='m_{e_{2}#tau} (GeV)', maxy=None, project=[80, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTCut')
+
+        plotter.plot_final('e2_t_Mass#LT', 20, xaxis='m_{e_{2}#tau} (GeV)', maxy=None, project=[80, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTCut-flatbin')
+
+        plotter.plot_final('e1Pt', 10, maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-e1Pt')
 
-        plotter.plot_final('e2Pt', 10)
+        plotter.plot_final('e2Pt', 10, maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-e2Pt')
 
-        plotter.plot_final('tPt', 10)
+        plotter.plot_final('tPt', 10, maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-tPt')
 
-        plotter.plot_final('e1AbsEta', 10)
+        plotter.plot_final('e1AbsEta', 10, maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-e1AbsEta')
 
-        plotter.plot_final('e2AbsEta', 10)
+        plotter.plot_final('e2AbsEta', 10, maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-e2AbsEta')
 
-        plotter.plot_final('tAbsEta', 10)
+        plotter.plot_final('tAbsEta', 10, maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-tAbsEta')
 
-        plotter.plot_final('e2_t_Mass', 20, xaxis='m_{e_{2}#tau} (GeV)')
+        plotter.plot_final('e2_t_Mass', 20, xaxis='m_{e_{2}#tau} (GeV)', maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-subMass')
 
-        plotter.plot_final('e1_t_Mass', 20, xaxis='m_{e_{1}#tau} (GeV)')
+        plotter.plot_final('e1_t_Mass', 20, xaxis='m_{e_{1}#tau} (GeV)', maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-e1tMass')
 
-        plotter.plot_final('e1_e2_Mass', 20, xaxis='m_{ee} (GeV)')
+        plotter.plot_final('e1_e2_Mass', 20, xaxis='m_{ee} (GeV)', maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-e1e2Mass')
 
-        plotter.plot_final('tAbsEta', 5, xaxis='|#eta_#tau|')
+        plotter.plot_final('tAbsEta', 5, xaxis='|#eta_#tau|', maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-tAbsEta')
 
-        plotter.plot_final('e2RelPFIsoDB', 10)
+        plotter.plot_final('e2RelPFIsoDB', 10, maxy='auto')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-e2Iso')
 
@@ -171,14 +195,41 @@ if __name__ == "__main__":
         ## plotter.add_cms_blurb(sqrts)
         ## plotter.save('final-metSig')
 
-        plotter.plot_final('LT', 5)
+        plotter.plot_final('LT', 10, maxy='auto', xaxis='m_{e_{1}#tau} (GeV)')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-LT')
+
+        plotter.plot_final('e2_t_Mass#LT', 20, xaxis='subleading mass from projection', maxy=None, project=[0, 600], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMassProj')
+
+        plotter.plot_final('e2_t_Mass#LT', 20, xaxis='M_{e_{2}#tau} (GeV)', maxy=None, project=[0, 70], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTLo')
+
+        plotter.plot_final('e2_t_Mass#LT', 20, xaxis='M_{e_{2}#tau} (GeV)', maxy=None, project=[70, 600], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-subMass-LTHi')
 
         ###########################################################################
         ##  f3 region plots        ################################################
         ###########################################################################
         plotter.set_subdir('f3')
+        plotter.plot_final_f3('e2_t_Mass#LT', rebin_slim, xaxis='m_{e_{2}#tau} (GeV)', maxy=None, project=[0, 100], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTLow')
+
+        plotter.plot_final_f3('e2_t_Mass#LT', rebin_slim, xaxis='m_{e_{2}#tau} (GeV)', maxy=None, project=[100, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTHigh')
+
+        plotter.plot_final_f3('e2_t_Mass#LT', rebin_slim, xaxis='m_{e_{2}#tau} (GeV)', maxy=None, project=[80, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTCut')
+
+        plotter.plot_final_f3('e2_t_Mass#LT', 20, xaxis='m_{e_{2}#tau} (GeV)', maxy=None, project=[80, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTCut-flatbin')
 
         plotter.plot_final_f3('e2_t_Mass', 20, xaxis='m_{e_{2}#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
@@ -244,6 +295,18 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-e2_t_DR')
 
+        plotter.plot_final_f3('e2_t_Mass#LT', 20, xaxis='subleading mass from projection', maxy=None, project=[0, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMassProj')
+
+        plotter.plot_final_f3('e2_t_Mass#LT', 20, xaxis='M_{e_{2}#tau} (GeV)', maxy=None, project=[0, 70], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTLo')
+
+        plotter.plot_final_f3('e2_t_Mass#LT', 20, xaxis='M_{e_{2}#tau} (GeV)', maxy=None, project=[70, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-subMass-LTHi')
+
         ###########################################################################
         ##  charge flip region plots        #######################################
         ###########################################################################
@@ -290,16 +353,98 @@ if __name__ == "__main__":
         plotter.canvas.SetGridy()
         plotter.save('final-%s-LT' % shape_prefix)
 
-
-
         shape_file = ROOT.TFile(
-            os.path.join(plotter.outputdir, '%seet_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
-        shape_dir = shape_file.mkdir('eet')
-        plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=0.5)
-        shape_dir = shape_file.mkdir('eet_w')
-        plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=0.0)
-        shape_dir = shape_file.mkdir('eet_q')
-        plotter.write_shapes(prefix+'e2_t_Mass', 20, shape_dir, qcd_fraction=1.0)
-        logging.warning('shape file %s created' % shape_file.GetName()) 
+            os.path.join(plotter.outputdir, 'LTCut_eet_shapes_%s.root' % ( plotter.period) ), 'RECREATE')
+        shape_dir = shape_file.mkdir('eetCatHigh')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', 20, shape_dir, qcd_fraction=0.5, project=[80, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('eetCatHigh_w')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', 20, shape_dir, qcd_fraction=0.0, project=[80, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('eetCatHigh_q')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', 20, shape_dir, qcd_fraction=1.0, project=[80, 650], project_axis='X')
         shape_file.Close()
 
+        rebin = rebin_slim
+        shape_file = ROOT.TFile(
+            os.path.join(plotter.outputdir, 'LTCut_RebinSmart_eet_shapes_%s.root' % ( plotter.period) ), 'RECREATE')
+        shape_dir = shape_file.mkdir('eetCatHigh')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.5, project=[80, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('eetCatHigh_w')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.0, project=[80, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('eetCatHigh_q')
+        plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=1.0, project=[80, 650], project_axis='X')
+        shape_file.Close()
+
+        low = 0
+        rebin_fat  = range(0, 80, 20)+[110,200]
+        for mid in range(70, 140, 10):
+            for name, rebin in zip(['slim', 'fat'],[rebin_slim, rebin_fat]):
+                shape_prefix = "Rebin%s_LT_CAT_%i_%i_inf_" % (name, low, mid)
+                
+                shape_file = ROOT.TFile(
+                    os.path.join(plotter.outputdir, '%seet_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+        
+                shape_dir = shape_file.mkdir('eetCatLow')
+                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.5, project=[low, mid], project_axis='X')
+                shape_dir = shape_file.mkdir('eetCatLow_w')
+                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.0, project=[low, mid], project_axis='X')
+                shape_dir = shape_file.mkdir('eetCatLow_q')
+                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=1.0, project=[low, mid], project_axis='X')
+        
+                shape_dir = shape_file.mkdir('eetCatHigh')
+                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.5, project=[mid, 650], project_axis='X')
+                shape_dir = shape_file.mkdir('eetCatHigh_w')
+                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=0.0, project=[mid, 650], project_axis='X')
+                shape_dir = shape_file.mkdir('eetCatHigh_q')
+                plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin, shape_dir, qcd_fraction=1.0, project=[mid, 650], project_axis='X')
+        
+                logging.warning('shape file %s created' % shape_file.GetName()) 
+                shape_file.Close()
+
+        #special ones
+        mid = 70
+        for mid in [70, 80]:
+            shape_prefix = "Rebin%s_LT_CAT_%i_%i_inf_" % ('smart', low, mid)
+            shape_file = ROOT.TFile(
+                os.path.join(plotter.outputdir, '%seet_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+            
+            shape_dir = shape_file.mkdir('eetCatLow')
+            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_fat, shape_dir, qcd_fraction=0.5, project=[low, mid], project_axis='X')
+            shape_dir = shape_file.mkdir('eetCatLow_w')
+            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_fat, shape_dir, qcd_fraction=0.0, project=[low, mid], project_axis='X')
+            shape_dir = shape_file.mkdir('eetCatLow_q')
+            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_fat, shape_dir, qcd_fraction=1.0, project=[low, mid], project_axis='X')
+        
+            shape_dir = shape_file.mkdir('eetCatHigh')
+            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[mid, 650], project_axis='X')
+            shape_dir = shape_file.mkdir('eetCatHigh_w')
+            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[mid, 650], project_axis='X')
+            shape_dir = shape_file.mkdir('eetCatHigh_q')
+            plotter.write_shapes(prefix+'e2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[mid, 650], project_axis='X')
+        
+            logging.warning('shape file %s created' % shape_file.GetName()) 
+            shape_file.Close()
+
+
+        #low = 10
+        #for mid in range(25, 42, 5):
+        #    shape_prefix = "TPT_CAT_%i_%i_inf_" % (20, mid)
+        #    
+        #    shape_file = ROOT.TFile(
+        #        os.path.join(plotter.outputdir, '%seet_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+        #    
+        #    shape_dir = shape_file.mkdir('eetCatLow')
+        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=0.5, project=[low, mid], project_axis='Y')
+        #    shape_dir = shape_file.mkdir('eetCatLow_w')
+        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=0.0, project=[low, mid], project_axis='Y')
+        #    shape_dir = shape_file.mkdir('eetCatLow_q')
+        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=1.0, project=[low, mid], project_axis='Y')
+        #
+        #    shape_dir = shape_file.mkdir('eetCatHigh')
+        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=0.5, project=[mid, 200], project_axis='Y')
+        #    shape_dir = shape_file.mkdir('eetCatHigh_w')
+        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=0.0, project=[mid, 200], project_axis='Y')
+        #    shape_dir = shape_file.mkdir('eetCatHigh_q')
+        #    plotter.write_shapes(prefix+'e2_t_Mass#tPt', 20, shape_dir, qcd_fraction=1.0, project=[mid, 200], project_axis='Y')
+        #
+        #    logging.warning('shape file %s created' % shape_file.GetName()) 
+        #    shape_file.Close()
