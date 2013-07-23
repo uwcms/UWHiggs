@@ -83,15 +83,15 @@ else:
     grid_search['MMT'] = {
         'leading_iso'    : 'eid12Loose_h2taucuts',
         'subleading_iso' : 'eid12Loose_h2taucuts020',
-        'LT'             : 80,
+        'LT'             : 50,
         'tauID'          : None,
         'tauPT'          : 0,
         'charge_fakes'   : 80,
     }
     grid_search['EMT'] = {
-        'leading_iso'    : 'lead4muon_eid12Medium_h2taucuts',
+        'leading_iso'    : 'eid12Medium_h2taucuts',
         'subleading_iso' : 'eid12Medium_h2taucuts',
-        'LT'             : 100,
+        'LT'             : 50,
         'tauID'          : None,
         'tauPT'          : 0,
         'charge_fakes'   : 80,
@@ -99,7 +99,7 @@ else:
     grid_search['EET'] = {
         'leading_iso'    : 'eid12Tight_h2taucuts',
         'subleading_iso' : 'eid12Medium_h2taucuts020',
-        'LT'             : 140, 
+        'LT'             : 50, 
         'tauID'          : None,
         'tauPT'          : 0,
         'charge_fakes'   : 100,
