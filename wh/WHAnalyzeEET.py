@@ -15,6 +15,7 @@ import optimizer
 import math
 import array
 from anti_charge_flip_cuts import charge_flip_funcs
+from FinalStateAnalysis.PlotTools.decorators import memo_last
 
 #mtr = frfits.mt_likelihood_ratio
 ################################################################################
@@ -61,28 +62,68 @@ class WHAnalyzeEET(WHAnalyzerBase):
                 return fcn(row, weight) if ok else negval
             return f
 
+        def mass_scaler(fcn):
+            def f(row, weight):
+                val, w = fcn(row, weight)
+                return frfits.default_scaler(val), w
+            return f
+
+        def merge_functions(fcn_1, fcn_2):
+            def f(row, weight):
+                r1, w1 = fcn_1(row, weight)
+                r2, w2 = fcn_2(row, weight)
+                w = w1 if w1 and w2 else None
+                return ((r1, r2), w)
+            return f
+
+        lead_iso = self.grid_search['']['leading_iso']
+        sublead_iso = self.grid_search['']['subleading_iso']
+        
+        @memo_last
+        def f_par_prob(e1Pt, e1JetPt,
+                       e2Pt, e2JetPt,
+                       tPt):
+            p_e1 = (( frfits.highpt_ee_fr[lead_iso](electronJetPt=max(e1JetPt, e1Pt), electronPt=e1Pt) +\
+                      frfits.highpt_ee_qcd_fr[lead_iso](electronJetPt=max(e1JetPt, e1Pt), electronPt=e1Pt) )/2)
+            p_e2 = (( frfits.lowpt_ee_fr[sublead_iso](electronJetPt=max(e2JetPt, e2Pt), electronPt=e2Pt) + \
+                      frfits.lowpt_ee_qcd_fr[sublead_iso](electronJetPt=max(e2JetPt, e2Pt), electronPt=e2Pt))/2)
+            p_t  = frfits.tau_fr(tPt)
+            return (p_e1 + p_e2*(1 - p_e1) + p_t*(1 - p_e1)*(1 - p_e2))
+            
+
+        def f_prob(row, weight):
+            val = f_par_prob(row.e1Pt, row.e1JetPt,
+                             row.e2Pt, row.e2JetPt,
+                             row.tPt)
+            return val, weight
+
+        def log_prob(row, weight):
+            prob, weight = f_prob(row, weight)
+            return ROOT.TMath.Log10(prob), weight
+        
+        self.hfunc['faking_prob'] = f_prob
+        self.hfunc['log_prob']    = log_prob
+        self.hfunc["e2_t_Mass#faking_prob"] = merge_functions( attr_getter('e2_t_Mass'), f_prob  )
+        self.hfunc["e2_t_Mass#log_prob"   ] = merge_functions( attr_getter('e2_t_Mass'), log_prob)
+
+        self.hfunc["e*2_t_Mass#faking_prob"] = merge_functions( mass_scaler( attr_getter('e2_t_Mass')), f_prob  )
+        self.hfunc["e*2_t_Mass#log_prob"   ] = merge_functions( mass_scaler( attr_getter('e2_t_Mass')), log_prob)
+        self.hfunc["e*2_t_Mass#LT" ] = merge_functions( mass_scaler( attr_getter('e2_t_Mass')), attr_getter('LT'))
+        self.hfunc["e*2_t_Mass#tPt"] = merge_functions( mass_scaler( attr_getter('e2_t_Mass')), attr_getter('tPt'))
+
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.e2Pt/row.e1Pt, weight)
-        self.hfunc["e*1_e2_Mass"] = lambda row, weight: ( frfits.default_scaler( row.e1_e2_Mass), weight)
-        self.hfunc["e*1_t_Mass" ] = lambda row, weight: ( frfits.default_scaler( row.e1_t_Mass ), weight)
-        self.hfunc["e1_e*2_Mass"] = lambda row, weight: ( frfits.default_scaler( row.e1_e2_Mass), weight)
-        self.hfunc["e*2_t_Mass" ] = lambda row, weight: ( frfits.default_scaler( row.e2_t_Mass ), weight)
-	self.hfunc["my_selection_info" ] = self.fill_id_info
+        self.hfunc["e*1_e2_Mass"] = mass_scaler( attr_getter('e1_e2_Mass'))
+        self.hfunc["e*1_t_Mass" ] = mass_scaler( attr_getter('e1_t_Mass')) 
+        self.hfunc["e1_e*2_Mass"] = mass_scaler( attr_getter('e1_e2_Mass'))
+        self.hfunc["e*2_t_Mass" ] = mass_scaler( attr_getter('e2_t_Mass')) 
 
-	self.hfunc["e1_e2_Mass_barr"] = make_both_barrel( attr_getter("e1_e2_Mass"))
-	self.hfunc["e1_e2_Mass_endc"] = make_both_endcap( attr_getter("e1_e2_Mass"))
-	self.hfunc["e1_e2_Mass_mix" ] = make_mixed( attr_getter("e1_e2_Mass"))
-
+        #self.hfunc['evt_info'] = lambda row, weight: (array.array("f", [row.e1Pt, row.e2Pt, row.tPt, row.LT, weight] ), None)
         self.pucorrector = mcCorrectors.make_puCorrector('doublee')
-
-    
 
     @staticmethod
     def anti_charge_flip(row, rejection_power=80):
+        #print 'running anti_charge_flip %s' % rejection_power
         return charge_flip_funcs[rejection_power](row)
-
-    @staticmethod
-    def fill_id_info(row, weight):
-	return array.array("f", [row.e1_e2_Mass, row.e1AbsEta, row.e2AbsEta, row.type1_pfMetEt, row.e2_t_CosThetaStar, row.e1_t_CosThetaStar, row.e1_e2_CosThetaStar, weight] ), None
 
     def book_histos(self, folder):
 	#PLOTS TO FILL IN ANY CASE
@@ -101,6 +142,21 @@ class WHAnalyzeEET(WHAnalyzerBase):
                 self.book(folder, "e*1_t_Mass", "leadingMass with misid sclaing correction", 200, 0, 200)
             elif 'c2' in folder:
                 self.book(folder, "e1_e*2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
+                #self.book(folder, "e*2_t_Mass#faking_prob", '', 200, 0, 200, 1100, 0., 1.1, type=ROOT.TH2F)
+                #self.book(folder, "e*2_t_Mass#log_prob"   , '', 200, 0, 200, 1000, -10,  1, type=ROOT.TH2F)
+                self.book(folder, "e*2_t_Mass#LT"         , '', 200, 0, 200, 120, 0, 600, type=ROOT.TH2F)
+                self.book(folder, "e*2_t_Mass#tPt"        , '', 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
+
+
+            self.book(folder, prefix+"e2_t_Mass#LT" , "subleadingMass", 200, 0, 200, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2_t_Mass#tPt", "subleadingMass", 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
+
+            #self.book(folder, prefix+"e2_t_Mass#faking_prob" , "subleadingMass", 200, 0, 200, 1100, 0., 1.1, type=ROOT.TH2F)
+            #self.book(folder, prefix+"e2_t_Mass#log_prob"    , "subleadingMass", 200, 0, 200, 1000, -10,  1, type=ROOT.TH2F)
+            #
+            #self.book(folder, prefix+'faking_prob'     , "", 1100, 0., 1.1)
+            #self.book(folder, prefix+'log_prob'        , "", 1000, -10, 1)
+
             self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 30, 0, 0.3)
             self.book(folder, "e1RelPFIsoDB", "e1RelPFIsoDB", 30, 0, 0.3)
             self.book(folder, "e1_e2_Mass", "E 1-2 Mass", 120, 0, 120)
@@ -130,6 +186,8 @@ class WHAnalyzeEET(WHAnalyzerBase):
             self.book(folder, "e2_t_CosThetaStar" , "e2_t_CosThetaStar" , 110, 0., 1.1)
             self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 300)
             self.book(folder, "mva_metEt"         , "metEt"         , 300, 0, 300)
+            #SPECIAL NTUPLE!
+            #self.book(folder, 'evt_info', 'evt_info', 'e1Pt:e2Pt:tPt:LT:weight', type=ROOT.TNtuple)
 
             
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
@@ -265,7 +323,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
         return frfits.highpt_ee_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt)
 
     def obj2_weight(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
-	return frfits.lowpt_ee_fr[subleadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e2Pt)
+	return frfits.lowpt_ee_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt)
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_fr(row.tPt)

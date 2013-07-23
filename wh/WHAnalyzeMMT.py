@@ -12,6 +12,7 @@ import mcCorrectors
 import baseSelections as selections
 import fakerate_functions as frfits
 import math
+from FinalStateAnalysis.PlotTools.decorators import memo_last
 import optimizer
 ################################################################################
 #### Analysis logic ############################################################
@@ -22,6 +23,49 @@ class WHAnalyzeMMT(WHAnalyzerBase):
     def __init__(self, tree, outfile, **kwargs):
         self.channel = 'MMT'
         super(WHAnalyzeMMT, self).__init__(tree, outfile, MuMuTauTree, **kwargs)
+
+	def attr_getter(attribute):
+            def f(row, weight):
+                return (getattr(row,attribute), weight)
+            return f
+
+        def merge_functions(fcn_1, fcn_2):
+            def f(row, weight):
+                r1, w1 = fcn_1(row, weight)
+                r2, w2 = fcn_2(row, weight)
+                w = w1 if w1 and w2 else None
+                return ((r1, r2), w)
+            return f
+
+        lead_iso = self.grid_search['']['leading_iso']
+        sublead_iso = self.grid_search['']['subleading_iso']
+        
+        @memo_last
+        def f_par_prob(m1Pt, m1JetPt,
+                       m2Pt, m2JetPt,
+                       tPt):
+            p_m1 = (( frfits.highpt_mu_fr[lead_iso](muonJetPt=max(m1JetPt, m1Pt), muonPt=m1Pt) +\
+                      frfits.highpt_mu_qcd_fr[lead_iso](muonJetPt=max(m1JetPt, m1Pt), muonPt=m1Pt) )/2)
+            p_m2 = (( frfits.lowpt_mu_fr[sublead_iso](muonJetPt=max(m2JetPt, m2Pt), muonPt=m2Pt) + \
+                      frfits.lowpt_mu_qcd_fr[sublead_iso](muonJetPt=max(m2JetPt, m2Pt), muonPt=m2Pt))/2)
+            p_t  = frfits.tau_fr(tPt)
+            return (p_m1 + p_m2*(1 - p_m1) + p_t*(1 - p_m1)*(1 - p_m2))
+            
+        def f_prob(row, weight):
+            val = f_par_prob(row.m1Pt, row.m1JetPt,
+                             row.m2Pt, row.m2JetPt,
+                             row.tPt)
+            return val, weight
+
+        def log_prob(row, weight):
+            prob, weight = f_prob(row, weight)
+            return ROOT.TMath.Log10(prob), weight
+        
+        self.hfunc['faking_prob'] = f_prob
+        self.hfunc['log_prob']    = log_prob
+        self.hfunc["m2_t_Mass#faking_prob"] = merge_functions( attr_getter('m2_t_Mass'), f_prob  )
+        self.hfunc["m2_t_Mass#log_prob"   ] = merge_functions( attr_getter('m2_t_Mass'), log_prob)
+
         self.hfunc['subMTMass'] = lambda row, weight: (row.m2_t_Mass, weight) if row.m1MtToMET > row.m2MtToMET else (row.m1_t_Mass, weight) #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.m2Pt/row.m1Pt, weight)
         
@@ -35,6 +79,15 @@ class WHAnalyzeMMT(WHAnalyzerBase):
             self.book(folder, prefix+"m2_t_Pt", "subleadingPt", 400, 0, 400)
 
         if len(self.grid_search.keys()) == 1:
+
+            self.book(folder, prefix+"m2_t_Mass#LT" , "subleadingMass", 200, 0, 200, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"m2_t_Mass#tPt", "subleadingMass", 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
+            #self.book(folder, prefix+"m2_t_Mass#faking_prob" , "subleadingMass", 200, 0, 200, 1100, 0., 1.1, type=ROOT.TH2F)
+            #self.book(folder, prefix+"m2_t_Mass#log_prob"    , "subleadingMass", 200, 0, 200, 1000, -10,  1, type=ROOT.TH2F)
+            #self.book(folder, prefix+'faking_prob'     , "", 1100, 0., 1.1)
+            #self.book(folder, prefix+'log_prob'        , "", 1000, -10, 1)
+
+
             self.book(folder, "m2RelPFIsoDB", "m2Iso", 100, 0, 0.3)
             self.book(folder, "m1_t_Mass", "leadingMass", 200, 0, 200)
             self.book(folder, "m1_m2_Mass", "Muon 1-2 Mass", 120, 0, 120)
