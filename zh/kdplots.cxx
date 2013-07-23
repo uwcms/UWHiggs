@@ -5,11 +5,11 @@
 
  generates comparison plots (signal vs. WZ vs. Z+jets) for two kinematic discriminators, with each shape normalized. */
 
-void kdplots(char* channel, char* leg3, char* leg4) {
-  TFile *ofile = new TFile(TString::Format("results/2012-10-24-8TeV-v1-Higgs/kd_plots/root_files/output-%s.root",channel),"RECREATE");
-  TFile *signal = TFile::Open(TString::Format("results/2012-10-24-8TeV-v1-Higgs/ZHAnalyze%s/VH_H2Tau_M-120.root",channel));
-  TFile *wz = TFile::Open(TString::Format("results/2012-10-24-8TeV-v1-Higgs/ZHAnalyze%s/WZJetsTo3LNu_pythia.root",channel));
-  TFile *zjets = TFile::Open(TString::Format("results/2012-10-24-8TeV-v1-Higgs/ZHAnalyze%s/Zjets_M50.root",channel));  
+void kdplots(char* channel) {
+  TFile *ofile = new TFile(TString::Format("results/2013-04-30-8TeV-v1-ZH_light/kd_plots/root_files/output-%s.root",channel),"RECREATE");
+  TFile *signal = TFile::Open(TString::Format("results/2013-04-30-8TeV-v1-ZH_light/ZHAnalyze%s/VH_H2Tau_M-125.root",channel));
+  TFile *wz = TFile::Open(TString::Format("results/2013-04-30-8TeV-v1-ZH_light/ZHAnalyze%s/WZJetsTo3LNu_pythia.root",channel));
+  TFile *zjets = TFile::Open(TString::Format("results/2013-04-30-8TeV-v1-ZH_light/ZHAnalyze%s/Zjets_M50.root",channel));  
 
   TH1F *kd1_signal = signal->Get("os/All_Passed/kinematicDiscriminant1");
   kd1_signal->SetName("kd1_signal");
@@ -23,13 +23,13 @@ void kdplots(char* channel, char* leg3, char* leg4) {
   kd2_wz->SetName("kd2_wz");
   
   // get Zjets statistics from the sideband region, weighted by fake rate
-  TH1F *kd1_zjets_f3 = zjets->Get(TString::Format("os/%sIsoFailed/obj1_weight/kinematicDiscriminant1",leg3));
-  TH1F *kd1_zjets_f4 = zjets->Get(TString::Format("os/%sIsoFailed/obj2_weight/kinematicDiscriminant1",leg4));
-  TH1F *kd1_zjets_f3f4 = zjets->Get(TString::Format("os/%sIsoFailed_%sIsoFailed/all_weights_applied/kinematicDiscriminant1",leg3,leg4));
+  TH1F *kd1_zjets_f3 = zjets->Get("os/Leg3Failed/leg3_weight/kinematicDiscriminant1");
+  TH1F *kd1_zjets_f4 = zjets->Get("os/Leg4Failed/leg4_weight/kinematicDiscriminant1");
+  TH1F *kd1_zjets_f3f4 = zjets->Get("os/Leg3Failed_Leg4Failed/all_weights_applied/kinematicDiscriminant1");
 
-  TH1F *kd2_zjets_f3 = zjets->Get(TString::Format("os/%sIsoFailed/obj1_weight/kinematicDiscriminant2",leg3));
-  TH1F *kd2_zjets_f4 = zjets->Get(TString::Format("os/%sIsoFailed/obj2_weight/kinematicDiscriminant2",leg4));
-  TH1F *kd2_zjets_f3f4 = zjets->Get(TString::Format("os/%sIsoFailed_%sIsoFailed/all_weights_applied/kinematicDiscriminant2",leg3,leg4));
+  TH1F *kd2_zjets_f3 = zjets->Get("os/Leg3Failed/leg3_weight/kinematicDiscriminant2");
+  TH1F *kd2_zjets_f4 = zjets->Get("os/Leg4Failed/leg4_weight/kinematicDiscriminant2");
+  TH1F *kd2_zjets_f3f4 = zjets->Get("os/Leg3Failed_Leg4Failed/all_weights_applied/kinematicDiscriminant2");
 
   TH1F *kd1_zjets = kd1_zjets_f3->Clone("kd1_zjets");
   kd1_zjets->Add(kd1_zjets_f4);
@@ -63,7 +63,7 @@ void kdplots(char* channel, char* leg3, char* leg4) {
   l1->SetBorderSize(0);
   l1->SetFillColor(0);
   l1->Draw();
-  c1->SaveAs(TString::Format("results/2012-10-24-8TeV-v1-Higgs/kd_plots/kd1_%s.png",channel));
+  c1->SaveAs(TString::Format("results/2013-04-30-8TeV-v1-ZH_light/kd_plots/kd1_%s.png",channel));
 
   TCanvas *c2 = new TCanvas("c2","kd2");
   kd2_zjets->SetMarkerColor(2);
@@ -78,7 +78,7 @@ void kdplots(char* channel, char* leg3, char* leg4) {
   l2->SetBorderSize(0);
   l2->SetFillColor(0);
   l2->Draw();
-  c2->SaveAs(TString::Format("results/2012-10-24-8TeV-v1-Higgs/kd_plots/kd2_%s.png",channel));
+  c2->SaveAs(TString::Format("results/2013-04-30-8TeV-v1-ZH_light/kd_plots/kd2_%s.png",channel));
 
   ofile->cd();
   kd1_zjets->Write();

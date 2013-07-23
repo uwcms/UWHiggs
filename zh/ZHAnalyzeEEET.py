@@ -22,6 +22,7 @@ import fake_rate_functions as fr_fcn
 
 class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
     tree = 'eeet/final/Ntuple'
+    name = 7
     def __init__(self, tree, outfile, **kwargs):
         super(ZHAnalyzeEEET, self).__init__(tree, outfile, EEETauTree, 'ET', **kwargs)
         # Hack to use S6 weights for the one 7TeV sample we use in 8TeV
@@ -46,11 +47,14 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_Z_histos(folder)
         self.book_H_histos(folder)
 
-    def probe1_id(self, row):
-        return selections.eleID(row, 'e3') and selections.elIsoTight(row, 'e3') ##THIS SEEMS too low
+    def leg3_id(self, row):
+        #if not (selections.eleID(row, 'e3')): print "failed eleID"
+        #if not (selections.elIsoTight(row, 'e3')): print "failed elIsoTight"
+        #print getattr(row, 'e3RelPFIsoDB')
+        return row.e3MVAIDH2TauWP and selections.elIsoLoose(row, 'e3') and (row.e3MissingHits==0)##THIS SEEMS too low
 
-    def probe2_id(self, row):
-        return bool(row.tMediumIso) ##Why not tMediumMVAIso
+    def leg4_id(self, row):
+        return bool(row.tLooseIso3Hits) ##Why not tMediumMVAIso
 
     def preselection(self, row):
         ''' Preselection applied to events.
@@ -62,8 +66,10 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
         if selections.overlap(row, 'e1','e2','e3','t') : return False
         if not selections.signalTauSelection(row,'t'): return False
         if not bool(row.tAntiMuonLoose): return False
-        if not bool(row.tAntiElectronMVA): return False
-        return selections.signalElectronSelection(row,'e3')
+        if not bool(row.tAntiElectronMVA2Tight): return False
+        if not selections.signalElectronSelection(row,'e3'): return False
+        if row.LT < 25: return False
+        return True
 
     def sign_cut(self, row):
         ''' Returns true if muons are SS '''
@@ -75,8 +81,8 @@ class ZHAnalyzeEEET(ZHAnalyzerBase.ZHAnalyzerBase):
         return self.pucorrector(row.nTruePU) * \
             mcCorrectors.get_electron_corrections(row, 'e1','e2','e3')
 
-    def obj1_weight(self, row):
-        return fr_fcn.e_tight_fr( row.e3Pt ) / (1 - fr_fcn.e_tight_fr( row.e3Pt ))
+    def leg3_weight(self, row):
+        return fr_fcn.e_loose_jetpt_fr( row.e3JetPt ) / (1 - fr_fcn.e_loose_jetpt_fr( row.e3JetPt ))
 
-    def obj2_weight(self, row):
-        return fr_fcn.tau_medium_fr( row.tPt ) / (1 - fr_fcn.tau_medium_fr( row.tPt ))
+    def leg4_weight(self, row):
+        return fr_fcn.tau_jetpt_fr( row.tJetPt ) / (1 - fr_fcn.tau_jetpt_fr( row.tJetPt ))

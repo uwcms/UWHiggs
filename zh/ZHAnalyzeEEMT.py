@@ -22,6 +22,7 @@ import fake_rate_functions as fr_fcn
 
 class ZHAnalyzeEEMT(ZHAnalyzerBase.ZHAnalyzerBase):
     tree = 'eemt/final/Ntuple'
+    name = 5
     def __init__(self, tree, outfile, **kwargs):
         super(ZHAnalyzeEEMT, self).__init__(tree, outfile, EEMuTauTree, 'MT', **kwargs)
         # Hack to use S6 weights for the one 7TeV sample we use in 8TeV
@@ -46,11 +47,11 @@ class ZHAnalyzeEEMT(ZHAnalyzerBase.ZHAnalyzerBase):
         self.book_Z_histos(folder)
         self.book_H_histos(folder)
 
-    def probe1_id(self, row):
-        return bool(row.mPFIDTight) and selections.muIsoTight(row, 'm') ##THIS SEEMS too low
+    def leg3_id(self, row):
+        return bool(row.mPFIDTight) and selections.muIsoLoose(row, 'm') 
 
-    def probe2_id(self, row):
-        return bool(row.tMediumIso) ##Why not tMediumMVAIso
+    def leg4_id(self, row):
+        return bool(row.tLooseIso3Hits) ##Why not tMediumMVAIso
 
     def preselection(self, row):
         ''' Preselection applied to events.
@@ -61,8 +62,10 @@ class ZHAnalyzeEEMT(ZHAnalyzerBase.ZHAnalyzerBase):
         if not selections.ZEESelection(row): return False
         if selections.overlap(row, 'e1','e2','m','t') : return False
         if not selections.signalTauSelection(row,'t'): return False
-        if not bool(row.tAntiMuonTight): return False
+        if not bool(row.tAntiMuonTight2): return False
         if not bool(row.tAntiElectronLoose): return False
+        #if row.LT < 45: return False
+        if row.mPt + row.tPt < 35: return False
         return selections.signalMuonSelection(row,'m')
 
     def sign_cut(self, row):
@@ -76,8 +79,8 @@ class ZHAnalyzeEEMT(ZHAnalyzerBase.ZHAnalyzerBase):
             mcCorrectors.get_muon_corrections(row,'m') * \
             mcCorrectors.get_electron_corrections(row, 'e1', 'e2')
 
-    def obj1_weight(self, row):
-        return fr_fcn.mu_tight_fr( row.mPt ) / (1 - fr_fcn.mu_tight_fr( row.mPt ))
+    def leg3_weight(self, row):
+        return fr_fcn.mu_loose_jetpt_fr( row.mJetPt ) / (1 - fr_fcn.mu_loose_jetpt_fr( row.mJetPt ))
 
-    def obj2_weight(self, row):
-        return fr_fcn.tau_medium_fr( row.tPt ) / (1 -  fr_fcn.tau_medium_fr( row.tPt ))
+    def leg4_weight(self, row):
+        return fr_fcn.tau_jetpt_fr( row.tJetPt ) / (1 -  fr_fcn.tau_jetpt_fr( row.tJetPt ))
