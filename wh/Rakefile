@@ -665,11 +665,9 @@ def make_unc_vals_task(channel)
     sh "echo '# Stat shape uncertainties' >> #{t.name}"
     Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.txt").each do |list|
       category = list.split('/')[-1].split('_')[-2]
-      puts category
-      puts list
       sh "cat #{list} | xargs -n 1 -I {} echo '#{category} fakes {} 1.0' >> #{t.name}"
-      sh "python get_fake_systematic.py #{$carddir}/#{channel}/shapes.root #{category} CMS_vhtt_#{category}_fakes_#{$period} >> #{t.name}"
     end
+    sh "python get_fake_systematic.py #{$carddir}/#{channel}/shapes.root #{$categories_map[channel].join(',')} CMS_vhtt_#{channel}_fakes_#{$period} >> #{t.name}"
   end
 end
 
