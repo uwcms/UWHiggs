@@ -259,8 +259,8 @@ end
 fr_fits["t_ztt_pt20_mvaloose_tauPt"] = Hash[
     "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMT",
-    "function" => exponential,
-    "variables" => exponential_vars,
+    "function" => $exponential,
+    "variables" => $exponential_vars,
     "rebin" => 5,
     "range" => "20 100",
   ]
@@ -268,8 +268,8 @@ fr_fits["t_ztt_pt20_mvaloose_tauPt"] = Hash[
 fr_fits["t_ztt_pt20_hpsloose_tauPt"] = Hash[
     "samples" => Array["diboson", "data_mm"],
     "analyzer" => "FakeRatesMMT",
-    "function" => exponential,
-    "variables" => exponential_vars,
+    "function" => $exponential,
+    "variables" => $exponential_vars,
     "rebin" => 5,
     "range" => "20 100",
   ]
@@ -429,7 +429,7 @@ file "WHAnalyzeEET.py" => kNN_files.select{|x| x.start_with?( 'ee_')} + \
                ["optimizer.py",
                 'WHAnalyzerBase.py',
                 "fakerate_functions.py",
-                "mcCorrectors.py"
+                "mcCorrectors.py",
                 "chargeflipcuts.py"] do |t|
   sh "touch #{t.name}"
 end
@@ -679,7 +679,7 @@ def make_datacard_task(mass, channel)
                 "#{$carddir}/#{channel}/unc.conf", 
                 "#{$carddir}/#{channel}/unc.vals", 
                 "#{$carddir}/#{channel}/cgs.conf"] do |t|
-    puts t.investigation
+    #puts t.investigation
     sh "mkdir -p #{$carddir}"
     chdir($carddir) do
       sh "mkdir -p #{channel}/#{mass}"
@@ -796,7 +796,7 @@ def make_json_limit_task(channel)
     sh "harvest_limits.py #{$carddir}/#{channel}"
     sh "touch #{t.name}"
     sh "add_tag_to_json.py #{$carddir}/#{channel}/*.json -l jobid -t #{$jobid}"
-    sh "add_tag_to_json.py #{$carddir}/#{channel}/*.json -l lumi -t #{get_lumi(samples_map[channel])}"
+    sh "add_tag_to_json.py #{$carddir}/#{channel}/*.json -l lumi -t #{get_lumi(samples_map[channel], $jobid)}"
   end
   return json_stamp
 end
@@ -887,5 +887,5 @@ end
 
 task :copycards => ["#{$auxdir}/vhtt_llt.inputs-sm-#{$period}.root"] +
     mmt_cfg + emt_cfg + eet_cfg do |t|
-    puts t.investigation
+    #puts t.investigation
 end
