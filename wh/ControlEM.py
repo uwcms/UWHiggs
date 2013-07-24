@@ -13,12 +13,15 @@ import os
 import mcCorrectors
 import baseSelections as selections
 import fakerate_functions as frfits
+import optimizer
 
 # Determine MC-DATA corrections
 is7TeV = bool('7TeV' in os.environ['jobid'])
 print "Is 7TeV:", is7TeV
 use_iso_trigger = not is7TeV
 
+leadleptonId = optimizer.grid_search['EMT']['leading_iso'].replace('lead4muon_', '')
+subleptonId  = optimizer.grid_search['EMT']['subleading_iso']
 
 class ControlEM(MegaBase):
     tree = 'em/final/Ntuple'
@@ -127,22 +130,24 @@ class ControlEM(MegaBase):
         return True
 
     def obj1_id(self, row):
-        return bool(row.mPFIDTight) and (
-            row.mRelPFIsoDB < 0.1 or
-            (row.mRelPFIsoDB < 0.15 and row.mAbsEta < 1.479))
+        return selections.lepton_id_iso(row, 'm', leadleptonId)
+        #bool(row.mPFIDTight) and (
+        #    row.mRelPFIsoDB < 0.1 or
+        #    (row.mRelPFIsoDB < 0.15 and row.mAbsEta < 1.479))
 
     def obj2_id(self, row):
-        return bool(row.eMVAIDH2TauWP) and bool(
-            row.eRelPFIsoDB < 0.1 or
-            (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479))
+        return selections.lepton_id_iso(row, 'e', subleptonId)
+        #bool(row.eMVAIDH2TauWP) and bool(
+        #    row.eRelPFIsoDB < 0.1 or
+        #    (row.eRelPFIsoDB < 0.15 and row.eAbsEta < 1.479))
 
     def obj2_weight(self, row):
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         fr = 0.
         if mu17e8:
-            fr = frfits.lowpt_e_fr(max(row.eJetPt, row.ePt))
+            fr = frfits.lowpt_e_fr[subleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt)
         else:
-            fr = frfits.highpt_e_fr(max(row.eJetPt, row.ePt))
+            fr = frfits.highpt_e_fr[subleptonId](electronJetPt=max(row.eJetPt, row.ePt),electronPt=row.ePt)
         return fr / (1. - fr)
 
     def process(self):
