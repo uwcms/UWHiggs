@@ -1,7 +1,7 @@
 import os
 from FinalStateAnalysis.StatTools.RooFunctorFromWS import build_roofunctor, make_corrector_from_th2, build_uncorr_2Droofunctor, FunctorFromMVA
 from FinalStateAnalysis.StatTools.VariableScaler import make_scaler
-from FinalStateAnalysis.Utilities.smartDictionary import smart_dict
+from FinalStateAnalysis.Utilities.smartdict import SmartDict
 import itertools
 import optimizer
 import re
@@ -84,7 +84,7 @@ def make_scaler_dict(filename, mapname):
     return ret
 
 def make_mva_functor_dict(template, variables, mapper=None):
-    ret = smart_dict() #faster than normal dict
+    ret = SmartDict() #faster than normal dict
     for i in optimizer.lep_id:
         lepid = i
         if mapper:
