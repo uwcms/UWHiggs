@@ -1,6 +1,7 @@
 # Get common recipes
 recipes = ENV['CMSSW_BASE'] + '/src/FinalStateAnalysis/PlotTools/rake/recipes.rake'
 import recipes
+require ENV['CMSSW_BASE'] + '/src/FinalStateAnalysis/PlotTools/rake/tools.rb'
 
 $jobid = ENV['jobid']
 $blind = ENV['blind']
@@ -11,39 +12,11 @@ if $jobid.include? '7TeV'
   $period = '7TeV'
 end
 
-def get_lumi(sample)
-  lumifiles = Dir.glob("inputs/#{$jobid}/*.lumicalc.sum").select {|x| x.include? sample}
-  lumifiles = lumifiles.map {|x| Float(File.read(x).strip())*0.001}
-  totLumi   = 0
-  lumifiles.each {|a| totLumi+=a }
-  return totLumi
-end
+check_luminosity(['data_DoubleElectron', 'data_DoubleMu', 'data_MuEG'], $period, $jobid)
 
-def check_luminosity(samples)
-  #check that we have the expected lumi
-  target_lumi = Float(ENV.fetch("TARGET_LUMI_#{$period}", -1))
-  tolerance   = Float(ENV.fetch('LUMI_TOLERANCE', 0.1))
-  ingore_err  = Float(ENV.fetch('IGNORE_LUMI_ERRORS', 0))
-  if target_lumi == -1 || ingore_err == 1
-    return nil
-  end
-  samples.each do |sample|
-    lumifiles = Dir.glob("inputs/#{$jobid}/*.lumicalc.sum").select {|x| x.include? sample}
-    lumifiles = lumifiles.map {|x| Float(File.read(x).strip())*0.001}
-    totLumi   = get_lumi(sample)
-    diff_to_target = totLumi - target_lumi
-    diff_to_target = diff_to_target.abs
-    abs_tolerance  = tolerance*target_lumi
-    if diff_to_target > abs_tolerance
-      raise "For your future mental health the process was stopped! 
-The total lumi I have for the sample #{sample} is #{totLumi} which does not 
-match with the target one (#{target_lumi}) within the tolerance of #{tolerance}. 
-If you want to skip this test set the environmental variable IGNORE_LUMI_ERRORS to 1"
-    end
-  end
+task :getlumi, [:sample] do |t, args|
+  puts get_lumi(args.sample, $jobid)
 end
-
-check_luminosity(['data_DoubleMu', 'data_DoubleElectron', 'data_MuEG'])
 
 ################################################################################
 ## Sample names ################################################################
@@ -82,6 +55,10 @@ def get_analyzer_results(analyzer, the_samples)
   return output
 end
 
+file "baseSelections.py" => "electronids.py" do |t|
+  sh "touch #{t.name}"
+end
+
 file "optimizer.py" => "baseSelections.py" do |t|
   sh "touch #{t.name}"
 end
@@ -94,23 +71,23 @@ end
 
 # Map which samples need to be analyzed by which analyzer
 fr_analyzer_sample_map = Hash[
-  "FakeRatesEE.py"  => samples['data_ee'] + samples["zjets"] + samples['diboson'],
+  "FakeRatesEE.py"  => samples['data_ee'] + samples['diboson'],
   "ChargeFlipProbabilityEE.py" => samples['zjets'],
   "FakeRatesEM.py"  => samples['diboson'] + samples['data_em'],
-  "FakeRatesEMT.py" => samples['diboson'] + samples['data_em'],
   "FakeRatesMM.py"  => samples['diboson'] + samples['data_mm'],
   "FakeRatesMMT.py" => samples['diboson'] + samples['data_mm'],
-  "FakeRatesMMM.py" => samples['diboson'] + samples['data_mm'],
+#  "FakeRatesEMT.py" => samples['diboson'] + samples['data_em'],
+#  "FakeRatesMMM.py" => samples['diboson'] + samples['data_mm'],
 ]
 
 fr_analyzer_dep_map = Hash[
-  "ChargeFlipProbabilityEE.py" => Array["baseSelections.py"], # "optimizer.py"],
-  "FakeRatesEE.py"  => Array["baseSelections.py"],# + samples['diboson'],
+  "ChargeFlipProbabilityEE.py" => Array["baseSelections.py"], 
+  "FakeRatesEE.py"  => Array["baseSelections.py"],
   "FakeRatesEM.py"  => Array["baseSelections.py"],
-  "FakeRatesEMT.py" => Array["baseSelections.py"],
   "FakeRatesMM.py"  => Array["baseSelections.py"],
   "FakeRatesMMT.py" => Array["baseSelections.py"],
-  "FakeRatesMMM.py" => Array["baseSelections.py"],
+#  "FakeRatesEMT.py" => Array["baseSelections.py"],
+#  "FakeRatesMMM.py" => Array["baseSelections.py"],
 ]
 
 # Create an empty placeholder to enable tab-completion
@@ -118,7 +95,6 @@ task :fakerates => []
 #check if base class or some selections has changed
 fr_analyzer_sample_map.each do |analyzer, the_samples|
   file analyzer => fr_analyzer_dep_map[analyzer] do |t|
-    puts t.investigation
     sh "touch #{t.name}"
   end
 end
@@ -144,75 +120,61 @@ $frfit_dir = "results/#{$jobid}/fakerate_fits"
 directory $frfit_dir
 
 # Common fit functions
-exponential = "scale*TMath::Exp(x*decay)+offset"
-exponential_vars =  "scale[0.5, 0, 5],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
+$exponential = "scale*TMath::Exp(x*decay)+offset"
+$exponential_vars =  "scale[0.5, 0, 5],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
 
-landau = "scale*TMath::Landau(x,mu,sigma,0)+offset"
-landau_vars =  "scale[0.5, 0, 15],mu[5, 0, 30],sigma[1.9, 0.1, 20],offset[1e-2, 0, 0.5]"
+$landau = "scale*TMath::Landau(x,mu,sigma,0)+offset"
+$landau_vars =  "scale[0.5, 0, 15],mu[5, 0, 30],sigma[1.9, 0.1, 20],offset[1e-2, 0, 0.5]"
 
-flat = "offset"
-flat_vars =  "offset[1e-2, 0, 0.5]"
+$flat = "offset"
+$flat_vars =  "offset[1e-2, 0, 0.5]"
 
-fr_binning =  "10,12,15,20,25,30,40,50,70,100"
-fr_binning_tight =  "10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,45,50,60,65,70,80,100"
-#fr_binning =  5
-#fr_binning_tight =  2
+$fr_binning =  "10,12,15,20,25,30,40,50,70,100"
+$fr_binning_tight =  "10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,45,50,60,65,70,80,100"
 
 def make_landau(chan, datas)
-  fr_binning =  "10,12,15,20,25,30,40,50,70,100" #ruby does not seem to see global variables
-  landau = "scale*TMath::Landau(x,mu,sigma,0)+offset"
-  landau_vars =  "scale[0.5, 0, 15],mu[5, 0, 30],sigma[1.9, 0.1, 20],offset[1e-2, 0, 0.5]"
   return Hash[
               "samples" => Array["diboson", "data_#{datas.downcase}"],
               "analyzer" => "FakeRates#{chan.upcase}",
-              "function" => landau,
-              "variables" => landau_vars,
-              "rebin" => fr_binning,
+              "function" => $landau,
+              "variables" => $landau_vars,
+              "rebin" => $fr_binning,
               "range" => "10 100",
               'fitter' => 'fit_efficiency_chi2.py',
              ]
 end
 
 def make_exponential(chan, datas)
-  fr_binning =  "10,12,15,20,25,30,40,50,70,100"
-  exponential = "scale*TMath::Exp(x*decay)+offset"
-  exponential_vars =  "scale[0.5, 0, 5],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
   return Hash[
               "samples" => Array["diboson", "data_#{datas.downcase}"],
               "analyzer" => "FakeRates#{chan.upcase}",
-              "function" => exponential,
-              "variables" => exponential_vars,
-              "rebin" => fr_binning,
+              "function" => $exponential,
+              "variables" => $exponential_vars,
+              "rebin" => $fr_binning,
               "range" => "10 100",
               'fitter' => 'fit_efficiency_chi2.py',
              ]
 end
 
 def make_cruijff(chan, datas)
-  fr_binning =  "10,12,15,20,25,30,40,50,70,100" #ruby does not seem to see global variables
-  landau = "scale*RooCruijffFcn(x,mu, sigmaL, sigmaR, alphaL, alphaR)" #+offset"
-  landau_vars =  "scale[0.5, 0, 15],mu[5, 0, 20],sigmaR[1.9, 0.1, 20],sigmaL[1e-5], alphaL[1e-5], alphaR[3,0,100]" #,offset[1e-2, 0, 0.5]"
   return Hash[
               "samples" => Array["diboson", "data_#{datas.downcase}"],
               "analyzer" => "FakeRates#{chan.upcase}",
-              "function" => landau,
-              "variables" => landau_vars,
-              "rebin" => fr_binning,
+              "function" => $landau,
+              "variables" => $landau_vars,
+              "rebin" => $fr_binning,
               "range" => "10 100",
               'fitter' => 'fit_efficiency_chi2.py',
              ]
 end
 
 def make_constant(chan, datas)
-  fr_binning =  "10,12,15,20,25,30,40,50,70,100" #ruby does not seem to see global variables
-  landau = "offset"
-  landau_vars =  "offset[1e-2, 0, 0.5]"
   return Hash[
               "samples" => Array["diboson", "data_#{datas.downcase}"],
               "analyzer" => "FakeRates#{chan.upcase}",
-              "function" => landau,
-              "variables" => landau_vars,
-              "rebin" => fr_binning,
+              "function" => $landau,
+              "variables" => $landau_vars,
+              "rebin" => $fr_binning,
               "range" => "10 100",
               'fitter' => 'fit_efficiency_chi2.py',
              ]
@@ -243,7 +205,7 @@ elewps.each do |ele_wp|
   emcrs.each do |cr|
     pt_regions.each do |ptr|
       key = "e_#{cr}_#{ptr}_#{ele_wp}_eJetPt"
-      fr_fits[key] =  make_exponential('em', 'em') #fit EVERYTHING with exponential, in case change afterwards
+      #fr_fits[key] =  make_exponential('em', 'em') #fit EVERYTHING with exponential, in case change afterwards
 
       key = "e_#{cr}_#{ptr}_#{ele_wp}_electronInfo"
       kNN_trains[key] =  make_kNN('em', 'em') 
@@ -259,9 +221,9 @@ eecrs = ['qcd', 'wjetsNoZmass']
 elewps.each do |ele_wp|
   eecrs.each do |cr|
     key = "ee_#{cr}_pt10_#{ele_wp}_electronJetPt"
-    fr_fits[key] =  make_landau('ee', 'ee') #fit pt10 with landau
+    #fr_fits[key] =  make_landau('ee', 'ee') #fit pt10 with landau
     key = "ee_#{cr}_pt20_#{ele_wp}_electronJetPt"
-    fr_fits[key] =  make_exponential('ee', 'ee') #fit pt20 with expo
+    #fr_fits[key] =  make_exponential('ee', 'ee') #fit pt20 with expo
 
     key = "ee_#{cr}_pt10_#{ele_wp}_electronInfo"
     kNN_trains[key] =  make_kNN('ee', 'ee')
@@ -271,7 +233,7 @@ elewps.each do |ele_wp|
     kNN_trains[key]['vars'] = ['electronJetPt', 'electronPt']
   end
 end
-fr_fits["ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronJetPt"] = make_constant('ee', 'ee')
+#fr_fits["ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronJetPt"] = make_constant('ee', 'ee')
 
 #############
 #  MM datas
@@ -281,7 +243,7 @@ muonwps.each do |mu_wp|
   mmcrs.each do |cr|
     pt_regions.each do |ptr|
       key = "m_#{cr}_#{ptr}_#{mu_wp}_muonJetPt"
-      fr_fits[key] =  make_landau('mm', 'mm')
+      #fr_fits[key] =  make_landau('mm', 'mm')
 
       key = "m_#{cr}_#{ptr}_#{mu_wp}_muonInfo"
       kNN_trains[key] =  make_kNN('mm', 'mm')
@@ -289,8 +251,8 @@ muonwps.each do |mu_wp|
     end
   end
 end
-fr_fits["m_qcd_pt20_h2taucuts_muonJetPt"] = make_cruijff('mm', 'mm')
-fr_fits["m_qcd_pt20_h2taucuts020_muonJetPt"] = make_cruijff('mm', 'mm')
+#fr_fits["m_qcd_pt20_h2taucuts_muonJetPt"] = make_cruijff('mm', 'mm')
+#fr_fits["m_qcd_pt20_h2taucuts020_muonJetPt"] = make_cruijff('mm', 'mm')
 
 
 #Tau stuff (by hand, they are just 2)
@@ -316,7 +278,9 @@ fr_fits["t_ztt_pt20_hpsloose_tauPt"] = Hash[
 task :fits => []
 task :kNN  => []
 
+################################################
 # Create tasks for all the fr_fits
+################################################
 fr_fits.each do |fit, fit_info|
   fit_configuration = fit.split("_")
   region = ''
@@ -326,12 +290,12 @@ fr_fits.each do |fit, fit_info|
 
   if fit_configuration.size() == 6 #check if we have an idIso with _ separation
     region = fit_configuration[1]
-    denom = fit_configuration[2]
+    denom  = fit_configuration[2]
     num = "#{fit_configuration[3]}_#{fit_configuration[4]}"
     var = fit_configuration[5]
   else #otherwise as usual
     region = fit_configuration[1]
-    denom = fit_configuration[2]
+    denom  = fit_configuration[2]
     num = fit_configuration[3]
     var = fit_configuration[4]
   end
@@ -368,8 +332,9 @@ fr_fits.each do |fit, fit_info|
 end
 
 
-
+################################################
 #create tasks for running kNN
+################################################
 kNN_trains.each do |kNN, info|
   kNN_configuration = kNN.split("_")
   region = ''
@@ -413,19 +378,18 @@ end
 
 
 
-
+################################################
+#charge fake rate tasks
+################################################
 task :charge_fakes => []
 elewps.each do |iso_label|
   output = "#{$frfit_dir}/charge_flip_prob_map_#{iso_label}.root"
   file output => ["results/#{$jobid}/ChargeFlipProbabilityEE/#{samples["zjets"][0]}.root", "make_charge_flip_probalility_map.py"] do |t|
     sh "python make_charge_flip_probalility_map.py #{t.name} #{iso_label}/flipped_electrons #{iso_label}/matched_electrons #{t.prerequisites[0]}"
-    sh "python make_charge_flip_probalility_map.py #{t.name.sub('prob_map_','prob_map_e1_')} #{iso_label}/flipped_e1 #{iso_label}/matched_e1 #{t.prerequisites[0]}"
-    sh "python make_charge_flip_probalility_map.py #{t.name.sub('prob_map_','prob_map_e2_')} #{iso_label}/flipped_e2 #{iso_label}/matched_e2 #{t.prerequisites[0]}"
   end
   task :charge_fakes => output
 end
 
-#task :charge_fakes => ["#{$frfit_dir}/charge_flip_prob_map.root"]
 task :fits => :charge_fakes
 
 ################################################################################
@@ -438,10 +402,11 @@ task :fits => :charge_fakes
 ##     eecontrol
 ################################################################################
 fake_rate_files = fr_fits.keys.map{|x| "#{$frfit_dir}/#{x}.root"}
+kNN_files       = kNN_trains.keys.map{|x| "#{$frfit_dir}/#{x}.kNN.root"}
 
 # IF the FR fits change, make sure we re-run the analyses
-file "WHAnalyzeEMT.py" => fake_rate_files.select{|x| x.start_with?('e_')} + \
-               fake_rate_files.select{|x| x.start_with?('m_')} + \
+file "WHAnalyzeEMT.py" => kNN_files.select{|x| x.start_with?('e_')} + \
+               kNN_files.select{|x| x.start_with?('m_')} + \
                fake_rate_files.select{|x| x.start_with?('t_')} + \
                Array["optimizer.py",
                      'WHAnalyzerBase.py',
@@ -450,7 +415,7 @@ file "WHAnalyzeEMT.py" => fake_rate_files.select{|x| x.start_with?('e_')} + \
   sh "touch #{t.name}"
 end
 
-file "WHAnalyzeMMT.py" => fake_rate_files.select{|x| x.start_with?('m_')} + \
+file "WHAnalyzeMMT.py" => kNN_files.select{|x| x.start_with?('m_')} + \
                fake_rate_files.select{|x| x.start_with?('t_')} + \
                ["optimizer.py",
                 'WHAnalyzerBase.py',
@@ -459,12 +424,13 @@ file "WHAnalyzeMMT.py" => fake_rate_files.select{|x| x.start_with?('m_')} + \
   sh "touch #{t.name}"
 end
 
-file "WHAnalyzeEET.py" => fake_rate_files.select{|x| x.start_with?( 'ee_')} + \
+file "WHAnalyzeEET.py" => kNN_files.select{|x| x.start_with?( 'ee_')} + \
                fake_rate_files.select{|x| x.start_with?('t_')} + \
                ["optimizer.py",
                 'WHAnalyzerBase.py',
                 "fakerate_functions.py",
-                "mcCorrectors.py"] do |t|
+                "mcCorrectors.py"
+                "chargeflipcuts.py"] do |t|
   sh "touch #{t.name}"
 end
 
@@ -632,6 +598,8 @@ cardmasses = get_sample_names('VH') #get all the VH samples available
 cardmasses = cardmasses.select{|x| x.include? "H2Tau"} #get only the H2Tau, to avid repetition
 cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
 cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it's really needed but can't harm)
+cardmasses = cardmasses.select{|x| x <= 140} #FIXME! to be removed!
+#puts cardmasses
 
 $to_extrapolate = cardmasses.select{|x| x > 140}
 
@@ -640,7 +608,7 @@ def make_morphing_task(channel, shapefile)
   file ret => [shapefile] do |t|
     sh "mkdir -p `dirname #{t.name}`"
     sh "cp #{t.prerequisites[0]} #{t.name}"
-    sh "horizontal-morphing.py --categories='#{$categories_map[channel].join(',')}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 --extrapolate=#{$to_extrapolate.join(",")} #{t.name}"
+    sh "horizontal-morphing.py --categories='#{$categories_map[channel].join(',')}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 #{t.name}"# --extrapolate=#{$to_extrapolate.join(",")} #{t.name}" #FIXME! to be removed!
   end
   return ret
 end
@@ -921,4 +889,3 @@ task :copycards => ["#{$auxdir}/vhtt_llt.inputs-sm-#{$period}.root"] +
     mmt_cfg + emt_cfg + eet_cfg do |t|
     puts t.investigation
 end
-
