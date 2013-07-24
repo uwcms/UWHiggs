@@ -14,7 +14,7 @@ import fakerate_functions as frfits
 import optimizer
 import math
 import array
-from anti_charge_flip_cuts import charge_flip_funcs
+from chargeflipcuts import charge_flip_funcs
 from FinalStateAnalysis.PlotTools.decorators import memo_last
 
 #mtr = frfits.mt_likelihood_ratio
