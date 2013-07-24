@@ -10,23 +10,23 @@ export jobid=$jobid8
 rake fakerates
 rake fits
 
-rake mmcontrol
-rake emcontrol
+#rake mmcontrol
+#rake emcontrol
 rake eecontrol
 
 rake mmt
 rake emt
 rake eet
 
-export jobid=$jobid7
-rake fakerates
-rake fits
+#export jobid=$jobid7
+#rake fakerates
+#rake fits
 
-rake mmcontrol
-rake emcontrol
-rake eecontrol
+#rake mmcontrol
+#rake emcontrol
+#rake eecontrol
 
-rake mmt
-rake emt
-rake eet
+#rake mmt
+#rake emt
+#rake eet
 

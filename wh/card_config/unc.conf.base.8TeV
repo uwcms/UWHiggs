@@ -18,6 +18,10 @@ CMS_vhtt_emt_fakes_8TeV lnN
 CMS_vhtt_mmt_fakes_8TeV lnN
 CMS_vhtt_eet_fakes_8TeV lnN
 
+CMS_vhtt_emt_chargeFlip_8TeV shape
+CMS_vhtt_mmt_chargeFlip_8TeV shape
+CMS_vhtt_eet_chargeFlip_8TeV shape
+
 pdf_qqbar               lnN
 QCDscale_VH             lnN
 QCDscale_VV             lnN
