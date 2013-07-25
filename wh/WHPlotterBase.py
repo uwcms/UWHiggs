@@ -13,19 +13,24 @@ If [blind] is true, data in the p1p2p3 region will not be plotted.
 '''
 
 import rootpy.plotting.views as views
-from FinalStateAnalysis.PlotTools.Plotter import Plotter
-from FinalStateAnalysis.PlotTools.BlindView import BlindView
-from FinalStateAnalysis.PlotTools.PoissonView import PoissonView
-from FinalStateAnalysis.PlotTools.MedianView import MedianView
+from FinalStateAnalysis.PlotTools.Plotter        import Plotter
+from FinalStateAnalysis.PlotTools.BlindView      import BlindView
+from FinalStateAnalysis.PlotTools.PoissonView    import PoissonView
+from FinalStateAnalysis.PlotTools.MedianView     import MedianView
 from FinalStateAnalysis.PlotTools.ProjectionView import ProjectionView
-from FinalStateAnalysis.PlotTools.RebinView import RebinView
+from FinalStateAnalysis.PlotTools.FixedIntegralView import FixedIntegralView
+from FinalStateAnalysis.PlotTools.RebinView  import RebinView
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
+from FinalStateAnalysis.PlotTools.decorators import memo
+from FinalStateAnalysis.MetaData.datacommon  import br_w_leptons, br_z_leptons
 from optparse import OptionParser
 import os
 import ROOT
 import glob
 import math
 import logging
+from fnmatch import fnmatch
+from yellowhiggs import xs, br, xsbr
 
 parser = OptionParser(description=__doc__)
 parser.add_option('--dry-run', action='store_true', dest='dry_run', default = False,
@@ -223,39 +228,44 @@ class WHPlotterBase(Plotter):
                                             blinder)
         self.defaults = {} #allows to set some options and avoid repeating them each function call
         os.chdir( cwd )
+        #create a fake wiew summing up all HWW
+        self.views['VH_hww_sum'] = {
+            'unweighted_view' : views.SumView(
+                *[item['unweighted_view'] for name, item in self.views.iteritems() if fnmatch(name, 'VH_*_HWW*')]
+            )
+        }
 
     def set_subdir(self, folder):
         self.outputdir = '/'.join([self.base_out_dir, folder])
 
-    def apply_projection(self, dictionary, project, project_axis, rebin):
+    def apply_to_dict(self, dictionary, viewtype, *args, **kwargs): #project, project_axis, rebin):
         ret = {}
         for key, val in dictionary.iteritems():
             if isinstance(val, dict):
-                ret[key] = self.apply_projection(val, project, project_axis, rebin)
+                ret[key] = self.apply_to_dict(val, viewtype, *args, **kwargs) #project, project_axis, rebin)
             else:
-                ret[key] = self.rebin_view( ProjectionView(val, project_axis, project), rebin )
+                ret[key] = viewtype(val, *args, **kwargs) # self.rebin_view( ProjectionView(val, project_axis, project), rebin )
         return ret
 
-
-    def make_signal_views(self, rebin, unblinded=False, qcd_weight_fraction=0):
+    @memo
+    def make_signal_views(self, unblinded=False, qcd_weight_fraction=0):
         ''' Make signal views with FR background estimation '''
 
         wz_view_tautau = views.SubdirectoryView(
-            self.rebin_view(self.get_view('WZJetsTo3LNu*ZToTauTau*'), rebin),
+            self.get_view('WZJetsTo3LNu*ZToTauTau*'),
             'ss/p1p2p3/'
         )
         wz_view_3l = views.SubdirectoryView(
-            self.rebin_view(self.get_view('WZJetsTo3LNu_pythia'), rebin),
+            self.get_view('WZJetsTo3LNu_pythia'),
             'ss/p1p2p3/'
         )
         zz_view = views.SubdirectoryView(
-            self.rebin_view(self.get_view('ZZJetsTo4L*'), rebin),
+            self.get_view('ZZJetsTo4L*'),
             'ss/p1p2p3/'
         )
-        all_data_view = self.rebin_view(self.get_view('data'), rebin)
+        all_data_view = self.get_view('data')
         if unblinded:
-            all_data_view = self.rebin_view(
-                self.get_view('data', 'unblinded_view'), rebin)
+            all_data_view = self.get_view('data', 'unblinded_view')
 
         data_view = views.SubdirectoryView(all_data_view, 'ss/p1p2p3/')
 
@@ -359,19 +369,21 @@ class WHPlotterBase(Plotter):
         }
 
         # Add signal
+        data_total_lumi = self.views['data']['intlumi']
         for mass in range(110, 165, 5):
             vh_view = views.SubdirectoryView(
-                self.rebin_view(self.get_view('VH_*%i' % mass), rebin),
+                self.get_view('VH_*%i' % mass),
                 'ss/p1p2p3/'
             )
             output['vh%i' % mass] = vh_view
             if mass % 10 == 0 and mass < 150:
+                # Only have 10 GeV steps for WW
                 ww_view = views.SubdirectoryView(
-                    self.rebin_view(self.get_view('VH_%i_HWW*' % mass), rebin),
-                    'ss/p1p2p3/'
+                    self.get_view('VH_%i_HWW*' % mass),
+                'ss/p1p2p3/'
                 )
                 output['vh%i_hww' % mass] = ww_view
-                output['signal%i' % mass] = views.SumView(ww_view, vh_view) #views.SumView(vh_view)#
+                output['signal%i' % mass] = views.SumView(ww_view, vh_view)
 
         return output
 
@@ -406,23 +418,24 @@ class WHPlotterBase(Plotter):
         )
         return {'obs': data_view, 'qcd': qcd_view}
 
-    def make_obj3_fail_cr_views(self, rebin, qcd_correction=False,
+    @memo
+    def make_obj3_fail_cr_views(self, qcd_correction=False,
                                 qcd_weight_fraction=0):
         ''' Make views when obj3 fails, estimating the bkg in obj1 pass using
             f1p2f3 '''
         wz_view = views.SubdirectoryView(
-            self.rebin_view(self.get_view('WZJetsTo3LNu*ZToTauTau*'), rebin),
+            self.get_view('WZJetsTo3LNu*ZToTauTau*'),
             'ss/p1p2f3/'
         )
         wz_view_3l = views.SubdirectoryView(
-            self.rebin_view(self.get_view('WZJetsTo3LNu_pythia'), rebin),
+            self.get_view('WZJetsTo3LNu_pythia'),
             'ss/p1p2f3/'
         )
         zz_view = views.SubdirectoryView(
-            self.rebin_view(self.get_view('ZZJetsTo4L*'), rebin),
+            self.get_view('ZZJetsTo4L*'),
             'ss/p1p2f3/'
         )
-        all_data_view = self.rebin_view(self.get_view('data'), rebin)
+        all_data_view = self.get_view('data')
         data_view = views.SubdirectoryView(all_data_view, 'ss/p1p2f3/')
 
         def make_fakes(qcd_fraction):
@@ -471,19 +484,6 @@ class WHPlotterBase(Plotter):
         fakes_view_05 = make_fakes(0.5)[-1]
         fakes_view_0  = make_fakes(0)[-1]
         fakes_view_1  = make_fakes(1)[-1]
-
-        if False and qcd_correction:  # broken
-            obj1_view = QCDCorrectionView(all_data_view,
-                                          'ss/f1p2f3',
-                                          'ss/f1f2f3/q2',
-                                          'ss/f1p2f3/w1',
-                                          'ss/f1p2f3/q1')
-            obj2_view = QCDCorrectionView(all_data_view,
-                                          'ss/p1f2f3',
-                                          'ss/f1f2f3/q1',
-                                          'ss/p1f2f3/w2',
-                                          'ss/p1f2f3/q2')
-            obj12_view = views.SubdirectoryView(all_data_view, 'ss/f1f2f3/w12')
 
         style_dict_no_name = remove_name_entry(data_styles['TT*'])
         charge_fakes = views.TitleView( 
@@ -587,7 +587,7 @@ class WHPlotterBase(Plotter):
         # Add signal
         for mass in [110, 120, 130, 140]:
             vh_view = views.SubdirectoryView(
-                self.rebin_view(self.get_view('VH_*%i' % mass), rebin),
+                self.rebin_view(self.get_view('VH_*%i' % mass, 'unweighted_view'), rebin),
                 'ss/p1p2p3/'
             )
             output['vh%i' % mass] = vh_view
@@ -599,11 +599,12 @@ class WHPlotterBase(Plotter):
                      project=None, project_axis=None):
         ''' Write final shapes for [variable] into a TDirectory [outputdir] '''
         show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
-        sig_view = self.make_signal_views(rebin, unblinded=(not self.blind),
+        sig_view = self.make_signal_views(unblinded=(not self.blind),
                                           qcd_weight_fraction=qcd_fraction)
         
         if project and project_axis:
-            sig_view = self.apply_projection( sig_view, project, project_axis, rebin )
+            sig_view = self.apply_to_dict( sig_view, ProjectionView, project_axis, project )
+        sig_view = self.apply_to_dict( sig_view, RebinView, rebin )
 
         outdir.cd()
         wz = views.SumView(sig_view['wz'], sig_view['wz_3l']).Get(variable)
@@ -644,12 +645,12 @@ class WHPlotterBase(Plotter):
             charge_fakes_sys_up.Write()
             charge_fakes_sys_down.Write()
         
-    def write_cut_and_count(self, variable, outdir, unblinded=False):
+    def write_cut_and_count(self, variable, outdir):
         ''' Version of write_shapes(...) with only one bin.
 
         Equivalent to a cut & count analysis.
         '''
-        sig_view = self.make_signal_views(1, unblinded)
+        sig_view = self.make_signal_views( unblinded=(not self.blind))
         nbins = sig_view['wz'].Get(variable).GetNbinsX()
         return self.write_shapes(variable, nbins, outdir, unblinded)
 
@@ -660,10 +661,11 @@ class WHPlotterBase(Plotter):
                    project_axis=None, **kwargs):
         ''' Plot the final output - with bkg. estimation '''        
         show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
-        sig_view = self.make_signal_views(
-            rebin, unblinded=(not self.blind), qcd_weight_fraction=qcd_weight_fraction)
+        sig_view = self.make_signal_views(unblinded=(not self.blind), 
+                                          qcd_weight_fraction=qcd_weight_fraction)
         if project and project_axis:
-            sig_view = self.apply_projection(sig_view, project, project_axis, rebin)
+            sig_view = self.apply_to_dict( sig_view, ProjectionView, project_axis, project ) 
+        sig_view = self.apply_to_dict( sig_view, RebinView, rebin ) #Rebin
 
         vh_10x = views.TitleView(
             views.StyleView(
@@ -772,9 +774,10 @@ class WHPlotterBase(Plotter):
         ''' Plot the final F3 control region - with bkg. estimation '''
 
         sig_view = self.make_obj3_fail_cr_views(
-            rebin, qcd_correction, qcd_weight_fraction)
+            qcd_correction, qcd_weight_fraction)
         if project and project_axis:
-            sig_view = self.apply_projection(sig_view, project, project_axis, rebin)
+            sig_view = self.apply_to_dict( sig_view, ProjectionView, project_axis, project ) 
+        sig_view = self.apply_to_dict( sig_view, RebinView, rebin ) #Rebin
 
         charge_fakes_view = MedianView(highv=sig_view['charge_fakes']['sys_up'], centv=sig_view['charge_fakes']['central'])
 
@@ -849,7 +852,9 @@ class WHPlotterBase(Plotter):
 
     def plot_final_f3_split(self, variable, rebin=1, xaxis='', maxy=None):
         ''' Plot the final F3 control region - with bkg. estimation '''
-        sig_view = self.make_obj3_fail_cr_views(rebin)
+        sig_view = self.make_obj3_fail_cr_views(
+            False, 0.5)
+        sig_view = self.apply_to_dict( sig_view, RebinView, rebin ) #Rebin
 
         stack = views.StackView(
             sig_view['zz'],
