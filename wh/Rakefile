@@ -999,6 +999,15 @@ task :f3_postfit_shapes => Array[:f3_postfit_shapes_mmt,
                                  :f3_postfit_shapes_emt,
                                  :f3_postfit_shapes_eet]
 
+
+#categories
+$xlabels_map = Hash[
+   'eet' => '"M_{e_{2}#tau} (GeV)"',
+   'emt' => '"M_{l_{2}#tau} (GeV)"',
+   'mmt' => '"M_{#mu_{2}#tau} (GeV)"',
+]
+
+
 def make_f3_postfit_plots_task(channel)
   resultdir  = "results/#{$jobid}/plots/#{channel}/f3/postfit"
   shape_file = "#{resultdir}/#{channel}_f3_postfit_shapes.root"
@@ -1006,10 +1015,10 @@ def make_f3_postfit_plots_task(channel)
   file plot_timestamp => shape_file do |t|
     sh "mkdir -p `dirname #{t.name}`"
     $categories_map[channel].each do |category|
-      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.png"
-      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.pdf"
+      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.png -x #{$xlabels_map[channel]}"
+      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.pdf -x #{$xlabels_map[channel]}"
     end
-    sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/Categories_summed.png"
+    sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.png -x #{$xlabels_map[channel]}"
     sh "touch #{t.name}"
   end
   return plot_timestamp
