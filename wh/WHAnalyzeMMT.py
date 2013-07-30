@@ -89,6 +89,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
 
             #Pt
             self.book(folder, prefix+"m1Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"tPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
             self.book(folder, prefix+"m2Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
             self.book(folder, prefix+"m1JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
             self.book(folder, prefix+"m2JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
@@ -96,6 +97,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
             #eta
             self.book(folder, prefix+"m1AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
             self.book(folder, prefix+"m2AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"tAbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
 
             #DR
             self.book(folder, prefix+"m1_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
