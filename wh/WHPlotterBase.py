@@ -517,7 +517,7 @@ class WHPlotterBase(Plotter):
             'Charge mis-id')
 
         #charge_fakes = MedianView(highv=charge_fakes_sysup, centv=charge_fakes)
-                
+                            
         output = {
             'wz': wz_view,
             'wz_3l': wz_view_3l,
@@ -537,6 +537,20 @@ class WHPlotterBase(Plotter):
                 'sys_up'  : charge_fakes_sysup,
                 }
         }
+
+        #Add signal @ 120, just mo make bkg fitting easier
+        mass = 120
+        vh_view = views.SubdirectoryView(
+            self.get_view('VH_*%i' % mass),
+            'ss/p1p2f3/'
+        )
+        output['vh%i' % mass] = vh_view
+        ww_view = views.SubdirectoryView(
+            self.get_view('VH_%i_HWW*' % mass),
+            'ss/p1p2f3/'
+        )
+        output['vh%i_hww' % mass] = ww_view
+        output['signal%i' % mass] = views.SumView(ww_view, vh_view)
 
         return output
 
@@ -654,9 +668,58 @@ class WHPlotterBase(Plotter):
         nbins = sig_view['wz'].Get(variable).GetNbinsX()
         return self.write_shapes(variable, nbins, outdir, unblinded)
 
+    def write_f3_shapes(self, variable, rebin, outdir,
+                     qcd_fraction=0, show_charge_fakes=False,
+                     project=None, project_axis=None):
+        ''' Write final shapes for [variable] into a TDirectory [outputdir] '''
+        show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
+        sig_view = self.make_obj3_fail_cr_views(False, qcd_weight_fraction=qcd_fraction)
+        
+        if project and project_axis:
+            sig_view = self.apply_to_dict( sig_view, ProjectionView, project_axis, project )
+        sig_view = self.apply_to_dict( sig_view, RebinView, rebin )
+
+        outdir.cd()
+        wz = views.SumView(sig_view['wz'], sig_view['wz_3l']).Get(variable)
+        zz = sig_view['zz'].Get(variable)
+        obs = sig_view['data'].Get(variable)
+        fakes = sig_view['fakes'].Get(variable)
+
+        wz.SetName('wz')
+        zz.SetName('zz')
+        obs.SetName('data_obs')
+        fakes.SetName('fakes')
+        
+        wz.Write()
+        zz.Write()
+        obs.Write()
+        fakes.Write()
+
+        mass = 120
+        vh = sig_view['vh%i' % mass].Get(variable)
+        vh.SetName('WH%i' % mass)
+        vh.Write()
+        # Only have 10 GeV steps for WW
+        ww = sig_view['vh%i_hww' % mass].Get(variable)
+        ww.SetName('WH_hww%i' % mass)
+        ww.Write()
+
+        #charge_fakes_CMS_vhtt_emt_chargeFlip_8TeVUpx
+        if show_charge_fakes:
+            logging.info('adding charge fakes shape errors')
+            charge_fakes          = sig_view['charge_fakes']['central'].Get(variable)
+            charge_fakes_sys_up   = sig_view['charge_fakes']['sys_up' ].Get(variable) #shift='up') 
+            charge_fakes_sys_down = charge_fakes+charge_fakes - charge_fakes_sys_up
+            charge_fakes.SetName('charge_fakes')
+            charge_fakes_sys_up.SetName('charge_fakes_CMS_vhtt_%s_chargeFlip_%sTeVUp' % (self.channel.lower(), self.sqrts))
+            charge_fakes_sys_down.SetName('charge_fakes_CMS_vhtt_%s_chargeFlip_%sTeVDown' % (self.channel.lower(), self.sqrts))
+            charge_fakes.Write()
+            charge_fakes_sys_up.Write()
+            charge_fakes_sys_down.Write()
+
     def plot_final(self, variable, rebin=1, xaxis='', maxy=24,
                    show_error=False, qcd_correction=False, stack_higgs=True, 
-                   qcd_weight_fraction=0, x_range=None, show_charge_fakes=False,
+                   qcd_weight_fraction=0.5, x_range=None, show_charge_fakes=False,
                    leftside_legend=False, higgs_xsec_multiplier=5, project=None, 
                    project_axis=None, **kwargs):
         ''' Plot the final output - with bkg. estimation '''        
