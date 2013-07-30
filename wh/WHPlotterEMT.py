@@ -241,22 +241,59 @@ if __name__ == "__main__":
         ###########################################################################
         plotter.set_subdir('f3')
 
-        plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[0, 130], project_axis='X')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-subMass-LTLow')
+        categories = {
+            'LTCut' : [80, 650],
+            'LTLow' : [0, 130],
+            'LTHigh': [130, 650],
+            }
+                
+        for label, proj_range in categories.iteritems():
+            plotter.set_subdir('f3/%s' % label)
+            plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-subMass-%s' % label)
 
-        plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[130, 650], project_axis='X')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-subMass-LTHigh')
+            plotter.plot_final_f3('subMass#LT', 200, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-subMass-%s-counting' % label, dotc=True, dotroot=True)
 
-        plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[80, 650], project_axis='X')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-subMass-LTCut')
+            #pt
+            plotter.plot_final_f3("mPt#LT"    , 10, xaxis='p_{T#mu} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-mPt-%s' % label)
 
-        plotter.plot_final_f3('subMass#LT', 20, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=[80, 650], project_axis='X')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-subMass-LTCut-flatbin')
+            plotter.plot_final_f3("ePt#LT"    , 10, xaxis='p_{Te} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-ePt-%s' % label)
 
+            plotter.plot_final_f3("mJetPt#LT" , 10, xaxis='p_{T Jet#mu} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-mJetPt-%s' % label)
+
+            plotter.plot_final_f3("eJetPt#LT" , 10, xaxis='p_{T Jet e} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-eJetPt-%s' % label)
+
+            #eta
+            plotter.plot_final_f3("mAbsEta#LT", 10, xaxis='|#eta_{#mu}|', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-mAbsEta-%s' % label)
+
+            plotter.plot_final_f3("eAbsEta#LT", 10, xaxis='|#eta_{e}|'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-eAbsEta-%s' % label)
+
+            #DR
+            plotter.plot_final_f3("m_t_DR#LT", 10, xaxis='#DeltaR_{#mu#tau}', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-m_t_DR-%s' % label)
+
+            plotter.plot_final_f3("e_t_DR#LT", 10, xaxis='#DeltaR_{e#tau}'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-e_t_DR-%s' % label)
+
+
+        plotter.set_subdir('f3')
         plotter.plot_final_f3('LT', 5, xaxis='LT (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-LT')
@@ -267,7 +304,7 @@ if __name__ == "__main__":
 
         plotter.plot_final_f3('subMass', 200, xaxis='m_{l_{2}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-subMass-counting-like')
+        plotter.save('final-f3-subMass-counting-like', dotc=True, dotroot=True)
 
         plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{2}#tau_{#mu}} (GeV)', qcd_weight_fraction=1, show_error=True)
         plotter.add_cms_blurb(sqrts)
@@ -398,3 +435,23 @@ if __name__ == "__main__":
         logging.warning('shape file %s created' % shape_file.GetName()) 
         shape_file.Close()
 
+
+        shape_file = ROOT.TFile(
+            os.path.join(plotter.outputdir, '%semt_f3_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+        
+        shape_dir = shape_file.mkdir('emtCatLow')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[0., 130], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatLow_w')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[0., 130], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatLow_q')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[0., 130], project_axis='X')
+        
+        shape_dir = shape_file.mkdir('emtCatHigh')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[130, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatHigh_w')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[130, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatHigh_q')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[130, 650], project_axis='X')
+        
+        logging.warning('shape file %s created' % shape_file.GetName()) 
+        shape_file.Close()
