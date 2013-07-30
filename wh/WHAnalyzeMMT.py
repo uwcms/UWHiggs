@@ -87,6 +87,22 @@ class WHAnalyzeMMT(WHAnalyzerBase):
             #self.book(folder, prefix+'faking_prob'     , "", 1100, 0., 1.1)
             #self.book(folder, prefix+'log_prob'        , "", 1000, -10, 1)
 
+            #Pt
+            self.book(folder, prefix+"m1Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"tPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"m2Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"m1JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"m2JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+
+            #eta
+            self.book(folder, prefix+"m1AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"m2AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"tAbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
+
+            #DR
+            self.book(folder, prefix+"m1_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"m2_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
+
 
             self.book(folder, "m2RelPFIsoDB", "m2Iso", 100, 0, 0.3)
             self.book(folder, "m1_t_Mass", "leadingMass", 200, 0, 200)
