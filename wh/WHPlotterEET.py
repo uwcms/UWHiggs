@@ -221,6 +221,7 @@ if __name__ == "__main__":
             }
                 
         for label, proj_range in categories.iteritems():
+            factor = 1.5 if label == 'LTHigh' else 1
             plotter.set_subdir('f3/%s' % label)
             plotter.plot_final_f3('e2_t_Mass#LT', rebin_slim, xaxis='m_{e_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
@@ -231,19 +232,19 @@ if __name__ == "__main__":
             plotter.save('final-f3-subMass-%s-counting' % label, dotc=True, dotroot=True)
 
             #pt
-            plotter.plot_final_f3("e1Pt#LT"    , 10, xaxis='p_{Te_{1}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final_f3("e1Pt#LT"    , int(factor*10), xaxis='p_{Te_{1}} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-e1Pt-%s' % label)
 
-            plotter.plot_final_f3("e2Pt#LT"    , 10, xaxis='p_{Te_{2}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final_f3("e2Pt#LT"    , int(factor*10), xaxis='p_{Te_{2}} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-e2Pt-%s' % label)
 
-            plotter.plot_final_f3("e1JetPt#LT" , 10, xaxis='p_{T Jet e_{1}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final_f3("e1JetPt#LT" , int(factor*10), xaxis='p_{T Jet e_{1}} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-e1JetPt-%s' % label)
 
-            plotter.plot_final_f3("e2JetPt#LT" , 10, xaxis='p_{T Jet e_{2}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final_f3("e2JetPt#LT" , int(factor*10), xaxis='p_{T Jet e_{2}} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-e2JetPt-%s' % label)
 
