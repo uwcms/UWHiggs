@@ -61,12 +61,12 @@ end
 
 # Map which samples need to be analyzed by which analyzer
 fr_analyzer_sample_map = Hash[
-  "EFakeRateEEET.py"    => samples['data_ee'] + samples["diboson"] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"], # 
-  "EFakeRateMMET.py"    => samples['data_mm'] + samples["diboson"] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"], # 
-  "MUFakeRateEEMT.py"   => samples['data_ee'] + samples["diboson"] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"], # 
-  "MUFakeRateMMMT.py"   => samples['data_mm'] + samples["diboson"] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"], # 
-  "TauFakeRatesEETT.py" => samples["diboson"] + samples['data_ee'] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"],
-  "TauFakeRatesMMTT.py" => samples["diboson"] + samples['data_mm'] + samples["zjets"] + samples["wjets"] + Array["TTplusJets_madgraph"],
+  "EFakeRateEEET.py"    => samples['data_ee'] + samples["diboson"] + samples["zjets"] + samples["wjets"],# + Array["TTplusJets_madgraph"], # 
+  "EFakeRateMMET.py"    => samples['data_mm'] + samples["diboson"] + samples["zjets"] + samples["wjets"],# + Array["TTplusJets_madgraph"], # 
+  "MUFakeRateEEMT.py"   => samples['data_ee'] + samples["diboson"] + samples["zjets"] + samples["wjets"],# + Array["TTplusJets_madgraph"], # 
+  "MUFakeRateMMMT.py"   => samples['data_mm'] + samples["diboson"] + samples["zjets"] + samples["wjets"],# + Array["TTplusJets_madgraph"], # 
+  "TauFakeRatesEETT.py" => samples["diboson"] + samples['data_ee'] + samples["zjets"] + samples["wjets"],# + Array["TTplusJets_madgraph"],
+  "TauFakeRatesMMTT.py" => samples["diboson"] + samples['data_mm'] + samples["zjets"] + samples["wjets"],# + Array["TTplusJets_madgraph"],
  ]
 
 fr_analyzer_dependencies = Hash[
@@ -183,7 +183,7 @@ fr_fits = Hash[
     "analyzer" => "MUFakeRate??MT",
     "function" => rise,
     "variables" => rise_vars,
-    #"corr"      => "--noCorrection true",
+  ##  "corr"      => "--noCorrection true",
     "rebin" => 10,
     "range" => "10 60",
   ],

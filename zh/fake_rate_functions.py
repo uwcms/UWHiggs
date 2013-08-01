@@ -95,33 +95,33 @@ e_loose_jetpt_fr =build_roofunctor( #lambda x: 0.2
 ##     'efficiency'
 ## )
 
-tau_medium_jetpt_fr = build_roofunctor(
-    frfit_dir + '/t_ztt_pt10_MediumIso_tauJetPt.root',
-    'fit_efficiency',
-    'efficiency'
-)
-tau_tight_jetpt_fr = build_roofunctor(
-    frfit_dir + '/t_ztt_pt10_TightIso_tauJetPt.root',
-    'fit_efficiency',
-    'efficiency'
-)
-tau_mm_medium_jetpt_fr = build_roofunctor(
-    frfit_dir + '/t_ztt_pt10-antiElMed-antiMuMed_MediumIso_tauJetPt.root',
-    'fit_efficiency',
-    'efficiency'
-)
-tau_tl_medium_jetpt_fr = build_roofunctor(
-    frfit_dir + '/t_ztt_pt10-antiElTight-antiMuLoose_MediumIso_tauJetPt.root',
-    'fit_efficiency',
-    'efficiency'
-)
-tau_lt_medium_jetpt_fr = build_roofunctor(
-    frfit_dir + '/t_ztt_pt10-antiElLoose-antiMuTight_MediumIso_tauJetPt.root',
-    'fit_efficiency',
-    'efficiency'
-)
-tau_mm_tight_jetpt_fr = build_roofunctor(
-    frfit_dir + '/t_ztt_pt10-antiElMed-antiMuMed_TightIso_tauJetPt.root',
+#tau_medium_jetpt_fr = build_roofunctor(
+#    frfit_dir + '/t_ztt_pt10_MediumIso_tauJetPt.root',
+#    'fit_efficiency',
+#    'efficiency'
+#)
+#tau_tight_jetpt_fr = build_roofunctor(
+#    frfit_dir + '/t_ztt_pt10_TightIso_tauJetPt.root',
+#    'fit_efficiency',
+#    'efficiency'
+#)
+#tau_mvatl_medium_jetpt_fr = build_roofunctor(
+#    frfit_dir + '/t_ztt_pt10-antiElMVATight-antiMuLoose_MediumIso_tauJetPt.root',
+#    'fit_efficiency',
+#    'efficiency'
+#)
+#tau_mm_tight_jetpt_fr = build_roofunctor(
+#    frfit_dir + '/t_ztt_pt10-antiElMed-antiMuMed_TightIso_tauJetPt.root',
+#    'fit_efficiency',
+#    'efficiency'
+#)
+#tau_lt_medium_jetpt_fr = build_roofunctor(
+#    frfit_dir + '/t_ztt_pt10-antiElLoose-antiMuTight_MediumIso_tauJetPt.root',
+#    'fit_efficiency',
+#    'efficiency'
+#)
+tau_jetpt_fr = build_roofunctor(
+    frfit_dir + '/t_ztt_pt10_LooseIso3Hits_tauJetPt.root',
     'fit_efficiency',
     'efficiency'
 )

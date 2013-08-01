@@ -1,15 +1,18 @@
 import ROOT
 import os
 
-jobid = "2013-06-29-8TeV-v1-ZH_light"
+jobid = "2013-07-17-8TeV-v1-ZH_light"
 
 data_lumi = 19500.0
-wz_lumi = 1690320.0
+#wz_lumi = 1690320.0
+wz_lumi = 760148.520414
 
 
 for channel, label in [("MMTT", "t1_t2_Mass"), ("EETT", "t1_t2_Mass"), ("MMMT", "m3_t_Mass"),
-	("EEMT", "m_t_Mass"), ("MMET", "e_t_Mass"), ("EEET", "e3_t_Mass"), 
-	("MMEM", "e_m3_Mass"),("EEEM", "e3_m_Mass")]:
+	("EEMT", "m_t_Mass"), ("MMET", "e_t_Mass"), ("EEET", "e3_t_Mass")]:
+
+
+#for channel, label in [("MMEM", "e_m3_Mass"),("EEEM", "e3_m_Mass")]:
 
 #for channel, label in [("MMTT", "t1_t2_Mass"), ("EETT", "t1_t2_Mass"), ("MMMT", "m3_t_Mass"),
 #	("EEMT", "m_t_Mass"), ("EEET", "e3_t_Mass"), 
@@ -45,7 +48,7 @@ for channel, label in [("MMTT", "t1_t2_Mass"), ("EETT", "t1_t2_Mass"), ("MMMT", 
     fr_m1.Add(data_0, -1)
 
     # 2 + WZ-4R
-    fr_m2 = ROOT.TH1F(data_2)
+    fr_m2 = ROOT.TH1F(data_2) # should be data_2
     fr_m2.Add(wz_4R)
 
     # rebin histograms
@@ -59,15 +62,17 @@ for channel, label in [("MMTT", "t1_t2_Mass"), ("EETT", "t1_t2_Mass"), ("MMMT", 
     fr_m2.SetMarkerColor(38)
     fr_m2.SetLineColor(38)
 
-    fr_m2.GetXaxis().SetTitle(" \\tau\\tau visible mass (GeV), %s" % channel)
+    fr_m1.GetXaxis().SetTitle(" \\tau\\tau SVMass (GeV), %s" % channel)
 
-    fr_m2.Draw()
-    data_ss.Draw("same")
+    #fr_m2.Draw()
+    #data_ss.Draw("same")
     #fr_m2.Draw("same")
-    fr_m1.Draw("same")
+    fr_m1.Draw()
+    fr_m2.Draw("same")
+    #data_ss.Draw("same")
 
     l5 = ROOT.TLegend(0.7,0.80,0.85,0.65,"")
-    l5.AddEntry(data_ss,"data_ss")
+    #l5.AddEntry(data_ss,"data_ss")
     l5.AddEntry(fr_m1, "2 + 1 - 0")
     l5.AddEntry(fr_m2, "2 + WZ-4R")
     l5.SetBorderSize(0);
