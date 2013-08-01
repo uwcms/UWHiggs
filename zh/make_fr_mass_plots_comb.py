@@ -17,6 +17,7 @@ data_0 = ROOT.TH1F("data_0", "data_0", 200, 0, 200)
 data_1 = ROOT.TH1F("data_1", "data_1", 200, 0, 200)
 data_2 = ROOT.TH1F("data_2", "data_2", 200, 0, 200)
 wz_4R = ROOT.TH1F("wz", "wz", 200, 0, 200)
+data_2s = ROOT.TH1F("wz", "wz", 200, 0, 200) # just because in xxEM channels we want e to fail, which is technically the third leg
 
 for channel, label, realLeg in [("MMTT", "t1_t2_SVfitMass",4), ("MMMT", "m3_t_SVfitMass",4),
 	("EEMT", "m_t_SVfitMass",4), ("MMET", "e_t_SVfitMass",4), ("EEET", "e3_t_SVfitMass",4),
@@ -34,6 +35,9 @@ for channel, label, realLeg in [("MMTT", "t1_t2_SVfitMass",4), ("MMMT", "m3_t_SV
 
     data_1_m = data_file.Get("os/Leg3Failed/leg3_weight/%s" % label)
     data_1.Add(data_1_m)
+
+    data_2s_m = data_file.Get("os/Leg%dFailed/leg%d_weight/%s" % (realLeg, realLeg, label))
+    data_2s.Add(data_2s_m)
 
     data_2_m = data_file.Get("os/Leg4Failed/leg4_weight/%s" % label)
     data_2.Add(data_2_m)
@@ -61,7 +65,7 @@ fr_m1.Add(data_2)
 fr_m1.Add(data_0, -1)
 
 # 2 + WZ-4R
-fr_m2 = ROOT.TH1F(data_2)
+fr_m2 = ROOT.TH1F(data_2s) # used to be just data_2
 fr_m2.Add(wz_4R)
 
 data_ss.Rebin(20)
