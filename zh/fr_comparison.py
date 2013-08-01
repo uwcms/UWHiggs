@@ -5,10 +5,10 @@ import math
  
 def print_table(channel, weighted=True):
 # print a tex table for a given channel
-    data = ROOT.TFile("results/2013-06-29-8TeV-v1-ZH_light/ZHAnalyze%s/data.root" % channel, "READ")
-    zz = ROOT.TFile("results/2013-06-29-8TeV-v1-ZH_light/ZHAnalyze%s/ZZJetsTo4L_pythia.root" % channel, "READ")
-    zjets = ROOT.TFile("results/2013-06-29-8TeV-v1-ZH_light/ZHAnalyze%s/Zjets_M50.root" % channel, "READ")
-    wz = ROOT.TFile("results/2013-06-29-8TeV-v1-ZH_light/ZHAnalyze%s/WZJetsTo3LNu_pythia.root" % channel, "READ")
+    data = ROOT.TFile("results/2013-07-17-8TeV-v1-ZH_light/ZHAnalyze%s/data.root" % channel, "READ")
+    zz = ROOT.TFile("results/2013-07-17-8TeV-v1-ZH_light/ZHAnalyze%s/ZZJetsTo4L_pythia.root" % channel, "READ")
+    zjets = ROOT.TFile("results/2013-07-17-8TeV-v1-ZH_light/ZHAnalyze%s/Zjets_M50.root" % channel, "READ")
+    wz = ROOT.TFile("results/2013-07-17-8TeV-v1-ZH_light/ZHAnalyze%s/WZJetsTo3LNu_pythia.root" % channel, "READ")
     data_lumi = 19.2
     zz_lumi = 64.332
     zjets_lumi = 25866.364

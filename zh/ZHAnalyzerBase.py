@@ -65,7 +65,7 @@ class ZHAnalyzerBase(MegaBase):
 
     #@classmethod #staticmethod
     def leg4IsReal(self,row):
-        plabel = self.H_decay_products()[1] # label of fourth leg
+        plabel = self.H_decay_products()[1] # label of fourth leg 
         if 't' in plabel: # fourth leg is a tau
             return bool(getattr(row, '%sGenDecayMode' % plabel) >= 0)
         if 'e' in plabel: # electron
@@ -73,6 +73,16 @@ class ZHAnalyzerBase(MegaBase):
         if 'm' in plabel: # muon 
             return bool(abs(getattr(row, '%sGenPdgId' % plabel)) == 13)
         return False         
+
+    def leg3IsReal(self,row):
+        plabel = self.H_decay_products()[0] # label of third leg 
+        if 't' in plabel: # third leg is a tau
+            return bool(getattr(row, '%sGenDecayMode' % plabel) >= 0)
+        if 'e' in plabel: # electron
+            return bool(abs(getattr(row, '%sGenPdgId' % plabel)) == 11)
+        if 'm' in plabel: # muon 
+            return bool(abs(getattr(row, '%sGenPdgId' % plabel)) == 13)
+        return False
 
     def build_zh_folder_structure(self):
         # Build list of folders, and a mapping of
@@ -86,18 +96,20 @@ class ZHAnalyzerBase(MegaBase):
         for sign in ['ss', 'os']:
              #for failing_objs in [(), (1,2), (1,), (2,), (3,), (4,), (3,4), (1,2,3,4)]:
              weightsAvail = [None, None, None, self.leg3_weight, self.leg4_weight]
-             for failing_objs in [(), (3,), (4,), (3,4), (0,)]: # 0 special case for real4 check
+             for failing_objs in [(), (3,), (4,), (3,4), (0,), (10,)]: # 0 special case for real4 check, 10 for real3 check
              #for failing_objs in [(), (3,), (4,), (3,4)]:
                 region_label = '_'.join(['Leg%iFailed' % obj for obj in failing_objs]) if len(failing_objs) else 'All_Passed'
                 if 0 in failing_objs:
                     region_label = 'All_Passed_Leg4Real'
+                if 10 in failing_objs:
+                    region_label = 'All_Passed_Leg3Real'
                 flag_map[(sign,region_label)] = {
                     'selection' : {
                         self.sign_cut  : (sign == 'os'), 
                         self.leg3_id : (not (3 in failing_objs) ),
                         self.leg4_id : (not (4 in failing_objs) ),
                         },
-                    'weights'   : [weightsAvail[i] for i in failing_objs if not 0 in failing_objs] 
+                    'weights'   : [weightsAvail[i] for i in failing_objs if not (0 in failing_objs or 10 in failing_objs)] 
                     }
              # look for events with leg3 fake to estimate WZ background not accounted by w4*PPPF 
              #label = 'leg3Fake_All_Passed'
@@ -235,13 +247,14 @@ class ZHAnalyzerBase(MegaBase):
                 if all( [ (row_id_map[f] == res) for f, res in selection.iteritems() if res is not None] ): #all cuts match the one of the region, None means the cut is not needed
                                                                                                             #if counter < 200: print "region found!: ",folder                   
                     if folder[1] == 'All_Passed_Leg4Real' and not self.leg4IsReal(row): continue
+                    if folder[1] == 'All_Passed_Leg3Real' and not self.leg3IsReal(row): continue
 
                     # add fully passed events to sync file
                     if folder[1] == 'All_Passed':
-                        hmass = round(getattr(row, "%s_%s_Mass" % self.H_decay_products()), 1) # should switch to SVfitMas when ready
+                        hmass = round(getattr(row, "%s_%s_SVfitMass" % self.H_decay_products()), 1) # should switch to SVfitMas when ready
                         zmass = round(getattr(row, "%s_%s_Mass" % self.Z_decay_products()), 1)
                         sync_info = str(self.name) + ' ' + str(row.run) + ' ' + str(row.lumi) + ' ' + str(row.evt) + ' '+ str(zmass) + ' ' + str(hmass) + '\n'
-                        #sync_file.write(sync_info)
+                        sync_file.write(sync_info)
                      
                     fill_histos(histos, folder, row, event_weight)
                     wToApply = [ (w, w(row) )  for w in region_info['weights'] ]
@@ -297,7 +310,7 @@ class ZHAnalyzerBase(MegaBase):
 
     def book_H_histos(self, folder):
         self.book_resonance_histos(folder, self.H_decay_products(), 'H')
-        #self.book(folder, "%s_%s_SVfitMass"   % self.H_decay_products(), "H candidate SVfit Mass", 200, 0, 200)
+        self.book(folder, "%s_%s_SVfitMass"   % self.H_decay_products(), "H candidate SVfit Mass", 200, 0, 200)
             
     def fill_histos(self, histos, folder, row, weight):
         '''fills histograms'''
