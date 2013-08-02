@@ -47,7 +47,7 @@ class FakeRatesMM(MegaBase):
         self.pucorrector = mcCorrectors.make_puCorrector('doublemu')
 
     def begin(self):
-        for region in ['wjets', 'qcd', 'all']:
+        for region in ['wjets', 'qcd']:#, 'all']:
             for denom in ['pt10', 'pt20']: #, 'pt10b', 'pt10t', 'pt10f']:
                 denom_key = (region, denom)
                 denom_histos = {}
@@ -57,7 +57,7 @@ class FakeRatesMM(MegaBase):
                 denom_histos['muonInfo'] = self.book(
                     os.path.join(region, denom),
                     'muonInfo', "muonInfo", 
-                    'muonPt:muonJetPt:weight:'+':'.join(self.lepIds), 
+                    'muonPt:muonJetPt:muonJetCSVBtag:muonPVDXY:weight:'+':'.join(self.lepIds), 
                     type=ROOT.TNtuple)
                 
                 for numerator in self.lepIds:
@@ -87,20 +87,15 @@ class FakeRatesMM(MegaBase):
                     book_histo('muonPtRatio', 'Muon Pt', 100, 0., 1.)
                     book_histo('muonPtDiff', 'Muon Pt', 200, 0., 200.)
 
-                    #book_histo('metSignificance', 'MET sig.', 100, 0, 10)
                     book_histo('m1MtToMET', 'Muon 1 MT', 100, 0, 200)
+                    book_histo('m2MtToMET', 'Muon 2 MT', 100, 0, 200)
                     book_histo('m1m2Mass', 'DiMuon Mass', 100, 0, 200)
+                    book_histo("m1JetBtag", "Muon 2 Pt", 100, -10, 3.3)
+                    book_histo("m2JetBtag", "Muon 2 Pt", 100, -10, 3.3)
 
                     book_histo('m2JetptD', "", 200, 0, 1)
                     book_histo('m2Jetmult', "", 50, 0, 50)
 
-                    book_histo('muonJetVsLeptonPt', 'Muon Pt; jet PT; Mu PT', 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
-                    book_histo('muonJetVsEta', 'Muon Pt', 200, 0, 200, 100, -2.5, 2.5, type=ROOT.TH2F)
-                    book_histo('m2Jetmultvsm2JetptD', "",200, 0, 1,50, 0, 50, type=ROOT.TH2F)
-                    book_histo('m2Jetmultvsm2JetPt', '', 200, 0, 200, 200, 0, 200,type=ROOT.TH2F)
-                    book_histo('m2JetptDvsm2JetPt', '' ,  200, 0, 200, 200, 0, 1,type=ROOT.TH2F)
-                    book_histo('muonPtRatio_vs_muonJetPt', 'Muon Pt', 100, 0., 1., 200, 0., 200, type=ROOT.TH2F)
-                    book_histo('muonPtDiff_vs_muonJetPt', 'Muon Pt', 200, 0., 200., 200, 0., 200, type=ROOT.TH2F)
 
     def process(self):
 
@@ -115,6 +110,7 @@ class FakeRatesMM(MegaBase):
 
             if not row.m1_m2_SS: return False
             if row.m2Pt > row.m1Pt: return False
+            if row.m1_m2_Mass < 20: return False
             if not row.m1Pt > 20: return False
             if not row.m1PFIDTight: return False
             if not selections.muSelection(row, 'm1'):  return False
@@ -122,13 +118,6 @@ class FakeRatesMM(MegaBase):
             if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
             if not (row.jetVeto40_DR05 >= 1): return False
             return True
-            #if not row.m2Pt > 10: return False
-            #if not row.m1AbsEta < 2.4: return False
-            #if not row.m2AbsEta < 2.4: return False
-            #if not row.m2JetBtag < 3.3: return False
-            #if not row.m2PixHits: return False
-            #if not abs(row.m1DZ) < 0.2: return False
-            #if not abs(row.m2DZ) < 0.2: return False
 
         def fill(the_histos, row, fillNtuple=False):
             # Get PU weight - fix me
@@ -142,25 +131,21 @@ class FakeRatesMM(MegaBase):
             the_histos['muonAbsEta'].Fill(row.m2AbsEta, weight)
             the_histos['muonPtRatio'].Fill(row.m2Pt/max(row.m2JetPt, row.m2Pt), weight)
             the_histos['muonPtDiff'].Fill(max(row.m2JetPt, row.m2Pt) - row.m2Pt, weight)
-            the_histos['muonJetVsLeptonPt'].Fill(max(row.m2JetPt, row.m2Pt), row.m2Pt, weight)
-            the_histos['muonJetVsEta'].Fill(max(row.m2JetPt, row.m2Pt), row.m2AbsEta, weight)
+
             the_histos['m1MtToMET'].Fill(row.m1MtToMET, weight)
-            the_histos['m1m2Mass'].Fill(row.m1_m2_Mass, weight)
+            the_histos['m1m2Mass' ].Fill(row.m1_m2_Mass, weight)
+            the_histos['m2MtToMET'].Fill(row.m2MtToMET, weight)
+            the_histos["m1JetBtag"].Fill(row.m1JetBtag, weight)
+            the_histos["m2JetBtag"].Fill(row.m2JetBtag, weight)
 
             the_histos['m2JetptD'].Fill(row.m2JetptD, weight)
             the_histos['m2Jetmult'].Fill(row.m2Jetmult, weight)
-            the_histos['m2Jetmultvsm2JetptD'].Fill(row.m2JetptD,row.m2Jetmult, weight)
-
-            the_histos['m2Jetmultvsm2JetPt'].Fill(max(row.m2JetPt, row.m2Pt),row.m2Jetmult, weight)
-            the_histos['m2JetptDvsm2JetPt'].Fill(max(row.m2JetPt, row.m2Pt),row.m2JetptD, weight)
-            the_histos['muonPtRatio_vs_muonJetPt'].Fill(row.m2Pt/max(row.m2JetPt, row.m2Pt), max(row.m2JetPt, row.m2Pt), weight)
-            the_histos['muonPtDiff_vs_muonJetPt'].Fill(max(row.m2JetPt, row.m2Pt) - row.m2Pt, max(row.m2JetPt, row.m2Pt), weight)
 
             if fillNtuple:
                 pfidiso02    = float( row.m2PFIDTight and row.m2RelPFIsoDB < 0.2)
                 h2taucuts    = float( row.m2PFIDTight and ((row.m2RelPFIsoDB < 0.15 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.1 ))
                 h2taucuts020 = float( row.m2PFIDTight and ((row.m2RelPFIsoDB < 0.20 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.15))
-                the_histos['muonInfo'].Fill( array("f", [row.m2Pt, row.m2JetPt, weight, pfidiso02, h2taucuts, h2taucuts020] ) )
+                the_histos['muonInfo'].Fill( array("f", [row.m2Pt, row.m2JetPt, max(0, row.m2JetCSVBtag), abs(row.m2PVDXY), weight, pfidiso02, h2taucuts, h2taucuts020] ) )
                 
         histos = self.histograms
         for row in self.tree:
@@ -188,11 +173,11 @@ class FakeRatesMM(MegaBase):
                     #    fill(histos[(region, tag, 'h2taucuts025')], row)
                         
             fill_region(region, 'pt10')
-            fill_region('all', 'pt10')
+            #fill_region('all', 'pt10')
 
             if row.m2Pt > 20:
                 fill_region(region, 'pt20')
-                fill_region('all', 'pt20')
+                #fill_region('all', 'pt20')
 
     def finish(self):
         self.write_histos()

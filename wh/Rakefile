@@ -196,6 +196,9 @@ pt_regions   = ['pt10', 'pt20']
 muonwps      = ['h2taucuts', 'h2taucuts020', 'pfidiso02']
 fr_fits      = Hash.new
 kNN_trains   = Hash.new
+muon_kNN_vars= ['muonJetPt', 'muonPt', 'muonJetCSVBtag'] #'muonPVDXY']
+electron_kNN_vars= ['electronJetPt', 'electronPt']
+
 
 #############
 #  EM datas
@@ -209,10 +212,23 @@ elewps.each do |ele_wp|
 
       key = "e_#{cr}_#{ptr}_#{ele_wp}_electronInfo"
       kNN_trains[key] =  make_kNN('em', 'em') 
-      kNN_trains[key]['vars'] = ['electronJetPt', 'electronPt']
+      kNN_trains[key]['vars'] = electron_kNN_vars
     end
   end
 end
+
+#muon fakes from em
+#mmcrs = ['qcd', 'wjets']
+#muonwps.each do |mu_wp|
+#  mmcrs.each do |cr|
+#    pt_regions.each do |ptr|
+#      key = "m_M#{cr}_#{ptr}_#{mu_wp}_muonInfo"
+#      kNN_trains[key] =  make_kNN('em', 'em') 
+#      kNN_trains[key]['vars'] = muon_kNN_vars
+#    end
+#  end
+#end
+
 
 #############
 #  EE datas
@@ -227,10 +243,10 @@ elewps.each do |ele_wp|
 
     key = "ee_#{cr}_pt10_#{ele_wp}_electronInfo"
     kNN_trains[key] =  make_kNN('ee', 'ee')
-    kNN_trains[key]['vars'] = ['electronJetPt', 'electronPt']
+    kNN_trains[key]['vars'] = electron_kNN_vars
     key = "ee_#{cr}_pt20_#{ele_wp}_electronInfo"
     kNN_trains[key] =  make_kNN('ee', 'ee')
-    kNN_trains[key]['vars'] = ['electronJetPt', 'electronPt']
+    kNN_trains[key]['vars'] = electron_kNN_vars
   end
 end
 #fr_fits["ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronJetPt"] = make_constant('ee', 'ee')
@@ -247,7 +263,7 @@ muonwps.each do |mu_wp|
 
       key = "m_#{cr}_#{ptr}_#{mu_wp}_muonInfo"
       kNN_trains[key] =  make_kNN('mm', 'mm')
-      kNN_trains[key]['vars'] = ['muonJetPt', 'muonPt']
+      kNN_trains[key]['vars'] = muon_kNN_vars
     end
   end
 end
@@ -335,6 +351,7 @@ end
 ################################################
 #create tasks for running kNN
 ################################################
+kNN_files = Array[]
 kNN_trains.each do |kNN, info|
   kNN_configuration = kNN.split("_")
   region = ''
@@ -370,13 +387,15 @@ kNN_trains.each do |kNN, info|
 
   file knn_output => subsamples_inputs_result_list + [info['analyzer'] + '.py',] do |t|
     sh "mkdir -p #{$frfit_dir}"
-    sh "train_kNN.py --files #{subsample_input_list} --outputfile #{knn_output} --tree #{tree_path} --cut #{cut} --variables #{vars_str}"
+    sh "train_kNN.py --files #{subsample_input_list} --outputfile #{knn_output} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 0"
   end
   task :kNN => knn_output
-
+  kNN_files << knn_output
 end
 
-
+#Rake.application.tasks.each do |t|
+#  puts "#{t}, #{t.prerequisites}"
+#end
 
 ################################################
 #charge fake rate tasks
@@ -402,12 +421,11 @@ task :fits => :charge_fakes
 ##     eecontrol
 ################################################################################
 fake_rate_files = fr_fits.keys.map{|x| "#{$frfit_dir}/#{x}.root"}
-kNN_files       = kNN_trains.keys.map{|x| "#{$frfit_dir}/#{x}.kNN.root"}
 
 # IF the FR fits change, make sure we re-run the analyses
-file "WHAnalyzeEMT.py" => kNN_files.select{|x| x.start_with?('e_')} + \
-               kNN_files.select{|x| x.start_with?('m_')} + \
-               fake_rate_files.select{|x| x.start_with?('t_')} + \
+file "WHAnalyzeEMT.py" => kNN_files.select{|x| x.start_with?("#{$frfit_dir}/e_")} + \
+               kNN_files.select{|x| x.start_with?("#{$frfit_dir}/m_")} + \
+               fake_rate_files.select{|x| x.start_with?("#{$frfit_dir}/t_")} + \
                Array["optimizer.py",
                      'WHAnalyzerBase.py',
                      "fakerate_functions.py",
@@ -415,8 +433,8 @@ file "WHAnalyzeEMT.py" => kNN_files.select{|x| x.start_with?('e_')} + \
   sh "touch #{t.name}"
 end
 
-file "WHAnalyzeMMT.py" => kNN_files.select{|x| x.start_with?('m_')} + \
-               fake_rate_files.select{|x| x.start_with?('t_')} + \
+file "WHAnalyzeMMT.py" => kNN_files.select{|x| x.start_with?("#{$frfit_dir}/m_")} + \
+               fake_rate_files.select{|x| x.start_with?("#{$frfit_dir}/t_")} + \
                ["optimizer.py",
                 'WHAnalyzerBase.py',
                 "fakerate_functions.py",
@@ -424,8 +442,8 @@ file "WHAnalyzeMMT.py" => kNN_files.select{|x| x.start_with?('m_')} + \
   sh "touch #{t.name}"
 end
 
-file "WHAnalyzeEET.py" => kNN_files.select{|x| x.start_with?( 'ee_')} + \
-               fake_rate_files.select{|x| x.start_with?('t_')} + \
+file "WHAnalyzeEET.py" => kNN_files.select{|x| x.start_with?( "#{$frfit_dir}/ee_")} + \
+               fake_rate_files.select{|x| x.start_with?("#{$frfit_dir}/t_")} + \
                ["optimizer.py",
                 'WHAnalyzerBase.py',
                 "fakerate_functions.py",

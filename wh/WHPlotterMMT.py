@@ -171,6 +171,85 @@ if __name__ == "__main__":
         ###########################################################################
         plotter.set_subdir('')
         rebin_slim = [0,20]+range(30, 91, 10)+[110,200]
+        categories = {
+            'LTCut' : [80, 650],
+            'LTLow' : [0, 130],
+            'LTHigh': [130, 650],
+            }
+                
+        for label, proj_range in categories.iteritems():
+            plotter.set_subdir('%s' % label)
+            plotter.plot_final('m2_t_Mass#LT', rebin_slim, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-subMass-%s' % label)
+
+            plotter.plot_final('m2_t_Mass#LT', 200, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-subMass-%s-counting' % label, dotc=True, dotroot=True)
+
+            #pt
+            plotter.plot_final("m1Pt#LT"    , 10, xaxis='p_{T#mu_{1}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m1Pt-%s' % label)
+
+            plotter.plot_final("m2Pt#LT"    , 10, xaxis='p_{T#mu_{2}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m2Pt-%s' % label)
+
+            plotter.plot_final("m1JetPt#LT" , 10, xaxis='p_{T Jet #mu_{1}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m1JetPt-%s' % label)
+
+            plotter.plot_final("m2JetPt#LT" , 10, xaxis='p_{T Jet #mu_{2}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m2JetPt-%s' % label)
+
+            plotter.plot_final("tPt#LT"    , 10, xaxis='p_{T#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-tPt-%s' % label)
+
+            #eta
+            plotter.plot_final("m1AbsEta#LT", 10, xaxis='|#eta_{#mu_{1}}|', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m1AbsEta-%s' % label)
+
+            plotter.plot_final("m2AbsEta#LT", 10, xaxis='|#eta_{#mu_{2}}|'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m2AbsEta-%s' % label)
+
+            plotter.plot_final("tAbsEta#LT", 10, xaxis='|#eta_{#tau}|'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-tAbsEta-%s' % label)
+
+            #DR
+            plotter.plot_final("m1_t_DR#LT", 10, xaxis='#DeltaR_{#mu_{1}#tau}', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m1_t_DR-%s' % label)
+
+            plotter.plot_final("m2_t_DR#LT", 10, xaxis='#DeltaR_{#mu_{2}#tau}'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m2_t_DR-%s' % label)
+
+            #Jet BTag
+            
+            #from pdb import set_trace; set_trace()
+            plotter.plot_final("m2JetBtag#LT", [-100, -40, 20, 100], xaxis='#mu_{2} Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m2JetBtag-%s' % label, dotroot=True)
+
+            plotter.plot_final("m1JetBtag#LT", 1, xaxis='#mu_{1} Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m1JetBtag-%s' % label)
+
+            plotter.plot_final("m2JetCSVBtag#LT", 1, xaxis='#mu_{2} Jet CSV Btag'  , maxy=None, project=proj_range, project_axis='X', x_range=[0,1])
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m2JetCSVBtag-%s' % label, dotroot=True)
+
+            plotter.plot_final("m1JetCSVBtag#LT", 1, xaxis='#mu_{1} Jet CSV Btag'  , maxy=None, project=proj_range, project_axis='X', x_range=[0,1])
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m1JetCSVBtag-%s' % label)
+
+
 
         #from pdb import set_trace; set_trace()
         plotter.plot_final('m2_t_Mass#LT', rebin_slim, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=[0, 130], project_axis='X')
@@ -295,6 +374,10 @@ if __name__ == "__main__":
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-m2JetPt-%s' % label)
 
+            plotter.plot_final_f3("tPt#LT"    , 10, xaxis='p_{T#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-tPt-%s' % label)
+
             #eta
             plotter.plot_final_f3("m1AbsEta#LT", 10, xaxis='|#eta_{#mu_{1}}|', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
@@ -303,6 +386,10 @@ if __name__ == "__main__":
             plotter.plot_final_f3("m2AbsEta#LT", 10, xaxis='|#eta_{#mu_{2}}|'  , maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-m2AbsEta-%s' % label)
+
+            plotter.plot_final_f3("tAbsEta#LT", 10, xaxis='|#eta_{#tau}|'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-tAbsEta-%s' % label)
 
             #DR
             plotter.plot_final_f3("m1_t_DR#LT", 10, xaxis='#DeltaR_{#mu_{1}#tau}', maxy=None, project=proj_range, project_axis='X')
@@ -313,6 +400,24 @@ if __name__ == "__main__":
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-m2_t_DR-%s' % label)
 
+            #Jet BTag
+            
+            #from pdb import set_trace; set_trace()
+            plotter.plot_final_f3("m2JetBtag#LT", [-100, -40, 20, 100], xaxis='#mu_{2} Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-m2JetBtag-%s' % label, dotroot=True)
+
+            plotter.plot_final_f3("m1JetBtag#LT", 1, xaxis='#mu_{1} Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-m1JetBtag-%s' % label)
+
+            plotter.plot_final_f3("m2JetCSVBtag#LT", 1, xaxis='#mu_{2} Jet CSV Btag'  , maxy=None, project=proj_range, project_axis='X', x_range=[0,1])
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-m2JetCSVBtag-%s' % label, dotroot=True)
+
+            plotter.plot_final_f3("m1JetCSVBtag#LT", 1, xaxis='#mu_{1} Jet CSV Btag'  , maxy=None, project=proj_range, project_axis='X', x_range=[0,1])
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-m1JetCSVBtag-%s' % label)
 
 
         plotter.set_subdir('f3')
@@ -324,10 +429,6 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-leadMass')
 
-        plotter.plot_final_f3('m2JetBtag', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-m2JetBtag')
-
         plotter.plot_final_f3('m2_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0, show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-wjetfake-subMass')
@@ -335,6 +436,14 @@ if __name__ == "__main__":
         plotter.plot_final_f3('m2_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=1, show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-qcdfake-subMass')
+
+        plotter.plot_final_f3("m2JetBtag#LT", 4, xaxis='#mu_{2} Jet Btag'  , maxy=None, project=[0, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-m2JetBtag')
+
+        plotter.plot_final_f3("m1JetBtag#LT", 4, xaxis='#mu_{1} Jet Btag'  , maxy=None, project=[0, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-m1JetBtag')
 
         plotter.plot_final_f3('m2_t_Mass', 20, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
