@@ -137,10 +137,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             self.book(folder, prefix+"m_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
             self.book(folder, prefix+"e_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
 
-            #self.book(folder, prefix+"subMass#faking_prob" , "subleadingMass", 200, 0, 200, 220, 0., 1.1, type=ROOT.TH2F)
-            #self.book(folder, prefix+"subMass#log_prob"    , "subleadingMass", 200, 0, 200, 200, -2,   1, type=ROOT.TH2F)
-            #self.book(folder, prefix+'faking_prob'     , "", 220, 0., 1.1)
-            #self.book(folder, prefix+'log_prob'        , "", 200, -2, 1)
+            #Jet BTag
+            self.book(folder, "mJetBtag#LT", "Muon 2 Pt", 30, -10, 5, 60, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "eJetBtag#LT", "Muon 2 Pt", 30, -10, 5, 60, 0, 600, type=ROOT.TH2F)
 
             self.book(folder, "subPt"   , "SubLeading Pt", 100, 0, 100)
             self.book(folder, "leadPt"  , "Leading Pt"   , 100, 0, 100)
@@ -239,6 +238,7 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     	if not row.eChargeIdTight: return False
         #cut_flow_trk.Fill('ChargeIdTight')
        
+        if e_m_Mass < 20:          return False
         cut_flow_trk.Fill('charge_fakes') #no charge fakes here
 
         #FIXME: ONLY FOR CUT-FLOW PRODUCTION
@@ -306,9 +306,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     def obj1_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         if mu17e8:
-            return frfits.highpt_mu_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt) 
+            return frfits.highpt_mu_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt, muonJetCSVBtag=max(0, row.mJetCSVBtag)) 
         else:
-            return frfits.lowpt_mu_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt) 
+            return frfits.lowpt_mu_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt, muonJetCSVBtag=max(0, row.mJetCSVBtag)) 
 
     def obj2_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
@@ -323,9 +323,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     def obj1_qcd_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         if mu17e8:
-            return frfits.highpt_mu_qcd_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt)
+            return frfits.highpt_mu_qcd_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt, muonJetCSVBtag=max(0, row.mJetCSVBtag))
         else:
-            return frfits.lowpt_mu_qcd_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt)
+            return frfits.lowpt_mu_qcd_fr[ledleptonId](muonJetPt=max(row.mJetPt, row.mPt), muonPt=row.mPt, muonJetCSVBtag=max(0, row.mJetCSVBtag))
 
     def obj2_qcd_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
