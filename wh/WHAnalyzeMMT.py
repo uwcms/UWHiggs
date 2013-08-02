@@ -80,29 +80,39 @@ class WHAnalyzeMMT(WHAnalyzerBase):
 
         if len(self.grid_search.keys()) == 1:
 
-            self.book(folder, prefix+"m2_t_Mass#LT" , "subleadingMass", 200, 0, 200, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"m2_t_Mass#tPt", "subleadingMass", 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
-            #self.book(folder, prefix+"m2_t_Mass#faking_prob" , "subleadingMass", 200, 0, 200, 1100, 0., 1.1, type=ROOT.TH2F)
-            #self.book(folder, prefix+"m2_t_Mass#log_prob"    , "subleadingMass", 200, 0, 200, 1000, -10,  1, type=ROOT.TH2F)
-            #self.book(folder, prefix+'faking_prob'     , "", 1100, 0., 1.1)
-            #self.book(folder, prefix+'log_prob'        , "", 1000, -10, 1)
+            self.book(folder, "m2_t_Mass#LT" , "subleadingMass", 200, 0, 200, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m2_t_Mass#tPt", "subleadingMass", 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
+            #self.book(folder, "m2_t_Mass#faking_prob" , "subleadingMass", 200, 0, 200, 1100, 0., 1.1, type=ROOT.TH2F)
+            #self.book(folder, "m2_t_Mass#log_prob"    , "subleadingMass", 200, 0, 200, 1000, -10,  1, type=ROOT.TH2F)
+            #self.book(folder, 'faking_prob'     , "", 1100, 0., 1.1)
+            #self.book(folder, 'log_prob'        , "", 1000, -10, 1)
 
             #Pt
-            self.book(folder, prefix+"m1Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"tPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"m2Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"m1JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"m2JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m1Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "tPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m2Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m1JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m2JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
 
             #eta
-            self.book(folder, prefix+"m1AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"m2AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"tAbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m1AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m2AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "tAbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
 
             #DR
-            self.book(folder, prefix+"m1_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"m2_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m1_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m2_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
 
+            #Jet BTag
+            self.book(folder, "m2JetBtag#LT", "Muon 2 Pt", 100, -100, 100, 60, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m1JetBtag#LT", "Muon 2 Pt", 100, -100, 100, 60, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m1JetCSVBtag#LT", "Muon 2 Pt", 120, -5, 1, 60, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m2JetCSVBtag#LT", "Muon 2 Pt", 120, -5, 1, 60, 0, 600, type=ROOT.TH2F)
+
+
+            #Mt To MET
+            self.book(folder, "m1MtToMET#LT", "Muon 2 Pt", 150, 0, 150, 60, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m2MtToMET#LT", "Muon 2 Pt", 150, 0, 150, 60, 0, 600, type=ROOT.TH2F)
 
             self.book(folder, "m2RelPFIsoDB", "m2Iso", 100, 0, 0.3)
             self.book(folder, "m1_t_Mass", "leadingMass", 200, 0, 200)
@@ -110,7 +120,6 @@ class WHAnalyzeMMT(WHAnalyzerBase):
             self.book(folder, "m2_t_DR", "m2_t_DR", 100, 0, 5)
             self.book(folder, "m1_t_DR", "m1_t_DR", 100, 0, 5)
 
-            self.book(folder, "m2JetBtag", "Muon 2 Pt", 100, -10, 3.3)
             self.book(folder, "m1JetPt", "Muon 1 Jet Pt", 100, 0, 200)
             self.book(folder, "m2JetPt", "Muon 2 Jet Pt", 100, 0, 200)
             # Rank muons by less MT to MET, for WZ control region
@@ -235,19 +244,19 @@ class WHAnalyzeMMT(WHAnalyzerBase):
             mcCorrectors.double_muon_trigger(row,'m1','m2')
 
     def obj1_weight(self, row, ledleptonId='h2taucuts', subledleptonId=None):
-        return frfits.highpt_mu_fr[ledleptonId](muonJetPt=max(row.m1JetPt, row.m1Pt), muonPt=row.m1Pt)
+        return frfits.highpt_mu_fr[ledleptonId](muonJetPt=max(row.m1JetPt, row.m1Pt), muonPt=row.m1Pt, muonJetCSVBtag=max(0, row.m1JetCSVBtag)) #muonPVDXY=row.m1PVDXY) #, muonJetBtag=row.m1JetBtag)
 
     def obj2_weight(self, row, ledleptonId=None, subledleptonId='h2taucuts'):
-        return frfits.lowpt_mu_fr[subledleptonId](muonJetPt=max(row.m2JetPt, row.m2Pt), muonPt=row.m2Pt)
+        return frfits.lowpt_mu_fr[subledleptonId](muonJetPt=max(row.m2JetPt, row.m2Pt), muonPt=row.m2Pt, muonJetCSVBtag=max(0, row.m2JetCSVBtag)) #, muonPVDXY=row.m2PVDXY) #, muonJetBtag=row.m2JetBtag)
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row, ledleptonId='h2taucuts', subledleptonId=None):
-        return frfits.highpt_mu_qcd_fr[ledleptonId](muonJetPt=max(row.m1JetPt, row.m1Pt), muonPt=row.m1Pt)
+        return frfits.highpt_mu_qcd_fr[ledleptonId](muonJetPt=max(row.m1JetPt, row.m1Pt), muonPt=row.m1Pt, muonJetCSVBtag=max(0, row.m1JetCSVBtag)) #, muonPVDXY=row.m1PVDXY) #, muonJetBtag=row.m1JetBtag)
 
     def obj2_qcd_weight(self, row, ledleptonId=None, subledleptonId='h2taucuts'):
-        return frfits.lowpt_mu_qcd_fr[subledleptonId](muonJetPt=max(row.m2JetPt, row.m2Pt), muonPt=row.m2Pt)
+        return frfits.lowpt_mu_qcd_fr[subledleptonId](muonJetPt=max(row.m2JetPt, row.m2Pt), muonPt=row.m2Pt, muonJetCSVBtag=max(0, row.m2JetCSVBtag)) #, muonPVDXY=row.m2PVDXY) #, muonJetBtag=row.m2JetBtag)
 
     def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_qcd_fr(row.tPt)

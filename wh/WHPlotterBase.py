@@ -900,7 +900,7 @@ class WHPlotterBase(Plotter):
         else:
             #histo.SetMaximum(
                 #1.2*max(histo.GetHistogram().GetMaximum(), data.GetMaximum()))
-            histo.SetMaximum(2 * data.GetMaximum())
+            histo.SetMaximum(2 * max(data.GetMaximum(), histo.GetMaximum()))
         self.keep.append(data)
         self.keep.append(histo)
         if latexit:

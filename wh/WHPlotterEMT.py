@@ -274,6 +274,10 @@ if __name__ == "__main__":
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-eJetPt-%s' % label)
 
+            plotter.plot_final_f3("tPt#LT"    , 10, xaxis='p_{T#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-tPt-%s' % label)
+
             #eta
             plotter.plot_final_f3("mAbsEta#LT", 10, xaxis='|#eta_{#mu}|', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
@@ -282,6 +286,10 @@ if __name__ == "__main__":
             plotter.plot_final_f3("eAbsEta#LT", 10, xaxis='|#eta_{e}|'  , maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-eAbsEta-%s' % label)
+
+            plotter.plot_final_f3("tAbsEta#LT", 10, xaxis='|#eta_{#tau}|'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-tAbsEta-%s' % label)
 
             #DR
             plotter.plot_final_f3("m_t_DR#LT", 10, xaxis='#DeltaR_{#mu#tau}', maxy=None, project=proj_range, project_axis='X')
@@ -292,6 +300,14 @@ if __name__ == "__main__":
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-e_t_DR-%s' % label)
 
+            #Jet BTag
+            plotter.plot_final_f3("eJetBtag#LT", 2, xaxis='e Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-eJetBtag-%s' % label)
+
+            plotter.plot_final_f3("mJetBtag#LT", 2, xaxis='#mu Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-mJetBtag-%s' % label)
 
         plotter.set_subdir('f3')
         plotter.plot_final_f3('LT', 5, xaxis='LT (GeV)', qcd_weight_fraction=0.5, show_error=True)
@@ -313,6 +329,15 @@ if __name__ == "__main__":
         plotter.plot_final_f3('subMass', 20, xaxis='m_{l_{2}#tau_{#mu}} (GeV)', qcd_weight_fraction=0, show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-wjetfake-subMass')
+
+        plotter.plot_final_f3("eJetBtag#LT", 2, xaxis='e Jet Btag'  , maxy=None, project=[0, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-eJetBtag')
+
+        plotter.plot_final_f3("mJetBtag#LT", 2, xaxis='#mu Jet Btag'  , maxy=None, project=[0, 650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-f3-mJetBtag')
+
 
         plotter.plot_final_f3('e_t_Mass', 20, xaxis='m_{e#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         plotter.add_cms_blurb(sqrts)
