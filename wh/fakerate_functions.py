@@ -103,7 +103,7 @@ def make_mva_functor_dict(template, variables, mapper=None):
 
 #no changes in muonID in 2013
 mapper    = {'eid1[0-9][A-Z][a-z]+_':'', 'idiso02' : 'pfidiso02'}
-variables = ['muonJetPt', 'muonPt']
+variables = ['muonJetPt', 'muonPt', 'muonJetCSVBtag'] #'muonPVDXY']#, 'muonJetBtag']
 highpt_mu_fr = make_mva_functor_dict(frfit_dir + '/m_wjets_pt20_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
 lowpt_mu_fr  = make_mva_functor_dict(frfit_dir + '/m_wjets_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
 
