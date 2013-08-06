@@ -355,7 +355,7 @@ class AnalyzeMuTauTightvbf(MegaBase):
 	    return False
 	if(abs(row.vbfDeta)<3.5):
 	    return False
-	if vbfMassCut == True:
+	if vbfMassCut500 == True:
         	if row.vbfMass < 500:
 	    		return False
 	else:
@@ -370,7 +370,7 @@ class AnalyzeMuTauTightvbf(MegaBase):
     def loosevbf(self,row):
 	if(abs(row.vbfDeta)<2.0):
             return False
-	if vbfMassCut == True:
+	if vbfMassCut500 == True:
         	if row.vbfMass < 200:
             		return False
         #if row.jetVeto20 < 2:
