@@ -20,13 +20,17 @@ import math
 #args = parser.parse_args()
 #print args
 preselection = False  ##preselection or signal region (preselection = false)
-twomu = True
+twomu = False
 muiso = False
-vbfMassCut = False
+vbfMassCut500 = False
+if vbfMassCut500 == True:
+	vbfMassCutstr = "500 GeV"
+else:
+	vbfMassCutstr = "200 GeV"
 print "Preselection: " + str(preselection)
 print "Two Muon Selection: " + str(twomu)
 print "Is Muon Isolation applied: " + str(muiso)
-print "vbfMassCut is: " + str(vbfMassCut)
+print "vbfMassCut is: " + vbfMassCutstr
 ###### Because I need to add a bunch more branches to the ntuple...
 from math import sqrt, pi
 
@@ -170,7 +174,8 @@ class AnalyzeMuTauTightvbf(MegaBase):
             self.book(names[x], "tMtToMVAMET", "Tau MT (MVA)", 200, 0, 200)
             self.book(names[x], "tMtToPfMet_Ty1", "Tau MT (PF Ty1)", 200, 0, 200)
             self.book(names[x], "tCharge", "Tau  Charge", 5, -2, 2)
-    
+	    self.book(names[x], "tJetPt", "Tau Jet Pt" , 500, 0 ,500)	    
+		        
             self.book(names[x], 'mPixHits', 'Mu 1 pix hits', 10, -0.5, 9.5)
             self.book(names[x], 'mJetBtag', 'Mu 1 JetBtag', 100, -5.5, 9.5)
     	    
@@ -250,6 +255,7 @@ class AnalyzeMuTauTightvbf(MegaBase):
         histos[name+'/tMtToMVAMET'].Fill(row.tMtToMVAMET,weight)
         histos[name+'/tMtToPfMet_Ty1'].Fill(row.tMtToPfMet_Ty1,weight)
         histos[name+'/tCharge'].Fill(row.tCharge, weight)
+	histos[name+'/tJetPt'].Fill(row.tJetPt, weight)
 
 	histos[name+'/LT'].Fill(row.LT,weight)
 
@@ -352,6 +358,9 @@ class AnalyzeMuTauTightvbf(MegaBase):
 	if vbfMassCut == True:
         	if row.vbfMass < 500:
 	    		return False
+	else:
+		if row.vbfMass < 200:
+			return True
 	#if row.jetVeto30 < 2:
 	 #   return False
         if row.vbfJetVeto30 > 0:
@@ -411,7 +420,7 @@ class AnalyzeMuTauTightvbf(MegaBase):
        	    if twomu == True:
 		if muiso == True:
                 	obj2iso = self.obj2mu_iso(row)
-			obj1iso = self.ojb1_iso(row)
+			obj1iso = self.obj1_iso(row)
 		else:
 			obj2iso = True
 			obj1iso = True
