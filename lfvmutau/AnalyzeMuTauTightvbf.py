@@ -427,7 +427,7 @@ class AnalyzeMuTauTightvbf(MegaBase):
                 obj2id = self.obj2mu_id(row)
       	    else:
                 obj2iso = self.obj2_iso(row)
-                obj2iso = self.obj2_id(row)
+                obj2id = self.obj2_id(row)
 		obj1iso = self.obj1_iso(row)
 	    if not self.presel(row):
 		continue
@@ -446,18 +446,18 @@ class AnalyzeMuTauTightvbf(MegaBase):
 		tightcutgg = self.ggtight(row)		
 	    if tightcutgg:
 		if self.lowMt(row):
-			if obj2iso and obj2iso and self.oppositesign(row): 
+			if obj1iso and obj2iso and self.oppositesign(row): 
 	        	        self.fill_histos(row,'gg')
-                	if obj2iso and obj2iso and not self.oppositesign(row):
+                	if obj1iso and obj2iso and not self.oppositesign(row):
                 	        self.fill_histos(row,'ssgg')
                 	if self.obj1_antiiso(row) and obj2iso and  self.oppositesign(row):
                         	self.fill_histos(row,'antiisomuongg')
 			if self.obj1_antiiso(row) and obj2iso and not self.oppositesign(row):
                         	self.fill_histos(row,'ssantiisomuongg')
 		if self.highMt(row):
-                        if obj2iso and obj2iso and self.oppositesign(row):
+                        if obj1iso and obj2iso and self.oppositesign(row):
                                 self.fill_histos(row,'highMtgg')
-                        if obj2iso and obj2iso and not self.oppositesign(row):
+                        if obj1iso and obj2iso and not self.oppositesign(row):
                                 self.fill_histos(row,'highMtssgg')
 
 	    if preselection == True:
@@ -473,16 +473,16 @@ class AnalyzeMuTauTightvbf(MegaBase):
                                 self.fill_histos(row,'antiisomuonvbf')
 	    if tightcutvbf:	
 		if self.lowMt(row):
-                	if obj2iso and obj2iso and self.oppositesign(row):
+                	if obj1iso and obj2iso and self.oppositesign(row):
                         	self.fill_histos(row,'vbf')
-                	if obj2iso and obj2iso and not self.oppositesign(row):
+                	if obj1iso and obj2iso and not self.oppositesign(row):
                         	self.fill_histos(row,'ssvbf')
                         if self.obj1_antiiso(row) and obj2iso and not self.oppositesign(row):
                                 self.fill_histos(row,'ssantiisomuonvbf')
 		if self.highMt(row):
-                        if obj2iso and obj2iso and self.oppositesign(row):
+                        if obj1iso and obj2iso and self.oppositesign(row):
                                 self.fill_histos(row,'highMtvbf')
-                        if obj2iso and obj2iso and not self.oppositesign(row):
+                        if obj1iso and obj2iso and not self.oppositesign(row):
                                 self.fill_histos(row,'highMtssvbf')			
 
 
