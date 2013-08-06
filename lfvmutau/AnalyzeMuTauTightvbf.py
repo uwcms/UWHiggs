@@ -19,8 +19,14 @@ import math
 #parser = argparse.ArgumentParser()
 #args = parser.parse_args()
 #print args
-preselection = True  ##preselection or signal region (preselection = false)
+preselection = False  ##preselection or signal region (preselection = false)
+twomu = True
+muiso = False
+vbfMassCut = False
 print "Preselection: " + str(preselection)
+print "Two Muon Selection: " + str(twomu)
+print "Is Muon Isolation applied: " + str(muiso)
+print "vbfMassCut is: " + str(vbfMassCut)
 ###### Because I need to add a bunch more branches to the ntuple...
 from math import sqrt, pi
 
@@ -343,8 +349,9 @@ class AnalyzeMuTauTightvbf(MegaBase):
 	    return False
 	if(abs(row.vbfDeta)<3.5):
 	    return False
-        if row.vbfMass < 500:
-	    return False
+	if vbfMassCut == True:
+        	if row.vbfMass < 500:
+	    		return False
 	#if row.jetVeto30 < 2:
 	 #   return False
         if row.vbfJetVeto30 > 0:
@@ -354,8 +361,9 @@ class AnalyzeMuTauTightvbf(MegaBase):
     def loosevbf(self,row):
 	if(abs(row.vbfDeta)<2.0):
             return False
-        if row.vbfMass < 200:
-            return False
+	if vbfMassCut == True:
+        	if row.vbfMass < 200:
+            		return False
         #if row.jetVeto20 < 2:
          #   return False
         if row.vbfJetVeto30 > 0:
@@ -372,6 +380,9 @@ class AnalyzeMuTauTightvbf(MegaBase):
     def obj1_id(self, row):
         return bool(row.mPFIDTight)  and bool(abs(row.mDZ) < 0.2) 
 
+    def obj2mu_id(self, row):
+        return bool(row.mPFIDTight)  and bool(abs(row.mDZ) < 0.2)	
+
     def obj2_id(self, row):
 	return  row.tAntiElectronLoose and row.tAntiMuonTight2 and row.tDecayFinding
 
@@ -379,7 +390,8 @@ class AnalyzeMuTauTightvbf(MegaBase):
 	return  (bool (row.muVetoPt5IsoIdVtx<1) and bool (row.eVetoCicTightIso<1))
     def obj1_iso(self, row):
         return bool(row.mRelPFIsoDB <0.12)
-
+    def obj2mu_iso(self, row):
+	return bool(row.mRelPFIsoDB <0.12)
     def obj2_iso(self, row):
         return  row.tTightIso3Hits
 
@@ -396,13 +408,25 @@ class AnalyzeMuTauTightvbf(MegaBase):
 
     def process(self):
         for row in self.tree:
+       	    if twomu == True:
+		if muiso == True:
+                	obj2iso = self.obj2mu_iso(row)
+			obj1iso = self.ojb1_iso(row)
+		else:
+			obj2iso = True
+			obj1iso = True
+                obj2id = self.obj2mu_id(row)
+      	    else:
+                obj2iso = self.obj2_iso(row)
+                obj2iso = self.obj2_id(row)
+		obj1iso = self.obj1_iso(row)
 	    if not self.presel(row):
 		continue
             if not self.kinematics(row):
                 continue
             if not self.obj1_id(row): 
                 continue
-            if not self.obj2_id(row):
+            if not obj2id:
                 continue
 	    if not self.vetos(row):
 		continue 
@@ -413,18 +437,18 @@ class AnalyzeMuTauTightvbf(MegaBase):
 		tightcutgg = self.ggtight(row)		
 	    if tightcutgg:
 		if self.lowMt(row):
-			if self.obj1_iso(row) and self.obj2_iso(row) and self.oppositesign(row): 
+			if obj2iso and obj2iso and self.oppositesign(row): 
 	        	        self.fill_histos(row,'gg')
-                	if self.obj1_iso(row) and self.obj2_iso(row) and not self.oppositesign(row):
+                	if obj2iso and obj2iso and not self.oppositesign(row):
                 	        self.fill_histos(row,'ssgg')
-                	if self.obj1_antiiso(row) and self.obj2_iso(row) and  self.oppositesign(row):
+                	if self.obj1_antiiso(row) and obj2iso and  self.oppositesign(row):
                         	self.fill_histos(row,'antiisomuongg')
-			if self.obj1_antiiso(row) and self.obj2_iso(row) and not self.oppositesign(row):
+			if self.obj1_antiiso(row) and obj2iso and not self.oppositesign(row):
                         	self.fill_histos(row,'ssantiisomuongg')
 		if self.highMt(row):
-                        if self.obj1_iso(row) and self.obj2_iso(row) and self.oppositesign(row):
+                        if obj2iso and obj2iso and self.oppositesign(row):
                                 self.fill_histos(row,'highMtgg')
-                        if self.obj1_iso(row) and self.obj2_iso(row) and not self.oppositesign(row):
+                        if obj2iso and obj2iso and not self.oppositesign(row):
                                 self.fill_histos(row,'highMtssgg')
 
 	    if preselection == True:
@@ -440,16 +464,16 @@ class AnalyzeMuTauTightvbf(MegaBase):
                                 self.fill_histos(row,'antiisomuonvbf')
 	    if tightcutvbf:	
 		if self.lowMt(row):
-                	if self.obj1_iso(row) and self.obj2_iso(row) and self.oppositesign(row):
+                	if obj2iso and obj2iso and self.oppositesign(row):
                         	self.fill_histos(row,'vbf')
-                	if self.obj1_iso(row) and self.obj2_iso(row) and not self.oppositesign(row):
+                	if obj2iso and obj2iso and not self.oppositesign(row):
                         	self.fill_histos(row,'ssvbf')
-                        if self.obj1_antiiso(row) and self.obj2_iso(row) and not self.oppositesign(row):
+                        if self.obj1_antiiso(row) and obj2iso and not self.oppositesign(row):
                                 self.fill_histos(row,'ssantiisomuonvbf')
 		if self.highMt(row):
-                        if self.obj1_iso(row) and self.obj2_iso(row) and self.oppositesign(row):
+                        if obj2iso and obj2iso and self.oppositesign(row):
                                 self.fill_histos(row,'highMtvbf')
-                        if self.obj1_iso(row) and self.obj2_iso(row) and not self.oppositesign(row):
+                        if obj2iso and obj2iso and not self.oppositesign(row):
                                 self.fill_histos(row,'highMtssvbf')			
 
 
