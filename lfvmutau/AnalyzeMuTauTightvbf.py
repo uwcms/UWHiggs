@@ -20,16 +20,16 @@ import math
 #args = parser.parse_args()
 #print args
 preselection = False  ##preselection or signal region (preselection = false)
-twomu = False
-muiso = False
+Isiso = False
+Twomu = True
 vbfMassCut500 = False
 if vbfMassCut500 == True:
 	vbfMassCutstr = "500 GeV"
 else:
 	vbfMassCutstr = "200 GeV"
 print "Preselection: " + str(preselection)
-print "Two Muon Selection: " + str(twomu)
-print "Is Muon Isolation applied: " + str(muiso)
+print "Two Muon Selection: " + str(Twomu)
+print "Is Isolation applied: " + str(Isiso)
 print "vbfMassCut is: " + vbfMassCutstr
 ###### Because I need to add a bunch more branches to the ntuple...
 from math import sqrt, pi
@@ -139,7 +139,8 @@ if not is7TeV:
     mc_corrector = mc_corrector_2012
 
 class AnalyzeMuTauTightvbf(MegaBase):
-    tree = 'mt/final/Ntuple'
+    #tree = 'mt/final/Ntuple'
+    tree = 'New_Tree'
 
     def __init__(self, tree, outfile, **kwargs):
         super(AnalyzeMuTauTightvbf, self).__init__(tree, outfile, **kwargs)
@@ -168,7 +169,6 @@ class AnalyzeMuTauTightvbf(MegaBase):
             self.book(names[x], "mMtToMVAMET", "Muon MT (MVA)", 200, 0, 200)
             self.book(names[x], "mMtToPfMet_Ty1", "Muon MT (PF Ty1)", 200, 0, 200)
             self.book(names[x], "mCharge", "Muon Charge", 5, -2, 2)
-    
             self.book(names[x], "tPt", "Tau  Pt", 100, 0, 100)
             self.book(names[x], "tEta", "Tau  eta", 100, -2.5, 2.5)
             self.book(names[x], "tMtToMVAMET", "Tau MT (MVA)", 200, 0, 200)
@@ -200,7 +200,7 @@ class AnalyzeMuTauTightvbf(MegaBase):
             self.book(names[x], 'bjetVeto', 'Number of b-jets', 5, -0.5, 4.5)
             self.book(names[x], 'bjetCSVVeto', 'Number of b-jets', 5, -0.5, 4.5)
             self.book(names[x], 'muVetoPt5IsoIdVtx', 'Number of extra muons', 5, -0.5, 4.5)
-            self.book(names[x], 'muVetoPt15IsoIdVtx', 'Number of extra muons', 5, -0.5, 4.5)
+	    self.book(names[x], 'muVetoPt15IsoIdVtx', 'Number of extra muons', 5, -0.5, 4.5)
             self.book(names[x], 'tauVetoPt20', 'Number of extra taus', 5, -0.5, 4.5)
             self.book(names[x], 'eVetoCicTightIso', 'Number of extra CiC tight electrons', 5, -0.5, 4.5)
     
@@ -249,7 +249,6 @@ class AnalyzeMuTauTightvbf(MegaBase):
 	histos[name+'/mMtToMVAMET'].Fill(row.mMtToMVAMET,weight)
         histos[name+'/mMtToPfMet_Ty1'].Fill(row.mMtToPfMet_Ty1,weight)
         histos[name+'/mCharge'].Fill(row.mCharge, weight)
-
         histos[name+'/tPt'].Fill(row.tPt, weight)
         histos[name+'/tEta'].Fill(row.tEta, weight)
         histos[name+'/tMtToMVAMET'].Fill(row.tMtToMVAMET,weight)
@@ -389,18 +388,16 @@ class AnalyzeMuTauTightvbf(MegaBase):
     def obj1_id(self, row):
         return bool(row.mPFIDTight)  and bool(abs(row.mDZ) < 0.2) 
 
-    def obj2mu_id(self, row):
-        return bool(row.mPFIDTight)  and bool(abs(row.mDZ) < 0.2)	
-
     def obj2_id(self, row):
 	return  row.tAntiElectronLoose and row.tAntiMuonTight2 and row.tDecayFinding
 
     def vetos(self,row):
-	return  (bool (row.muVetoPt5IsoIdVtx<1) and bool (row.eVetoCicTightIso<1))
+	if Twomu == False:
+		return  (bool (row.muVetoPt5IsoIdVtx<1) and bool (row.eVetoCicTightIso<1))
+	else:
+		return (bool (row.muVetoPt15IsoIdVtx>1) and bool (row.eVetoCicTightIso<1))
     def obj1_iso(self, row):
         return bool(row.mRelPFIsoDB <0.12)
-    def obj2mu_iso(self, row):
-	return bool(row.mRelPFIsoDB <0.12)
     def obj2_iso(self, row):
         return  row.tTightIso3Hits
 
@@ -417,25 +414,19 @@ class AnalyzeMuTauTightvbf(MegaBase):
 
     def process(self):
         for row in self.tree:
-       	    if twomu == True:
-		if muiso == True:
-                	obj2iso = self.obj2mu_iso(row)
-			obj1iso = self.obj1_iso(row)
-		else:
-			obj2iso = True
-			obj1iso = True
-                obj2id = self.obj2mu_id(row)
-      	    else:
-                obj2iso = self.obj2_iso(row)
-                obj2id = self.obj2_id(row)
+	    if Isiso == False:
+		obj1iso = True
+		obj2iso = True
+	    else:
 		obj1iso = self.obj1_iso(row)
+		obj2iso = self.obj2_iso(row)
 	    if not self.presel(row):
 		continue
             if not self.kinematics(row):
                 continue
             if not self.obj1_id(row): 
                 continue
-            if not obj2id:
+            if not self.obj2_id(row):
                 continue
 	    if not self.vetos(row):
 		continue 
