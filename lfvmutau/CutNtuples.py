@@ -1,3 +1,9 @@
+#CutNtuple.py
+#Author: Aaron Levine, UW Madison
+#Copy events from original TTrees that pass the selected cuts. Significantly speeds up AnalyzeMuTauTightvbf.py
+
+
+
 from sys import argv, stdout, stderr
 import ROOT
 import math
