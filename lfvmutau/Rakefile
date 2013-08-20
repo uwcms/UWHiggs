@@ -23,15 +23,18 @@ def get_sample_names(substring)
 end
 
 samples = Hash[
+  "extra" => Array['T_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola','Tbar_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola','Tbar_t-channel','T_t-channel'],
   "ewk" => Array['Zjets_M50', 
-    'TTplusJets_madgraph'], 
-  "ttbar" => Array['TTplusJets_madgraph'],
+    'WWJetsTo2L2Nu_TuneZ2_8TeV',
+	'TTJets_FullLeptMGDecays_8TeV-madgraph-tauola','TTJets_SemiLeptMGDecays_8TeV-madgraph-tauola'], 
+  "ttbar" => Array['TTJets_FullLeptMGDecays_8TeV-madgraph-tauola','TTJets_SemiLeptMGDecays_8TeV-madgraph-tauola'],
   "wjets" => get_sample_names('Wplus'),
+  "wjetsmin" => get_sample_names('WplusJets_madgraph_Extension'),
+  "data_Embed_login05"=>get_sample_names('data_Embed'),
   "zjets" => Array['Zjets_M50'],
-
-   "signal" => get_sample_names('LFV'),
-   "sm" => Array['VBF_H2Tau_M-125','GluGlu_H2Tau_M-125'],
-  "data_mt" => get_sample_names("data_SingleMu") 
+  "signal" => get_sample_names('LFV'),
+  "sm" => Array['VBF_H2Tau_M-125','GGH_H2Tau_M-125'],
+  "data_mt" => get_sample_names("data_SingleMu"), 
 ]
 
 # Function to get the .root files for an analyzer and samples
@@ -45,12 +48,14 @@ def get_analyzer_results(analyzer, the_samples)
 end
 
 ################################################################################
-## Recipes to analyze LFV H->mutau
+## Recipes to analyze the GG channel of the LFV HToMuTau analysis
 ##  targets:
 ##     mt
 ################################################################################
 
-task :mttight => get_analyzer_results("AnalyzeMuTauTight.py", samples['ewk'] + samples['wjets'] + samples['data_mt'] + samples['signal']+samples['sm'])
-
-#task :testPy  => get_analyzer_results(  "AnalyzeMuTauTight.py",samples['signal'])
+task :analyzeMuTauMC => get_analyzer_results("AnalyzeGG.py", samples['ewk'] + samples['wjets'] +samples['sm']+samples['extra'])
+task :analyzeMuTauData => get_analyzer_results("AnalyzeGG.py", samples['data_mt'])
+task :analyzeMuTauNoPU => get_analyzer_results("AnalyzeGGNoPU.py", samples['signal'])
+#task :analyzeMuTauMCFilter => get_analyzer_results("AnalyzeGGFilter.py", samples['zjets'])
+#task :analyzeMuTauMCEmbedded => get_analyzer_results("AnalyzeGGEmbedded.py", samples['zjets'])
 
