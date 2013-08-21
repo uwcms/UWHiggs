@@ -71,7 +71,7 @@ class FakeRatesEM(MegaBase):
                 denom_histos['electronInfo'] = self.book(
                     os.path.join(region, denom),
                     'electronInfo', "electronInfo", 
-                    'electronPt:electronJetPt:weight:'+':'.join(self.lepIds), 
+                    'electronPt:electronJetPt:electronJetCSVBtag:numJets20:numJets40:weight:'+':'.join(self.lepIds), 
                     type=ROOT.TNtuple)
 
                 for numerator in self.lepIds:
@@ -109,7 +109,7 @@ class FakeRatesEM(MegaBase):
                 denom_histos['muonInfo'] = self.book(
                     os.path.join(region, denom),
                     'muonInfo', "muonInfo", 
-                    'muonPt:muonJetPt:muonJetBtag:weight:'+':'.join(self.muon_lepIds), 
+                    'muonPt:muonJetPt:muonJetCSVBtag:numJets20:numJets40:weight:'+':'.join(self.muon_lepIds), 
                     type=ROOT.TNtuple)
                 
                 for numerator in self.muon_lepIds:
@@ -147,7 +147,8 @@ class FakeRatesEM(MegaBase):
             if not selections.muSelection(row, 'm'):  return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
             if not selections.eSelection(row, 'e'):   return False #applies basic selection (eta, pt > 10, DZ, missingHits, jetBTag, HasConversion and chargedIdTight)
             if not row.eChargeIdTight:                return False
-            if not (row.jetVeto40_DR05 >= 1):         return False
+            #if not (row.jetVeto40_DR05 >= 1):         return False
+            if not (row.jetVeto20 >= 1): return False
             if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
             return True
         #if self.is7TeV:
@@ -171,11 +172,12 @@ class FakeRatesEM(MegaBase):
             the_histos['eJetptDvseJetPt'].Fill(max(row.eJetPt, row.ePt),row.eJetptD) 
             if fillNtuple:
                 id_iso_vals = [ float( selections.lepton_id_iso(row, 'e', label) ) for label in self.lepIds]
-                the_histos['electronInfo'].Fill( array("f", [row.ePt, row.eJetPt, weight]+id_iso_vals) )
+                the_histos['electronInfo'].Fill( array("f", [row.ePt, row.eJetPt, max(0, row.eJetCSVBtag), 
+                                                             row.jetVeto20, row.jetVeto40_DR05, weight]+id_iso_vals) )
 
 
         def fill_muon(the_histos, row, fillNtuple=False):
-            weight = 1
+            weight = 1.
             if row.run == 1:
                 weight = self.pucorrector(row.nTruePU) *\
                          mcCorrectors.correct_mueg_mu(row.mPt, row.mAbsEta) * \
@@ -190,11 +192,16 @@ class FakeRatesEM(MegaBase):
                 pfidiso02    = float( row.mPFIDTight and row.mRelPFIsoDB < 0.2)
                 h2taucuts    = float( row.mPFIDTight and ((row.mRelPFIsoDB < 0.15 and row.mAbsEta < 1.479) or row.mRelPFIsoDB < 0.1 ))
                 h2taucuts020 = float( row.mPFIDTight and ((row.mRelPFIsoDB < 0.20 and row.mAbsEta < 1.479) or row.mRelPFIsoDB < 0.15))
-                the_histos['muonInfo'].Fill( array("f", [row.mPt, row.mJetPt, row.mJetBtag, weight, pfidiso02, h2taucuts, h2taucuts020] ) )
+                
+                the_histos['muonInfo'].Fill( array("f", [row.mPt, row.mJetPt, max(0, row.mJetCSVBtag), 
+                                                         row.jetVeto20, row.jetVeto40_DR05, weight, 
+                                                         pfidiso02, h2taucuts, h2taucuts020] ) )
 
 
                 
         def fill_region(region,pt_cut):
+            if region is None:
+                return None
             fill(histos[(region, pt_cut)], row, True)
 
             for idlabel, idfcn in selections.electronIds.iteritems():                
@@ -211,6 +218,8 @@ class FakeRatesEM(MegaBase):
                     fill(histos[(region, pt_cut, idlabel+'_h2taucuts020')], row)
 
         def fill_muon_region(region, tag):
+            if region is None:
+                return None
             # This is a QCD or Wjets
             fill_muon(histos[(region, tag)], row, True)
             
@@ -230,9 +239,8 @@ class FakeRatesEM(MegaBase):
             if not preselection(row):
                 continue
             region = control_region(row)
-            if region is None:
-                continue
-            # This is a QCD or Wjets
+            muon_region = control_region_muon(row)
+
             is7TeV = bool('7TeV' in os.environ['jobid'])
             use_iso_trigger = not is7TeV
             mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
@@ -241,7 +249,6 @@ class FakeRatesEM(MegaBase):
                 fill_region(region,'pt10')
             if mu8e17:
                 fill_region(region,'pt20')
-                muon_region = control_region_muon(row)
                 if muon_region:
                     fill_muon_region(muon_region, 'pt10')
                     if row.mPt > 20:
