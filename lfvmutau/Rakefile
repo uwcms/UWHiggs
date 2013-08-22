@@ -6,6 +6,7 @@ $jobid = ENV['jobid']
 
 # Figure out what run period we are in
 $period = '8TeV'
+PU = ENV['PU']
 #if $jobid.include? '8TeV'
 #  $period = '8TeV'
 #end
@@ -21,18 +22,43 @@ def get_sample_names(substring)
   inputs = inputs.map{|x| File.basename(x).sub(".txt", "")}
   return inputs
 end
-
+#
 samples = Hash[
-  "ewk" => Array['Zjets_M50', 
-    'TTplusJets_madgraph'], 
-  "ttbar" => Array['TTplusJets_madgraph'],
+  #"ewk" => Array['Zjets_M50'], 
+   # 'TTplusJets_madgraph'], 
+  #"ttbar" => Array['TTplusJets_madgraph'],
+   "ttbar" => get_sample_names('TTJets'),
+  "ttbar05" => get_sample_names('TTJets'),	
   "wjets" => get_sample_names('Wplus'),
-  "zjets" => Array['Zjets_M50'],
+  "wwjets" => get_sample_names('WWJets'),
+  #"zjets" => Array['Zjets_M50'],
+  "zjets" => get_sample_names('Zjets_M50'),
 
-   "signal" => get_sample_names('LFV'),
-   "sm" => Array['VBF_H2Tau_M-125','GluGlu_H2Tau_M-125'],
-  "data_mt" => get_sample_names("data_SingleMu") 
+  "old_signal" => get_sample_names('H2Tau_M-126'),
+  "new_signal" => get_sample_names('Minus'),	
+  "sm" => Array['VBF_H2Tau_M-125'],
+	#'GluGlu_H2Tau_M-125'], not working (July 1 2013)
+  "data_mt" => get_sample_names('data_SingleMu'),
+  "DY" => get_sample_names('DY'),
+  "embedded" => get_sample_names('Embedded')
+
 ]
+
+#samples = Hash[
+  #"ewk" => Array[ 
+  #'TTplusJets_madgraph'], 
+  
+#"ttbar" => get_sample_names('TTJets'),
+ # "wjets" => get_sample_names('Wplus')
+#  "wwjets" => get_sample_names('WWJets'),
+#  "zjets" => Array['Zjets_M50'],
+
+ # "old_signal" => get_sample_names('H2Tau_M-126'),
+#  "new_signal" => get_sample_names('Minus'),   
+#  "sm" => Array['VBF_H2Tau_M-125'],
+        #'GluGlu_H2Tau_M-125'], not working (July 1 2013)
+#  "data_mt" => get_sample_names("data_SingleMu") 
+#]
 
 # Function to get the .root files for an analyzer and samples
 def get_analyzer_results(analyzer, the_samples)
@@ -50,7 +76,12 @@ end
 ##     mt
 ################################################################################
 
-task :mttight => get_analyzer_results("AnalyzeMuTauTight.py", samples['ewk'] + samples['wjets'] + samples['data_mt'] + samples['signal']+samples['sm'])
+task :mttight => get_analyzer_results("AnalyzeMuTauTightvbfNew.py", samples['zjets'] + samples['wjets'] + samples['sm']+samples['new_signal'] + samples['data_mt'] + samples['ttbar'] + samples['wwjets'] + samples['DY'] + samples['embedded']
+	)
 
-#task :testPy  => get_analyzer_results(  "AnalyzeMuTauTight.py",samples['signal'])
+
+##use $PU = false for samples with no pileup
+task :pu1mttight  => get_analyzer_results(  "AnalyzeMuTauTightvbfNew.py",samples['old_signal'])
+#Task for samples on login05
+task :mttight05 => get_analyzer_results("AnalyzeMuTauTightvbf.py", samples['wjets'] + samples['ttbar05'])
 
