@@ -96,6 +96,18 @@ def make_mva_functor_dict(template, variables, mapper=None):
         )
     return ret
 
+def null(*args, **kwargs):
+    return 0.
+
+def make_null_dict(template, variables, mapper=None):
+    ret = {}
+    for i in optimizer.lep_id:
+        lepid = i
+        if mapper:
+            lepid = mapper(lepid)
+        ret[i] = null
+    return ret
+
 
 ##################
 ## 1D Muon Func ##
@@ -103,19 +115,26 @@ def make_mva_functor_dict(template, variables, mapper=None):
 
 #no changes in muonID in 2013
 mapper    = {'eid1[0-9][A-Z][a-z]+_':'', 'idiso02' : 'pfidiso02'}
-variables = ['muonJetPt', 'muonPt', 'muonJetCSVBtag'] #'muonPVDXY']#, 'muonJetBtag']
+variables = ['muonJetPt', 'muonPt', 'numJets20'] #, 'muonJetCSVBtag']
 highpt_mu_fr = make_mva_functor_dict(frfit_dir + '/m_wjets_pt20_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
 lowpt_mu_fr  = make_mva_functor_dict(frfit_dir + '/m_wjets_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
 
 highpt_mu_qcd_fr = make_mva_functor_dict(frfit_dir + '/m_qcd_pt20_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
 lowpt_mu_qcd_fr  = make_mva_functor_dict(frfit_dir + '/m_qcd_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
 
+variables = ['muonJetPt', 'muonPt', 'numJets20']
+highpt_mue_fr = make_mva_functor_dict(frfit_dir + '/m_Mwjets_pt20_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+lowpt_mue_fr  = make_mva_functor_dict(frfit_dir + '/m_Mwjets_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+
+highpt_mue_qcd_fr = make_mva_functor_dict(frfit_dir + '/m_Mqcd_pt20_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+lowpt_mue_qcd_fr  = make_mva_functor_dict(frfit_dir + '/m_Mqcd_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+
 
 #######################
 ## 1D Electrons Func ##
 #######################
 
-variables = ['electronJetPt', 'electronPt']
+variables = ['electronJetPt', 'electronPt', 'numJets20']
 #EMT
 highpt_e_fr = make_mva_functor_dict(frfit_dir + '/e_wjets_pt20_%s_electronInfo.kNN.weights.xml', variables)
 lowpt_e_fr  = make_mva_functor_dict(frfit_dir + '/e_wjets_pt10_%s_electronInfo.kNN.weights.xml', variables)
@@ -124,6 +143,7 @@ highpt_e_qcd_fr = make_mva_functor_dict(frfit_dir + '/e_qcd_pt20_%s_electronInfo
 lowpt_e_qcd_fr  = make_mva_functor_dict(frfit_dir + '/e_qcd_pt10_%s_electronInfo.kNN.weights.xml', variables)
 
 #EET
+variables = ['electronJetPt', 'electronPt', 'numJets20']
 highpt_ee_fr = make_mva_functor_dict(frfit_dir + '/ee_wjetsNoZmass_pt20_%s_electronInfo.kNN.weights.xml', variables) 
 lowpt_ee_fr  = make_mva_functor_dict(frfit_dir + '/ee_wjetsNoZmass_pt10_%s_electronInfo.kNN.weights.xml', variables) 
 
@@ -150,10 +170,10 @@ mass_scaler        = make_scaler_dict(frfit_dir+"/charge_flip_prob_map_%s.root",
 default_scaler     = mass_scaler[mass_scaler.keys()[0]]
 
 
-e1_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map")         
-e1_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map_statUp")  
-e1_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map_statDown")
-
-e2_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map")         
-e2_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map_statUp")  
-e2_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map_statDown")
+#e1_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map")         
+#e1_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map_statUp")  
+#e1_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map_statDown")
+#
+#e2_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map")         
+#e2_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map_statUp")  
+#e2_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map_statDown")
