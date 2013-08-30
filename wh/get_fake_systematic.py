@@ -26,4 +26,5 @@ qcd_view = views.SumView(
 nom = nom_view.Get('fakes').Integral()
 qcd = qcd_view.Get('fakes').Integral()
 
-print "%s fakes %s %0.2f" % (','.join(base_dirs), syst_name, 1 + abs(nom - qcd) / nom)
+minimalerror = max(abs(nom - qcd)/nom, 0.01)
+print "%s fakes %s %0.2f" % (','.join(base_dirs), syst_name, 1 + minimalerror)
