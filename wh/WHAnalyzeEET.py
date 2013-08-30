@@ -17,6 +17,18 @@ import array
 from chargeflipcuts import charge_flip_funcs
 from FinalStateAnalysis.PlotTools.decorators import memo_last
 
+#initialize FRFits
+optimizer_keys   = [ i for i in optimizer.grid_search.keys() if i.startswith('EET') ]
+grid_search = {}
+if len(optimizer_keys) > 1:
+        grid_search[key] = optimizer.grid_search[key]
+
+for key in optimizer_keys:
+    frfits.highpt_ee_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
+    frfits.highpt_ee_qcd_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
+    frfits.lowpt_ee_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
+    frfits.lowpt_ee_qcd_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
+
 #mtr = frfits.mt_likelihood_ratio
 ################################################################################
 #### Analysis logic ############################################################
@@ -340,19 +352,19 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
    
     def obj1_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
-        return frfits.highpt_ee_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt)
+        return frfits.highpt_ee_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt, numJets20=row.jetVeto20+1)
 
     def obj2_weight(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
-	return frfits.lowpt_ee_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt)
+	return frfits.lowpt_ee_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt, numJets20=row.jetVeto20+1)
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_fr(row.tPt)
 
     def obj1_qcd_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
-        return frfits.highpt_ee_qcd_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt)
+        return frfits.highpt_ee_qcd_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt, numJets20=row.jetVeto20+1)
 
     def obj2_qcd_weight(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
-        return frfits.lowpt_ee_qcd_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt)
+        return frfits.lowpt_ee_qcd_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt, numJets20=row.jetVeto20+1)
 
     def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
         return frfits.tau_qcd_fr(row.tPt)
