@@ -57,7 +57,7 @@ class FakeRatesMM(MegaBase):
                 denom_histos['muonInfo'] = self.book(
                     os.path.join(region, denom),
                     'muonInfo', "muonInfo", 
-                    'muonPt:muonJetPt:muonJetCSVBtag:muonPVDXY:weight:'+':'.join(self.lepIds), 
+                    'muonPt:muonJetPt:muonAbsEta:muonJetCSVBtag:muonPVDXY:numJets20:numJets40:weight:'+':'.join(self.lepIds), 
                     type=ROOT.TNtuple)
                 
                 for numerator in self.lepIds:
@@ -116,7 +116,8 @@ class FakeRatesMM(MegaBase):
             if not selections.muSelection(row, 'm1'):  return False
             if not selections.muSelection(row, 'm2'):  return False
             if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
-            if not (row.jetVeto40_DR05 >= 1): return False
+            #if not (row.jetVeto40_DR05 >= 1): return False
+            if not (row.jetVeto20 > 0): return False
             return True
 
         def fill(the_histos, row, fillNtuple=False):
@@ -145,7 +146,9 @@ class FakeRatesMM(MegaBase):
                 pfidiso02    = float( row.m2PFIDTight and row.m2RelPFIsoDB < 0.2)
                 h2taucuts    = float( row.m2PFIDTight and ((row.m2RelPFIsoDB < 0.15 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.1 ))
                 h2taucuts020 = float( row.m2PFIDTight and ((row.m2RelPFIsoDB < 0.20 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.15))
-                the_histos['muonInfo'].Fill( array("f", [row.m2Pt, row.m2JetPt, max(0, row.m2JetCSVBtag), abs(row.m2PVDXY), weight, pfidiso02, h2taucuts, h2taucuts020] ) )
+                the_histos['muonInfo'].Fill( array("f", [row.m2Pt, row.m2JetPt, row.m2AbsEta, max(0, row.m2JetCSVBtag), 
+                                                         abs(row.m2PVDXY), row.jetVeto20, row.jetVeto40_DR05, weight, 
+                                                         pfidiso02, h2taucuts, h2taucuts020] ) )
                 
         histos = self.histograms
         for row in self.tree:

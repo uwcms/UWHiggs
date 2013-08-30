@@ -57,7 +57,7 @@ class FakeRatesEE(MegaBase):
                 denom_histos['electronInfo'] = self.book(
                     os.path.join(region, denom),
                     'electronInfo', "electronInfo", 
-                    'electronPt:electronJetPt:weight:'+':'.join(self.lepIds), 
+                    'electronPt:electronJetPt:electronJetCSVBtag:numJets20:numJets40:weight:'+':'.join(self.lepIds), 
                     type=ROOT.TNtuple)
 
                 for numerator in self.lepIds:
@@ -103,7 +103,8 @@ class FakeRatesEE(MegaBase):
             if not selections.eSelection(row, 'e1'): return False
             if not row.e1MVAIDH2TauWP: return False
             if not selections.eSelection(row, 'e2'): return False
-            if not (row.jetVeto40_DR05 >= 1):             return False
+            #if not (row.jetVeto40_DR05 >= 1):             return False
+            if not (row.jetVeto20 > 1): return False
             if not selections.vetos(row): return False
             return True
 
@@ -135,7 +136,8 @@ class FakeRatesEE(MegaBase):
                 #print id_iso_vals
                 #print self.lepIds
                 id_iso_vals = [float( i ) for i in id_iso_vals ]
-                the_histos['electronInfo'].Fill( array("f", [row.e2Pt, row.e2JetPt, weight]+id_iso_vals) )
+                the_histos['electronInfo'].Fill( array("f", [row.e2Pt, row.e2JetPt, max(0, row.e2JetCSVBtag),
+                                                             row.jetVeto20, row.jetVeto40_DR05, weight]+id_iso_vals) )
 
 
         histos = self.histograms
