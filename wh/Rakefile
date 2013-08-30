@@ -188,23 +188,23 @@ def make_kNN(chan, datas)
              ]
 end
 
-iso_points   = ['idiso02', 'h2taucuts', 'h2taucuts020']
-electronIds  = ['eid12Loose', 'eid12Medium', 'eid12Tight'] #, 'eid13Loose', 'eid13Tight']
+iso_points   = ['h2taucuts', 'h2taucuts020'] #'idiso02', 
+electronIds  = ['eid12Medium', 'eid12Tight'] #, 'eid13Loose', 'eid12Loose', 'eid13Tight']
 elewps       = electronIds.product(iso_points)
 elewps       = elewps.map{|x,y| "#{x}_#{y}"}
 pt_regions   = ['pt10', 'pt20']
-muonwps      = ['h2taucuts', 'h2taucuts020', 'pfidiso02']
+muonwps      = ['h2taucuts', 'h2taucuts020'] #, 'pfidiso02']
 fr_fits      = Hash.new
 kNN_trains   = Hash.new
-muon_kNN_vars= ['muonJetPt', 'muonPt', 'muonJetCSVBtag'] #'muonPVDXY']
-electron_kNN_vars= ['electronJetPt', 'electronPt']
+muon_kNN_vars= ['muonJetPt', 'muonPt', 'numJets20'] 
+electron_kNN_vars= ['electronJetPt', 'electronPt', 'numJets20']
 
 
 #############
 #  EM datas
 #############
 emcrs = ['qcd', 'wjets']
-elewps.each do |ele_wp|
+elewps.select{|x| x.start_with?('eid12Medium')}.each do |ele_wp|
   emcrs.each do |cr|
     pt_regions.each do |ptr|
       key = "e_#{cr}_#{ptr}_#{ele_wp}_eJetPt"
@@ -218,16 +218,16 @@ elewps.each do |ele_wp|
 end
 
 #muon fakes from em
-#mmcrs = ['qcd', 'wjets']
-#muonwps.each do |mu_wp|
-#  mmcrs.each do |cr|
-#    pt_regions.each do |ptr|
-#      key = "m_M#{cr}_#{ptr}_#{mu_wp}_muonInfo"
-#      kNN_trains[key] =  make_kNN('em', 'em') 
-#      kNN_trains[key]['vars'] = muon_kNN_vars
-#    end
-#  end
-#end
+mmcrs = ['qcd', 'wjets']
+muonwps.each do |mu_wp|
+  mmcrs.each do |cr|
+    pt_regions.each do |ptr|
+      key = "m_M#{cr}_#{ptr}_#{mu_wp}_muonInfo"
+      kNN_trains[key] =  make_kNN('em', 'em') 
+      kNN_trains[key]['vars'] = muon_kNN_vars
+    end
+  end
+end
 
 
 #############
@@ -254,6 +254,7 @@ end
 #############
 #  MM datas
 #############
+muon_kNN_vars= ['muonJetPt', 'muonPt', 'numJets20']
 mmcrs = ['qcd', 'wjets']
 muonwps.each do |mu_wp|
   mmcrs.each do |cr|
@@ -387,7 +388,7 @@ kNN_trains.each do |kNN, info|
 
   file knn_output => subsamples_inputs_result_list + [info['analyzer'] + '.py',] do |t|
     sh "mkdir -p #{$frfit_dir}"
-    sh "train_kNN.py --files #{subsample_input_list} --outputfile #{knn_output} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 0"
+    sh "train_kNN.py --files #{subsample_input_list} --outputfile #{knn_output} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 1"
   end
   task :kNN => knn_output
   kNN_files << knn_output
@@ -673,6 +674,7 @@ def make_unc_vals_task(channel, opttag='')
     Dir.glob("results/#{$jobid}/plots/#{channel}/#{channel}#{opttag}_shapes_*_statshapes.txt").each do |list|
       category = list.split('/')[-1].split('_')[-2]
       sh "cat #{list} | xargs -n 1 -I {} echo '#{category} fakes {} 1.0' >> #{t.name}"
+      #sh "python get_fake_systematic.py #{carddir_channel}/shapes.root #{$categories_map[channel].join(',')} CMS_vhtt_#{category}_fakes_#{$period} >> #{t.name}"
     end
     sh "python get_fake_systematic.py #{carddir_channel}/shapes.root #{$categories_map[channel].join(',')} CMS_vhtt_#{channel}_fakes_#{$period} >> #{t.name}"
   end
@@ -1036,6 +1038,7 @@ def make_f3_postfit_plots_task(channel)
       sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.png -x #{$xlabels_map[channel]}"
       sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.pdf -x #{$xlabels_map[channel]}"
     end
+    sh "cp -v #{$carddir}/#{channel}/#{channel}.pulls* #{resultdir}/."
     sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.png -x #{$xlabels_map[channel]}"
     sh "touch #{t.name}"
   end
