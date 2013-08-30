@@ -19,6 +19,7 @@ from FinalStateAnalysis.PlotTools.PoissonView    import PoissonView
 from FinalStateAnalysis.PlotTools.MedianView     import MedianView
 from FinalStateAnalysis.PlotTools.ProjectionView import ProjectionView
 from FinalStateAnalysis.PlotTools.FixedIntegralView import FixedIntegralView
+from FinalStateAnalysis.PlotTools.DifferentialView import DifferentialView
 from FinalStateAnalysis.PlotTools.RebinView  import RebinView
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 from FinalStateAnalysis.PlotTools.decorators import memo
@@ -721,7 +722,7 @@ class WHPlotterBase(Plotter):
                    show_error=False, qcd_correction=False, stack_higgs=True, 
                    qcd_weight_fraction=0.5, x_range=None, show_charge_fakes=False,
                    leftside_legend=False, higgs_xsec_multiplier=5, project=None, 
-                   project_axis=None, **kwargs):
+                   project_axis=None, differential=False, **kwargs):
         ''' Plot the final output - with bkg. estimation '''        
         show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
         sig_view = self.make_signal_views(unblinded=(not self.blind), 
@@ -729,6 +730,9 @@ class WHPlotterBase(Plotter):
         if project and project_axis:
             sig_view = self.apply_to_dict( sig_view, ProjectionView, project_axis, project ) 
         sig_view = self.apply_to_dict( sig_view, RebinView, rebin ) #Rebin
+        
+        if differential:
+            sig_view = self.apply_to_dict(sig_view, DifferentialView)
 
         vh_10x = views.TitleView(
             views.StyleView(
@@ -833,7 +837,7 @@ class WHPlotterBase(Plotter):
                       show_error=True, qcd_correction=False,
                       qcd_weight_fraction=0.5, x_range=None, #):
                       show_chi2=False,project=None, 
-                      project_axis=None, **kwargs):
+                      project_axis=None, differential=False, **kwargs):
         ''' Plot the final F3 control region - with bkg. estimation '''
 
         sig_view = self.make_obj3_fail_cr_views(
@@ -841,6 +845,8 @@ class WHPlotterBase(Plotter):
         if project and project_axis:
             sig_view = self.apply_to_dict( sig_view, ProjectionView, project_axis, project ) 
         sig_view = self.apply_to_dict( sig_view, RebinView, rebin ) #Rebin
+        if differential:
+            sig_view = self.apply_to_dict(sig_view, DifferentialView)
 
         charge_fakes_view = MedianView(highv=sig_view['charge_fakes']['sys_up'], centv=sig_view['charge_fakes']['central'])
 
