@@ -33,7 +33,7 @@ end
 #puts get_sample_names('data_DoubleMu')
 
 samples = Hash[
-  "ewk" => Array['Zjets_M50', 'WplusJets_madgraph', 'TTplusJets_madgraph'] + get_sample_names('WZ') + get_sample_names('WWJet')+ get_sample_names('ZZ'),     #'ZZJetsTo4L_pythia',
+  "ewk" => Array['Zjets_M50', 'WplusJets_madgraph'] + get_sample_names('TTplusJets') + get_sample_names('WZ') + get_sample_names('WWJet')+ get_sample_names('ZZ'),     #'ZZJetsTo4L_pythia',
   "wjets" => Array['WplusJets_madgraph'],
   "zjets" => Array['Zjets_M50'],
   "diboson" => get_sample_names('ZZ')+get_sample_names('WZ') + get_sample_names('WWJet'),
@@ -605,8 +605,12 @@ task :eet_shapes => eet_shape_file
 $carddir = "results/#{$jobid}/cards"
 
 cardmasses = get_sample_names('VH') #get all the VH samples available
-cardmasses = cardmasses.select{|x| x.include? "H2Tau"} #get only the H2Tau, to avid repetition
-cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
+cardmasses = cardmasses.select{|x| not x.include? "HWW"} #get only the H2Tau, to avid repetition
+if $period == '8TeV' 
+  cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
+else
+  cardmasses = cardmasses.map{|x| x.sub("VH_","")} #remove trailing name, the leftover is the mass (as a string)
+end
 cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it's really needed but can't harm)
 cardmasses = cardmasses.select{|x| x <= 140} #FIXME! to be removed!
 #puts cardmasses
@@ -618,7 +622,7 @@ def make_morphing_task(channel, shapefile)
   file ret => [shapefile] do |t|
     sh "mkdir -p `dirname #{t.name}`"
     sh "cp #{t.prerequisites[0]} #{t.name}"
-    sh "horizontal-morphing.py --categories='#{$categories_map[channel].join(',')}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 -i #{t.name}"# --extrapolate=#{$to_extrapolate.join(",")} #{t.name}" #FIXME! to be removed!
+    #sh "horizontal-morphing.py --categories='#{$categories_map[channel].join(',')}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 -i #{t.name}"# --extrapolate=#{$to_extrapolate.join(",")} #{t.name}" #FIXME! to be removed!
   end
   return ret
 end
@@ -730,11 +734,13 @@ def make_timestamp_task(cardmasses, channel)
   make_unc_vals_task(channel)
   make_cgs_conf_task(channel)
   file timestamp => cardmasses.map{|x| make_datacard_task(x, channel)} do |t|
+    sh "mkdir -p `dirname #{t.name}`"
     sh "touch #{t.name}"
   end
 end
 
 file "#{$carddir}/llt/.creation_timestamp" => cardmasses.map{|x| combine_channels(x)} do |t|
+  sh "mkdir -p `dirname #{t.name}`"
   sh "touch #{t.name}"
 end
 
@@ -872,6 +878,15 @@ def copy_file(source, target)
   return target
 end
 
+def copy_and_trim_file(source, target)
+  file target => [source] do |t|
+    sh "mkdir -p `dirname #{t.name}`"
+    sh "grep -v -E 'CMS_vhtt_.*_bin_[0-9]+' #{source} > #{t.name}"
+  end
+  return target
+end
+
+
 def copy_configs(channel, vhtt_number)
   dir    = "#{$carddir}/#{channel}"
   htt_id = "sm-#{$period}-#{vhtt_number}"
@@ -880,10 +895,10 @@ def copy_configs(channel, vhtt_number)
   copy_file("#{dir}/cgs.conf", "#{$httcombodir}/cgs-#{htt_id}.conf")
 
   #copies unc.conf
-  copy_file("#{dir}/unc.conf", "#{$httcombodir}/unc-#{htt_id}.conf")
+  copy_and_trim_file("#{dir}/unc.conf", "#{$httcombodir}/unc-#{htt_id}.conf")
 
   #copies unc.vals
-  copy_file("#{dir}/unc.vals", "#{$httcombodir}/unc-#{htt_id}.vals")
+  copy_and_trim_file("#{dir}/unc.vals", "#{$httcombodir}/unc-#{htt_id}.vals")
 
   return ["#{$httcombodir}/cgs-#{htt_id}.conf", "#{$httcombodir}/unc-#{htt_id}.conf", "#{$httcombodir}/unc-#{htt_id}.vals"]
 end
@@ -1035,11 +1050,11 @@ def make_f3_postfit_plots_task(channel)
   file plot_timestamp => shape_file do |t|
     sh "mkdir -p `dirname #{t.name}`"
     $categories_map[channel].each do |category|
-      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.png -x #{$xlabels_map[channel]}"
-      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.pdf -x #{$xlabels_map[channel]}"
+      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.png -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV'"
+      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.pdf -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV'"
     end
     sh "cp -v #{$carddir}/#{channel}/#{channel}.pulls* #{resultdir}/."
-    sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.png -x #{$xlabels_map[channel]}"
+    sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.png -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV'"
     sh "touch #{t.name}"
   end
   return plot_timestamp
