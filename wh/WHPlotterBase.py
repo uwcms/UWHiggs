@@ -200,7 +200,7 @@ class WHPlotterBase(Plotter):
             'ZZ*',
             'VH*',
             'WW*',
-            'TTplusJets_madgraph',
+            #'TTplusJets_madgraph',
             "data_*",
         ]
 
@@ -228,6 +228,7 @@ class WHPlotterBase(Plotter):
         super(WHPlotterBase, self).__init__(files, lumifiles, self.outputdir,
                                             blinder)
         self.defaults = {} #allows to set some options and avoid repeating them each function call
+        self.mc_samples = filter(lambda x: x.startswith('data'), samples)
         os.chdir( cwd )
         #create a fake wiew summing up all HWW
         self.views['VH_hww_sum'] = {
@@ -244,6 +245,8 @@ class WHPlotterBase(Plotter):
         for key, val in dictionary.iteritems():
             if isinstance(val, dict):
                 ret[key] = self.apply_to_dict(val, viewtype, *args, **kwargs) #project, project_axis, rebin)
+            elif val is None:
+                ret[key] = None
             else:
                 ret[key] = viewtype(val, *args, **kwargs) # self.rebin_view( ProjectionView(val, project_axis, project), rebin )
         return ret
@@ -256,8 +259,9 @@ class WHPlotterBase(Plotter):
             self.get_view('WZJetsTo3LNu*ZToTauTau*'),
             'ss/p1p2p3/'
         )
+        tomatch = 'WZJetsTo3LNu' if self.sqrts == 7 else 'WZJetsTo3LNu_pythia'
         wz_view_3l = views.SubdirectoryView(
-            self.get_view('WZJetsTo3LNu_pythia'),
+            self.get_view(tomatch),
             'ss/p1p2p3/'
         )
         zz_view = views.SubdirectoryView(
@@ -371,20 +375,29 @@ class WHPlotterBase(Plotter):
 
         # Add signal
         data_total_lumi = self.views['data']['intlumi']
-        for mass in range(110, 165, 5):
-            vh_view = views.SubdirectoryView(
-                self.get_view('VH_*%i' % mass),
-                'ss/p1p2p3/'
-            )
-            output['vh%i' % mass] = vh_view
+        for mass in range(100, 165, 5):
+            try:
+                vh_view = views.SubdirectoryView(
+                    self.get_view('VH_*%i' % mass),
+                    'ss/p1p2p3/'
+                )
+                output['vh%i' % mass] = vh_view
+            except KeyError:
+                logging.warning('No sample found matching VH_*%i' % mass)
+                continue
+
             if mass % 10 == 0 and mass < 150:
                 # Only have 10 GeV steps for WW
-                ww_view = views.SubdirectoryView(
-                    self.get_view('VH_%i_HWW*' % mass),
-                'ss/p1p2p3/'
-                )
+                try:
+                    ww_view = views.SubdirectoryView(
+                        self.get_view('VH_%i_HWW*' % mass),
+                        'ss/p1p2p3/'
+                    )
+                except KeyError:
+                    logging.warning('No sample found matching VH_%i_HWW*' % mass)
+                    ww_view = None
                 output['vh%i_hww' % mass] = ww_view
-                output['signal%i' % mass] = views.SumView(ww_view, vh_view)
+                output['signal%i' % mass] = views.SumView(ww_view, vh_view) if ww_view else vh_view
 
         return output
 
@@ -428,8 +441,9 @@ class WHPlotterBase(Plotter):
             self.get_view('WZJetsTo3LNu*ZToTauTau*'),
             'ss/p1p2f3/'
         )
+        tomatch = 'WZJetsTo3LNu' if self.sqrts == 7 else 'WZJetsTo3LNu_pythia'
         wz_view_3l = views.SubdirectoryView(
-            self.get_view('WZJetsTo3LNu_pythia'),
+            self.get_view(tomatch),
             'ss/p1p2f3/'
         )
         zz_view = views.SubdirectoryView(
@@ -546,12 +560,16 @@ class WHPlotterBase(Plotter):
             'ss/p1p2f3/'
         )
         output['vh%i' % mass] = vh_view
-        ww_view = views.SubdirectoryView(
-            self.get_view('VH_%i_HWW*' % mass),
-            'ss/p1p2f3/'
-        )
+        try:
+            ww_view = views.SubdirectoryView(
+                self.get_view('VH_%i_HWW*' % mass),
+                'ss/p1p2f3/'
+            )
+        except KeyError:
+            logging.warning('No sample found matching VH_%i_HWW*' % mass)
+            ww_view = None
         output['vh%i_hww' % mass] = ww_view
-        output['signal%i' % mass] = views.SumView(ww_view, vh_view)
+        output['signal%i' % mass] = views.SumView(ww_view, vh_view) if ww_view else vh_view
 
         return output
 
@@ -633,15 +651,21 @@ class WHPlotterBase(Plotter):
         fakes.SetName('fakes')
         
         #for mass in [110, 115, 120, 125, 130, 135, 140]:
-        for mass in range(110, 165, 5):
-            vh = sig_view['vh%i' % mass].Get(variable)
-            vh.SetName('WH%i' % mass)
-            vh.Write()
+        for mass in range(100, 165, 5):
+            try:
+                vh = sig_view['vh%i' % mass].Get(variable)
+                vh.SetName('WH%i' % mass)
+                vh.Write()
+            except KeyError:
+                logging.warning('No sample found matching VH_*%i' % mass)
+                continue
+
             if mass % 10 == 0 and mass < 150:
                 # Only have 10 GeV steps for WW
-                ww = sig_view['vh%i_hww' % mass].Get(variable)
-                ww.SetName('WH_hww%i' % mass)
-                ww.Write()
+                if sig_view['vh%i_hww' % mass]:
+                    ww = sig_view['vh%i_hww' % mass].Get(variable)
+                    ww.SetName('WH_hww%i' % mass)
+                    ww.Write()
 
         wz.Write()
         zz.Write()
@@ -701,9 +725,10 @@ class WHPlotterBase(Plotter):
         vh.SetName('WH%i' % mass)
         vh.Write()
         # Only have 10 GeV steps for WW
-        ww = sig_view['vh%i_hww' % mass].Get(variable)
-        ww.SetName('WH_hww%i' % mass)
-        ww.Write()
+        if sig_view['vh%i_hww' % mass]:
+            ww = sig_view['vh%i_hww' % mass].Get(variable)
+            ww.SetName('WH_hww125')
+            ww.Write()
 
         #charge_fakes_CMS_vhtt_emt_chargeFlip_8TeVUpx
         if show_charge_fakes:
@@ -722,7 +747,7 @@ class WHPlotterBase(Plotter):
                    show_error=False, qcd_correction=False, stack_higgs=True, 
                    qcd_weight_fraction=0.5, x_range=None, show_charge_fakes=False,
                    leftside_legend=False, higgs_xsec_multiplier=5, project=None, 
-                   project_axis=None, differential=False, **kwargs):
+                   project_axis=None, differential=False, yaxis='Events', **kwargs):
         ''' Plot the final output - with bkg. estimation '''        
         show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
         sig_view = self.make_signal_views(unblinded=(not self.blind), 
@@ -754,6 +779,8 @@ class WHPlotterBase(Plotter):
         
         histo.Draw()
         histo.GetHistogram().GetXaxis().SetTitle(xaxis)
+        histo.GetHistogram().GetYaxis().SetTitle(yaxis)
+
         if x_range:
             histo.GetHistogram().GetXaxis().SetRangeUser(x_range[0], x_range[1])
         if isinstance(maxy, (int, long, float)):
@@ -837,7 +864,7 @@ class WHPlotterBase(Plotter):
                       show_error=True, qcd_correction=False,
                       qcd_weight_fraction=0.5, x_range=None, #):
                       show_chi2=False,project=None, 
-                      project_axis=None, differential=False, **kwargs):
+                      project_axis=None, differential=False, yaxis='Events', **kwargs):
         ''' Plot the final F3 control region - with bkg. estimation '''
 
         sig_view = self.make_obj3_fail_cr_views(
@@ -860,6 +887,8 @@ class WHPlotterBase(Plotter):
         histo = stack.Get(variable)
         histo.Draw()
         histo.GetHistogram().GetXaxis().SetTitle(xaxis)
+        histo.GetHistogram().GetYaxis().SetTitle(yaxis)
+
         if x_range:
             histo.GetHistogram().GetXaxis().SetRangeUser(x_range[0], x_range[1])
 
