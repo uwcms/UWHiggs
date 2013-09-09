@@ -7,9 +7,9 @@
 #backgrounds: background
 #data: data_obs
 
-$ GROUP signal WH,WH_hww
-$ GROUP all_background wz,zz,fakes,charge_fakes
-$ GROUP simulated WH,wz,zz,WH_hww
+$ GROUP signal WH
+$ GROUP all_background wz,zz,fakes,charge_fakes,WH_hww125
+$ GROUP simulated WH,wz,zz,WH_hww125
 
 categories: emtCatHigh,emtCatLow
 signals: signal

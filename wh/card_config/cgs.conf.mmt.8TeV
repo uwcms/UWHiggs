@@ -7,9 +7,9 @@
 #backgrounds: background
 #data: data_obs
 
-$ GROUP signal WH,WH_hww
-$ GROUP background wz,zz,fakes
-$ GROUP simulated WH,wz,zz,WH_hww
+$ GROUP signal WH
+$ GROUP background wz,zz,fakes,WH_hww125
+$ GROUP simulated WH,wz,zz,WH_hww125
 
 categories: mmtCatHigh,mmtCatLow
 signals: signal
