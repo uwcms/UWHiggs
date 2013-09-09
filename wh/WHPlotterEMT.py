@@ -40,9 +40,9 @@ if __name__ == "__main__":
         plotter.set_subdir('mc_data')
 
         # Control Z->tautau + jet region
-        plotter.plot_mc_vs_data('os/p1p2f3', 'e_m_Mass', rebin=10, xaxis='m_{e#mu} (GeV)', leftside=False)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('mcdata-os-p1p2f3-emMass')
+        #plotter.plot_mc_vs_data('os/p1p2f3', 'e_m_Mass', rebin=10, xaxis='m_{e#mu} (GeV)', leftside=False)
+        #plotter.add_cms_blurb(sqrts)
+        #plotter.save('mcdata-os-p1p2f3-emMass')
 
         plotter.plot_mc_vs_data('os/p1p2f3', 'nTruePU', rebin=1, xaxis='True PU')
         plotter.add_cms_blurb(sqrts)
@@ -56,14 +56,14 @@ if __name__ == "__main__":
         ## plotter.add_cms_blurb(sqrts)
         ## plotter.save('mcdata-os-p1p2f3-bveto')
 
-        plotter.plot_mc_vs_data('os/p1p2f3/w3', 'e_m_Mass', 10)
-        plotter.save('mcdata-os-p1p2f3-w3-emMass')
-
-        plotter.plot_mc_vs_data('os/p1f2p3', 'e_m_Mass', 10)
-        plotter.save('mcdata-os-p1f2p3-emMass')
-
-        plotter.plot_mc_vs_data('os/f1p2p3', 'e_m_Mass', 10)
-        plotter.save('mcdata-os-p1f2p3-emMass')
+        #plotter.plot_mc_vs_data('os/p1p2f3/w3', 'e_m_Mass', 10)
+        #plotter.save('mcdata-os-p1p2f3-w3-emMass')
+        #
+        #plotter.plot_mc_vs_data('os/p1f2p3', 'e_m_Mass', 10)
+        #plotter.save('mcdata-os-p1f2p3-emMass')
+        #
+        #plotter.plot_mc_vs_data('os/f1p2p3', 'e_m_Mass', 10)
+        #plotter.save('mcdata-os-p1f2p3-emMass')
 
         # Check PU variables
         #plotter.plot_mc_vs_data('os/p1p2f3', 'rho')
@@ -81,15 +81,15 @@ if __name__ == "__main__":
 
         # Make Z->mumu + tau jet control
 
-        weighted = plotter.plot('data', 'os/p1p2f3/w3/e_m_Mass',  'hist', rebin=20, styler=make_styler(2, 'hist'), xaxis='m_{e#mu} (GeV)')
-        unweighted = plotter.plot('data', 'os/p1p2p3/e_m_Mass', 'same', rebin=20, styler=make_styler(1), xaxis='m_{e#mu} (GeV)')
-        weighted.SetTitle('e^{+}#mu^{-} + fake #tau_{h} est.')
-        weighted.legendstyle = 'l'
-        unweighted.SetTitle('e^{+}#mu^{-} + fake #tau_{h} obs.')
-        unweighted.legendstyle = 'pe'
-        plotter.add_legend([weighted, unweighted])
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('ztt-os-fr-control')
+        #weighted = plotter.plot('data', 'os/p1p2f3/w3/e_m_Mass',  'hist', rebin=20, styler=make_styler(2, 'hist'), xaxis='m_{e#mu} (GeV)')
+        #unweighted = plotter.plot('data', 'os/p1p2p3/e_m_Mass', 'same', rebin=20, styler=make_styler(1), xaxis='m_{e#mu} (GeV)')
+        #weighted.SetTitle('e^{+}#mu^{-} + fake #tau_{h} est.')
+        #weighted.legendstyle = 'l'
+        #unweighted.SetTitle('e^{+}#mu^{-} + fake #tau_{h} obs.')
+        #unweighted.legendstyle = 'pe'
+        #plotter.add_legend([weighted, unweighted])
+        #plotter.add_cms_blurb(sqrts)
+        #plotter.save('ztt-os-fr-control')
 
         #plotter.plot('data', 'os/p1p2p3/prescale', styler=make_styler(1))
         #plotter.save('ztt-os-prescale-check')
@@ -136,18 +136,32 @@ if __name__ == "__main__":
         ##  Signal region plots    ################################################
         ###########################################################################
         plotter.set_subdir('')
-        rebin_slim = [0,20]+range(30, 81, 10)+[100,130,200]
+        rebin_slim = [20]+range(30, 81, 10)+[100,130,300]
         categories = {
             'LTCut' : [80, 650],
             'LTLow' : [0, 130],
             'LTHigh': [130, 650],
+            'Full'  : [0, 650],
             }
 
         for label, proj_range in categories.iteritems():
             plotter.set_subdir('%s' % label)
-            plotter.plot_final('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X', differential=True)
+            plotter.plot_final('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
+                               project=proj_range, project_axis='X', differential=True, yaxis='Events / GeV')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-subMass-%s' % label)
+
+            plotter.plot_final("e_m_Mass#LT", 20, xaxis='m_{e#mu} (GeV)'   , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-e_m_Mass-%s' % label)
+
+            plotter.plot_final("m_t_Mass#LT", 20, xaxis='m_{#mu#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m_t_Mass-%s' % label)
+
+            plotter.plot_final("e_t_Mass#LT", 20, xaxis='m_{e#tau} (GeV)'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-e_t_Mass-%s' % label)
 
             plotter.plot_final('subMass#LT', 200, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
@@ -237,17 +251,17 @@ if __name__ == "__main__":
         plotter.plot_final('tSubDR', 10)
         plotter.save('final-tSubDR')
 
-        plotter.plot_final('e_t_Mass', 10)
-        plotter.save('final-etMass')
+        #plotter.plot_final('e_t_Mass', 10)
+        #plotter.save('final-etMass')
 
         ###########################################################################
         ##  WZ enhanced region plots    ###########################################
         ###########################################################################
         plotter.set_subdir('WZ_enhanced')
 
-        plotter.plot_final_wz('e_t_Mass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-wz-etMass')
+        #plotter.plot_final_wz('e_t_Mass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
+        #plotter.add_cms_blurb(sqrts)
+        #plotter.save('final-wz-etMass')
 
         #plotter.plot_final_wz('mPt', 5, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', maxy=20)
         #plotter.add_cms_blurb(sqrts)
@@ -264,9 +278,31 @@ if __name__ == "__main__":
                 
         for label, proj_range in categories.iteritems():
             plotter.set_subdir('f3/%s' % label)
-            plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X', differential=True)
+            plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
+                                  project=proj_range, project_axis='X', differential=True, yaxis='Events / GeV')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-subMass-%s' % label)
+
+            plotter.plot_final_f3('subMass#LT', [20, 40, 120, 200], xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
+                                  project=proj_range, project_axis='X', differential=True, yaxis='Events / GeV')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-subMass-widebin-%s' % label)
+
+            plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-f3-subMass-%s-notDifferential' % label)
+
+            plotter.plot_final_f3("e_m_Mass#LT", 20, xaxis='m_{e#mu} (GeV)'   , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-e_m_Mass-%s' % label)
+
+            plotter.plot_final_f3("m_t_Mass#LT", 20, xaxis='m_{#mu#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-m_t_Mass-%s' % label)
+
+            plotter.plot_final_f3("e_t_Mass#LT", 20, xaxis='m_{e#tau} (GeV)'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-e_t_Mass-%s' % label)
 
             plotter.plot_final_f3('subMass#LT', 200, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
@@ -354,13 +390,13 @@ if __name__ == "__main__":
         plotter.save('final-f3-mJetBtag')
 
 
-        plotter.plot_final_f3('e_t_Mass', 20, xaxis='m_{e#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-etMass')
-
-        plotter.plot_final_f3('e_m_Mass', 20, xaxis='m_{e#mu} (GeV)', qcd_weight_fraction=0.5, show_error=True)
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-emMass')
+        #plotter.plot_final_f3('e_t_Mass', 20, xaxis='m_{e#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        #plotter.add_cms_blurb(sqrts)
+        #plotter.save('final-f3-etMass')
+        #
+        #plotter.plot_final_f3('e_m_Mass', 20, xaxis='m_{e#mu} (GeV)', qcd_weight_fraction=0.5, show_error=True)
+        #plotter.add_cms_blurb(sqrts)
+        #plotter.save('final-f3-emMass')
 
         #plotter.plot_final_f3('m_t_Mass', 20, xaxis='m_{#mu#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
         #plotter.add_cms_blurb(sqrts)
