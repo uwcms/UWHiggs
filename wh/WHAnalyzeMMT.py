@@ -99,7 +99,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
 
         if len(self.grid_search.keys()) == 1:
 
-            self.book(folder, "m2_t_Mass#LT" , "subleadingMass", 200, 0, 200, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, "m2_t_Mass#LT" , "subleadingMass", 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
 
             #Pt
             self.book(folder, "m1Pt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)

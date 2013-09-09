@@ -139,14 +139,16 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
     def book_histos(self, folder):
 	#PLOTS TO FILL IN ANY CASE
+        LTBinning = array('d',[0, 80, 130, 600])
+        nLTBins   = len(LTBinning) -1
 	for key in self.grid_search:
 	    prefix = key+'$' if key else ''
 	    self.book(folder, prefix+"LT", "L_T", 100, 0, 300)
-            self.book(folder, prefix+"e2_t_Mass", "subleadingMass", 200, 0, 200)
+            self.book(folder, prefix+"e2_t_Mass", "subleadingMass", 300, 0, 300)
             self.book(folder, prefix+"e2_t_Pt",   "subleadingPt", 400, 0, 400)
             #Charge mis-id special histograms
             if 'c2' in folder:
-                self.book(folder, prefix+"e*2_t_Mass", "subleadingMass with misid sclaing correction", 200, 0, 200)
+                self.book(folder, prefix+"e*2_t_Mass", "subleadingMass with misid sclaing correction", 300, 0, 300)
 
         if len(self.grid_search.keys()) == 1:
             if 'c1' in folder:
@@ -156,28 +158,26 @@ class WHAnalyzeEET(WHAnalyzerBase):
                 self.book(folder, "e1_e*2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
                 #self.book(folder, "e*2_t_Mass#faking_prob", '', 200, 0, 200, 1100, 0., 1.1, type=ROOT.TH2F)
                 #self.book(folder, "e*2_t_Mass#log_prob"   , '', 200, 0, 200, 1000, -10,  1, type=ROOT.TH2F)
-                self.book(folder, "e*2_t_Mass#LT"         , '', 200, 0, 200, 120, 0, 600, type=ROOT.TH2F)
-                self.book(folder, "e*2_t_Mass#tPt"        , '', 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
+                self.book(folder, "e*2_t_Mass#LT"         , '', 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
 
 
-            self.book(folder, prefix+"e2_t_Mass#LT" , "subleadingMass", 200, 0, 200, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e2_t_Mass#tPt", "subleadingMass", 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2_t_Mass#LT" , "subleadingMass", 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
 
             #Pt
-            self.book(folder, prefix+"e1Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e2Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"tPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e1JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e2JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"e1Pt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2Pt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"tPt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"e1JetPt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2JetPt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
 
             #eta
-            self.book(folder, prefix+"e1AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e2AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"tAbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"e1AbsEta#LT" , "subleadingMass", 100, 0, 2.5, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2AbsEta#LT" , "subleadingMass", 100, 0, 2.5, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"tAbsEta#LT" , "subleadingMass", 100, 0, 2.5, nLTBins, LTBinning, type=ROOT.TH2F)
 
             #DR
-            self.book(folder, prefix+"e1_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e2_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"e1_t_DR#LT" , "subleadingMass", 100, 0, 10, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2_t_DR#LT" , "subleadingMass", 100, 0, 10, nLTBins, LTBinning, type=ROOT.TH2F)
 
             #Jet BTag
             self.book(folder, "e1JetBtag#LT", "Muon 2 Pt", 30, -10, 5, 60, 0, 600, type=ROOT.TH2F)

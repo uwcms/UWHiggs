@@ -141,9 +141,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
                 self.book(folder, "e*_m_Mass", "Electron-Muon Mass", 200, 0, 200)
                 #self.book(folder, "subMass*#faking_prob", '', 200, 0, 200, 220, 0., 1.1, type=ROOT.TH2F)
                 #self.book(folder, "subMass*#log_prob"   , '', 200, 0, 200, 200, -2,  1, type=ROOT.TH2F)
-                self.book(folder, "subMass*#LT"         , '', 200, 0, 200, nLTBins, LTBinning, type=ROOT.TH2F)
+                self.book(folder, "subMass*#LT"         , '', 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
 
-            self.book(folder, prefix+"subMass#LT" , "subleadingMass", 200, 0, 200, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"subMass#LT" , "subleadingMass", 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
             self.book(folder, "e_m_Mass#LT", "Electron-Muon Mass", 200, 0, 200, nLTBins, LTBinning, type=ROOT.TH2F)
             self.book(folder, "m_t_Mass#LT", "Electron-Muon Mass", 200, 0, 200, nLTBins, LTBinning, type=ROOT.TH2F)
             self.book(folder, "e_t_Mass#LT", "Electron-Tau Mass" , 200, 0, 200, nLTBins, LTBinning, type=ROOT.TH2F)
@@ -248,8 +248,8 @@ class WHAnalyzeEMT(WHAnalyzerBase):
 
         if not selections.tauSelection(row, 't'): return False #applies basic selection (eta, pt > 20, DZ)
         if row.tPt < taupt_thr: return False
-        if row.tMuOverlap:         return False
-        if not row.tAntiMuonTight: return False
+        #if row.tMuOverlap:         return False
+        if not row.tAntiMuonLoose: return False
         cut_flow_trk.Fill('obj3 Presel')
 
         if row.LT < LT_threshold:            return False
@@ -311,6 +311,9 @@ class WHAnalyzeEMT(WHAnalyzerBase):
                 return False
         elif not row.tAntiElectronMVA3Loose:
             return False
+        elif row.m_t_Zcompat < 20:
+            if not row.tAntiMuonTight:
+                return False            
         return True
 
     def enhance_wz(self, row):
