@@ -136,7 +136,7 @@ class FakeRatesEE(MegaBase):
                 #print id_iso_vals
                 #print self.lepIds
                 id_iso_vals = [float( i ) for i in id_iso_vals ]
-                the_histos['electronInfo'].Fill( array("f", [row.e2Pt, row.e2JetPt, max(0, row.e2JetCSVBtag),
+                the_histos['electronInfo'].Fill( array("f", [row.e2Pt, max(row.e2Pt, row.e2JetPt), max(0, row.e2JetCSVBtag),
                                                              row.jetVeto20, row.jetVeto40_DR05, weight]+id_iso_vals) )
 
 

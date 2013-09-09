@@ -172,7 +172,7 @@ class FakeRatesEM(MegaBase):
             the_histos['eJetptDvseJetPt'].Fill(max(row.eJetPt, row.ePt),row.eJetptD) 
             if fillNtuple:
                 id_iso_vals = [ float( selections.lepton_id_iso(row, 'e', label) ) for label in self.lepIds]
-                the_histos['electronInfo'].Fill( array("f", [row.ePt, row.eJetPt, max(0, row.eJetCSVBtag), 
+                the_histos['electronInfo'].Fill( array("f", [row.ePt, max(row.eJetPt, row.ePt), max(0, row.eJetCSVBtag), 
                                                              row.jetVeto20, row.jetVeto40_DR05, weight]+id_iso_vals) )
 
 
@@ -192,8 +192,7 @@ class FakeRatesEM(MegaBase):
                 pfidiso02    = float( row.mPFIDTight and row.mRelPFIsoDB < 0.2)
                 h2taucuts    = float( row.mPFIDTight and ((row.mRelPFIsoDB < 0.15 and row.mAbsEta < 1.479) or row.mRelPFIsoDB < 0.1 ))
                 h2taucuts020 = float( row.mPFIDTight and ((row.mRelPFIsoDB < 0.20 and row.mAbsEta < 1.479) or row.mRelPFIsoDB < 0.15))
-                
-                the_histos['muonInfo'].Fill( array("f", [row.mPt, row.mJetPt, max(0, row.mJetCSVBtag), 
+                the_histos['muonInfo'].Fill( array("f", [row.mPt, max(row.mJetPt, row.mPt), max(0, row.mJetCSVBtag), 
                                                          row.jetVeto20, row.jetVeto40_DR05, weight, 
                                                          pfidiso02, h2taucuts, h2taucuts020] ) )
 
@@ -244,7 +243,7 @@ class FakeRatesEM(MegaBase):
             is7TeV = bool('7TeV' in os.environ['jobid'])
             use_iso_trigger = not is7TeV
             mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
-            mu8e17 = (row.mu8ele17isoPass and row.ePt >= 20) #if use_iso_trigger else (row.mu17ele8Pass and row.mPt < 20)
+            mu8e17 = (row.mu8ele17isoPass and row.ePt >= 20) if use_iso_trigger else (row.mu8ele17Pass and row.ePt >= 20)
             if mu17e8:
                 fill_region(region,'pt10')
             if mu8e17:

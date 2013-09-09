@@ -146,7 +146,7 @@ class FakeRatesMM(MegaBase):
                 pfidiso02    = float( row.m2PFIDTight and row.m2RelPFIsoDB < 0.2)
                 h2taucuts    = float( row.m2PFIDTight and ((row.m2RelPFIsoDB < 0.15 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.1 ))
                 h2taucuts020 = float( row.m2PFIDTight and ((row.m2RelPFIsoDB < 0.20 and row.m2AbsEta < 1.479) or row.m2RelPFIsoDB < 0.15))
-                the_histos['muonInfo'].Fill( array("f", [row.m2Pt, row.m2JetPt, row.m2AbsEta, max(0, row.m2JetCSVBtag), 
+                the_histos['muonInfo'].Fill( array("f", [row.m2Pt, max(row.m2JetPt, row.m2Pt), row.m2AbsEta, max(0, row.m2JetCSVBtag), 
                                                          abs(row.m2PVDXY), row.jetVeto20, row.jetVeto40_DR05, weight, 
                                                          pfidiso02, h2taucuts, h2taucuts020] ) )
                 
