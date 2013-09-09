@@ -1,30 +1,31 @@
-#!/usr/bin/env python
+#! /bin/env python
 
-'''
-
-Get fake systematic.
-
-'''
-
-from rootpy import io
-import rootpy.plotting.views as views
 import sys
+import os
+import re
 
-the_filename = sys.argv[1]
-base_dirs = sys.argv[2].split(',')
-syst_name = sys.argv[3]
+"Usage pull files get_unc_val_from_pull.py pulls.txt nuisance initial_value header"
 
-the_file = io.open(the_filename, 'READ')
-nom_view = views.SumView(
-    *[ views.SubdirectoryView( the_file, dirname ) for dirname in base_dirs]
-)
+header   = sys.argv[-1]
+prefit   = float(sys.argv[-2])
+nuisance = sys.argv[-3]
+filename = sys.argv[-4]
 
-qcd_view = views.SumView(
-    *[ views.SubdirectoryView( the_file, dirname+'_q' ) for dirname in base_dirs]
-)
+if not os.path.isfile(filename):
+    print "%s not found!" % filename
+    sys.exit(1)
 
-nom = nom_view.Get('fakes').Integral()
-qcd = qcd_view.Get('fakes').Integral()
+lines = open(filename).readlines()
+parser    = re.compile(r'(?P<nuisance>\w+)\s+(?P<pull>(?:[\*\!] )?[\-+]\d+\.\d+)\,\s(?P<constraint>\d+\.\d+)')
 
-minimalerror = max(abs(nom - qcd)/nom, 0.01)
-print "%s fakes %s %0.2f" % (','.join(base_dirs), syst_name, 1 + minimalerror)
+for line in lines:
+    match = parser.match(line)
+    if match:
+        if match.group('nuisance') != nuisance:
+            continue
+        pull       = float(match.group('pull').replace('* ','').replace('! ',''))
+        constraint = float(match.group('constraint'))
+        max_dev    = max(abs(pull), abs(constraint))
+        new_dev    = abs(1-prefit)*max_dev + 1
+        print '%s %s %.2f' % (header, nuisance, new_dev)
+        
