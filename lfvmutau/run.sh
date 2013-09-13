@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Analyze the H->mutau channel
-
 set -o nounset
 set -o errexit
 
@@ -14,5 +12,9 @@ export PU=true
 rake mttight
 export PU=false
 rake pu1mttight
+export jobid=MuTauSingleMuJetReReco
+export jobidPU=MuTauSingleMuJetReReco
 
+rake analyzeMuTauData
+rake analyzeMuTauMC
 
