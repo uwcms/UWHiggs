@@ -169,7 +169,8 @@ if __name__ == "__main__":
         ##  Signal region plots    ################################################
         ###########################################################################
         plotter.set_subdir('')
-        rebin_slim = [0,20]+range(30, 91, 10)+[110,200]
+        #rebin_slim = range(20, 91, 10)+[110,200]
+        rebin_slim = range(20, 81, 10)+[100, 130, 300]
         categories = {
             'LTCut' : [80, 650],
             'LTLow' : [0, 130],
@@ -178,11 +179,12 @@ if __name__ == "__main__":
                 
         for label, proj_range in categories.iteritems():
             plotter.set_subdir('%s' % label)
-            plotter.plot_final('m2_t_Mass#LT', rebin_slim, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X', differential=True)
+            plotter.plot_final('m2_t_Mass#LT', rebin_slim, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, 
+                               project=proj_range, project_axis='X', differential=True, yaxis='Events / GeV')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-subMass-%s' % label)
 
-            plotter.plot_final('m2_t_Mass#LT', 200, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final('m2_t_Mass#LT', 300, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-subMass-%s-counting' % label, dotc=True, dotroot=True)
 
@@ -251,7 +253,8 @@ if __name__ == "__main__":
 
 
         #from pdb import set_trace; set_trace()
-        plotter.plot_final('m2_t_Mass#LT', rebin_slim, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=[0, 130], project_axis='X', differential=True)
+        plotter.plot_final('m2_t_Mass#LT', rebin_slim, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, 
+                           project=[0, 130], project_axis='X', differential=True, yaxis='Events / GeV')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-subMass-LTLow')
 
@@ -349,11 +352,13 @@ if __name__ == "__main__":
                 
         for label, proj_range in categories.iteritems():
             plotter.set_subdir('f3/%s' % label)
-            plotter.plot_final_f3('m2_t_Mass#LT', [0,10,20]+range(30, 91, 10)+[110,200], xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X', differential=True)
+            plotter.plot_final_f3('m2_t_Mass#LT', rebin_slim, xaxis='m_{#mu_{2}#tau} (GeV)', 
+                                  maxy=None, project=proj_range, project_axis='X', differential=True,
+                                  show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-subMass-%s' % label)
 
-            plotter.plot_final_f3('m2_t_Mass#LT', 200, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final_f3('m2_t_Mass#LT', 300, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-subMass-%s-counting' % label, dotc=True, dotroot=True)
 
@@ -449,7 +454,7 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-subMass')
 
-        plotter.plot_final_f3('m2_t_Mass#LT', 200, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5, show_error=True, project=[130, 650], project_axis='X')
+        plotter.plot_final_f3('m2_t_Mass#LT', 300, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', qcd_correction=False, qcd_weight_fraction=0.5, show_error=True, project=[130, 650], project_axis='X')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-subMass-counting-like', dotc=True, dotroot=True)
 
@@ -539,7 +544,7 @@ if __name__ == "__main__":
         plotter.write_shapes(prefix+'m2_t_Mass#LT', 20, shape_dir, qcd_fraction=1.0, project=[80, 650], project_axis='X')
         shape_file.Close()
 
-        
+        #rebin_slim = range(20, 91, 10)+[110,200]
         shape_file = ROOT.TFile(
             os.path.join(plotter.outputdir, '%smmt_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
         
