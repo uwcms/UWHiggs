@@ -29,12 +29,13 @@ jobid = os.environ['jobid']
 
 rebinPt = (
     [10,12,15,20,25,30,35,40,45,50,60,70,100], #,150,200],
-    range(0,50,5)+range(50,110,10),
+    [10,12,15,20,25,30,35,40,45,50,60,70,100], #range(0,50,5)+range(50,110,10),
     )
 
 rebinJet = (
     [0,1,2,3,4,6,9,12],
-    range(13),
+    [0,1,2,3,4,6,9,12],
+    #range(13),
     )
 
 axes = {
@@ -47,51 +48,39 @@ axes = {
 
 sources = {
     ##MMT
-    'm_mmt_pt10_h2taucuts020_kNN' : {
+    'm_mmt_subleading_kNN' : {
         'vars'  : {'muonPt':rebinPt, 'muonJetPt':rebinPt, 'numJets20':rebinJet},
         'wjets' : 'results/%s/fakerate_fits/m_wjets_pt10_h2taucuts020_muonInfo.kNN.root' % jobid,
         'qcd'   : 'results/%s/fakerate_fits/m_qcd_pt10_h2taucuts020_muonInfo.kNN.root'   % jobid,
         },
-    'm_mmt_pt20_h2taucuts_kNN' : {
+    'm_mmt_leading_kNN' : {
         'vars'  : {'muonPt':rebinPt, 'muonJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/m_wjets_pt20_h2taucuts_muonInfo.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/m_qcd_pt20_h2taucuts_muonInfo.kNN.root'   % jobid,
+        'wjets' : 'results/%s/fakerate_fits/m_wjets_pt10_h2taucuts_muonInfo.kNN.root' % jobid,
+        'qcd'   : 'results/%s/fakerate_fits/m_qcd_pt10_h2taucuts_muonInfo.kNN.root'   % jobid,
         },
 
     #EMT
-    'm_emt_pt10_h2taucuts_kNN' : {
+    'm_emt_kNN' : {
         'vars'  : {'muonPt':rebinPt, 'muonJetPt':rebinPt, 'numJets20':rebinJet},
         'wjets' : 'results/%s/fakerate_fits/m_Mwjets_pt10_h2taucuts_muonInfo.kNN.root' % jobid,
         'qcd'   : 'results/%s/fakerate_fits/m_Mqcd_pt10_h2taucuts_muonInfo.kNN.root'   % jobid,
         },
-    'm_emt_pt20_h2taucuts_kNN' : {
-        'vars'  : {'muonPt':rebinPt, 'muonJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/m_Mwjets_pt20_h2taucuts_muonInfo.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/m_Mqcd_pt20_h2taucuts_muonInfo.kNN.root'   % jobid,
-        },
-
-
-    'e_emt_pt10_h2taucuts_kNN' : {
+    'e_emt_kNN' : {
         'vars'  : {'electronPt':rebinPt, 'electronJetPt':rebinPt, 'numJets20':rebinJet},
         'wjets' : 'results/%s/fakerate_fits/e_wjets_pt10_eid12Medium_h2taucuts_electronInfo.kNN.root' % jobid,
         'qcd'   : 'results/%s/fakerate_fits/e_qcd_pt10_eid12Medium_h2taucuts_electronInfo.kNN.root'   % jobid,
         },
-    'e_emt_pt20_h2taucuts_kNN' : {
-        'vars'  : {'electronPt':rebinPt, 'electronJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/e_wjets_pt20_eid12Medium_h2taucuts_electronInfo.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/e_qcd_pt20_eid12Medium_h2taucuts_electronInfo.kNN.root'   % jobid,
-        },
 
     #EET
-    'e_eet_pt10_h2taucuts_kNN' : {
+    'e_eet_subleading_kNN' : {
         'vars'  : {'electronPt':rebinPt, 'electronJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/ee_wjetsNoZmass_pt10_eid12Tight_h2taucuts_electronInfo.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/ee_qcd_pt10_eid12Tight_h2taucuts_electronInfo.kNN.root'   % jobid,
+        'wjets' : 'results/%s/fakerate_fits/ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronInfo.kNN.root' % jobid,
+        'qcd'   : 'results/%s/fakerate_fits/ee_qcd_pt10_eid12Medium_h2taucuts020_electronInfo.kNN.root'   % jobid,
         },
-    'e_eet_pt20_h2taucuts_kNN' : {
+    'e_eet_leading_kNN' : {
         'vars'  : {'electronPt':rebinPt, 'electronJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/ee_wjetsNoZmass_pt20_eid12Medium_h2taucuts020_electronInfo.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/ee_qcd_pt20_eid12Medium_h2taucuts020_electronInfo.kNN.root'   % jobid,
+        'wjets' : 'results/%s/fakerate_fits/ee_wjetsNoZmass_pt20_eid12Tight_h2taucuts_electronInfo.kNN.root' % jobid,
+        'qcd'   : 'results/%s/fakerate_fits/ee_qcd_pt20_eid12Tight_h2taucuts_electronInfo.kNN.root'   % jobid,
         },
 }
 
