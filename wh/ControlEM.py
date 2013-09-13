@@ -145,9 +145,9 @@ class ControlEM(MegaBase):
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
         fr = 0.
         if mu17e8:
-            fr = frfits.lowpt_e_fr[subleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt)
+            fr = frfits.lowpt_e_fr[subleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt, numJets20=row.jetVeto20)
         else:
-            fr = frfits.highpt_e_fr[subleptonId](electronJetPt=max(row.eJetPt, row.ePt),electronPt=row.ePt)
+            fr = frfits.highpt_e_fr[subleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt, numJets20=row.jetVeto20)
         return fr / (1. - fr)
 
     def process(self):
