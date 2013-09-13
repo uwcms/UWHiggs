@@ -31,20 +31,20 @@ def deltaPhi(phi1, phi2):
 
 
 def fullMT(met,mupt,taupt, metphi, muphi, tauphi):
-	mux=mupt*math.cos(muphi)
+        mux=mupt*math.cos(muphi)
         muy=mupt*math.sin(muphi)
         metx=met*math.cos(metphi)
         mety=met*math.sin(metphi)
         taux=taupt*math.cos(tauphi)
         tauy=taupt*math.sin(tauphi)
-	full_pt=met+mupt+taupt
-	full_x=metx+mux+taux
+        full_pt=met+mupt+taupt
+        full_x=metx+mux+taux
         full_y=mety+muy+tauy
-	full_mt_2 = full_pt*full_pt-full_x*full_x-full_y*full_y
-	full_mt=0
-	if (full_mt_2>0):
-		full_mt= math.sqrt(full_mt_2)
-	return full_mt
+        full_mt_2 = full_pt*full_pt-full_x*full_x-full_y*full_y
+        full_mt=0
+        if (full_mt_2>0):
+                full_mt= math.sqrt(full_mt_2)
+        return full_mt
 
 ################################################################################
 #### MC-DATA and PU corrections ################################################
@@ -58,7 +58,7 @@ if is7TeV:
 # Make PU corrector from expected data PU distribution
 # PU corrections .root files from pileupCalc.py
 pu_distributions = glob.glob(os.path.join(
-	'inputs', os.environ['jobidPU'], 'data_SingleMu*pu.root'))
+        'inputs', os.environ['jobidPU'], 'data_SingleMu*pu.root'))
 pu_corrector = PileupWeight.PileupWeight(
     'S6' if is7TeV else 'S10', *pu_distributions)
 
@@ -102,7 +102,7 @@ class AnalyzeGG(MegaBase):
 "ggoptimized","antiisomuonggoptimized","ssggoptimized","antiisotauggoptimized", "loosetauisoggoptimized",    # these have tPt>25 GeV
 "gg","antiisomuongg","ssgg","antiisotaugg", "loosetauisogg",    # these have tPt>40 GeV
 ] 
-	for x in range(0,16):
+        for x in range(0,16):
 
             self.book(names[x], "weight", "Event weight", 100, 0, 5)
             self.book(names[x], "weight_nopu", "Event weight without PU", 100, 0, 5)
@@ -134,8 +134,8 @@ class AnalyzeGG(MegaBase):
             self.book(names[x], 'mPixHits', 'Mu 1 pix hits', 10, -0.5, 9.5)
             self.book(names[x], 'mJetBtag', 'Mu 1 JetBtag', 100, -5.5, 9.5)
     
-    	    self.book(names[x], "LT", "ht", 500, 0, 500)
-   	    self.book(names[x],"fullMT_mva","fullMT_mva",500,0,500); 
+            self.book(names[x], "LT", "ht", 500, 0, 500)
+            self.book(names[x],"fullMT_mva","fullMT_mva",500,0,500); 
             self.book(names[x],"fullMT_type1","fullMT_type1",500,0,500);
 
             self.book(names[x], "type1_pfMetEt", "Type1 MET", 500,0,500)
@@ -186,7 +186,7 @@ class AnalyzeGG(MegaBase):
 
         histos[name+'/mPt'].Fill(row.mPt, weight)
         histos[name+'/mEta'].Fill(row.mEta, weight)
-	histos[name+'/mMtToMVAMET'].Fill(row.mMtToMVAMET,weight)
+        histos[name+'/mMtToMVAMET'].Fill(row.mMtToMVAMET,weight)
         histos[name+'/mMtToPfMet_Ty1'].Fill(row.mMtToPfMet_Ty1,weight)
         histos[name+'/mCharge'].Fill(row.mCharge, weight)
         histos[name+'/mRelPFIsoDB'].Fill(row.mRelPFIsoDB, weight)
@@ -201,12 +201,12 @@ class AnalyzeGG(MegaBase):
         histos[name+'/tTightIso3Hits'].Fill(row.tTightIso3Hits, weight)
         histos[name+'/tDecayMode'].Fill(row.tDecayMode, weight)
 
-	histos[name+'/LT'].Fill(row.LT,weight)
+        histos[name+'/LT'].Fill(row.LT,weight)
         histos[name+'/fullMT_mva'].Fill(fullMT(row.mva_metEt,row.mPt,row.tPt,row.mva_metPhi, row.mPhi, row.tPhi),weight)
         histos[name+'/fullMT_type1'].Fill(fullMT(row.type1_pfMetEt,row.mPt,row.tPt,row.type1_pfMetPhi, row.mPhi, row.tPhi),weight)
 
-	histos[name+'/type1_pfMetEt'].Fill(row.type1_pfMetEt,weight)
-	histos[name+'/mva_metEt'].Fill(row.mva_metEt,weight)
+        histos[name+'/type1_pfMetEt'].Fill(row.type1_pfMetEt,weight)
+        histos[name+'/mva_metEt'].Fill(row.mva_metEt,weight)
 
         histos[name+'/pfMetPhi'].Fill(row.pfMetPhi,weight)
         histos[name+'/mva_metPhi'].Fill(row.mva_metPhi,weight)
@@ -216,7 +216,7 @@ class AnalyzeGG(MegaBase):
         histos[name+'/m_t_DR'].Fill(row.m_t_DR,weight)
         histos[name+'/m_t_DPhi'].Fill(row.m_t_DPhi,weight)
         histos[name+'/m_t_SS'].Fill(row.m_t_SS,weight)
-	histos[name+'/m_t_ToMETDPhi_Ty1'].Fill(row.m_t_ToMETDPhi_Ty1,weight)
+        histos[name+'/m_t_ToMETDPhi_Ty1'].Fill(row.m_t_ToMETDPhi_Ty1,weight)
 
         histos[name+'/mPixHits'].Fill(row.mPixHits, weight)
         histos[name+'/mJetBtag'].Fill(row.mJetBtag, weight)
@@ -242,7 +242,7 @@ class AnalyzeGG(MegaBase):
 ################################################################################
 
     def presel(self, row):
-	if not row.isoMu24eta2p1Pass:
+        if not row.isoMu24eta2p1Pass:
             return False
         if row.mPt < 26:
             return False
@@ -257,8 +257,8 @@ class AnalyzeGG(MegaBase):
             return False
         if abs(row.tEta)>=2.3 :
             return False
-	if row.mMtToPfMet_Ty1<30:
-	    return False
+        if row.mMtToPfMet_Ty1<30:
+            return False
         return True
 
     def ggtight(self,row):
@@ -288,32 +288,32 @@ class AnalyzeGG(MegaBase):
        return True
 
     def njets(self,row):
-	return bool(row.jetVeto30<1)
+        return bool(row.jetVeto30<1)
 
     def vbf(self,row):
-	if(abs(row.vbfDeta)<3):
-	    return False
+        if(abs(row.vbfDeta)<3):
+            return False
         return True
 
     def oppositesign(self,row):
-	if row.mCharge*row.tCharge!=-1:
+        if row.mCharge*row.tCharge!=-1:
             return False
-	return True
+        return True
 
     def obj1_id(self, row):
         return bool(row.mPFIDTight)  and bool(abs(row.mDZ) < 0.2) 
 
     def obj2_id(self, row):
-	return  row.tAntiElectronLoose and row.tAntiMuonTight2 and row.tDecayFinding
+        return  row.tAntiElectronLoose and row.tAntiMuonTight2 and row.tDecayFinding
 
     def vetos(self,row):
-	return bool (row.muVetoPt5IsoIdVtx<1) and bool (row.eVetoCicTightIso<1) and bool (row.tauVetoPt20<1) 
+        return bool (row.muVetoPt5IsoIdVtx<1) and bool (row.eVetoCicTightIso<1) and bool (row.tauVetoPt20<1) 
 
     def obj1_iso(self, row):
         return bool(row.mRelPFIsoDB <0.12)
 
     def obj2_iso(self, row):
-	return  row.tLooseIso3Hits
+        return  row.tLooseIso3Hits
 
     def obj2_iso_tight(self, row):
         return  row.tTightIso3Hits
@@ -325,7 +325,7 @@ class AnalyzeGG(MegaBase):
         return  not row.tTightIso3Hits
 
     def selectZs(self, row):
-	return bool(row.muVetoPt15IsoIdVtx==1)
+        return bool(row.muVetoPt15IsoIdVtx==1)
 
 ################################################################################
 #### RUN!    ###################################################################
@@ -342,8 +342,8 @@ class AnalyzeGG(MegaBase):
             if sel==True:
                 continue
 
-	    if not self.presel(row):
-		continue
+            if not self.presel(row):
+                continue
             if not self.obj1_id(row):
                 continue
             if not self.kinematics(row):
@@ -353,9 +353,9 @@ class AnalyzeGG(MegaBase):
             if not self.obj2_id(row):
                 continue
 
-	    sel = True
+            sel = True
 
-	     # Baseline
+             # Baseline
             if self.obj1_iso(row) and self.obj2_iso_tight(row) and self.oppositesign(row):
                         self.fill_histos(row,'ggBaselineTightTauIso')
             if self.obj1_antiiso(row) and self.obj2_iso(row) and  self.oppositesign(row):
@@ -369,10 +369,10 @@ class AnalyzeGG(MegaBase):
             if self.obj1_iso(row) and self.obj2_iso_tight(row) and self.oppositesign(row) and row.tPt>40:
                         self.fill_histos(row,'ggBaselineTightTauIso40')
 
-	    # Tight
-	    if self.ggtight(row):
-		if self.obj1_iso(row) and self.obj2_iso_tight(row) and self.oppositesign(row): 
-	                self.fill_histos(row,'gg')
+            # Tight
+            if self.ggtight(row):
+                if self.obj1_iso(row) and self.obj2_iso_tight(row) and self.oppositesign(row): 
+                        self.fill_histos(row,'gg')
                 if self.obj1_iso(row) and self.oppositesign(row) and self.obj2_iso(row):
                         self.fill_histos(row,'loosetauisogg')
                 if self.obj1_iso(row) and self.obj2_iso_tight(row) and not self.oppositesign(row):
