@@ -13,7 +13,7 @@ import baseSelections as selections
 import fakerate_functions as frfits
 import optimizer
 import math
-import array
+from array import array
 from chargeflipcuts import charge_flip_funcs
 from FinalStateAnalysis.PlotTools.decorators import memo_last
 
