@@ -65,9 +65,10 @@ def assign_id_weight(dir_, row):
         return 1
     leading_fr = leading_e_fr_wjets if 'wjet_w' in dir_ else leading_e_fr_qcd
     sublead_fr = subleading_e_fr_wjets if 'wjet_w' in dir_ else subleading_e_fr_qcd
-    if "f1f2"  in dir_: return leading_fr( electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt) * sublead_fr( electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt )
-    if "f2"    in dir_: return sublead_fr( electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt)
-    if "f1"    in dir_: return leading_fr( electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt)
+    if "f1f2"  in dir_: return leading_fr( electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt, numJets20=row.jetVeto20) *\
+       sublead_fr( electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt, numJets20=row.jetVeto20)
+    if "f2"    in dir_: return sublead_fr( electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt, numJets20=row.jetVeto20)
+    if "f1"    in dir_: return leading_fr( electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt, numJets20=row.jetVeto20)
 
 class ControlZEE(MegaBase):
     tree = 'ee/final/Ntuple'
