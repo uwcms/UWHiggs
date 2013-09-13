@@ -116,18 +116,18 @@ def make_null_dict(template, variables, mapper=None):
 #no changes in muonID in 2013
 mapper    = {'eid1[0-9][A-Z][a-z]+_':'', 'idiso02' : 'pfidiso02'}
 variables = ['muonJetPt', 'muonPt', 'numJets20'] #, 'muonJetCSVBtag']
-highpt_mu_fr = make_mva_functor_dict(frfit_dir + '/m_wjets_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
-lowpt_mu_fr  = make_mva_functor_dict(frfit_dir + '/m_wjets_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+lowpt_mu_fr  = make_mva_functor_dict(frfit_dir + '/m_wjets_pt10_%s_muonInfo_k100.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+highpt_mu_fr = lowpt_mu_fr
 
-highpt_mu_qcd_fr = make_mva_functor_dict(frfit_dir + '/m_qcd_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
-lowpt_mu_qcd_fr  = make_mva_functor_dict(frfit_dir + '/m_qcd_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+lowpt_mu_qcd_fr  = make_mva_functor_dict(frfit_dir + '/m_qcd_pt10_%s_muonInfo_k100.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+highpt_mu_qcd_fr = lowpt_mu_qcd_fr
 
 variables = ['muonJetPt', 'muonPt', 'numJets20']
-highpt_mue_fr = make_mva_functor_dict(frfit_dir + '/m_Mwjets_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
-lowpt_mue_fr  = make_mva_functor_dict(frfit_dir + '/m_Mwjets_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+lowpt_mue_fr  = make_mva_functor_dict(frfit_dir + '/m_Mwjets_pt10_%s_muonInfo_k100.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+highpt_mue_fr = lowpt_mue_fr
 
-highpt_mue_qcd_fr = make_mva_functor_dict(frfit_dir + '/m_Mqcd_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
-lowpt_mue_qcd_fr  = make_mva_functor_dict(frfit_dir + '/m_Mqcd_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+lowpt_mue_qcd_fr  = make_mva_functor_dict(frfit_dir + '/m_Mqcd_pt10_%s_muonInfo_k100.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+highpt_mue_qcd_fr = lowpt_mue_qcd_fr
 
 
 #######################
@@ -136,19 +136,19 @@ lowpt_mue_qcd_fr  = make_mva_functor_dict(frfit_dir + '/m_Mqcd_pt10_%s_muonInfo.
 
 variables = ['electronJetPt', 'electronPt', 'numJets20']
 #EMT
-highpt_e_fr = make_mva_functor_dict(frfit_dir + '/e_wjets_pt10_%s_electronInfo.kNN.weights.xml', variables)
-lowpt_e_fr  = make_mva_functor_dict(frfit_dir + '/e_wjets_pt10_%s_electronInfo.kNN.weights.xml', variables)
+lowpt_e_fr  = make_mva_functor_dict(frfit_dir + '/e_wjets_pt10_%s_electronInfo_k100.kNN.weights.xml', variables)
+highpt_e_fr = lowpt_e_fr
 
-highpt_e_qcd_fr = make_mva_functor_dict(frfit_dir + '/e_qcd_pt10_%s_electronInfo.kNN.weights.xml', variables)
-lowpt_e_qcd_fr  = make_mva_functor_dict(frfit_dir + '/e_qcd_pt10_%s_electronInfo.kNN.weights.xml', variables)
+lowpt_e_qcd_fr  = make_mva_functor_dict(frfit_dir + '/e_qcd_pt10_%s_electronInfo_k100.kNN.weights.xml', variables)
+highpt_e_qcd_fr = lowpt_e_qcd_fr
 
 #EET
 variables = ['electronJetPt', 'electronPt', 'numJets20']
-highpt_ee_fr = make_mva_functor_dict(frfit_dir + '/ee_wjetsNoZmass_pt10_%s_electronInfo.kNN.weights.xml', variables) 
-lowpt_ee_fr  = make_mva_functor_dict(frfit_dir + '/ee_wjetsNoZmass_pt10_%s_electronInfo.kNN.weights.xml', variables) 
+lowpt_ee_fr  = make_mva_functor_dict(frfit_dir + '/ee_wjetsNoZmass_pt10_%s_electronInfo_k100.kNN.weights.xml', variables) 
+highpt_ee_fr = lowpt_ee_fr
 
-highpt_ee_qcd_fr = make_mva_functor_dict(frfit_dir + '/ee_qcd_pt10_%s_electronInfo.kNN.weights.xml', variables) 
-lowpt_ee_qcd_fr  = make_mva_functor_dict(frfit_dir + '/ee_qcd_pt10_%s_electronInfo.kNN.weights.xml', variables) 
+lowpt_ee_qcd_fr  = make_mva_functor_dict(frfit_dir + '/ee_qcd_pt10_%s_electronInfo_k100.kNN.weights.xml', variables) 
+highpt_ee_qcd_fr = lowpt_ee_qcd_fr
 
 
 ##################
