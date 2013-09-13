@@ -185,6 +185,7 @@ def make_kNN(chan, datas)
               "samples" => Array["diboson", "data_#{datas.downcase}"],
               "analyzer" => "FakeRates#{chan.upcase}",
               'fitter' => 'train_kNN.py',
+              #'neighbors' => neighbors,
              ]
 end
 
@@ -192,13 +193,13 @@ iso_points   = ['h2taucuts', 'h2taucuts020'] #'idiso02',
 electronIds  = ['eid12Medium', 'eid12Tight'] #, 'eid13Loose', 'eid12Loose', 'eid13Tight']
 elewps       = electronIds.product(iso_points)
 elewps       = elewps.map{|x,y| "#{x}_#{y}"}
-pt_regions   = ['pt10', 'pt20']
+pt_regions   = ['pt10']#, 'pt20']
 muonwps      = ['h2taucuts', 'h2taucuts020'] #, 'pfidiso02']
 fr_fits      = Hash.new
 kNN_trains   = Hash.new
 muon_kNN_vars= ['muonJetPt', 'muonPt', 'numJets20'] 
 electron_kNN_vars= ['electronJetPt', 'electronPt', 'numJets20']
-
+neighbors        = ['100'] #, '50']
 
 #############
 #  EM datas
@@ -206,13 +207,15 @@ electron_kNN_vars= ['electronJetPt', 'electronPt', 'numJets20']
 emcrs = ['qcd', 'wjets']
 elewps.select{|x| x.start_with?('eid12Medium')}.each do |ele_wp|
   emcrs.each do |cr|
-    pt_regions.each do |ptr|
-      key = "e_#{cr}_#{ptr}_#{ele_wp}_eJetPt"
-      #fr_fits[key] =  make_exponential('em', 'em') #fit EVERYTHING with exponential, in case change afterwards
-
-      key = "e_#{cr}_#{ptr}_#{ele_wp}_electronInfo"
-      kNN_trains[key] =  make_kNN('em', 'em') 
-      kNN_trains[key]['vars'] = electron_kNN_vars
+    neighbors.each do |k|
+      pt_regions.each do |ptr|
+        key = "e_#{cr}_#{ptr}_#{ele_wp}_eJetPt"
+        #fr_fits[key] =  make_exponential('em', 'em') #fit EVERYTHING with exponential, in case change afterwards
+        
+        key = "e_#{cr}_#{ptr}_#{ele_wp}_electronInfo_k#{k}"
+        kNN_trains[key] =  make_kNN('em', 'em') 
+        kNN_trains[key]['vars'] = electron_kNN_vars
+      end
     end
   end
 end
@@ -221,10 +224,12 @@ end
 mmcrs = ['qcd', 'wjets']
 muonwps.each do |mu_wp|
   mmcrs.each do |cr|
-    pt_regions.each do |ptr|
-      key = "m_M#{cr}_#{ptr}_#{mu_wp}_muonInfo"
-      kNN_trains[key] =  make_kNN('em', 'em') 
-      kNN_trains[key]['vars'] = muon_kNN_vars
+    neighbors.each do |k|
+      pt_regions.each do |ptr|
+        key = "m_M#{cr}_#{ptr}_#{mu_wp}_muonInfo_k#{k}"
+        kNN_trains[key] =  make_kNN('em', 'em') 
+        kNN_trains[key]['vars'] = muon_kNN_vars
+      end
     end
   end
 end
@@ -235,18 +240,17 @@ end
 #############
 eecrs = ['qcd', 'wjetsNoZmass']
 elewps.each do |ele_wp|
-  eecrs.each do |cr|
-    key = "ee_#{cr}_pt10_#{ele_wp}_electronJetPt"
-    #fr_fits[key] =  make_landau('ee', 'ee') #fit pt10 with landau
-    key = "ee_#{cr}_pt20_#{ele_wp}_electronJetPt"
-    #fr_fits[key] =  make_exponential('ee', 'ee') #fit pt20 with expo
-
-    key = "ee_#{cr}_pt10_#{ele_wp}_electronInfo"
-    kNN_trains[key] =  make_kNN('ee', 'ee')
-    kNN_trains[key]['vars'] = electron_kNN_vars
-    key = "ee_#{cr}_pt20_#{ele_wp}_electronInfo"
-    kNN_trains[key] =  make_kNN('ee', 'ee')
-    kNN_trains[key]['vars'] = electron_kNN_vars
+  neighbors.each do |k|
+    eecrs.each do |cr|
+      pt_regions.each do |ptr|
+        key = "ee_#{cr}_#{ptr}_#{ele_wp}_electronJetPt"
+        #fr_fits[key] =  make_landau('ee', 'ee') #fit pt10 with landau
+        
+        key = "ee_#{cr}_#{ptr}_#{ele_wp}_electronInfo_k#{k}"
+        kNN_trains[key] =  make_kNN('ee', 'ee')
+        kNN_trains[key]['vars'] = electron_kNN_vars
+      end
+    end
   end
 end
 #fr_fits["ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronJetPt"] = make_constant('ee', 'ee')
@@ -258,18 +262,18 @@ muon_kNN_vars= ['muonJetPt', 'muonPt', 'numJets20']
 mmcrs = ['qcd', 'wjets']
 muonwps.each do |mu_wp|
   mmcrs.each do |cr|
-    pt_regions.each do |ptr|
-      key = "m_#{cr}_#{ptr}_#{mu_wp}_muonJetPt"
-      #fr_fits[key] =  make_landau('mm', 'mm')
-
-      key = "m_#{cr}_#{ptr}_#{mu_wp}_muonInfo"
-      kNN_trains[key] =  make_kNN('mm', 'mm')
-      kNN_trains[key]['vars'] = muon_kNN_vars
+    neighbors.each do |k|
+      pt_regions.each do |ptr|
+        key = "m_#{cr}_#{ptr}_#{mu_wp}_muonJetPt"
+        #fr_fits[key] =  make_landau('mm', 'mm')
+        
+        key = "m_#{cr}_#{ptr}_#{mu_wp}_muonInfo_k#{k}"
+        kNN_trains[key] =  make_kNN('mm', 'mm')
+        kNN_trains[key]['vars'] = muon_kNN_vars
+      end
     end
   end
 end
-#fr_fits["m_qcd_pt20_h2taucuts_muonJetPt"] = make_cruijff('mm', 'mm')
-#fr_fits["m_qcd_pt20_h2taucuts020_muonJetPt"] = make_cruijff('mm', 'mm')
 
 
 #Tau stuff (by hand, they are just 2)
@@ -360,16 +364,18 @@ kNN_trains.each do |kNN, info|
   cut    = ''
   var    = ''
 
-  if kNN_configuration.size() == 6 #check if we have an idIso with _ separation
+  if kNN_configuration.size() == 7 #check if we have an idIso with _ separation
     region = kNN_configuration[1]
     denom = kNN_configuration[2]
     cut = "#{kNN_configuration[3]}_#{kNN_configuration[4]}"
     var = kNN_configuration[5]
+    neigh = kNN_configuration[6].sub('k','')
   else #otherwise as usual
     region = kNN_configuration[1]
     denom = kNN_configuration[2]
     cut = kNN_configuration[3]
     var = kNN_configuration[4]
+    neigh = kNN_configuration[5].sub('k','')
   end
 
   knn_output = $frfit_dir + "/#{kNN}.kNN.root"
@@ -388,7 +394,7 @@ kNN_trains.each do |kNN, info|
 
   file knn_output => subsamples_inputs_result_list + [info['analyzer'] + '.py',] do |t|
     sh "mkdir -p #{$frfit_dir}"
-    sh "train_kNN.py --files #{subsample_input_list} --outputfile #{knn_output} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 1"
+    sh "train_kNN.py --files #{subsample_input_list} --outputfile #{knn_output} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 1 --neighbors #{neigh}"
   end
   task :kNN => knn_output
   kNN_files << knn_output
@@ -825,11 +831,11 @@ def make_f3_postfit_plots_task(channel)
   file plot_timestamp => shape_file do |t|
     sh "mkdir -p `dirname #{t.name}`"
     $categories_map[channel].each do |category|
-      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.png -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV'"
-      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.pdf -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV'"
+      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.png -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV' --show-errors"
+      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.pdf -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV' --show-errors"
     end
     sh "cp -v #{carddir}/#{channel}/#{channel}.pulls* #{resultdir}/."
-    sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.png -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV'"
+    sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.png -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV' --show-errors"
     sh "touch #{t.name}"
   end
   return plot_timestamp
@@ -900,7 +906,7 @@ def make_morphing_task(channel, shapefile)
   file ret => [shapefile] do |t|
     sh "mkdir -p `dirname #{t.name}`"
     sh "cp #{t.prerequisites[0]} #{t.name}"
-    sh "horizontal-morphing.py --categories='#{$categories_map[channel].join(',')}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 -i #{t.name}"# --extrapolate=#{$to_extrapolate.join(",")} #{t.name}" #FIXME! to be removed!
+    sh "horizontal-morphing.py --categories='#{$categories_map[channel].join(',')}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 #{t.name}"# --extrapolate=#{$to_extrapolate.join(",")} #{t.name}" #FIXME! to be removed!
   end
   return ret
 end
