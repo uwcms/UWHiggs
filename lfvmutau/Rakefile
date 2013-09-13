@@ -55,7 +55,5 @@ end
 
 task :analyzeMuTauMC => get_analyzer_results("AnalyzeGG.py", samples['ewk'] + samples['wjets'] +samples['sm']+samples['extra'])
 task :analyzeMuTauData => get_analyzer_results("AnalyzeGG.py", samples['data_mt'])
-task :analyzeMuTauNoPU => get_analyzer_results("AnalyzeGGNoPU.py", samples['signal'])
-#task :analyzeMuTauMCFilter => get_analyzer_results("AnalyzeGGFilter.py", samples['zjets'])
-#task :analyzeMuTauMCEmbedded => get_analyzer_results("AnalyzeGGEmbedded.py", samples['zjets'])
 
+# Missing cleaning of my analyzer for Embedded Samples 
