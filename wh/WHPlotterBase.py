@@ -184,7 +184,7 @@ def make_styler(color, format=None):
 class WHPlotterBase(Plotter):
     def __init__(self, channel, obj1_charge_mapper={}, obj2_charge_mapper={}):
         cwd = os.getcwd()
-        os.chdir( os.path.dirname(__file__) )
+        #os.chdir( os.path.dirname(__file__) )
         self.channel = channel
         jobid = os.environ['jobid']
         print "\nPlotting %s for %s\n" % (channel, jobid)
@@ -229,7 +229,7 @@ class WHPlotterBase(Plotter):
                                             blinder)
         self.defaults = {} #allows to set some options and avoid repeating them each function call
         self.mc_samples = filter(lambda x: x.startswith('data'), samples)
-        os.chdir( cwd )
+        #os.chdir( cwd )
         #create a fake wiew summing up all HWW
         self.views['VH_hww_sum'] = {
             'unweighted_view' : views.SumView(
@@ -761,7 +761,7 @@ class WHPlotterBase(Plotter):
 
         vh_10x = views.TitleView(
             views.StyleView(
-                views.ScaleView(sig_view['signal120'], higgs_xsec_multiplier),
+                views.ScaleView(sig_view['vh125'], higgs_xsec_multiplier),
                 **remove_name_entry(data_styles['VH*'])
             ),
             "(%i#times) m_{H} = 125" % higgs_xsec_multiplier
@@ -769,11 +769,16 @@ class WHPlotterBase(Plotter):
         charge_fakes_view = MedianView(highv=sig_view['charge_fakes']['sys_up'], centv=sig_view['charge_fakes']['central'])
 
         # Fudge factor to go from 120->125 - change in xsec*BR
-        vh_10x = views.ScaleView(vh_10x, .783)
+        #vh_10x = views.ScaleView(vh_10x), .783)
         tostack = [sig_view['wz_3l'], sig_view['zz'], sig_view['wz'], sig_view['fakes'], vh_10x] if stack_higgs else \
             [sig_view['wz_3l'], sig_view['zz'], sig_view['wz'], sig_view['fakes']]
         if show_charge_fakes:
             tostack = tostack[:2]+[charge_fakes_view]+tostack[2:]
+
+        vh_hww = views.ScaleView(sig_view['vh120_hww'], .783) if 'vh120_hww' in sig_view else None
+        if vh_hww:
+            tostack = tostack + [vh_hww]
+
         stack = views.StackView( *tostack )
         histo = stack.Get(variable)
         
