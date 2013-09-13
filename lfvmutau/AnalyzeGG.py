@@ -99,7 +99,7 @@ class AnalyzeGG(MegaBase):
 
         names=["ggBaselineTightTauIso","antiisomuonggBaseline",
 "ggBaselineTightTauIso30","ggBaselineTightTauIso40", "antiisomuonggBaseline30","antiisomuonggBaseline40"
-"ggmedium","antiisomuonggmedium","ssggmedium","antiisotauggmedium", "loosetauisoggmedium",    # these have tPt>30 GeV
+"ggoptimized","antiisomuonggoptimized","ssggoptimized","antiisotauggoptimized", "loosetauisoggoptimized",    # these have tPt>25 GeV
 "gg","antiisomuongg","ssgg","antiisotaugg", "loosetauisogg",    # these have tPt>40 GeV
 ] 
 	for x in range(0,16):
@@ -253,7 +253,7 @@ class AnalyzeGG(MegaBase):
     def kinematics(self, row):
         if row.mPt<30 :
             return False
-        if row.tPt<20 :
+        if row.tPt<25 :
             return False
         if abs(row.tEta)>=2.3 :
             return False
@@ -276,21 +276,16 @@ class AnalyzeGG(MegaBase):
           return False
        return True
 
-    def ggmedium(self,row):
-       if row.mPt < 30:
+    def ggoptimized(self,row):
+       if row.tPt < 25:
            return False
-       if row.tPt < 30:
+       if row.mPt < 40:
            return False
-       if row.mMtToPfMet_Ty1<30:
-            return False
-       if row.tMtToPfMet_Ty1>20:
-            return False
-       if (deltaPhi(row.tPhi,row.pfMetPhi)>1):
+       if (deltaPhi(row.tPhi,row.pfMetPhi)>0.3):
           return False
-       if (deltaPhi(row.mPhi,row.tPhi)<2.5):
+       if (deltaPhi(row.mPhi,row.pfMetPhi)<2.5):
           return False
        return True
-
 
     def njets(self,row):
 	return bool(row.jetVeto30<1)
@@ -388,17 +383,17 @@ class AnalyzeGG(MegaBase):
                         self.fill_histos(row,'antiisotaugg')
 
             # Medium
-            if self.ggmedium(row):
+            if self.ggoptimized(row):
                 if self.obj1_iso(row) and self.obj2_iso_tight(row) and self.oppositesign(row):
-                        self.fill_histos(row,'ggmedium')
+                        self.fill_histos(row,'ggoptimized')
                 if self.obj1_iso(row) and self.oppositesign(row) and self.obj2_iso(row):
-                        self.fill_histos(row,'loosetauisoggmedium')
+                        self.fill_histos(row,'loosetauisoggoptimized')
                 if self.obj1_iso(row) and self.obj2_iso_tight(row) and not self.oppositesign(row):
-                        self.fill_histos(row,'ssggmedium')
+                        self.fill_histos(row,'ssggoptimized')
                 if self.obj1_antiiso(row) and self.obj2_iso_tight(row) and  self.oppositesign(row):
-                        self.fill_histos(row,'antiisomuonggmedium')
+                        self.fill_histos(row,'antiisomuonggoptimized')
                 if self.obj1_iso(row) and self.obj2_antiiso(row) and  self.oppositesign(row):
-                        self.fill_histos(row,'antiisotauggmedium')
+                        self.fill_histos(row,'antiisotauggoptimized')
 
     def finish(self):
         self.write_histos()

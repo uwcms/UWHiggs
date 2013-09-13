@@ -2,7 +2,7 @@
 
 # Get the data
 export datasrc=/scratch/aglevine/data
-#export datasrc=/scratch/aglevine/data
+#export datasrc=/scratch/mcepeda/data
 
 export jobid=MuTauSingleMuJetReReco
 export jobid8TeV=$jobid
