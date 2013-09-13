@@ -147,7 +147,8 @@ if __name__ == "__main__":
         for label, proj_range in categories.iteritems():
             plotter.set_subdir('%s' % label)
             plotter.plot_final('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
-                               project=proj_range, project_axis='X', differential=True, yaxis='Events / GeV')
+                               project=proj_range, project_axis='X', differential=True, 
+                               yaxis='Events / GeV', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-subMass-%s' % label)
 
@@ -163,7 +164,7 @@ if __name__ == "__main__":
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-e_t_Mass-%s' % label)
 
-            plotter.plot_final('subMass#LT', 200, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final('subMass#LT', 300, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-subMass-%s-counting' % label, dotc=True, dotroot=True)
 
@@ -283,7 +284,7 @@ if __name__ == "__main__":
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-subMass-%s' % label)
 
-            plotter.plot_final_f3('subMass#LT', [20, 40, 120, 200], xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
+            plotter.plot_final_f3('subMass#LT', [20, 40, 120, 300], xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
                                   project=proj_range, project_axis='X', differential=True, yaxis='Events / GeV')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-subMass-widebin-%s' % label)
@@ -304,7 +305,7 @@ if __name__ == "__main__":
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-e_t_Mass-%s' % label)
 
-            plotter.plot_final_f3('subMass#LT', 200, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final_f3('subMass#LT', 300, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-f3-subMass-%s-counting' % label, dotc=True, dotroot=True)
 
@@ -369,7 +370,7 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-subMass')
 
-        plotter.plot_final_f3('subMass#LT', 200, xaxis='m_{l_{2}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True, project=[0, 650], project_axis='X')
+        plotter.plot_final_f3('subMass#LT', 300, xaxis='m_{l_{2}#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True, project=[0, 650], project_axis='X')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-subMass-counting-like', dotc=True, dotroot=True)
 
