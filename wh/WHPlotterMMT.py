@@ -22,6 +22,14 @@ class WHPlotterMMT(WHPlotterBase.WHPlotterBase):
     def __init__(self):
         super(WHPlotterMMT, self).__init__('MMT')
 
+rebin_slim = range(20, 81, 10)+[100, 130, 300]
+categories = {
+    'LTCut' : [80, 650],
+    'LTLow' : [0, 130],
+    'LTHigh': [130, 650],
+}
+
+
 if __name__ == "__main__":
     plotter = WHPlotterMMT()
     sqrts   = plotter.sqrts
@@ -170,12 +178,6 @@ if __name__ == "__main__":
         ###########################################################################
         plotter.set_subdir('')
         #rebin_slim = range(20, 91, 10)+[110,200]
-        rebin_slim = range(20, 81, 10)+[100, 130, 300]
-        categories = {
-            'LTCut' : [80, 650],
-            'LTLow' : [0, 130],
-            'LTHigh': [130, 650],
-            }
                 
         for label, proj_range in categories.iteritems():
             plotter.set_subdir('%s' % label)
