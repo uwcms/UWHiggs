@@ -8,6 +8,9 @@ import os
 import glob
 from FinalStateAnalysis.PlotTools.Plotter import Plotter
 from FinalStateAnalysis.MetaData.data_styles import data_styles
+import logging
+import sys
+logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 jobid = os.environ['jobid']
 
@@ -92,7 +95,6 @@ plotter.views['Zjets_M50-no-fakes'] = {
                                          0.95 if sqrts == 7 else 1.0)
 }
 
-print plotter.views.keys()
 ww_name = 'WWJetsTo2L2Nu' if sqrts == 7 else 'WWJetsTo2L2Nu_TuneZ2_8TeV'
 plotter.views['WWJetsTo2L2Nu-no-fakes'] = {
     'view': correct_for_contrib_in_fakes(plotter.views[ww_name]['view'])
