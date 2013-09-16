@@ -69,6 +69,28 @@ def create_mapper(mapping):
 def remove_name_entry(dictionary):
     return dict( [ i for i in dictionary.iteritems() if i[0] != 'name'] )
 
+def fake_rate_estimate(histograms): #always, ALWAYS give as 1,2,0
+    cat1 = histograms.next()
+    cat2 = histograms.next()
+    cat0 = histograms.next()
+    ret  = cat0.Clone()
+    ret.Reset()
+    for i in range(ret.GetNbinsX() + 2):
+        c1 = cat1.GetBinContent(i)
+        c2 = cat2.GetBinContent(i)
+        c0 = cat0.GetBinContent(i)
+        e1 = cat1.GetBinError(i)
+        e2 = cat2.GetBinError(i)
+        e0 = cat0.GetBinError(i)
+        if c1 == 0 and c2 == 0:
+            ret.SetBinContent(i,c0)
+            ret.SetBinError(i,e0)
+        else:
+            ret.SetBinContent(i,c1+c2-c0)
+            ret.SetBinError(i,quad(e1,e2,e0))
+    return ret
+            
+
 class BackgroundErrorView(object):
     ''' Compute the total background error in each bin. '''
     def __init__(self, fakes, wz, zz, charge_fake, wz_error=0.1, zz_error=0.04,
@@ -251,27 +273,43 @@ class WHPlotterBase(Plotter):
                 ret[key] = viewtype(val, *args, **kwargs) # self.rebin_view( ProjectionView(val, project_axis, project), rebin )
         return ret
 
-    @memo
-    def make_signal_views(self, unblinded=False, qcd_weight_fraction=0):
+    def make_signal_views(self, unblinded=False, qcd_weight_fraction=0, #MARK
+                          rebin=1, project=None, project_axis=None ):
         ''' Make signal views with FR background estimation '''
 
-        wz_view_tautau = views.SubdirectoryView(
-            self.get_view('WZJetsTo3LNu*ZToTauTau*'),
-            'ss/p1p2p3/'
+        def preprocess(view):
+            ret = view
+            if project and project_axis:
+                ret = ProjectionView(ret, project_axis, project)
+            return RebinView( ret, rebin )
+
+        wz_view_tautau = preprocess(
+            views.SubdirectoryView(
+                self.get_view('WZJetsTo3LNu*ZToTauTau*'),
+                'ss/p1p2p3/'
+            )
         )
+
         tomatch = 'WZJetsTo3LNu' if self.sqrts == 7 else 'WZJetsTo3LNu_pythia'
-        wz_view_3l = views.SubdirectoryView(
-            self.get_view(tomatch),
-            'ss/p1p2p3/'
+        wz_view_3l = preprocess(
+            views.SubdirectoryView(
+                self.get_view(tomatch),
+                'ss/p1p2p3/'
+            )
         )
-        zz_view = views.SubdirectoryView(
-            self.get_view('ZZJetsTo4L*'),
-            'ss/p1p2p3/'
+
+        zz_view = preprocess(
+            views.SubdirectoryView(
+                self.get_view('ZZJetsTo4L*'),
+                'ss/p1p2p3/'
+            )
         )
+
         all_data_view = self.get_view('data')
         if unblinded:
             all_data_view = self.get_view('data', 'unblinded_view')
-
+        all_data_view = preprocess(all_data_view)
+            
         data_view = views.SubdirectoryView(all_data_view, 'ss/p1p2p3/')
 
         def make_fakes(qcd_fraction):
@@ -298,20 +336,18 @@ class WHPlotterBase(Plotter):
                     views.StyleView(obj12_view, **remove_name_entry(data_styles['WW*'])),
                     'Reducible bkg. 12')
 
-                subtract_obj12_view = views.ScaleView(obj12_view, -1)
-                return obj1_view, obj2_view, obj12_view, subtract_obj12_view
+                return obj1_view, obj2_view, obj12_view
 
-            qcd1, qcd2, qcd12, negqcd12 = make_fakes_view('q', qcd_fraction)
-            wjet1, wjet2, wjet12, negwjet12 = make_fakes_view(
+            qcd1, qcd2, qcd12 = make_fakes_view('q', qcd_fraction)
+            wjet1, wjet2, wjet12 = make_fakes_view(
                 'w', 1 - qcd_fraction)
 
             obj1_view = views.SumView(qcd1, wjet1)
             obj2_view = views.SumView(qcd2, wjet2)
             obj12_view = views.SumView(qcd12, wjet12)
-            subtract_obj12_view = views.SumView(negqcd12, negwjet12)
 
             # Corrected fake view
-            fakes_view = views.SumView(obj1_view, obj2_view, subtract_obj12_view)
+            fakes_view = views.MultiFunctorView(fake_rate_estimate, obj1_view, obj2_view, obj12_view)
             fakes_view = views.TitleView(
                 views.StyleView(fakes_view, **remove_name_entry(data_styles['Zjets*'])), 'Reducible bkg.')
             return obj1_view, obj2_view, obj12_view, fakes_view
@@ -381,9 +417,9 @@ class WHPlotterBase(Plotter):
                     self.get_view('VH_*%i' % mass),
                     'ss/p1p2p3/'
                 )
-                output['vh%i' % mass] = vh_view
+                output['vh%i' % mass] = preprocess(vh_view)
             except KeyError:
-                logging.warning('No sample found matching VH_*%i' % mass)
+                #logging.warning('No sample found matching VH_*%i' % mass)
                 continue
 
             if mass % 10 == 0 and mass < 150:
@@ -393,11 +429,11 @@ class WHPlotterBase(Plotter):
                         self.get_view('VH_%i_HWW*' % mass),
                         'ss/p1p2p3/'
                     )
+                    output['vh%i_hww' % mass] = preprocess(ww_view)
                 except KeyError:
-                    logging.warning('No sample found matching VH_%i_HWW*' % mass)
-                    ww_view = None
-                output['vh%i_hww' % mass] = ww_view
-                output['signal%i' % mass] = views.SumView(ww_view, vh_view) if ww_view else vh_view
+                    #logging.warning('No sample found matching VH_%i_HWW*' % mass)
+                    continue
+                #output['signal%i' % mass] = views.SumView(ww_view, vh_view) if ww_view else vh_view
 
         return output
 
@@ -633,12 +669,9 @@ class WHPlotterBase(Plotter):
         ''' Write final shapes for [variable] into a TDirectory [outputdir] '''
         show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
         sig_view = self.make_signal_views(unblinded=(not self.blind),
-                                          qcd_weight_fraction=qcd_fraction)
+                                          qcd_weight_fraction=qcd_fraction,
+                                          rebin=rebin, project=project, project_axis=project_axis)
         
-        if project and project_axis:
-            sig_view = self.apply_to_dict( sig_view, ProjectionView, project_axis, project )
-        sig_view = self.apply_to_dict( sig_view, RebinView, rebin )
-
         outdir.cd()
         wz = views.SumView(sig_view['wz'], sig_view['wz_3l']).Get(variable)
         zz = sig_view['zz'].Get(variable)
@@ -662,7 +695,7 @@ class WHPlotterBase(Plotter):
 
             if mass % 10 == 0 and mass < 150:
                 # Only have 10 GeV steps for WW
-                if sig_view['vh%i_hww' % mass]:
+                if 'vh%i_hww' % mass in sig_view:
                     ww = sig_view['vh%i_hww' % mass].Get(variable)
                     ww.SetName('WH_hww%i' % mass)
                     ww.Write()
@@ -751,11 +784,9 @@ class WHPlotterBase(Plotter):
         ''' Plot the final output - with bkg. estimation '''        
         show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
         sig_view = self.make_signal_views(unblinded=(not self.blind), 
-                                          qcd_weight_fraction=qcd_weight_fraction)
-        if project and project_axis:
-            sig_view = self.apply_to_dict( sig_view, ProjectionView, project_axis, project ) 
-        sig_view = self.apply_to_dict( sig_view, RebinView, rebin ) #Rebin
-        
+                                          qcd_weight_fraction=qcd_weight_fraction,
+                                          rebin=rebin, project=project, project_axis=project_axis)
+
         if differential:
             sig_view = self.apply_to_dict(sig_view, DifferentialView)
 
@@ -777,7 +808,7 @@ class WHPlotterBase(Plotter):
 
         vh_hww = views.ScaleView(sig_view['vh120_hww'], .783) if 'vh120_hww' in sig_view else None
         if vh_hww:
-            tostack = tostack + [vh_hww]
+            tostack = tostack[:-1] + [vh_hww] + tostack[-1:]
 
         stack = views.StackView( *tostack )
         histo = stack.Get(variable)
