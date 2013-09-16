@@ -926,7 +926,7 @@ def make_timestamp_task(cardmasses, channel)
   timestamp = "#{$carddir}/#{channel}/.creation_timestamp"
   #creates the tasks
   make_unc_conf_task(channel)
-  make_unc_vals_task(channel)
+  make_unc_vals_task(channel, '', true)
   make_cgs_conf_task(channel)
   file timestamp => cardmasses.map{|x| make_datacard_task(x, channel)} do |t|
     sh "mkdir -p `dirname #{t.name}`"
