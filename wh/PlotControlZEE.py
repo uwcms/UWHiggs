@@ -12,6 +12,9 @@ import rootpy.plotting.views as views
 from FinalStateAnalysis.PlotTools.HistToTGRaphErrors import HistStackToTGRaphErrors
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 import ROOT
+import logging
+import sys
+logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 ROOT.gROOT.SetBatch(True)
 
@@ -22,11 +25,11 @@ class ControlZEEPlotter(Plotter):
         self.output_dir = os.path.join('results', self.jobid, 'plots', 'zee')
         samples = [
             'Zjets_M50',
-            #'WZ*',
-            #'ZZ*',
-            #'WW*',
+            'WZ*',
+            'ZZ*',
+            'WW*',
             'TT*',
-            #'WplusJets*',
+            'WplusJets*',
             "data_DoubleE*",
             ]
         files = []
@@ -65,23 +68,6 @@ class ControlZEEPlotter(Plotter):
         ss_fakes_12  = MedianView(ss_f1f2_qcd_view, ss_f1f2_wje_view)
         ss_fakes_est = views.SumView(ss_fakes_1, ss_fakes_2, ss_fakes_12)
         ss_fakes_est = views.TitleView( views.StyleView(ss_fakes_est, **data_styles['Zjets*']), 'Fakes;%s' % xaxis)
-
-        ## os_f1p2_qcd_views, os_p1f2_qcd_views, os_f1f2_qcd_views = zip(make_fakes_view('os', 'qcd_w/charge_weightSysUp'), make_fakes_view('os', 'qcd_w/charge_weightSysDwn'))
-        ## os_f1p2_wje_views, os_p1f2_wje_views, os_f1f2_wje_views = zip(make_fakes_view('os', 'wjet_w/charge_weightSysUp'),make_fakes_view('os', 'wjet_w/charge_weightSysDwn'))
-
-        ## os_f1p2_qcd_view = MedianView( *os_f1p2_qcd_views )
-        ## os_p1f2_qcd_view = MedianView( *os_p1f2_qcd_views )
-        ## os_f1f2_qcd_view = MedianView( *os_f1f2_qcd_views )
-
-        ## os_f1p2_wje_view = MedianView( *os_f1p2_wje_views )
-        ## os_p1f2_wje_view = MedianView( *os_p1f2_wje_views )
-        ## os_f1f2_wje_view = MedianView( *os_f1f2_wje_views )
-
-        ## os_fakes_1   = MedianView(os_f1p2_qcd_view, os_f1p2_wje_view)
-        ## os_fakes_2   = MedianView(os_p1f2_qcd_view, os_p1f2_wje_view)
-        ## os_fakes_12  = MedianView(os_f1f2_qcd_view, os_f1f2_wje_view)
-        ## os_fakes_est = views.SumView(os_fakes_1, os_fakes_2, os_fakes_12)
-        ## neg_os_fakes = views.ScaleView(os_fakes_est, -1)
 
         os_flip_est_up  = views.SubdirectoryView( data_view, 'os/p1p2/charge_weightSysUp')
         os_flip_est     = views.SubdirectoryView( data_view, 'os/p1p2/charge_weight')
@@ -176,3 +162,34 @@ plotter.save('EE_Charge_Flip_closure_absEta')
 
 plotter.make_charge_flip_control_plot('ePt','electron p_{T}',2,x_range=[0,200], data_type='Zjets_M50')
 plotter.save('EE_Charge_Flip_closure_ePt')
+
+#
+# DATA/MC control plots
+#
+
+plotter.plot_mc_vs_data('os/p1p2/', 'TrkMass', rebin=2, xaxis='m_{#mu#mu} (GeV)')
+plotter.add_cms_blurb(plotter.sqrts)
+plotter.save('mass')
+
+plotter.plot_mc_vs_data('os/p1p2/', 'TrkMass', rebin=10, xaxis='m_{#mu#mu} (GeV)')
+plotter.add_cms_blurb(plotter.sqrts)
+plotter.save('mass_rebin')
+
+plotter.plot_mc_vs_data('os/p1p2/', 'e1Pt')
+plotter.save('e1Pt')
+plotter.plot_mc_vs_data('os/p1p2/', 'e1Pt', 5)
+plotter.save('e1Pt_rebin')
+plotter.plot_mc_vs_data('os/p1p2/', 'e2Pt')
+plotter.save('e2Pt')
+plotter.plot_mc_vs_data('os/p1p2/', 'e2Pt', 5)
+plotter.save('e2Pt_rebin')
+
+plotter.plot_mc_vs_data('os/p1p2/', 'e1AbsEta')
+plotter.save('e1AbsEta')
+plotter.plot_mc_vs_data('os/p1p2/', 'e2AbsEta')
+plotter.save('e2AbsEta')
+
+plotter.plot_mc_vs_data('os/p1p2/', 'e1AbsEta', 5)
+plotter.save('e1AbsEta_rebin')
+plotter.plot_mc_vs_data('os/p1p2/', 'e2AbsEta', 5)
+plotter.save('e2AbsEta_rebin')
