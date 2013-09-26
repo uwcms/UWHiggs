@@ -14,7 +14,9 @@ echo "Symlinking FinalStateAnalysis into working area"
 
 pushd $CMSSW_BASE/src
 if ! [ -L FinalStateAnalysis ]; then
-  ln -s UWHiggs/dependencies/FinalStateAnalysis FinalStateAnalysis
+  if ! [ -d FinalStateAnalysis ]; then
+    ln -s UWHiggs/dependencies/FinalStateAnalysis FinalStateAnalysis
+  fi
 fi
 
 echo "Checking out FSA dependencies"
