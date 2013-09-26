@@ -66,6 +66,7 @@ class ZHAnalyzeEEMT(ZHAnalyzerBase.ZHAnalyzerBase):
         if not bool(row.tAntiElectronLoose): return False
         #if row.LT < 45: return False
         if row.mPt + row.tPt < 35: return False
+        #if (row.m_t_SVfitMass < 100 or row.m_t_SVfitMass > 150): return False # for MSSM
         return selections.signalMuonSelection(row,'m')
 
     def sign_cut(self, row):
