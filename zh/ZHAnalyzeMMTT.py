@@ -14,7 +14,7 @@ import mcCorrectors
 import ZHAnalyzerBase
 import ROOT
 import fake_rate_functions as fr_fcn
-import random
+#import random
 
 ################################################################################
 #### Analysis logic ############################################################
