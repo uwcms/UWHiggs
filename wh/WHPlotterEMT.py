@@ -12,7 +12,7 @@ import os
 import ROOT
 import sys
 import WHPlotterBase
-from WHPlotterBase import make_styler, parser
+from WHPlotterBase import make_styler, parser, project_x
 import rootpy.plotting.views as views
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 
@@ -108,15 +108,15 @@ if __name__ == "__main__":
         #plotter.plot_mc_vs_data('ss/p1f2p3', 'mPt', 5, '#mu_{1} p_{T}', leftside=False)
         #plotter.save('mcdata-ss-p1f2p3-mPt')
 
-        #plotter.plot_mc_vs_data('ss/p1f2p3', 'subMass', 20, 'Subleading mass (GeV)', leftside=False)
-        #plotter.save('mcdata-ss-p1f2p3-subMass')
-        #
+        plotter.plot_mc_vs_data('ss/p1f2p3', 'subMass#LT', 20, 'Subleading mass (GeV)', leftside=False, preprocess=project_x)
+        plotter.save('mcdata-ss-p1f2p3-subMass')
+        
         #plotter.plot_mc_vs_data('ss/p1p2f3', 'subMass', 20, 'Subleading mass (GeV)', leftside=False)
         #plotter.save('mcdata-ss-p1p2f3-subMass')
         #
-        #plotter.plot_mc_vs_data('ss/f1p2p3', 'subMass', 20, 'Subleading mass (GeV)', leftside=False)
-        #plotter.save('mcdata-ss-f1p2p3-subMass')
-        #
+        plotter.plot_mc_vs_data('ss/f1p2p3', 'subMass#LT', 20, 'Subleading mass (GeV)', leftside=False, preprocess=project_x)
+        plotter.save('mcdata-ss-f1p2p3-subMass')
+        
         #plotter.plot_mc_vs_data('ss/p1f2p3/w2', 'mPt', 5, '#mu_{1} p_{T}', leftside=False)
         #plotter.save('mcdata-ss-p1f2p3-w2-mPt')
         #
@@ -528,6 +528,40 @@ if __name__ == "__main__":
         shape_dir = shape_file.mkdir('emtCatHigh_w')
         plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[130, 650], project_axis='X')
         shape_dir = shape_file.mkdir('emtCatHigh_q')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[130, 650], project_axis='X')
+        
+        logging.warning('shape file %s created' % shape_file.GetName()) 
+        shape_file.Close()
+
+        shape_file = ROOT.TFile(
+            os.path.join(plotter.outputdir, '%semt_f3_all_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+        
+        shape_dir = shape_file.mkdir('emtCatLow')
+        plotter.write_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[0., 130], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatLow_w')
+        plotter.write_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[0., 130], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatLow_q')
+        plotter.write_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[0., 130], project_axis='X')
+        
+        shape_dir = shape_file.mkdir('emtCatHigh')
+        plotter.write_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[130, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatHigh_w')
+        plotter.write_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[130, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatHigh_q')
+        plotter.write_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[130, 650], project_axis='X')
+        
+        shape_dir = shape_file.mkdir('emtCatLowf3')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[0., 130], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatLowf3_w')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[0., 130], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatLowf3_q')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[0., 130], project_axis='X')
+        
+        shape_dir = shape_file.mkdir('emtCatHighf3')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[130, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatHighf3_w')
+        plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[130, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('emtCatHighf3_q')
         plotter.write_f3_shapes(prefix+'subMass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[130, 650], project_axis='X')
         
         logging.warning('shape file %s created' % shape_file.GetName()) 

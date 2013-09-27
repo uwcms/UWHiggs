@@ -12,7 +12,7 @@ import os
 import ROOT
 import sys
 import WHPlotterBase
-from WHPlotterBase import make_styler, parser
+from WHPlotterBase import make_styler, parser, project_x
 import rootpy.plotting.views as views
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 
@@ -28,6 +28,7 @@ categories = {
     'LTLow' : [0, 130],
     'LTHigh': [130, 650],
 }
+
 
 
 if __name__ == "__main__":
@@ -148,18 +149,27 @@ if __name__ == "__main__":
         #plotter.add_cms_blurb(sqrts)
         #plotter.save('mcdata-ss-p1f2p3-m1Pt')
         
-        #plotter.plot_mc_vs_data('ss/p1f2p3', 'm2_t_Mass', rebin=10, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('mcdata-ss-p1f2p3-subMass')
+        plotter.plot_mc_vs_data('ss/p1f2p3', 'm2_t_Mass#LT', rebin=10, xaxis='m_{#mu2#tau} (GeV)', 
+                                leftside=False, preprocess=project_x)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-ss-p1f2p3-subMass')
+
+        plotter.plot_mc_vs_data('os/p1p2f3', 'nvtx')
+        plotter.save('mcdata-os-p1p2f3-nvtx')
+
+        plotter.plot_mc_vs_data('os/p1p2f3', 'm1_m2_Mass', rebin=10)
+        plotter.save('mcdata-os-p1p2f3-m1_m2_Mass')
+        
+        plotter.plot_mc_vs_data('os/p1p2f3', 'm2_t_Mass#LT', rebin=10, xaxis='m_{#mu1#mu2} (GeV)',
+                                leftside=False, preprocess=project_x)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-os-p1p2f3-m1m2Mass')
         #
-        #plotter.plot_mc_vs_data('ss/p1f2p3/w2', 'm1Pt', rebin=10, xaxis='#mu_{1} p_{T}', leftside=False)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('mcdata-ss-p1f2p3-w2-m1Pt')
-        #
-        #plotter.plot_mc_vs_data('ss/f1p2p3', 'm2_t_Mass', rebin=20, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('mcdata-ss-f1p2p3-subMass')
-        #
+        plotter.plot_mc_vs_data('ss/f1p2p3', 'm2_t_Mass#LT', rebin=20, xaxis='m_{#mu2#tau} (GeV)', 
+                                leftside=False, preprocess=project_x)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-ss-f1p2p3-subMass')
+        
         #plotter.plot_mc_vs_data('ss/f1p2p3/w1', 'm2_t_Mass', rebin=20, xaxis='m_{#mu2#tau} (GeV)', leftside=False)
         #plotter.add_cms_blurb(sqrts)
         #plotter.save('mcdata-ss-f1p2p3-w1-subMass')
@@ -182,7 +192,8 @@ if __name__ == "__main__":
         for label, proj_range in categories.iteritems():
             plotter.set_subdir('%s' % label)
             plotter.plot_final('m2_t_Mass#LT', rebin_slim, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, 
-                               project=proj_range, project_axis='X', differential=True, yaxis='Events / GeV')
+                               project=proj_range, project_axis='X', differential=True, 
+                               yaxis='Events / GeV', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-subMass-%s' % label)
 
@@ -584,6 +595,40 @@ if __name__ == "__main__":
         shape_dir = shape_file.mkdir('mmtCatHigh_w')
         plotter.write_f3_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[130, 650], project_axis='X')
         shape_dir = shape_file.mkdir('mmtCatHigh_q')
+        plotter.write_f3_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[130, 650], project_axis='X')
+        
+        logging.warning('shape file %s created' % shape_file.GetName()) 
+        shape_file.Close()
+
+        shape_file = ROOT.TFile(
+            os.path.join(plotter.outputdir, '%smmt_f3_all_shapes_%s.root' % (shape_prefix, plotter.period) ), 'RECREATE')
+        
+        shape_dir = shape_file.mkdir('mmtCatLow')
+        plotter.write_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[0., 130], project_axis='X')
+        shape_dir = shape_file.mkdir('mmtCatLow_w')
+        plotter.write_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[0., 130], project_axis='X')
+        shape_dir = shape_file.mkdir('mmtCatLow_q')
+        plotter.write_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[0., 130], project_axis='X')
+        
+        shape_dir = shape_file.mkdir('mmtCatHigh')
+        plotter.write_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[130, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('mmtCatHigh_w')
+        plotter.write_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[130, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('mmtCatHigh_q')
+        plotter.write_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[130, 650], project_axis='X')
+        
+        shape_dir = shape_file.mkdir('mmtCatLowf3')
+        plotter.write_f3_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[0., 130], project_axis='X')
+        shape_dir = shape_file.mkdir('mmtCatLowf3_w')
+        plotter.write_f3_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[0., 130], project_axis='X')
+        shape_dir = shape_file.mkdir('mmtCatLowf3_q')
+        plotter.write_f3_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[0., 130], project_axis='X')
+        
+        shape_dir = shape_file.mkdir('mmtCatHighf3')
+        plotter.write_f3_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.5, project=[130, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('mmtCatHighf3_w')
+        plotter.write_f3_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=0.0, project=[130, 650], project_axis='X')
+        shape_dir = shape_file.mkdir('mmtCatHighf3_q')
         plotter.write_f3_shapes(prefix+'m2_t_Mass#LT', rebin_slim, shape_dir, qcd_fraction=1.0, project=[130, 650], project_axis='X')
         
         logging.warning('shape file %s created' % shape_file.GetName()) 
