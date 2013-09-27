@@ -19,8 +19,8 @@ import optimizer
 from functools import wraps
 
 math = ROOT.TMath
-leading_iso    = optimizer.grid_search['EET']['leading_iso']
-subleading_iso = optimizer.grid_search['EET']['subleading_iso']
+leading_iso    = 'eid12Medium_h2taucuts' #optimizer.grid_search['EET']['leading_iso']
+subleading_iso = 'eid12Medium_h2taucuts' #optimizer.grid_search['EET']['subleading_iso']
 
 
 def sc_inv_mass(row):
@@ -89,6 +89,7 @@ class ControlZEE(MegaBase):
             self.book(dirname, 'SCEnergy', 'electron Super Cluster energy', 500, 0, 1000)
             self.book(dirname, 'SCDPhi'  , 'electron Super Cluster DeltaPhi', 180, 0, math.Pi())
             self.book(dirname, 'TrkMass' , 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
+            self.book(dirname, 'TrkMass_NoWeight', 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
             self.book(dirname, 'TrkMass_NOSCALE' , 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
             self.book(dirname, 'SCMass'  , 'Dielectrons Super Cluster invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
             self.book(dirname, "e1Pt"    , "electron 1 Pt", 400, 0, 800)
@@ -97,6 +98,10 @@ class ControlZEE(MegaBase):
             self.book(dirname, "e2AbsEta", "electron 2 abseta", 100, 0., 2.5)
             self.book(dirname, "type1_pfMetEt", "metEt"         , 300, 0, 300)
             self.book(dirname, "mva_metEt", "mva_metEt", 300, 0, 300)
+            self.book(dirname, "trig_weight" , "mva_metEt", 200, 0, 2)
+            self.book(dirname, "PU_weight"   , "mva_metEt", 200, 0, 2)
+            self.book(dirname, "idIso_weight", "mva_metEt", 200, 0, 2)
+            
 
         self.dirs = ['/'.join([sign,id_,weight,ch_weight]) for sign in ['os','ss']
                 for id_ in [h+k for h in ['p1','f1'] for k in ['p2','f2'] ]
@@ -119,14 +124,6 @@ class ControlZEE(MegaBase):
                 self.dir_based_histograms[location] = {}
             self.dir_based_histograms[location][name] = hist
 
-    def evt_weight(self, row):
-        if row.run > 2:
-            return 1.
-        else:
-            return self.pucorrector(row.nTruePU) * \
-                mcCorrectors.get_electron_corrections(row,'e1','e2')
-        
-
     def preselection(self, row):
         ''' Preselection applied to events.
 
@@ -144,7 +141,7 @@ class ControlZEE(MegaBase):
         return True
 
     def obj1_id(self, row):
-        return selections.lepton_id_iso(row, 'e1', subleading_iso)
+        return selections.lepton_id_iso(row, 'e1', leading_iso)
 
     def obj2_id(self, row):
         return selections.lepton_id_iso(row, 'e2', subleading_iso)
@@ -152,8 +149,10 @@ class ControlZEE(MegaBase):
     def mc_weight(self, row):
         if row.run > 2:
             return 1.
-        return self.pucorrector(row.nTruePU) * \
-            mcCorrectors.get_electron_corrections(row,'e1','e2')
+        else:
+            return self.pucorrector(row.nTruePU) * \
+                mcCorrectors.get_electron_corrections(row,'e1','e2') *\
+                mcCorrectors.double_electron_trigger(row)
 
     def process(self):
 
@@ -174,8 +173,13 @@ class ControlZEE(MegaBase):
             histos[dirname]["e1AbsEta"].Fill(row.e1AbsEta,weight)
             histos[dirname]["e2AbsEta"].Fill(row.e2AbsEta,weight)
             histos[dirname]['TrkMass_NOSCALE'].Fill(row.e1_e2_Mass, weight)
+            histos[dirname]['TrkMass_NoWeight'].Fill(row.e1_e2_Mass)
             histos[dirname]['type1_pfMetEt'].Fill(row.type1_pfMetEt, weight)
             histos[dirname]['mva_metEt'].Fill(row.mva_metEt, weight)
+            if row.run < 2:
+                histos[dirname]["trig_weight" ].Fill( self.pucorrector(row.nTruePU) )
+                histos[dirname]["PU_weight"   ].Fill( mcCorrectors.get_electron_corrections(row,'e1','e2') )
+                histos[dirname]["idIso_weight"].Fill( mcCorrectors.double_electron_trigger(row) )
         
         for row in self.tree:
             if not self.preselection(row):
