@@ -31,12 +31,15 @@ electron_corrections       = H2TauCorrections.correct_e_idiso_2011 if is7TeV els
 muon_pog_Mu17Mu8_2011      = MuonPOGCorrections.muon_pog_Mu17Mu8_eta_eta_2011
 muon_pog_Mu17Mu8_Mu17_2012 = MuonPOGCorrections.make_muon_pog_Mu17Mu8_Mu17_2012()
 muon_pog_Mu17Mu8_Mu8_2012  = MuonPOGCorrections.make_muon_pog_Mu17Mu8_Mu8_2012()
+muon_h2tau_Mu17Mu8_2012    = H2TauCorrections.correct_double_muon_trg_2012
+
 
 #Scale factors for mueg triggers, that's better
 correct_mueg_mu            = H2TauCorrections.correct_mueg_mu_2011 if is7TeV else H2TauCorrections.correct_mu_idiso_2012
 correct_mueg_e             = H2TauCorrections.correct_mueg_e_2011  if is7TeV else H2TauCorrections.correct_mueg_e_2012
 
-#Double electrons does NOT need scale factors    
+#Double electrons scale factors    
+correct_double_electron    = H2TauCorrections.correct_double_electron_trg_2011 if is7TeV else H2TauCorrections.correct_double_electron_trg_2012
 
 def make_puCorrector(dataset, kind=None):
     'makes PU reweighting according to the pu distribution of the reference data and the MC, MC distribution can be forced'
@@ -74,7 +77,7 @@ def double_muon_trigger(row,m1,m2):
     if is7TeV:
         return muon_pog_Mu17Mu8_2011(getattr(row, '%sEta' % m1), getattr(row, '%sEta' % m2) )
     else:
-        f1 = muon_pog_Mu17Mu8_Mu17_2012(getattr(row, '%sPt' % m1), getattr(row, '%sEta' % m1))
-        f2 =  muon_pog_Mu17Mu8_Mu8_2012(getattr(row, '%sPt' % m2), getattr(row, '%sEta' % m2))
-        return f1*f2
+        return muon_h2tau_Mu17Mu8_2012(getattr(row, '%sPt' % m1), getattr(row, '%sEta' % m1), getattr(row, '%sPt' % m2), getattr(row, '%sEta' % m2))
 
+def double_electron_trigger(row):
+    return correct_double_electron( row.e1Pt, row.e1Eta, row.e2Pt, row.e2Eta )
