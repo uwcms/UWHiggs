@@ -348,8 +348,8 @@ class WHAnalyzeEET(WHAnalyzerBase):
         if row.run > 2:
             return 1.
         return self.pucorrector(row.nTruePU) * \
-            mcCorrectors.get_electron_corrections(row,'e1','e2')
-
+            mcCorrectors.get_electron_corrections(row,'e1','e2') *\
+            mcCorrectors.double_electron_trigger(row)
    
     def obj1_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
         return frfits.highpt_ee_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt, numJets20=row.jetVeto20+1)
