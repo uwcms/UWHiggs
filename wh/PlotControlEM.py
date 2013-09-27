@@ -131,31 +131,32 @@ fakes_samples = [
 for suffix, samples in [('', os_ss_samples), ('-fakes', fakes_samples)]:
     plotter.mc_samples = samples
 
+    #from pdb import set_trace; set_trace()
     plotter.plot_mc_vs_data('em', 'emMass', rebin=5, leftside=False,
-                            xaxis='m_{e#mu} (GeV)')
+                            xaxis='m_{e#mu} (GeV)', show_ratio=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mass' + suffix)
 
     plotter.plot_mc_vs_data('em', 'emMass', rebin=10, leftside=False,
-                            xaxis='m_{e#mu} (GeV)')
+                            xaxis='m_{e#mu} (GeV)', show_ratio=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mass_rebin' + suffix)
 
-    plotter.plot_mc_vs_data('em', 'mPt', rebin=10)
+    plotter.plot_mc_vs_data('em', 'mPt', rebin=10, show_ratio=True)
     plotter.save('mPt' + suffix)
-    plotter.plot_mc_vs_data('em', 'ePt', rebin=10)
+    plotter.plot_mc_vs_data('em', 'ePt', rebin=10, show_ratio=True)
     plotter.save('ePt' + suffix)
 
-    plotter.plot_mc_vs_data('em', 'mAbsEta', rebin=5)
+    plotter.plot_mc_vs_data('em', 'mAbsEta', rebin=5, show_ratio=True)
     plotter.save('mAbsEta' + suffix)
-    plotter.plot_mc_vs_data('em', 'eAbsEta', rebin=5)
+    plotter.plot_mc_vs_data('em', 'eAbsEta', rebin=5, show_ratio=True)
     plotter.save('eAbsEta' + suffix)
 
-    plotter.plot_mc_vs_data('em', 'nvtx')
+    plotter.plot_mc_vs_data('em', 'nvtx', show_ratio=True)
     plotter.save('nvtx' + suffix)
 
-    plotter.plot_mc_vs_data('em', 'bjetCSVVeto')
+    plotter.plot_mc_vs_data('em', 'bjetCSVVeto', show_ratio=True)
     plotter.save('bjetCSVVeto' + suffix)
 
-    plotter.plot_mc_vs_data('em', 'bjetVeto')
+    plotter.plot_mc_vs_data('em', 'bjetVeto', show_ratio=True)
     plotter.save('bjetVeto' + suffix)

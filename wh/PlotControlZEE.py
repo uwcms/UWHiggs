@@ -39,7 +39,7 @@ class ControlZEEPlotter(Plotter):
             files.extend(glob.glob('results/%s/ControlZEE/%s.root' % (self.jobid, x)))
             lumifiles.extend(glob.glob('inputs/%s/%s.lumicalc.sum' % (self.jobid, x)))
         super(ControlZEEPlotter, self).__init__(files, lumifiles, self.output_dir)
-        self.mc_samples = ['Zjets_M50']
+        self.mc_samples = filter(lambda x: 'data' not in x, samples)
 
     def get_flip_data(self, rebin=1, xaxis='', data_type='data'):
         data_view = self.get_view(data_type)
@@ -167,29 +167,45 @@ plotter.save('EE_Charge_Flip_closure_ePt')
 # DATA/MC control plots
 #
 
-plotter.plot_mc_vs_data('os/p1p2/', 'TrkMass', rebin=2, xaxis='m_{#mu#mu} (GeV)')
+plotter.plot_mc_vs_data('os/p1p2/', 'TrkMass', rebin=2, xaxis='m_{#mu#mu} (GeV)', 
+                        leftside=False, show_ratio=True)
 plotter.add_cms_blurb(plotter.sqrts)
 plotter.save('mass')
 
-plotter.plot_mc_vs_data('os/p1p2/', 'TrkMass', rebin=10, xaxis='m_{#mu#mu} (GeV)')
+plotter.plot_mc_vs_data('os/p1p2/', 'TrkMass', rebin=10, xaxis='m_{#mu#mu} (GeV)', 
+                        leftside=False, show_ratio=True)
 plotter.add_cms_blurb(plotter.sqrts)
 plotter.save('mass_rebin')
 
-plotter.plot_mc_vs_data('os/p1p2/', 'e1Pt')
+plotter.plot_mc_vs_data('os/p1p2/', 'e1Pt', leftside=False, show_ratio=True)
 plotter.save('e1Pt')
-plotter.plot_mc_vs_data('os/p1p2/', 'e1Pt', 5)
+plotter.plot_mc_vs_data('os/p1p2/', 'e1Pt', 5, leftside=False, show_ratio=True)
 plotter.save('e1Pt_rebin')
-plotter.plot_mc_vs_data('os/p1p2/', 'e2Pt')
+plotter.plot_mc_vs_data('os/p1p2/', 'e2Pt', leftside=False, show_ratio=True)
 plotter.save('e2Pt')
-plotter.plot_mc_vs_data('os/p1p2/', 'e2Pt', 5)
+plotter.plot_mc_vs_data('os/p1p2/', 'e2Pt', 5, leftside=False, show_ratio=True)
 plotter.save('e2Pt_rebin')
 
-plotter.plot_mc_vs_data('os/p1p2/', 'e1AbsEta')
+plotter.plot_mc_vs_data('os/p1p2/', 'e1AbsEta', leftside=False, show_ratio=True)
 plotter.save('e1AbsEta')
-plotter.plot_mc_vs_data('os/p1p2/', 'e2AbsEta')
+plotter.plot_mc_vs_data('os/p1p2/', 'e2AbsEta', leftside=False, show_ratio=True)
 plotter.save('e2AbsEta')
 
-plotter.plot_mc_vs_data('os/p1p2/', 'e1AbsEta', 5)
+plotter.plot_mc_vs_data('os/p1p2/', 'e1AbsEta', 5, leftside=False, show_ratio=True)
 plotter.save('e1AbsEta_rebin')
-plotter.plot_mc_vs_data('os/p1p2/', 'e2AbsEta', 5)
+plotter.plot_mc_vs_data('os/p1p2/', 'e2AbsEta', 5, leftside=False, show_ratio=True)
 plotter.save('e2AbsEta_rebin')
+
+
+plotter.plot_mc_vs_data('os/p1p2/', "trig_weight" , 5, leftside=False, show_ratio=True)
+plotter.save('trig_weight')
+
+plotter.plot_mc_vs_data('os/p1p2/', "PU_weight"   , 5, leftside=False, show_ratio=True)
+plotter.save('PU_weight')
+
+plotter.plot_mc_vs_data('os/p1p2/', "idIso_weight", 5, leftside=False, show_ratio=True)
+plotter.save('idIso_weight')
+
+
+#plotter.plot_mc_vs_data('os/p1p2/', 'nvtx', show_ratio=True)
+#plotter.save('nvtx')
