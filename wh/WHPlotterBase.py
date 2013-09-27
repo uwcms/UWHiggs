@@ -41,6 +41,8 @@ parser.add_option('--prefix', metavar='label', type=str, dest='prefix', default 
 parser.add_option('--prefixes', metavar='label', type=str, dest='prefixes', default = '',
                   help='prefix to eppend before histogram name o be used to make the shapes' )
 
+project_x = lambda x: ProjectionView(x, 'X', [0, 650])
+
 def get_chi_square(hdata, hexp):
     chi2  = 0.
     nbins = 0.
@@ -250,14 +252,14 @@ class WHPlotterBase(Plotter):
         super(WHPlotterBase, self).__init__(files, lumifiles, self.outputdir,
                                             blinder)
         self.defaults = {} #allows to set some options and avoid repeating them each function call
-        self.mc_samples = filter(lambda x: x.startswith('data'), samples)
+        self.mc_samples = filter(lambda x: not x.startswith('data'), samples)
         #os.chdir( cwd )
         #create a fake wiew summing up all HWW
-        self.views['VH_hww_sum'] = {
-            'unweighted_view' : views.SumView(
-                *[item['unweighted_view'] for name, item in self.views.iteritems() if fnmatch(name, 'VH_*_HWW*')]
-            )
-        }
+        #self.views['VH_hww_sum'] = {
+        #    'unweighted_view' : views.SumView(
+        #        *[item['unweighted_view'] for name, item in self.views.iteritems() if fnmatch(name, 'VH_*_HWW*')]
+        #    )
+        #}
 
     def set_subdir(self, folder):
         self.outputdir = '/'.join([self.base_out_dir, folder])
@@ -306,8 +308,8 @@ class WHPlotterBase(Plotter):
         )
 
         all_data_view = self.get_view('data')
-        if unblinded:
-            all_data_view = self.get_view('data', 'unblinded_view')
+        #if unblinded:
+        #    all_data_view = self.get_view('data', 'unblinded_view')
         all_data_view = preprocess(all_data_view)
             
         data_view = views.SubdirectoryView(all_data_view, 'ss/p1p2p3/')
@@ -779,7 +781,7 @@ class WHPlotterBase(Plotter):
     def plot_final(self, variable, rebin=1, xaxis='', maxy=24,
                    show_error=False, qcd_correction=False, stack_higgs=True, 
                    qcd_weight_fraction=0.5, x_range=None, show_charge_fakes=False,
-                   leftside_legend=False, higgs_xsec_multiplier=5, project=None, 
+                   leftside_legend=False, higgs_xsec_multiplier=1, project=None, 
                    project_axis=None, differential=False, yaxis='Events', **kwargs):
         ''' Plot the final output - with bkg. estimation '''        
         show_charge_fakes = show_charge_fakes if 'show_charge_fakes' not in self.defaults else self.defaults['show_charge_fakes']
@@ -828,7 +830,10 @@ class WHPlotterBase(Plotter):
         self.keep.append(histo)
 
         # Add legend
-        legend = self.add_legend(histo, leftside=leftside_legend, entries=4)
+        entries = len(tostack)+1
+        if show_error:
+            entries += 1
+        legend  = self.add_legend(histo, leftside=leftside_legend, entries=entries)
 
         if show_error:
             correct_qcd_view = None
@@ -857,7 +862,7 @@ class WHPlotterBase(Plotter):
             legend.AddEntry(bkg_error)
 
         # Use poisson error bars on the data
-        sig_view['data'] = PoissonView(sig_view['data'], x_err=False)
+        sig_view['data'] = sig_view['data'] #PoissonView(, x_err=False)
 
         data = sig_view['data'].Get(variable)
         if not self.blind:
@@ -902,7 +907,7 @@ class WHPlotterBase(Plotter):
                       show_chi2=False,project=None, 
                       project_axis=None, differential=False, yaxis='Events', **kwargs):
         ''' Plot the final F3 control region - with bkg. estimation '''
-
+        show_chi2 = False #broken
         sig_view = self.make_obj3_fail_cr_views(
             qcd_correction, qcd_weight_fraction)
         if project and project_axis:
@@ -932,10 +937,10 @@ class WHPlotterBase(Plotter):
 
         # Add legend
         legend  = self.add_legend(histo, leftside=False, entries=4)
-        latex   = ROOT.TLatex(0.01, 0.9, "")
-        pad     = ROOT.TPad('da','fuq',0.1,0.8,0.5,0.9)
-        self.canvas.cd()
-        latexit = ''
+        #latex   = ROOT.TLatex(0.01, 0.9, "")
+        #pad     = ROOT.TPad('da','fuq',0.1,0.8,0.5,0.9)
+        #self.canvas.cd()
+        #latexit = ''
         if show_error:
             correct_qcd_view = None
             if qcd_weight_fraction == 0:
@@ -961,9 +966,9 @@ class WHPlotterBase(Plotter):
             self.keep.append(bkg_error)
             bkg_error.Draw('pe2,same')
             legend.AddEntry(bkg_error)
-            if show_chi2:
-                chival  = get_chi_square(data, bkg_error)
-                latexit = '#chi^{2}/#bins = %.2f / %i' % chival 
+            #if show_chi2:
+            #    chival  = get_chi_square(data, bkg_error)
+            #    latexit = '#chi^{2}/#bins = %.2f / %i' % chival 
                 
         data.Draw('same')
         if isinstance(maxy, (int, long, float)):
@@ -974,13 +979,13 @@ class WHPlotterBase(Plotter):
             histo.SetMaximum(2 * max(data.GetMaximum(), histo.GetMaximum()))
         self.keep.append(data)
         self.keep.append(histo)
-        if latexit:
-            pad.cd()
-            latex.DrawLatex(0.01, 0.01, latexit)
-            self.canvas.cd()
-            pad.Draw()
-        self.keep.append(latex)
-        self.keep.append(pad)
+        #if latexit:
+        #    pad.cd()
+        #    latex.DrawLatex(0.01, 0.01, latexit)
+        #    self.canvas.cd()
+        #    pad.Draw()
+        #self.keep.append(latex)
+        #self.keep.append(pad)
         #legend.AddEntry(data)
         legend.Draw()
 
