@@ -74,6 +74,11 @@ class ControlEM(MegaBase):
                       5, -0.5, 4.5)
             self.book('em' + folder, 'eVetoCicTightIso',
                       'Number of extra CiC tight electrons', 5, -0.5, 4.5)
+            self.book('em' + folder, "trig_weight" , "mva_metEt", 200, 0, 2)
+            self.book('em' + folder, "PU_weight"   , "mva_metEt", 200, 0, 2)
+            self.book('em' + folder, "idIso_weight", "mva_metEt", 200, 0, 2)
+            self.book('em' + folder, "emMass_noweight", "m_{e#mu} (GeV)", 240, 0, 240)
+
 
     def correction(self, row):
         return self.pucorrector(row.nTruePU) * \
@@ -100,12 +105,20 @@ class ControlEM(MegaBase):
             histos[x + '/eJetBtag'].Fill(row.eJetBtag, w)
             histos[x + '/mJetBtag'].Fill(row.mJetBtag, w)
             histos[x + '/emMass'].Fill(row.e_m_Mass, w)
+            histos[x + '/emMass_noweight'].Fill(row.e_m_Mass)
 
             histos[x + '/bjetVeto'].Fill(row.bjetVeto, w)
             histos[x + '/bjetCSVVeto'].Fill(row.bjetCSVVeto, w)
             histos[x + '/muVetoPt5'].Fill(row.muVetoPt5, w)
             histos[x + '/tauVetoPt20'].Fill(row.tauVetoPt20, w)
             histos[x + '/eVetoCicTightIso'].Fill(row.eVetoCicTightIso, w)
+            if row.run < 2:
+                histos[x + "/trig_weight" ].Fill(mcCorrectors.correct_mueg_mu(row.mPt, row.mAbsEta)* 
+                                                 mcCorrectors.correct_mueg_e(row.ePt, row.eAbsEta) )
+                histos[x + "/PU_weight"   ].Fill(self.pucorrector(row.nTruePU)) 
+                histos[x + "/idIso_weight"].Fill(mcCorrectors.get_muon_corrections(row,'m') * 
+                                                 mcCorrectors.get_electron_corrections(row,'e') ) 
+
 
         passes_e_id_iso = self.obj2_id(row)
         if row.e_m_SS and passes_e_id_iso:
@@ -122,7 +135,7 @@ class ControlEM(MegaBase):
         Excludes FR object IDs and sign cut.
         '''
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
-        mu8e17 = (row.mu8ele17isoPass and row.ePt >= 20) #if use_iso_trigger else (row.mu17ele8Pass and row.mPt < 20)
+        mu8e17 = (row.mu8ele17isoPass and row.ePt >= 20) if use_iso_trigger else (row.mu8ele17Pass and row.mPt < 20)
         if not (mu17e8 or mu8e17):                return False
         if not selections.muSelection(row, 'm'):  return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         if not selections.eSelection(row, 'e'):   return False #applies basic selection (eta, pt > 10, DZ, missingHits, jetBTag, HasConversion and chargedIdTight)
