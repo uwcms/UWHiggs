@@ -100,7 +100,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         if len(self.grid_search.keys()) == 1:
 
             self.book(folder, "m2_t_Mass#LT" , "subleadingMass", 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
-
+            self.book(folder, "Event_ID", "Event ID", 'run:lumi:evt1:evt2', type=ROOT.TNtuple)
             #Pt
             self.book(folder, "m1Pt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
             self.book(folder, "tPt#LT"  , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
@@ -165,6 +165,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
 
         Excludes FR object IDs and sign cut.
         '''
+
         double_mu_pass =  row.doubleMuPass and \
             row.m1MatchesDoubleMuPaths > 0 and \
             row.m2MatchesDoubleMuPaths > 0
@@ -202,7 +203,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         cut_flow_trk.Fill('vetos')
         #cut_flow_trk.Fill('ChargeIdTight')
         cut_flow_trk.Fill('charge_fakes') #no charge fakes here
-        
+
         #FIXME: ONLY FOR CUT-FLOW PRODUCTION
         #if not row.m1PFIDTight: return False
         #cut_flow_trk.Fill('obj1 ID')
@@ -232,10 +233,12 @@ class WHAnalyzeMMT(WHAnalyzerBase):
 
     @staticmethod
     def obj3_id(row, tauId=None, LT_threshold = 80., taupt_thr = 0.):
+        retval = False
         if row.LT >= LT_threshold and row.tPt >= taupt_thr:
-            return bool(row.tLooseIso3Hits)
+            retval = bool(row.tLooseIso3Hits)
         else:
-            return bool( getattr(row, tauId) )
+            retval = bool( getattr(row, tauId) )
+        return retval
     
     @staticmethod
     def anti_wz(row):
