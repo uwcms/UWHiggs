@@ -58,6 +58,7 @@ import os
 import ROOT
 import math
 import itertools
+import array
 from FinalStateAnalysis.PlotTools.decorators import memo
 from FinalStateAnalysis.Utilities.struct import struct
 
@@ -365,6 +366,9 @@ class WHAnalyzerBase(MegaBase):
                     if row.processID != 26:
                         continue
 
+                #if row.lumi == 2348 and row.evt == 704038:
+                #    print 'preselection', preselection(row, cut_flow_trk, cut_settings['LT'] if lt_tpt_in_presel else 0., cut_settings['tauPT'] if lt_tpt_in_presel else 0.)
+
                 cut_flow_trk.Fill('WH Event')
                 lt_tpt_in_presel = not bool(cut_settings['tauID'])
                 if not preselection(row, cut_flow_trk, cut_settings['LT'] if lt_tpt_in_presel else 0., cut_settings['tauPT'] if lt_tpt_in_presel else 0.):
@@ -384,6 +388,14 @@ class WHAnalyzerBase(MegaBase):
                 to_fill = ('',) \
                     if not anti_charge_flip_cut else \
                     ('','charge_flip_CR/') if anti_charge_flip else ('charge_flip_CR/',)
+                
+                #if row.lumi == 2348 and row.evt == 704038:
+                #    print 'sign_result   ', sign_result     
+                #    print 'obj1_id_result', obj1_id_result 
+                #    print 'obj2_id_result', obj2_id_result 
+                #    print 'obj3_id_result', obj3_id_result 
+                #    print 'anti_wz       ', anti_wz        
+                #    #from pdb import set_trace; set_trace()
 
                 #if not cut_flow_trk.disabled:
                 if obj1_id_result:
@@ -407,6 +419,9 @@ class WHAnalyzerBase(MegaBase):
 
                 if anti_wz:
                     base_folder, weights = region_result
+                    #if base_folder == ('ss', 'p1p2f3'):
+                    #    print row.run, row.lumi, row.evt
+
                     base_folder = joinDirs(*base_folder)
                     # Fill the un-fr-weighted histograms
                     for i in to_fill:
