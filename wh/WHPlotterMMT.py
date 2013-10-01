@@ -197,74 +197,105 @@ if __name__ == "__main__":
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-subMass-%s' % label)
 
-            plotter.plot_final('m2_t_Mass#LT', 300, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final('m2_t_Mass#LT', 20, xaxis='m_{#mu_{2}#tau} (GeV)', 
+                               project=proj_range, project_axis='X', 
+                               yaxis='Events', show_error=True, x_range=[0,199], maxy=15.6)
             plotter.add_cms_blurb(sqrts)
-            plotter.save('final-subMass-%s-counting' % label, dotc=True, dotroot=True)
+            plotter.save('final-subMass-const_bin-%s' % label, verbose=True)
+
+            data_view = plotter.make_signal_views(unblinded=(not plotter.blind), 
+                                                 qcd_weight_fraction=0.5,
+                                                 rebin=20, project=proj_range, project_axis='X')['data']
+            data_hist = data_view.Get('m2_t_Mass#LT')
+            data_hist.GetXaxis().SetRangeUser(0,200)
+            data_hist.GetXaxis().SetRangeUser(0,15.6)
+            data_hist.SetMarkerColor(2)
+            data_hist.Draw()
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('bareData-subMass-const_bin-%s' % label)
+
+            plotter.plot_final('m2_t_Mass#LT', 300, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
+            plotter.add_cms_blurb(sqrts)
+            plotter.save('final-subMass-%s-counting' % label) #, dotc=True, dotroot=True)
 
             #pt
-            plotter.plot_final("m1Pt#LT"    , 10, xaxis='p_{T#mu_{1}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("m1Pt#LT"    , 10, xaxis='p_{T#mu_{1}} (GeV)', 
+                               maxy=None, project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m1Pt-%s' % label)
 
-            plotter.plot_final("m2Pt#LT"    , 10, xaxis='p_{T#mu_{2}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("m2Pt#LT"    , 10, xaxis='p_{T#mu_{2}} (GeV)', maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m2Pt-%s' % label)
 
-            plotter.plot_final("m1JetPt#LT" , 10, xaxis='p_{T Jet #mu_{1}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("m1JetPt#LT" , 10, xaxis='p_{T Jet #mu_{1}} (GeV)', maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m1JetPt-%s' % label)
 
-            plotter.plot_final("m2JetPt#LT" , 10, xaxis='p_{T Jet #mu_{2}} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("m2JetPt#LT" , 10, xaxis='p_{T Jet #mu_{2}} (GeV)', maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m2JetPt-%s' % label)
 
-            plotter.plot_final("tPt#LT"    , 10, xaxis='p_{T#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("tPt#LT"    , 10, xaxis='p_{T#tau} (GeV)', maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-tPt-%s' % label)
 
             #eta
-            plotter.plot_final("m1AbsEta#LT", 10, xaxis='|#eta_{#mu_{1}}|', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("m1AbsEta#LT", 10, xaxis='|#eta_{#mu_{1}}|', maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m1AbsEta-%s' % label)
 
-            plotter.plot_final("m2AbsEta#LT", 10, xaxis='|#eta_{#mu_{2}}|'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("m2AbsEta#LT", 10, xaxis='|#eta_{#mu_{2}}|'  , maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m2AbsEta-%s' % label)
 
-            plotter.plot_final("tAbsEta#LT", 10, xaxis='|#eta_{#tau}|'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("tAbsEta#LT", 10, xaxis='|#eta_{#tau}|'  , maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-tAbsEta-%s' % label)
 
             #DR
-            plotter.plot_final("m1_t_DR#LT", 10, xaxis='#DeltaR_{#mu_{1}#tau}', maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("m1_t_DR#LT", 10, xaxis='#DeltaR_{#mu_{1}#tau}', maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m1_t_DR-%s' % label)
 
-            plotter.plot_final("m2_t_DR#LT", 10, xaxis='#DeltaR_{#mu_{2}#tau}'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("m2_t_DR#LT", 10, xaxis='#DeltaR_{#mu_{2}#tau}'  , maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m2_t_DR-%s' % label)
 
             #Jet BTag
             
             #from pdb import set_trace; set_trace()
-            plotter.plot_final("m2JetBtag#LT", [-100, -40, 20, 100], xaxis='#mu_{2} Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("m2JetBtag#LT", [-100, -40, 20, 100], xaxis='#mu_{2} Jet Btag'  , 
+                               maxy=None, project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m2JetBtag-%s' % label, dotroot=True)
 
-            plotter.plot_final("m1JetBtag#LT", 1, xaxis='#mu_{1} Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
+            plotter.plot_final("m1JetBtag#LT", 1, xaxis='#mu_{1} Jet Btag'  , maxy=None, 
+                               project=proj_range, project_axis='X', show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m1JetBtag-%s' % label)
 
-            plotter.plot_final("m2JetCSVBtag#LT", 1, xaxis='#mu_{2} Jet CSV Btag'  , maxy=None, project=proj_range, project_axis='X', x_range=[0,1])
+            plotter.plot_final("m2JetCSVBtag#LT", 1, xaxis='#mu_{2} Jet CSV Btag'  , maxy=None, 
+                               project=proj_range, project_axis='X', x_range=[0,1], show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m2JetCSVBtag-%s' % label, dotroot=True)
 
-            plotter.plot_final("m1JetCSVBtag#LT", 1, xaxis='#mu_{1} Jet CSV Btag'  , maxy=None, project=proj_range, project_axis='X', x_range=[0,1])
+            plotter.plot_final("m1JetCSVBtag#LT", 1, xaxis='#mu_{1} Jet CSV Btag'  , maxy=None, 
+                               project=proj_range, project_axis='X', x_range=[0,1], show_error=True)
             plotter.add_cms_blurb(sqrts)
             plotter.save('final-m1JetCSVBtag-%s' % label)
 
-
-
+        raise ValueError
         #from pdb import set_trace; set_trace()
         plotter.plot_final('m2_t_Mass#LT', rebin_slim, xaxis='m_{#mu_{2}#tau} (GeV)', maxy=None, 
                            project=[0, 130], project_axis='X', differential=True, yaxis='Events / GeV')
