@@ -836,6 +836,7 @@ def make_f3_postfit_plots_task(channel)
     end
     sh "cp -v #{carddir}/#{channel}/#{channel}.pulls* #{resultdir}/."
     sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.png -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV' --show-errors"
+    sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.pdf -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV' --show-errors"
     sh "touch #{t.name}"
   end
   return plot_timestamp
@@ -846,8 +847,8 @@ task :f3_postfit_plots_emt => make_f3_postfit_plots_task('emt')
 task :f3_postfit_plots_eet => make_f3_postfit_plots_task('eet')
 #task :f3_postfit_plots_llt => make_f3_postfit_plots_task('llt')
 task :f3_postfit_plots => Array[:f3_postfit_plots_mmt,
-                                 :f3_postfit_plots_emt,
-                                 :f3_postfit_plots_eet]
+                                :f3_postfit_plots_emt,
+                                :f3_postfit_plots_eet]
 
 
 
@@ -1063,7 +1064,7 @@ end
 #### Copying card configuration to official place ###############################
 #################################################################################
 $httcombodir = "#{ENV['CMSSW_BASE']}/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt/"
-$auxdir      = "#{ENV['CMSSW_BASE']}/src/auxiliaries/datacards/collected/vhtt/"
+$auxdir      = "#{ENV['CMSSW_BASE']}/src/auxiliaries/shapes/VHTT/"
 
 def copy_and_trim_file(source, target)
   file target => [source] do |t|
