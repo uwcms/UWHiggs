@@ -297,6 +297,9 @@ class ZHAnalyzerBase(MegaBase):
             for obj2 in args[pos+1:]:
                 self.book(folder, "%s_%s_Mass" % (obj1, obj2), "%s %s - %s %s Mass" % (get_name(obj1) + get_name(obj2) ), 150, 0, 150)
 
+        self.book(folder, "Mass", "ZH Mass", 200, 0, 200)
+        self.book(folder, "%s_%s_SVfitMass" % self.H_decay_products(), "H candidate SVMass", 200, 0, 200)
+
     def book_resonance_histos(self, folder, products, name):
         self.book(folder, "%s_%s_Pt"     % products, "%s candidate Pt"              % name, 100, 0, 100)
         #self.book(folder, "%s_%s_AbsEta" % products, "%s candidate AbsEta"          % name, 100, 0, 2.4)
@@ -310,7 +313,7 @@ class ZHAnalyzerBase(MegaBase):
 
     def book_H_histos(self, folder):
         self.book_resonance_histos(folder, self.H_decay_products(), 'H')
-        self.book(folder, "%s_%s_SVfitMass"   % self.H_decay_products(), "H candidate SVfit Mass", 200, 0, 200)
+        #self.book(folder, "%s_%s_SVfitMass"   % self.H_decay_products(), "H candidate SVfit Mass", 200, 0, 200)
             
     def fill_histos(self, histos, folder, row, weight):
         '''fills histograms'''
