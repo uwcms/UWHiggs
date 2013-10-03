@@ -37,13 +37,6 @@ class ZHAnalyzeMMTT(ZHAnalyzerBase.ZHAnalyzerBase):
 
     def H_decay_products(self):
         return ('t1','t2')
-        ## random leg assignment 
-        #pair = ['t1', 't2']
-        #i = range(len(pair))
-        #random.shuffle(i)
-        #pair[i[0]] = 't1'
-        #pair[i[1]] = 't2'
-        #return tuple(pair)
 
     def book_histos(self, folder):
         self.book_general_histos(folder)
