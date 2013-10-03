@@ -15,9 +15,13 @@ import mcCorrectors
 import fakerate_functions as frfits
 import baseSelections as selections
 import ROOT
+import optimizer
 from functools import wraps
 
 math = ROOT.TMath
+leading_iso    = optimizer.grid_search['EET']['leading_iso']
+subleading_iso = optimizer.grid_search['EET']['subleading_iso']
+
 
 def sc_inv_mass(row):
     pt1 = row.e1SCEnergy / math.CosH(row.e1SCEta)
@@ -27,44 +31,31 @@ def sc_inv_mass(row):
 #@decorator
 def make_weight(fcn):
     #@wraps(fcn)
-    def f_(*args):
-        prob = fcn(*args)
-        if prob:
-            return prob / (1-prob)
-        else:
-            raise Exception("error in calulating weight")
+    def f_(*args,**kargs):
+        prob = fcn(*args,**kargs)
+        return prob / (1-prob)
     return f_
 
 #SUMMED PROBABILITIES
-charge_flip       = make_weight(frfits.e_charge_flip      )
-charge_flip_up    = make_weight(frfits.e_charge_flip_up   )
-charge_flip_down  = make_weight(frfits.e_charge_flip_down )
+charge_flip_lead       = make_weight(frfits.e_charge_flip[leading_iso]      )
+charge_flip_up_lead    = make_weight(frfits.e_charge_flip_up[leading_iso]   )
+charge_flip_down_lead  = make_weight(frfits.e_charge_flip_down[leading_iso] )
 
-## highpt_e_charge_flip      = make_weight( frfits.highpt_e_charge_flip      )
-## highpt_e_charge_flip_up   = make_weight( frfits.highpt_e_charge_flip_up   )
-## highpt_e_charge_flip_down = make_weight( frfits.highpt_e_charge_flip_down )
+charge_flip_sub       = make_weight(frfits.e_charge_flip[subleading_iso]      )
+charge_flip_up_sub    = make_weight(frfits.e_charge_flip_up[subleading_iso]   )
+charge_flip_down_sub  = make_weight(frfits.e_charge_flip_down[subleading_iso] )
 
-## lowpt_e_charge_flip       = make_weight( frfits.lowpt_e_charge_flip       )
-## lowpt_e_charge_flip_up    = make_weight( frfits.lowpt_e_charge_flip_up    )
-## lowpt_e_charge_flip_down  = make_weight( frfits.lowpt_e_charge_flip_down  )
 
-leading_e_fr_wjets    = make_weight(frfits.highpt_ee_fr )
-leading_e_fr_qcd      = make_weight(frfits.highpt_ee_qcd_fr )
-subleading_e_fr_wjets = make_weight(frfits.lowpt_ee_fr )
-subleading_e_fr_qcd   = make_weight(frfits.lowpt_ee_qcd_fr )
-
-## def assign_charge_weight_two_maps(dir_, row):
-##     if "charge_weightSysUp"  in dir_: return highpt_e_charge_flip_up(row.e1AbsEta,row.e1Pt) + lowpt_e_charge_flip_up(row.e2AbsEta,row.e2Pt)
-##     if "charge_weightSysDwn" in dir_: return highpt_e_charge_flip_down(row.e1AbsEta,row.e1Pt) + lowpt_e_charge_flip_down(row.e2AbsEta,row.e2Pt)
-##     if "charge_weight"       in dir_:
-##         return highpt_e_charge_flip(row.e1AbsEta,row.e1Pt) + lowpt_e_charge_flip(row.e2AbsEta,row.e2Pt)
-##     return 1 #No Charge w to be applied!
+leading_e_fr_wjets    = make_weight(frfits.highpt_ee_fr[leading_iso] )
+leading_e_fr_qcd      = make_weight(frfits.highpt_ee_qcd_fr[leading_iso] )
+subleading_e_fr_wjets = make_weight(frfits.lowpt_ee_fr[subleading_iso] )
+subleading_e_fr_qcd   = make_weight(frfits.lowpt_ee_qcd_fr[subleading_iso] )
 
 def assign_charge_weight_one_maps(dir_, row):
-    if "charge_weightSysUp"  in dir_: return charge_flip_up(row.e1AbsEta,row.e1Pt)   + charge_flip_up(row.e2AbsEta,row.e2Pt)
-    if "charge_weightSysDwn" in dir_: return charge_flip_down(row.e1AbsEta,row.e1Pt) + charge_flip_down(row.e2AbsEta,row.e2Pt)
+    if "charge_weightSysUp"  in dir_: return charge_flip_up_lead(row.e1AbsEta,row.e1Pt)   + charge_flip_up_sub(row.e2AbsEta,row.e2Pt)
+    if "charge_weightSysDwn" in dir_: return charge_flip_down_lead(row.e1AbsEta,row.e1Pt) + charge_flip_down_sub(row.e2AbsEta,row.e2Pt)
     if "charge_weight"       in dir_:
-        return charge_flip(row.e1AbsEta,row.e1Pt) + charge_flip(row.e2AbsEta,row.e2Pt)
+        return charge_flip_lead(row.e1AbsEta,row.e1Pt) + charge_flip_sub(row.e2AbsEta,row.e2Pt)
     return 1 #No Charge w to be applied!
 
 assign_charge_weight = assign_charge_weight_one_maps #assign_charge_weight_two_maps
@@ -74,9 +65,9 @@ def assign_id_weight(dir_, row):
         return 1
     leading_fr = leading_e_fr_wjets if 'wjet_w' in dir_ else leading_e_fr_qcd
     sublead_fr = subleading_e_fr_wjets if 'wjet_w' in dir_ else subleading_e_fr_qcd
-    if "f1f2"  in dir_: return leading_fr( max(row.e1JetPt, row.e1Pt) ) * sublead_fr( max(row.e2JetPt, row.e2Pt) )
-    if "f2"    in dir_: return sublead_fr( max(row.e2JetPt, row.e2Pt) )
-    if "f1"    in dir_: return leading_fr( max(row.e1JetPt, row.e1Pt) )
+    if "f1f2"  in dir_: return leading_fr( electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt) * sublead_fr( electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt )
+    if "f2"    in dir_: return sublead_fr( electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt)
+    if "f1"    in dir_: return leading_fr( electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt)
 
 class ControlZEE(MegaBase):
     tree = 'ee/final/Ntuple'
@@ -92,15 +83,15 @@ class ControlZEE(MegaBase):
 
     def begin(self):
         def book_(dirname):
-            self.book(dirname, 'ePt'     , 'e Pt', 100, 0, 100)
+            self.book(dirname, 'ePt'     , 'e Pt', 400, 0, 800)
             self.book(dirname, 'eAbsEta' , 'e Abs Eta', 80, 0, 2.5)
             self.book(dirname, 'SCEnergy', 'electron Super Cluster energy', 500, 0, 1000)
             self.book(dirname, 'SCDPhi'  , 'electron Super Cluster DeltaPhi', 180, 0, math.Pi())
             self.book(dirname, 'TrkMass' , 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
             self.book(dirname, 'TrkMass_NOSCALE' , 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
             self.book(dirname, 'SCMass'  , 'Dielectrons Super Cluster invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
-            self.book(dirname, "e1Pt"    , "electron 1 Pt", 100, 0, 100)
-            self.book(dirname, "e2Pt"    , "electron 2 Pt", 100, 0, 100)
+            self.book(dirname, "e1Pt"    , "electron 1 Pt", 400, 0, 800)
+            self.book(dirname, "e2Pt"    , "electron 2 Pt", 400, 0, 800)
             self.book(dirname, "e1AbsEta", "electron 1 abseta", 100, 0., 2.5)
             self.book(dirname, "e2AbsEta", "electron 2 abseta", 100, 0., 2.5)
             self.book(dirname, "type1_pfMetEt", "metEt"         , 300, 0, 300)
@@ -141,24 +132,34 @@ class ControlZEE(MegaBase):
         Excludes FR object IDs and sign cut.
         '''
         if not row.doubleEPass: return False
+        if not (row.e1MatchesDoubleEPath > 0 and \
+                row.e2MatchesDoubleEPath > 0): return False 
         if row.e1Pt < 20: return False
         if not selections.eSelection(row, 'e1'): return False
         if not selections.eSelection(row, 'e2'): return False
-        if not selections.vetos(row): return False
+        if not selections.vetos(row):            return False
+        if row.e1_e2_Mass < 40:                  return False
         if not (row.jetVeto40 >= 1):             return False
         return True
 
     def obj1_id(self, row):
-        return selections.h2tau_eid(row, 'e1')
+        return selections.lepton_id_iso(row, 'e1', subleading_iso)
 
     def obj2_id(self, row):
-        return selections.h2tau_eid(row, 'e2')
+        return selections.lepton_id_iso(row, 'e2', subleading_iso)
+
+    def mc_weight(self, row):
+        if row.run > 2:
+            return 1.
+        return self.pucorrector(row.nTruePU) * \
+            mcCorrectors.get_electron_corrections(row,'e1','e2')
 
     def process(self):
 
-        histos = self.dir_based_histograms
+        histos    = self.dir_based_histograms
+        mc_weight = self.mc_weight
         def fill_histos(dirname, row, weight):
-            mass = frfits.mass_scaler(row.e1_e2_Mass) if "charge_weight" in dirname else row.e1_e2_Mass
+            mass = frfits.mass_scaler[leading_iso](row.e1_e2_Mass) if "charge_weight" in dirname else row.e1_e2_Mass
             histos[dirname]['ePt'     ].Fill(row.e1Pt,weight)
             histos[dirname]['eAbsEta' ].Fill(row.e1AbsEta,weight)
             histos[dirname]['SCEnergy'].Fill(row.e1SCEnergy,weight)
@@ -174,7 +175,7 @@ class ControlZEE(MegaBase):
             histos[dirname]['TrkMass_NOSCALE'].Fill(row.e1_e2_Mass, weight)
             histos[dirname]['type1_pfMetEt'].Fill(row.type1_pfMetEt, weight)
             histos[dirname]['mva_metEt'].Fill(row.mva_metEt, weight)
-            
+        
         for row in self.tree:
             if not self.preselection(row):
                 continue
@@ -184,7 +185,7 @@ class ControlZEE(MegaBase):
             to_match  = pair_sign+'/'+id1+id2
             matchingd = (i for i in self.dirs if i.startswith(to_match)) # filter(lambda x: x.startswith(pair_sign+'/'+id1+id2), self.dirs)
             for dir_ in matchingd:
-                weight = 1
+                weight = mc_weight(row)
                 weight *= assign_id_weight(dir_, row)
                 weight *= assign_charge_weight(dir_, row)
                 fill_histos(dir_, row, weight)

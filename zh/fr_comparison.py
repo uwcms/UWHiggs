@@ -9,7 +9,8 @@ def print_table(channel, weighted=True):
     zz = ROOT.TFile("results/2013-07-17-8TeV-v1-ZH_light/ZHAnalyze%s/ZZJetsTo4L_pythia.root" % channel, "READ")
     zjets = ROOT.TFile("results/2013-07-17-8TeV-v1-ZH_light/ZHAnalyze%s/Zjets_M50.root" % channel, "READ")
     wz = ROOT.TFile("results/2013-07-17-8TeV-v1-ZH_light/ZHAnalyze%s/WZJetsTo3LNu_pythia.root" % channel, "READ")
-    data_lumi = 19.2
+    #data_lumi = 19.2
+    data_lumi = 33.6/2
     zz_lumi = 64.332
     #zjets_lumi = 25866.364
     zjets_lumi = 6.5 
@@ -18,7 +19,9 @@ def print_table(channel, weighted=True):
     column_values = []
     background_estimates = [] 
     errors = []
-    for my_file, folder, weight_folder, lumi_weight in [(data, 'ss/All_Passed', '', 1.0), (data,'os/Leg3Failed_Leg4Failed', 'all_weights_applied', 1.0), (data,'os/Leg3Failed','leg3_weight', 1.0), (data, 'os/Leg4Failed', 'leg4_weight', 1.0), (wz,'os/All_Passed_Leg4Real','', data_lumi/wz_lumi), (wz,'os/All_Passed','',data_lumi/wz_lumi)]:
+
+    for my_file, folder, weight_folder, lumi_weight in [(data, 'ss/All_Passed', '', 1.0), (data,'ss/Leg3Failed_Leg4Failed', 'all_weights_applied', 1.0), (data,'ss/Leg3Failed','leg3_weight', 1.0), (data, 'ss/Leg4Failed', 'leg4_weight', 1.0), (wz,'ss/All_Passed_Leg4Real','', data_lumi/wz_lumi), (wz,'ss/All_Passed_Leg3Real','',data_lumi/wz_lumi)]:
+
         path_to_histo =  folder
         histo_unweighted = my_file.Get(path_to_histo + '/kinematicDiscriminant1')
         if weighted:
@@ -44,42 +47,43 @@ def print_table(channel, weighted=True):
     # passed same-sign data
     #line += ' & ' + column_values[0]    
     # estimate background contribution
-    fr_contribution = float(background_estimates[1]) + float(background_estimates[2]) - float(background_estimates[0])
-    fr_contribution_error = round(math.sqrt(errors[0]**2 + errors[1]**2 + errors[2]**2 ),2)
-    line += ' & ' + str(fr_contribution) #+ ' $\\pm$ ' + str(fr_contribution_error) # fakerate
+    line += ' & ' + background_estimates[1] + '$\\pm$ ' + str(round(errors[1]*float(background_estimates[1]),2)) # PPFP
+    line += ' & ' + background_estimates[2] + '$\\pm$ ' + str(round(errors[2]*float(background_estimates[2]),2)) # PPPF
+    line += ' & ' + background_estimates[0] + '$\\pm$ ' + str(round(errors[0]*float(background_estimates[0]),2)) # PPFF
 
-    #line += ' & ' + str(float(column_values[3]) + float(column_values[4]))
-    #line += ' & ' + str(float(background_estimates[2]) + float(column_values[4]))
+    fr_contribution = float(background_estimates[1]) + float(background_estimates[2]) - float(background_estimates[0])
+    fr_contribution_error = round(fr_contribution * math.sqrt(errors[0]**2 + errors[1]**2 + errors[2]**2 ),2)
+    line += ' & ' + str(fr_contribution) + ' $\\pm$ ' + str(fr_contribution_error) # '2+1-0' w/ error
+
+    line += ' & ' + column_values[4] + ' $\\pm$ ' + str(float(column_values[4])*0.2) # WZ-4R
     #if (channel == "MMEM" or channel == "EEEM"):
-    if (False):
-        line += ' & ' + str(float(column_values[2]) + float(column_values[4]))
-        line += ' & ' + column_values[2] # PPFP
-    else: 
-        line += ' & ' + str(float(column_values[3]) + float(column_values[4]))
-        line += ' & ' + column_values[3] # PPPF
-       
-    most_wz = str(float(column_values[5]) - float(column_values[4]))
-    line += ' & ' + column_values[4] # WZ-4R
-    line += ' & ' + most_wz # WZ where fourth leg is not real
-    line += ' & ' + column_values[2] # PPFP
-    line += ' & ' + str(float(most_wz) + float(column_values[2])) # alt alt method
+    alt_yield = float(background_estimates[2]) + float(column_values[4])
+    line += ' & ' + str(alt_yield) + ' $\\pm$ ' + str(round(alt_yield*errors[2],2)) #alt method
+
+    #most_wz = str(float(column_values[5]) - float(column_values[4]))
+    most_wz = column_values[5]  # WZ where fourth leg is not real
+    line += ' & ' + most_wz + ' $\\pm$ ' + str(float(column_values[5])*0.2) 
+    alt_alt_yield = float(most_wz) + float(background_estimates[1])
+    line += ' & ' + str(alt_alt_yield) + '$\\pm$ ' + str(round(math.sqrt(errors[1]**2 + 0.2**2)*alt_alt_yield,2)) # alt alt method
+
     #line += ' & ' + column_values[6]
     #line += ' & ' + column_values[5] # WZ
 
     #line += ' & ' + str(float(column_values[0]) + fr_contribution) # ZZ + fakerate
-    #line += ' & ' + column_values[6] # observed data
+    line += ' & ' + column_values[0] # observed data
 
     return line
 print '''
-\documentclass[final,letterpaper,twoside,12pt]{article}
+%\documentclass[final,letterpaper,twoside,12pt]{article}
+\documentclass[8pt]{extarticle}
 \usepackage{chngpage}
 \usepackage{tabularx}
 \\begin{document}
 \\begin{table}[htbp]
-\\begin{adjustwidth}{-4em}{-4em}
+\\begin{adjustwidth}{-4cm}{}
 \centering
-\\begin{tabular}{|c|c|c|c|c|c|c|c|} \\hline
-channel & 1+2-0 & PPPF+WZ-4R & PPPF & WZ-4Real & WZ-4Fake & PPFP & PPFP + WZ-4Fake\\\\ 
+\\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|} \\hline
+channel & PPFP & PPPF & PPFF & 1+2-0 & WZ-4Real & PPPF+WZ-4Real & WZ-3Real & PPFP+WZ-3Real & data ss\\\\ 
 \\hline \\hline '''
 
 print print_table('MMTT') + '  \\\\ \\hline'

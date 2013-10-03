@@ -14,6 +14,7 @@ import mcCorrectors
 import ZHAnalyzerBase
 import ROOT
 import fake_rate_functions as fr_fcn
+#import random
 
 ################################################################################
 #### Analysis logic ############################################################
@@ -36,6 +37,13 @@ class ZHAnalyzeMMTT(ZHAnalyzerBase.ZHAnalyzerBase):
 
     def H_decay_products(self):
         return ('t1','t2')
+        ## random leg assignment 
+        #pair = ['t1', 't2']
+        #i = range(len(pair))
+        #random.shuffle(i)
+        #pair[i[0]] = 't1'
+        #pair[i[1]] = 't2'
+        #return tuple(pair)
 
     def book_histos(self, folder):
         self.book_general_histos(folder)
@@ -65,13 +73,14 @@ class ZHAnalyzeMMTT(ZHAnalyzerBase.ZHAnalyzerBase):
         if selections.overlap(row, 'm1','m2','t1','t2') : return False
         if not selections.signalTauSelection(row,'t1'): return False
         if not selections.signalTauSelection(row,'t2'): return False
-        if not bool(row.t1AntiMuonLoose2): return False
+        if not bool(row.t1AntiMuonLoose): return False
         if not bool(row.t1AntiElectronLoose): return False
-        if not bool(row.t2AntiMuonLoose2): return False
+        if not bool(row.t2AntiMuonLoose): return False
         if not bool(row.t2AntiElectronLoose): return False
         if row.t1Pt < row.t2Pt: return False #Avoid double counting
         #if row.LT < 75: return False
         if row.t1Pt + row.t2Pt < 70: return False
+        #if (row.t1_t2_SVfitMass < 100 or row.t1_t2_SVfitMass > 150): return False # for MSSM
         return True
 
     def sign_cut(self, row):

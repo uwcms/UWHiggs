@@ -2,6 +2,7 @@
 import rootpy.plotting.views as views
 import rootpy.io as io
 import rootpy.plotting as plotting
+import ROOT
 import os
 
 def relative_to_bin1(hist):
@@ -9,8 +10,11 @@ def relative_to_bin1(hist):
     binx= ret.GetNbinsX()
     bin1= ret.GetBinContent(1)
     for i in range(binx):
-        ret.SetBinContent(i+1,
-                          ret.GetBinContent(i+1) / bin1)
+        try:
+            ret.SetBinContent(i+1,
+                              ret.GetBinContent(i+1) / bin1)
+        except ZeroDivisionError:
+            raise ZeroDivisionError("bin %s is empty" % i)
     return ret
 
 def relative_to_previous(hist):
@@ -37,8 +41,12 @@ def relative_to(hist, bin_label):
                           content)
     return ret
 
+postfix = '_TEST_'
+
+ROOT.gStyle.SetPaintTextFormat('.2g')
 jobid    = os.environ['jobid']
-channels = ['mmt', 'emt', 'eet']
+channels = ['eet', 'emt', 'mmt']
+
 public   = os.environ['pub']
 chan_hists = {}
 for ch, color in zip(channels, ['darkgreen','blue','red']):
@@ -57,6 +65,7 @@ for ch, color in zip(channels, ['darkgreen','blue','red']):
         ch
         )
     chan_hists[ch] = view.Get('ss/CUT_FLOW')
+    chan_hists[ch].SetLabelSize(0.035)
 
 canvas   = plotting.Canvas(name='adsf', title='asdf')
 canvas.SetGridx(True)
@@ -76,7 +85,7 @@ for i, hist in enumerate(chan_hists.itervalues()):
     hist.Draw(drawattr)
 legend.Draw()
 
-canvas.Print(os.path.join(public,'bare_cut_flow.png') )
+canvas.Print(os.path.join(public,'bare_cut_flow%s.png' % postfix) )
 
 to_keep = []
 for i, h in enumerate(chan_hists.itervalues()):
@@ -87,7 +96,7 @@ for i, h in enumerate(chan_hists.itervalues()):
     hist.Draw(drawattr)
 legend.Draw()
 
-canvas.Print(os.path.join(public,'relative_cut_flow.png') )
+canvas.Print(os.path.join(public,'relative_cut_flow%s.png' % postfix) )
 
 to_keep  = []
 canvas.SetLogy(False)
@@ -99,7 +108,7 @@ for i, h in enumerate(chan_hists.itervalues()):
     hist.Draw(drawattr)
 legend.Draw()
 
-canvas.Print(os.path.join(public,'relative_to_previous_cut_flow.png') )
+canvas.Print(os.path.join(public,'relative_to_previous_cut_flow%s.png' % postfix) )
 
 ## to_keep  = []
 ## canvas.SetLogy(True)

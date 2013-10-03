@@ -17,12 +17,12 @@ source jobid.sh
 #python plots_for_prepp.py 
 #
 export jobid=$jobid8
-rake plot_zee 
+#rake plot_zee 
 rake plot_eet
-
-rake plot_em
+#
+#rake plot_em
 rake plot_emt
-
-rake plot_zmm 
+#
+#rake plot_zmm 
 rake plot_mmt
 python plots_for_prepp.py 

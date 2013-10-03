@@ -123,6 +123,10 @@ if __name__ == "__main__":
             eff_map_statDown.SetBinContent(ibinx, ibiny, statDown)
             worse_rel_err.SetBinContent(ibinx, ibiny, worse_err)
             
+    canvas = ROOT.TCanvas("asdf", "asdf", 800, 600)
+    ROOT.gStyle.SetPalette(53)
+    eff_map.Draw('colz')
+    canvas.Print(args.output.replace(".root",".png"))
     outFile = ROOT.TFile(args.output,'recreate') #FIXME move to rootpy io
     outFile.cd()
     eff_map.Write()
@@ -147,7 +151,6 @@ if __name__ == "__main__":
         #ROOT.RooFit.SumW2Error(True),
         )
 
-    canvas = ROOT.TCanvas("asdf", "asdf", 800, 600)
     frame = m.frame(ROOT.RooFit.Title("OS Trk Mass distribution"))
     os_trkMass.plotOn(
         frame,
