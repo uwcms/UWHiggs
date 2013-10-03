@@ -11,12 +11,14 @@ def print_table(channel, weighted=True):
     wz = ROOT.TFile("results/2013-07-17-8TeV-v1-ZH_light/ZHAnalyze%s/WZJetsTo3LNu_pythia.root" % channel, "READ")
     data_lumi = 19.2
     zz_lumi = 64.332
-    zjets_lumi = 25866.364
-    wz_lumi = 1690.320
+    #zjets_lumi = 25866.364
+    zjets_lumi = 6.5 
+    #wz_lumi = 1690.320
+    wz_lumi = 760.148
     column_values = []
     background_estimates = [] 
     errors = []
-    for my_file, folder, weight_folder, lumi_weight in [(data, 'ss/All_Passed', '', 1.0), (data,'os/Leg3Failed_Leg4Failed', 'all_weights_applied', 1.0), (data,'os/Leg3Failed','leg3_weight', 1.0), (data, 'os/Leg4Failed', 'leg4_weight', 1.0), (wz,'os/All_Passed_Leg4Real','', data_lumi/wz_lumi)]:
+    for my_file, folder, weight_folder, lumi_weight in [(data, 'ss/All_Passed', '', 1.0), (data,'os/Leg3Failed_Leg4Failed', 'all_weights_applied', 1.0), (data,'os/Leg3Failed','leg3_weight', 1.0), (data, 'os/Leg4Failed', 'leg4_weight', 1.0), (wz,'os/All_Passed_Leg4Real','', data_lumi/wz_lumi), (wz,'os/All_Passed','',data_lumi/wz_lumi)]:
         path_to_histo =  folder
         histo_unweighted = my_file.Get(path_to_histo + '/kinematicDiscriminant1')
         if weighted:
@@ -29,10 +31,10 @@ def print_table(channel, weighted=True):
         if weight_folder:
             #s = str(round(histo.Integral(),3)) + ' (' + str(round(histo_unweighted.Integral(),3)) + ')'
             errors.append(1/math.sqrt(histo_unweighted.Integral()))
-            s = str(round(histo.Integral(),3))# + ' $\\pm$ ' + str(round(1/math.sqrt(histo_unweighted.Integral()),3))
-            background_estimates.append(str(round(histo.Integral(),3)))
+            s = str(round(histo.Integral(),2))# + ' $\\pm$ ' + str(round(1/math.sqrt(histo_unweighted.Integral()),3))
+            background_estimates.append(str(round(histo.Integral(),2)))
             column_values.append(s)
-        else: column_values.append(str(round(histo.Integral(),3)))
+        else: column_values.append(str(round(histo.Integral(),2)))
         #print str(histo.Integral())
         # now print them out, TeX style
         #line = " & ".join(str(column_values)) + "\\\\"
@@ -40,16 +42,28 @@ def print_table(channel, weighted=True):
     line = channel 
     
     # passed same-sign data
-    line += ' & ' + column_values[0]    
+    #line += ' & ' + column_values[0]    
     # estimate background contribution
     fr_contribution = float(background_estimates[1]) + float(background_estimates[2]) - float(background_estimates[0])
-    fr_contribution_error = round(math.sqrt(errors[0]**2 + errors[1]**2 + errors[2]**2 ),3)
-    line += ' & ' + str(fr_contribution) + ' $\\pm$ ' + str(fr_contribution_error) # fakerate
+    fr_contribution_error = round(math.sqrt(errors[0]**2 + errors[1]**2 + errors[2]**2 ),2)
+    line += ' & ' + str(fr_contribution) #+ ' $\\pm$ ' + str(fr_contribution_error) # fakerate
 
-    line += ' & ' + str(float(column_values[3]) + float(column_values[4]))
+    #line += ' & ' + str(float(column_values[3]) + float(column_values[4]))
     #line += ' & ' + str(float(background_estimates[2]) + float(column_values[4]))
-    line += ' & ' + column_values[3] # PPPF
+    #if (channel == "MMEM" or channel == "EEEM"):
+    if (False):
+        line += ' & ' + str(float(column_values[2]) + float(column_values[4]))
+        line += ' & ' + column_values[2] # PPFP
+    else: 
+        line += ' & ' + str(float(column_values[3]) + float(column_values[4]))
+        line += ' & ' + column_values[3] # PPPF
+       
+    most_wz = str(float(column_values[5]) - float(column_values[4]))
     line += ' & ' + column_values[4] # WZ-4R
+    line += ' & ' + most_wz # WZ where fourth leg is not real
+    line += ' & ' + column_values[2] # PPFP
+    line += ' & ' + str(float(most_wz) + float(column_values[2])) # alt alt method
+    #line += ' & ' + column_values[6]
     #line += ' & ' + column_values[5] # WZ
 
     #line += ' & ' + str(float(column_values[0]) + fr_contribution) # ZZ + fakerate
@@ -64,8 +78,8 @@ print '''
 \\begin{table}[htbp]
 \\begin{adjustwidth}{-4em}{-4em}
 \centering
-\\begin{tabular}{|c|c|c|c|c|c|} \\hline
-channel & ss data & 1+2-0 & PPPF+WZ-4R & PPPF & WZ-4R  \\\\ 
+\\begin{tabular}{|c|c|c|c|c|c|c|c|} \\hline
+channel & 1+2-0 & PPPF+WZ-4R & PPPF & WZ-4Real & WZ-4Fake & PPFP & PPFP + WZ-4Fake\\\\ 
 \\hline \\hline '''
 
 print print_table('MMTT') + '  \\\\ \\hline'
@@ -76,11 +90,11 @@ print print_table('MMMT') + '  \\\\ \\hline'
 print print_table('EEMT') + '  \\\\ \\hline'
 print print_table('EEEM') + '  \\\\ \\hline'
 print print_table('MMEM') + '  \\\\ \\hline'
-print print_table('COMB') + '  \\\\ \\hline'
+#print print_table('COMB') + '  \\\\ \\hline'
 
 print '''
 \end{tabular}
-\caption {Observed 2012 data vs. background estimations }
+\caption {Channel by channel comparison of the '2+1-0' and 2+WZ-4R reducible background estimation methods}
 \label{tab:cqdata0}
 \end{adjustwidth}\end{table}
 

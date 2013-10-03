@@ -60,7 +60,7 @@ class TauFakeRatesBase(MegaBase):
             if not bool(row.t2AntiMuonLoose2): return False
             if not bool(row.t2AntiElectronLoose): return False
             if row.t1Pt < row.t2Pt: return False #Avoid double counting
-            if row.LT < 75: return False
+            if row.t1Pt + row.t2Pt < 60: return False
             if not bool(row.t1_t2_SS):       return False
             return True
 

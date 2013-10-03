@@ -38,4 +38,4 @@ class EFakeRateMMET(EMUFakeRatesBase.EMUFakeRatesBase):
         return bool(row.eRelPFIsoDB < 0.10) and selections.eleID(row, 'e') #bool( row.eMVAIDH2TauWP ) ##THIS SEEMS too low        
 
     def lepton_passes_loose_iso(self, row):
-        return bool(row.eRelPFIsoDB < 0.30)  and selections.eleID(row, 'e') ##THIS SEEMS too low        
+        return bool(row.eRelPFIsoDB < 0.3)  and selections.eleID(row, 'e') ##THIS SEEMS too low        
