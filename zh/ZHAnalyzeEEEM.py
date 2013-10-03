@@ -65,6 +65,7 @@ class ZHAnalyzeEEEM(ZHAnalyzerBase.ZHAnalyzerBase):
         #if row.LT < 25: return False
         if row.e3Pt + row.mPt < 35: return False
         if row.e3MissingHits > 1: return False
+        #if (row.e3_m_SVfitMass < 100 or row.e3_m_SVfitMass > 150): return False # for MSSM
         return True
 
     def sign_cut(self, row):

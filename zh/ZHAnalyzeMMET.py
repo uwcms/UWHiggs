@@ -68,6 +68,7 @@ class ZHAnalyzeMMET(ZHAnalyzerBase.ZHAnalyzerBase):
         #if not bool(row.tAntiElectronTight): return False
         #if row.LT < 45: return False
         if row.ePt + row.tPt < 25: return False
+        #if (row.e_t_SVfitMass < 100 or row.e_t_SVfitMass > 150): return False # for MSSM
         return selections.signalElectronSelection(row,'e')
 
     def sign_cut(self, row):

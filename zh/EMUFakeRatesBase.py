@@ -40,8 +40,8 @@ class EMUFakeRatesBase(MegaBase):
                     num_histos[name] = self.book(os.path.join(
                         region, denom, numerator), name, *args)
 
-                book_histo(self.lepton+'Pt',     self.lepton+' Pt', 100, 0, 100)
-                book_histo(self.lepton+'JetPt',  self.lepton+' Jet Pt', 100, 0, 100)
+                book_histo(self.lepton+'Pt',     self.lepton+' Pt', 150, 0, 150)
+                book_histo(self.lepton+'JetPt',  self.lepton+' Jet Pt', 150, 0, 150)
                 book_histo(self.lepton+'AbsEta', self.lepton+' Abs Eta', 100, -2.5, 2.5)
     
     def process(self):

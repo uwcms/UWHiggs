@@ -70,6 +70,7 @@ class ZHAnalyzeEETT(ZHAnalyzerBase.ZHAnalyzerBase):
         if row.t1Pt < row.t2Pt: return False #Avoid double counting
         #if row.LT < 75: return False
         if row.t1Pt + row.t2Pt < 70: return False
+        #if (row.t1_t2_SVfitMass < 100 or row.t1_t2_SVfitMass > 150): return False # for MSSM
         return True
 
     def sign_cut(self, row):
