@@ -197,7 +197,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         if row.LT < LT_threshold: return False
         cut_flow_trk.Fill('LT')
 
-        if row.m1_m2_SS and row.m1_t_SS: return False #remove three SS leptons
+        #if row.m1_m2_SS and row.m1_t_SS: return False #remove three SS leptons
         if row.m1_m2_Mass < 20:          return False
         if not selections.vetos(row):    return False #applies mu bjet e additional tau vetoes
         cut_flow_trk.Fill('vetos')
@@ -217,6 +217,11 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         #cut_flow_trk.Fill('obj3 IDIso')
         
         return True
+
+    @staticmethod
+    def tau_sign_cut(row):
+        ''' Returns true if muons are SS '''
+        return not bool(row.m1_t_SS)
 
     @staticmethod
     def sign_cut(row):
@@ -247,14 +252,11 @@ class WHAnalyzeMMT(WHAnalyzerBase):
     def enhance_wz(self, row):
         # Require the "tau" to be a muon, and require the third muon
         # to have M_Z +- 20
-        if self.anti_wz(row):
-            return False
         # Cut on m2 PT > 20
         #if row.m2Pt < 20:
             #return False
         # Make sure any Z is from m1
-        m2_good_Z = bool(71 < row.m2_t_Mass < 111)
-        return not m2_good_Z
+        return row.tMuOverlap
 
     def event_weight(self, row):
         if row.run > 2:

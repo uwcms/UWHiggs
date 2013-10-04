@@ -255,7 +255,7 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         if row.LT < LT_threshold:            return False
         cut_flow_trk.Fill('LT')
 
-        if row.e_m_SS and row.e_t_SS: return False #remove three SS leptons
+        #if row.e_m_SS and row.e_t_SS: return False #remove three SS leptons
         if not selections.vetos(row): return False #applies mu bjet e additional tau vetoes
         cut_flow_trk.Fill('vetos')
         #FIXME
@@ -284,6 +284,11 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     def sign_cut( row):
         ''' Returns true if muons are SS '''
         return bool(row.e_m_SS)
+
+    @staticmethod
+    def tau_sign_cut(row):
+        ''' Returns true if muons are SS '''
+        return not bool(row.m_t_SS)
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
@@ -317,7 +322,7 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         return True
 
     def enhance_wz(self, row):
-        if row.e_t_Zcompat < 15 and not row.tAntiElectronMVA:
+        if row.e_t_Zcompat < 15 and row.tCiCTightElecOverlap:
             return True
         return False
 
