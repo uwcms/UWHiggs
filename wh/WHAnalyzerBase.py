@@ -141,65 +141,68 @@ class WHAnalyzerBase(MegaBase):
         #folders = []
         flag_map = {}
         for sign in ['ss', 'os']:
-            for failing_objs in [(), (1,), (2,), (3,), (1,3), (2, 3), (1,2), (1,2,3)]:
-                cut_key = [sign == 'ss']
-                region_label = ''
-                for i in range(1,4):
-                    if i in failing_objs:
-                        region_label += 'f' + str(i)
-                        cut_key.append(False)
-                    else:
-                        region_label += 'p' + str(i)
-                        cut_key.append(True)
-                # Figure out which objects to weight for FR
-                weights_to_apply = []
-                # Single fake
-                if len(failing_objs) == 1:
-                    weights_to_apply.append(
-                        (failing_objs, "w%i" % failing_objs))
-                    # A version using the QCD fake rate
-                    weights_to_apply.append(
-                        (failing_objs, "q%i" % failing_objs))
-                if len(failing_objs) == 2:
-                    # in the 1-2 case, apply both.  Otherwise, just apply the
-                    # first (a light lepton)
-                    if 3 not in failing_objs:
+            for tau_sign in ['tau_ss', 'tau_os']: 
+                for failing_objs in [(), (1,), (2,), (3,), (1,3), (2, 3), (1,2), (1,2,3)]:
+                    cut_key      = [sign == 'ss']
+                    tau_sign_key = (tau_sign == 'tau_os')
+                    cut_key.append( tau_sign_key )
+                    region_label = ''
+                    for i in range(1,4):
+                        if i in failing_objs:
+                            region_label += 'f' + str(i)
+                            cut_key.append(False)
+                        else:
+                            region_label += 'p' + str(i)
+                            cut_key.append(True)
+                    # Figure out which objects to weight for FR
+                    weights_to_apply = []
+                    # Single fake
+                    if len(failing_objs) == 1:
                         weights_to_apply.append(
-                            (failing_objs, "w%i%i" % failing_objs))
-                        # Using QCD rate
+                            (failing_objs, "w%i" % failing_objs))
+                        # A version using the QCD fake rate
                         weights_to_apply.append(
-                            (failing_objs, "q%i%i" % failing_objs))
-                    else:
-                        weights_to_apply.append(
-                            (failing_objs, "w%i" % failing_objs[0]))
-                        # Using QCD rate
-                        weights_to_apply.append(
-                            (failing_objs, "q%i" % failing_objs[0]))
+                            (failing_objs, "q%i" % failing_objs))
+                    if len(failing_objs) == 2:
+                        # in the 1-2 case, apply both.  Otherwise, just apply the
+                        # first (a light lepton)
+                        if 3 not in failing_objs:
+                            weights_to_apply.append(
+                                (failing_objs, "w%i%i" % failing_objs))
+                            # Using QCD rate
+                            weights_to_apply.append(
+                                (failing_objs, "q%i%i" % failing_objs))
+                        else:
+                            weights_to_apply.append(
+                                (failing_objs, "w%i" % failing_objs[0]))
+                            # Using QCD rate
+                            weights_to_apply.append(
+                                (failing_objs, "q%i" % failing_objs[0]))
 
-                if len(failing_objs) == 3:
-                    weights_to_apply.append( ((3,), "w3") )
-                    weights_to_apply.append( ((1,3,), "w13") )
-                    weights_to_apply.append( ((2,3,), "w23") )
-                    # QCD weight versions
-                    weights_to_apply.append( ((1,3,), "q13") )
-                    weights_to_apply.append( ((2,3,), "q23") )
-                    # Needed for f3 CR
-                    weights_to_apply.append( ((1,2), "w12"))
-                    weights_to_apply.append( ((1,), "w1"))
-                    weights_to_apply.append( ((2,), "w2"))
-                    weights_to_apply.append( ((1,2), "q12"))
-                    weights_to_apply.append( ((1,), "q1"))
-                    weights_to_apply.append( ((2,), "q2"))
+                    if len(failing_objs) == 3:
+                        weights_to_apply.append( ((3,), "w3") )
+                        weights_to_apply.append( ((1,3,), "w13") )
+                        weights_to_apply.append( ((2,3,), "w23") )
+                        # QCD weight versions
+                        weights_to_apply.append( ((1,3,), "q13") )
+                        weights_to_apply.append( ((2,3,), "q23") )
+                        # Needed for f3 CR
+                        weights_to_apply.append( ((1,2), "w12"))
+                        weights_to_apply.append( ((1,), "w1"))
+                        weights_to_apply.append( ((2,), "w2"))
+                        weights_to_apply.append( ((1,2), "q12"))
+                        weights_to_apply.append( ((1,), "q1"))
+                        weights_to_apply.append( ((2,), "q2"))
 
-                #folders_to_add = [ (sign, region_label) ]
-                # Which objects to weight for each region
-                weights_to_add = []
-                for failing_objs, weight_to_apply in weights_to_apply:
-                    #folders_to_add.append( (sign, region_label, weight_to_apply) )
-                    weights_to_add.append(weight_to_apply)
+                    #folders_to_add = [ (sign, region_label) ]
+                    # Which objects to weight for each region
+                    weights_to_add = []
+                    for failing_objs, weight_to_apply in weights_to_apply:
+                        #folders_to_add.append( (sign, region_label, weight_to_apply) )
+                        weights_to_add.append(weight_to_apply)
 
-                flag_map[tuple(cut_key)] = ((sign, region_label), tuple(weights_to_add))
-                #folders.extend(folders_to_add)
+                    flag_map[tuple(cut_key)] = ((sign, tau_sign, region_label), tuple(weights_to_add))
+            #folders.extend(folders_to_add)
 
         return flag_map
 
@@ -254,16 +257,16 @@ class WHAnalyzerBase(MegaBase):
                     self.book_histos(hfolder+'/charge_flip_CR')
 
         # Add WZ control region
-        self.book_histos('ss/p1p2p3_enhance_wz')
+        self.book_histos('ss/tau_os/p1p2p3_enhance_wz')
         # Where second light lepton fails
-        self.book_histos('ss/p1f2p3_enhance_wz')
-        self.book_histos('ss/p1f2p3_enhance_wz/w2')
+        self.book_histos('ss/tau_os/p1f2p3_enhance_wz')
+        self.book_histos('ss/tau_os/p1f2p3_enhance_wz/w2')
 
         # Add charge-fake control region - probability that obj1 will flip into
         # ss/p1p2p3
-        for i in itertools.product(['p3','f3'],['c1','c2','c1_sysup','c2_sysup']):
-            self.book_histos('os/p1p2%s/%s' % i)
-            self.book_histos('os/p1p2%s/%s/charge_flip_CR' % i)
+        for i in itertools.product(['tau_os','tau_ss'],['p3','f3'],['c1','c2','c1_sysup','c2_sysup']):
+            self.book_histos('os/%s/p1p2%s/%s' % i)
+            self.book_histos('os/%s/p1p2%s/%s/charge_flip_CR' % i)
 
         for key in self.histograms:
             charpos  = key.rfind('/')
@@ -309,6 +312,7 @@ class WHAnalyzerBase(MegaBase):
         histos = self.histograms
         preselection = self.preselection
         sign_cut = self.sign_cut
+        tau_sign_cut = self.tau_sign_cut
         obj1_id = self.obj1_id
         obj2_id = self.obj2_id
         obj3_id = self.obj3_id
@@ -378,6 +382,7 @@ class WHAnalyzerBase(MegaBase):
 
                 # Get the cuts that define the region
                 sign_result = sign_cut(row)
+                tau_sign_result = tau_sign_cut(row)
                 obj1_id_result = obj1_id(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
                 obj2_id_result = obj2_id(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
                 obj3_id_result = obj3_id(row, cut_settings['tauID'], cut_settings['LT'], cut_settings['tauPT'])
@@ -396,7 +401,7 @@ class WHAnalyzerBase(MegaBase):
                 #    print 'obj3_id_result', obj3_id_result 
                 #    print 'anti_wz       ', anti_wz        
                 #    #from pdb import set_trace; set_trace()
-
+                #from pdb import set_trace; set_trace()
                 #if not cut_flow_trk.disabled:
                 if obj1_id_result:
                     cut_flow_trk.Fill('obj1 IDIso')
@@ -411,7 +416,7 @@ class WHAnalyzerBase(MegaBase):
 
                 # Figure out which folder/region we are in
                 region_result = cut_region_map.get(
-                    (sign_result, obj1_id_result, obj2_id_result, obj3_id_result))
+                    (sign_result, tau_sign_result, obj1_id_result, obj2_id_result, obj3_id_result))
 
                 # Ignore stupid regions we don't care about
                 if region_result is None:
@@ -445,32 +450,28 @@ class WHAnalyzerBase(MegaBase):
                     if not sign_result and obj1_id_result and obj2_id_result:
                         # Object 1 can only flip if it is OS with the tau
                         obj1_obj3_SS     = self.obj1_obj3_SS(row)
-                        if (obj1_obj3_SS and obj1_charge_flip) \
-                            or ( not obj1_obj3_SS and obj2_charge_flip): #there is the function --> we have to compute it, otherwise skip and save some precious filling time!
-                            charge_flip_prob = obj1_charge_flip(row, cut_settings['leading_iso'], cut_settings['subleading_iso']) \
-                                if obj1_obj3_SS else \
-                                obj2_charge_flip(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
-                            charge_flip_sysu = obj1_charge_flip_sysup(row, cut_settings['leading_iso'], cut_settings['subleading_iso']) \
-                                if obj1_obj3_SS else \
-                                obj2_charge_flip_sysup(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
-                            directory        = joinDirs(base_folder,'c1' if obj1_obj3_SS else 'c2')
-                            directory_up     = joinDirs(base_folder,'c1_sysup' if obj1_obj3_SS else 'c2_sysup')
-                            charge_flip_prob = charge_flip_prob/(1. - charge_flip_prob)
-                            for i in to_fill:
-                                fill_histos(histos, joinDirs(directory,i), row, event_weight*charge_flip_prob, cut_label)
-                                fill_histos(histos, joinDirs(directory_up,i), row, event_weight*charge_flip_sysu, cut_label)
+                        for flipfunc, flipfunc_sysup, dirname in [(obj1_charge_flip, obj1_charge_flip_sysup, 'c1'), (obj2_charge_flip, obj2_charge_flip_sysup, 'c2')]:
+                            if flipfunc:
+                                charge_flip_prob = flipfunc(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
+                                charge_flip_sysu = flipfunc_sysup(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
+                                directory        = joinDirs(base_folder, dirname)
+                                directory_up     = joinDirs(base_folder, '%s_sysup' % dirname)
+                                charge_flip_prob = charge_flip_prob/(1. - charge_flip_prob)
+                                for i in to_fill:
+                                    fill_histos(histos, joinDirs(directory,i), row, event_weight*charge_flip_prob, cut_label)
+                                    fill_histos(histos, joinDirs(directory_up,i), row, event_weight*charge_flip_sysu, cut_label)
 
-                elif sign_result and obj1_id_result and obj3_id_result:
+                elif sign_result and obj1_id_result and obj3_id_result and tau_sign_result:
                     # WZ object topology fails. Check if we are in signal region.
                     if self.enhance_wz(row):
                         # Signal region
                         if obj2_id_result:
-                            fill_histos(histos, 'ss/p1p2p3_enhance_wz/', row, event_weight, cut_label)
+                            fill_histos(histos, 'ss/tau_os/p1p2p3_enhance_wz/', row, event_weight, cut_label)
                         else:
-                            fill_histos(histos, 'ss/p1f2p3_enhance_wz/', row, event_weight, cut_label)
+                            fill_histos(histos, 'ss/tau_os/p1f2p3_enhance_wz/', row, event_weight, cut_label)
                             fake_rate_obj2 = self.obj2_weight(row, cut_settings['leading_iso'], cut_settings['subleading_iso'])
                             fake_weight = fake_rate_obj2/(1.-fake_rate_obj2)
-                            fill_histos(histos, 'ss/p1f2p3_enhance_wz/w2/', row, event_weight*fake_weight, cut_label)
+                            fill_histos(histos, 'ss/tau_os/p1f2p3_enhance_wz/w2/', row, event_weight*fake_weight, cut_label)
         cut_flow_trk.flush()
 
     def finish(self):
