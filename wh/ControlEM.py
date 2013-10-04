@@ -139,7 +139,11 @@ class ControlEM(MegaBase):
         if not (mu17e8 or mu8e17):                return False
         if not selections.muSelection(row, 'm'):  return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         if not selections.eSelection(row, 'e'):   return False #applies basic selection (eta, pt > 10, DZ, missingHits, jetBTag, HasConversion and chargedIdTight)
-        if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
+        #if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes
+        if row.muVetoPt5IsoIdVtx: return False
+        if row.eVetoMVAIsoVtx:    return False
+        if row.tauVetoPt20Loose3HitsVtx: return False
+
         return True
 
     def obj1_id(self, row):

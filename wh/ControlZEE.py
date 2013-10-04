@@ -19,8 +19,8 @@ import optimizer
 from functools import wraps
 
 math = ROOT.TMath
-leading_iso    = 'eid12Medium_h2taucuts' #optimizer.grid_search['EET']['leading_iso']
-subleading_iso = 'eid12Medium_h2taucuts' #optimizer.grid_search['EET']['subleading_iso']
+leading_iso    = optimizer.grid_search['EET']['leading_iso']
+subleading_iso = optimizer.grid_search['EET']['subleading_iso']
 
 
 def sc_inv_mass(row):
@@ -135,7 +135,10 @@ class ControlZEE(MegaBase):
         if row.e1Pt < 20: return False
         if not selections.eSelection(row, 'e1'): return False
         if not selections.eSelection(row, 'e2'): return False
-        if not selections.vetos(row):            return False
+        if row.muVetoPt5IsoIdVtx: return False
+        if row.eVetoMVAIsoVtx:    return False
+        if row.tauVetoPt20Loose3HitsVtx: return False
+        #if not selections.vetos(row):            return False
         if row.e1_e2_Mass < 40:                  return False
         if not (row.jetVeto40 >= 1):             return False
         return True
@@ -151,9 +154,10 @@ class ControlZEE(MegaBase):
             return 1.
         else:
             return self.pucorrector(row.nTruePU) * \
-                mcCorrectors.get_electron_corrections(row,'e1','e2') *\
+                mcCorrectors.get_electron_corrections(row,'e2') *\
+                mcCorrectors.electron_tight_corrections(row.e1Pt, row.e1AbsEta) *\
                 mcCorrectors.double_electron_trigger(row)
-
+            #'e1',
     def process(self):
 
         histos    = self.dir_based_histograms
