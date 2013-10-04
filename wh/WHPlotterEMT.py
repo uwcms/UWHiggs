@@ -28,6 +28,13 @@ class WHPlotterEMT(WHPlotterBase.WHPlotterBase):
             "subMass"             : "subMass*"            ,} 
         super(WHPlotterEMT, self).__init__('EMT', {}, obj2_charge_mapper)
 
+categories = {
+    'LTCut' : [80, 650],
+    'LTLow' : [0, 130],
+    'LTHigh': [130, 650],
+    'Full'  : [0, 650],
+}
+
 if __name__ == "__main__":
     plotter = WHPlotterEMT()
     sqrts   = plotter.sqrts
@@ -35,242 +42,188 @@ if __name__ == "__main__":
     options,NOTUSED = parser.parse_args()
     if not options.dry_run:
         ###########################################################################
-        ##  Zmm control plots #####################################################
+        ##  Ztt control plots #####################################################
         ###########################################################################
-        plotter.set_subdir('mc_data')
+        plotter.set_subdir('mc_data/em')
 
         # Control Z->tautau + jet region
-        #plotter.plot_mc_vs_data('os/p1p2f3', 'e_m_Mass', rebin=10, xaxis='m_{e#mu} (GeV)', leftside=False)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('mcdata-os-p1p2f3-emMass')
-
-        plotter.plot_mc_vs_data('os/p1p2f3', 'nTruePU', rebin=1, xaxis='True PU')
+        plotter.plot_mc_vs_data('os/tau_?s/p1p2?3', 'e_m_Mass#LT', rebin=10, xaxis='m_{e#mu} (GeV)', 
+                                leftside=False, preprocess=project_x)
         plotter.add_cms_blurb(sqrts)
-        plotter.save('mcdata-os-p1p2f3-nTruePU')
-
-        plotter.plot('Zjets_M50', 'os/p1p2f3/nTruePU', 'nTruePU', rebin=1, xaxis='True PU')
-        plotter.save('zjets-os-p1p2f3-nTruePU')
+        plotter.save('mcdata-em-emMass')
 
 
-        ## plotter.plot_mc_vs_data('os/p1p2f3', 'bCSVVeto', rebin=1, xaxis='bveto')
-        ## plotter.add_cms_blurb(sqrts)
-        ## plotter.save('mcdata-os-p1p2f3-bveto')
+        plotter.plot_mc_vs_data('os/tau_?s/p1p2?3', 'mPt#LT', rebin=10, 
+                                xaxis='p_{T}^{#mu1} (GeV)', leftside=False, preprocess=project_x)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-em-mPt')
 
-        #plotter.plot_mc_vs_data('os/p1p2f3/w3', 'e_m_Mass', 10)
-        #plotter.save('mcdata-os-p1p2f3-w3-emMass')
-        #
-        #plotter.plot_mc_vs_data('os/p1f2p3', 'e_m_Mass', 10)
-        #plotter.save('mcdata-os-p1f2p3-emMass')
-        #
-        #plotter.plot_mc_vs_data('os/f1p2p3', 'e_m_Mass', 10)
-        #plotter.save('mcdata-os-p1f2p3-emMass')
+        plotter.plot_mc_vs_data('os/tau_?s/p1p2?3', 'ePt#LT', rebin=10, 
+                                xaxis='p_{T}^{#mu1} (GeV)', leftside=False, preprocess=project_x)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-em-ePt')
 
-        # Check PU variables
-        #plotter.plot_mc_vs_data('os/p1p2f3', 'rho')
-        #plotter.save('mcdata-os-p1p2f3-rho')
+        plotter.plot_mc_vs_data('os/tau_?s/p1p2?3', 'mAbsEta#LT', rebin=10, 
+                                xaxis='p_{T}^{#mu1} (GeV)', leftside=False, preprocess=project_x)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-em-mAbsEta')
 
-        #plotter.plot_mc_vs_data('os/p1p2f3', 'nvtx')
-        #plotter.save('mcdata-os-p1p2f3-nvtx')
-
-        # Lower stat but closer to signal region
-        #plotter.plot_mc_vs_data('os/p1p2p3', 'rho')
-        #plotter.save('mcdata-os-p1p2p3-rho')
-
-        #plotter.plot_mc_vs_data('os/p1p2p3', 'nvtx')
-        #plotter.save('mcdata-os-p1p2p3-nvtx')
-
-        # Make Z->mumu + tau jet control
-
-        #weighted = plotter.plot('data', 'os/p1p2f3/w3/e_m_Mass',  'hist', rebin=20, styler=make_styler(2, 'hist'), xaxis='m_{e#mu} (GeV)')
-        #unweighted = plotter.plot('data', 'os/p1p2p3/e_m_Mass', 'same', rebin=20, styler=make_styler(1), xaxis='m_{e#mu} (GeV)')
-        #weighted.SetTitle('e^{+}#mu^{-} + fake #tau_{h} est.')
-        #weighted.legendstyle = 'l'
-        #unweighted.SetTitle('e^{+}#mu^{-} + fake #tau_{h} obs.')
-        #unweighted.legendstyle = 'pe'
-        #plotter.add_legend([weighted, unweighted])
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('ztt-os-fr-control')
-
-        #plotter.plot('data', 'os/p1p2p3/prescale', styler=make_styler(1))
-        #plotter.save('ztt-os-prescale-check')
-
-        #plotter.plot('Zjets_M50', 'os/p1p2f3/weight')
-        #plotter.save('ztt-mc-event-weights')
-        ## Check MC weights
-        #plotter.plot('Zjets_M50', 'os/p1p2f3/weight_nopu')
-        #plotter.save('ztt-mc-event-weight_nopu')
+        plotter.plot_mc_vs_data('os/tau_?s/p1p2?3', 'eAbsEta#LT', rebin=10, 
+                                xaxis='p_{T}^{#mu1} (GeV)', leftside=False, preprocess=project_x)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-em-eAbsEta')
 
 
         ###########################################################################
-        ##  FR sideband MC-vs-Data ################################################
+        ##  WZ control plots #####################################################
         ###########################################################################
-
-        #plotter.plot_mc_vs_data('ss/p1f2p3', 'mPt', 5, '#mu_{1} p_{T}', leftside=False)
-        #plotter.save('mcdata-ss-p1f2p3-mPt')
-
-        plotter.plot_mc_vs_data('ss/p1f2p3', 'subMass#LT', 20, 'Subleading mass (GeV)', leftside=False, preprocess=project_x)
-        plotter.save('mcdata-ss-p1f2p3-subMass')
+        plotter.set_subdir('mc_data/wz_enhanced')
         
-        #plotter.plot_mc_vs_data('ss/p1p2f3', 'subMass', 20, 'Subleading mass (GeV)', leftside=False)
-        #plotter.save('mcdata-ss-p1p2f3-subMass')
-        #
-        plotter.plot_mc_vs_data('ss/f1p2p3', 'subMass#LT', 20, 'Subleading mass (GeV)', leftside=False, preprocess=project_x)
-        plotter.save('mcdata-ss-f1p2p3-subMass')
+        plotter.plot_mc_vs_data('ss/tau_os/p1p2p3_enhance_wz', 'e_t_Mass#LT', xaxis='m_{e#tau} (GeV)', 
+                                xrange=(0, 120), rebin=10, leftside=False, preprocess=project_x)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-ss-p1p2p3-enhance_wz-e_t_Mass')
         
-        #plotter.plot_mc_vs_data('ss/p1f2p3/w2', 'mPt', 5, '#mu_{1} p_{T}', leftside=False)
-        #plotter.save('mcdata-ss-p1f2p3-w2-mPt')
-        #
-        #plotter.plot_mc_vs_data('ss/p1f2p3', 'ePt', 5, 'Electron p_{T}', leftside=False)
-        #plotter.save('mcdata-ss-p1f2p3-ePt')
-        #
-        #plotter.plot_mc_vs_data('ss/p1f2p3/w2', 'ePt', 5, 'Electron p_{T}', leftside=False)
-        #plotter.save('mcdata-ss-p1f2p3-w2-ePt')
-        #
-        #plotter.plot_mc_vs_data('ss/f1p2p3', 'ePt', 5, 'Electron p_{T}', leftside=False)
-        #plotter.save('mcdata-ss-f1p2p3-ePt')
-        #
-        #plotter.plot_mc_vs_data('ss/f1p2p3/w1', 'ePt', 5, 'Electron p_{T}', leftside=False)
-        #plotter.save('mcdata-ss-f1p2p3-w2-ePt')
+        plotter.plot_mc_vs_data('ss/tau_os/p1p2p3_enhance_wz', 'm_t_Mass#LT', xaxis='m_{#mu#tau} (GeV)', 
+                                xrange=(0, 120), rebin=10, leftside=False, preprocess=project_x)
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('mcdata-ss-p1p2p3-enhance_wz-leadMass')
+                
+        plotter.set_subdir('WZ_enhanced')
+
+        plotter.plot_final_wz('e_t_Mass#LT', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)',
+                              project=[0,650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-wz-e_t_Mass')
+
+        plotter.plot_final_wz('m_t_Mass#LT', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)',
+                              project=[0,650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-wz-m_t_Mass')
+
+        plotter.plot_final_wz('ePt#LT', 5, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)',
+                              project=[0,650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-wz-ePt')
+        
+        plotter.plot_final_wz('eJetPt#LT', 5, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)',
+                              project=[0,650], project_axis='X')
+        plotter.add_cms_blurb(sqrts)
+        plotter.save('final-wz-eJetPt')
+
 
         ###########################################################################
         ##  Signal region plots    ################################################
         ###########################################################################
         plotter.set_subdir('')
         rebin_slim = [20]+range(30, 81, 10)+[100,130,300]
-        categories = {
-            'LTCut' : [80, 650],
-            'LTLow' : [0, 130],
-            'LTHigh': [130, 650],
-            'Full'  : [0, 650],
-            }
 
         for label, proj_range in categories.iteritems():
-            plotter.set_subdir('%s' % label)
-            plotter.plot_final('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
-                               project=proj_range, project_axis='X', differential=True, 
-                               yaxis='Events / GeV', show_error=True)
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-subMass-%s' % label)
+            for tau_charge in ['tau_os', 'tau_ss']:
+                if tau_charge == 'tau_os':
+                    plotter.set_subdir('%s' % label)
+                else:
+                    plotter.set_subdir('%s_charge3' % label)
 
-            plotter.plot_final("e_m_Mass#LT", 20, xaxis='m_{e#mu} (GeV)'   , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-e_m_Mass-%s' % label)
+                plotter.plot_final('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
+                                   project=proj_range, project_axis='X', differential=True, 
+                                   yaxis='Events / GeV', show_error=True, tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-subMass-%s' % label)
 
-            plotter.plot_final("m_t_Mass#LT", 20, xaxis='m_{#mu#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-m_t_Mass-%s' % label)
+                plotter.plot_final("e_m_Mass#LT", 20, xaxis='m_{e#mu} (GeV)', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-e_m_Mass-%s' % label)
 
-            plotter.plot_final("e_t_Mass#LT", 20, xaxis='m_{e#tau} (GeV)'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-e_t_Mass-%s' % label)
+                plotter.plot_final("m_t_Mass#LT", 20, xaxis='m_{#mu#tau} (GeV)', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-m_t_Mass-%s' % label)
 
-            plotter.plot_final('subMass#LT', 300, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-subMass-%s-counting' % label, dotc=True, dotroot=True)
+                plotter.plot_final("e_t_Mass#LT", 20, xaxis='m_{e#tau} (GeV)', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-e_t_Mass-%s' % label)
 
-            #pt
-            plotter.plot_final("mPt#LT"    , 10, xaxis='p_{T#mu} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-mPt-%s' % label)
+                plotter.plot_final('subMass#LT', 300, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-subMass-%s-counting' % label, dotc=True, dotroot=True)
 
-            plotter.plot_final("ePt#LT"    , 10, xaxis='p_{Te} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-ePt-%s' % label)
+                #pt
+                plotter.plot_final("mPt#LT"    , 10, xaxis='p_{T#mu} (GeV)', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-mPt-%s' % label)
 
-            plotter.plot_final("mJetPt#LT" , 10, xaxis='p_{T Jet#mu} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-mJetPt-%s' % label)
+                plotter.plot_final("ePt#LT"    , 10, xaxis='p_{Te} (GeV)', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-ePt-%s' % label)
 
-            plotter.plot_final("eJetPt#LT" , 10, xaxis='p_{T Jet e} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-eJetPt-%s' % label)
+                plotter.plot_final("mJetPt#LT" , 10, xaxis='p_{T Jet#mu} (GeV)', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-mJetPt-%s' % label)
 
-            plotter.plot_final("tPt#LT"    , 10, xaxis='p_{T#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-tPt-%s' % label)
+                plotter.plot_final("eJetPt#LT" , 10, xaxis='p_{T Jet e} (GeV)', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-eJetPt-%s' % label)
 
-            #eta
-            plotter.plot_final("mAbsEta#LT", 10, xaxis='|#eta_{#mu}|', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-mAbsEta-%s' % label)
+                plotter.plot_final("tPt#LT"    , 10, xaxis='p_{T#tau} (GeV)', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-tPt-%s' % label)
 
-            plotter.plot_final("eAbsEta#LT", 10, xaxis='|#eta_{e}|'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-eAbsEta-%s' % label)
+                #eta
+                plotter.plot_final("mAbsEta#LT", 10, xaxis='|#eta_{#mu}|', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-mAbsEta-%s' % label)
 
-            plotter.plot_final("tAbsEta#LT", 10, xaxis='|#eta_{#tau}|'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-tAbsEta-%s' % label)
+                plotter.plot_final("eAbsEta#LT", 10, xaxis='|#eta_{e}|'  , maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-eAbsEta-%s' % label)
 
-            #DR
-            plotter.plot_final("m_t_DR#LT", 10, xaxis='#DeltaR_{#mu#tau}', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-m_t_DR-%s' % label)
+                plotter.plot_final("tAbsEta#LT", 10, xaxis='|#eta_{#tau}|'  , maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-tAbsEta-%s' % label)
 
-            plotter.plot_final("e_t_DR#LT", 10, xaxis='#DeltaR_{e#tau}'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-e_t_DR-%s' % label)
+                #DR
+                plotter.plot_final("m_t_DR#LT", 10, xaxis='#DeltaR_{#mu#tau}', maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-m_t_DR-%s' % label)
 
-            #Jet BTag
-            plotter.plot_final("eJetBtag#LT", 2, xaxis='e Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-eJetBtag-%s' % label)
+                plotter.plot_final("e_t_DR#LT", 10, xaxis='#DeltaR_{e#tau}'  , maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-e_t_DR-%s' % label)
 
-            plotter.plot_final("mJetBtag#LT", 2, xaxis='#mu Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-mJetBtag-%s' % label)
+                #Jet BTag
+                plotter.plot_final("eJetBtag#LT", 2, xaxis='e Jet Btag'  , maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-eJetBtag-%s' % label)
+
+                plotter.plot_final("mJetBtag#LT", 2, xaxis='#mu Jet Btag'  , maxy=None, 
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-mJetBtag-%s' % label)
 
 
         plotter.plot_final('LT', 5, xaxis='LT (GeV)', maxy=15)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-LT')
 
-        #plotter.plot_final('mPt', 10)
-        #plotter.save('final-mPt')
-        #
-        #plotter.plot_final('ePt', 10)
-        #plotter.save('final-ePt')
-        #
-        #plotter.plot_final('tPt', 10)
-        #plotter.save('final-tPt')
-        #
-        #plotter.plot_final('mAbsEta', 10)
-        #plotter.save('final-mAbsEta')
-        #
-        #plotter.plot_final('eAbsEta', 10)
-        #plotter.save('final-eAbsEta')
-        #
-        #plotter.plot_final('tAbsEta', 10)
-        #plotter.save('final-tAbsEta')
-
-        #plotter.plot_final('subMass', 20, xaxis='m_{l_{2}#tau} (GeV)')
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-subMass')
-
         plotter.plot_final('tLeadDR', 10)
         plotter.save('final-tLeadDR')
         plotter.plot_final('tSubDR', 10)
         plotter.save('final-tSubDR')
-
-        #plotter.plot_final('e_t_Mass', 10)
-        #plotter.save('final-etMass')
-
-        ###########################################################################
-        ##  WZ enhanced region plots    ###########################################
-        ###########################################################################
-        plotter.set_subdir('WZ_enhanced')
-
-        #plotter.plot_final_wz('e_t_Mass', 10, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-wz-etMass')
-
-        #plotter.plot_final_wz('mPt', 5, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)', maxy=20)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-wz-mPt')
-
-        #plotter.plot_final_wz('mJetPt', 5, xaxis='m_{#mu_{1}#tau_{#mu}} (GeV)')
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-wz-mJetPt')
 
         ###########################################################################
         ##  F3 enhanced region plots    ###########################################
@@ -278,88 +231,112 @@ if __name__ == "__main__":
         plotter.set_subdir('f3')
                 
         for label, proj_range in categories.iteritems():
-            plotter.set_subdir('f3/%s' % label)
-            plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
-                                  project=proj_range, project_axis='X', differential=True, yaxis='Events / GeV')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-subMass-%s' % label)
+            for tau_charge in ['tau_os', 'tau_ss']:
+                if tau_charge == 'tau_os':
+                    plotter.set_subdir('f3/%s' % label)
+                else:
+                    plotter.set_subdir('f3/%s_charge3' % label)
 
-            plotter.plot_final_f3('subMass#LT', [20, 40, 120, 300], xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
-                                  project=proj_range, project_axis='X', differential=True, yaxis='Events / GeV')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-subMass-widebin-%s' % label)
+                plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
+                                      project=proj_range, project_axis='X', differential=True, 
+                                      yaxis='Events / GeV', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-subMass-%s' % label)
 
-            plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-subMass-%s-notDifferential' % label)
+                plotter.plot_final_f3('subMass#LT', [20, 40, 120, 300], xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
+                                      project=proj_range, project_axis='X', differential=True, 
+                                      yaxis='Events / GeV', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-subMass-widebin-%s' % label)
 
-            plotter.plot_final_f3("e_m_Mass#LT", 20, xaxis='m_{e#mu} (GeV)'   , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-e_m_Mass-%s' % label)
+                plotter.plot_final_f3('subMass#LT', rebin_slim, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
+                                      project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-subMass-%s-notDifferential' % label)
 
-            plotter.plot_final_f3("m_t_Mass#LT", 20, xaxis='m_{#mu#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-m_t_Mass-%s' % label)
+                plotter.plot_final_f3("e_m_Mass#LT", 20, xaxis='m_{e#mu} (GeV)', maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-e_m_Mass-%s' % label)
 
-            plotter.plot_final_f3("e_t_Mass#LT", 20, xaxis='m_{e#tau} (GeV)'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-e_t_Mass-%s' % label)
+                plotter.plot_final_f3("m_t_Mass#LT", 20, xaxis='m_{#mu#tau} (GeV)', maxy=None, 
+                                      project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-m_t_Mass-%s' % label)
 
-            plotter.plot_final_f3('subMass#LT', 300, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-subMass-%s-counting' % label, dotc=True, dotroot=True)
+                plotter.plot_final_f3("e_t_Mass#LT", 20, xaxis='m_{e#tau} (GeV)'  , maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-e_t_Mass-%s' % label)
 
-            #pt
-            plotter.plot_final_f3("mPt#LT"    , 10, xaxis='p_{T#mu} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-mPt-%s' % label)
+                plotter.plot_final_f3('subMass#LT', 300, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
+                                      project=proj_range, project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-subMass-%s-counting' % label, dotc=True, dotroot=True)
 
-            plotter.plot_final_f3("ePt#LT"    , 10, xaxis='p_{Te} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-ePt-%s' % label)
+                #pt
+                plotter.plot_final_f3("mPt#LT"    , 10, xaxis='p_{T#mu} (GeV)', maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-mPt-%s' % label)
 
-            plotter.plot_final_f3("mJetPt#LT" , 10, xaxis='p_{T Jet#mu} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-mJetPt-%s' % label)
+                plotter.plot_final_f3("ePt#LT"    , 10, xaxis='p_{Te} (GeV)', maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-ePt-%s' % label)
 
-            plotter.plot_final_f3("eJetPt#LT" , 10, xaxis='p_{T Jet e} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-eJetPt-%s' % label)
+                plotter.plot_final_f3("mJetPt#LT" , 10, xaxis='p_{T Jet#mu} (GeV)', maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-mJetPt-%s' % label)
 
-            plotter.plot_final_f3("tPt#LT"    , 10, xaxis='p_{T#tau} (GeV)', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-tPt-%s' % label)
+                plotter.plot_final_f3("eJetPt#LT" , 10, xaxis='p_{T Jet e} (GeV)', maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-eJetPt-%s' % label)
 
-            #eta
-            plotter.plot_final_f3("mAbsEta#LT", 10, xaxis='|#eta_{#mu}|', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-mAbsEta-%s' % label)
+                plotter.plot_final_f3("tPt#LT"    , 10, xaxis='p_{T#tau} (GeV)', maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-tPt-%s' % label)
 
-            plotter.plot_final_f3("eAbsEta#LT", 10, xaxis='|#eta_{e}|'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-eAbsEta-%s' % label)
+                #eta
+                plotter.plot_final_f3("mAbsEta#LT", 10, xaxis='|#eta_{#mu}|', maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-mAbsEta-%s' % label)
 
-            plotter.plot_final_f3("tAbsEta#LT", 10, xaxis='|#eta_{#tau}|'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-tAbsEta-%s' % label)
+                plotter.plot_final_f3("eAbsEta#LT", 10, xaxis='|#eta_{e}|'  , maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-eAbsEta-%s' % label)
 
-            #DR
-            plotter.plot_final_f3("m_t_DR#LT", 10, xaxis='#DeltaR_{#mu#tau}', maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-m_t_DR-%s' % label)
+                plotter.plot_final_f3("tAbsEta#LT", 10, xaxis='|#eta_{#tau}|'  , maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-tAbsEta-%s' % label)
 
-            plotter.plot_final_f3("e_t_DR#LT", 10, xaxis='#DeltaR_{e#tau}'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-e_t_DR-%s' % label)
+                #DR
+                plotter.plot_final_f3("m_t_DR#LT", 10, xaxis='#DeltaR_{#mu#tau}', maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-m_t_DR-%s' % label)
 
-            #Jet BTag
-            plotter.plot_final_f3("eJetBtag#LT", 2, xaxis='e Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-eJetBtag-%s' % label)
+                plotter.plot_final_f3("e_t_DR#LT", 10, xaxis='#DeltaR_{e#tau}'  , maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-e_t_DR-%s' % label)
 
-            plotter.plot_final_f3("mJetBtag#LT", 2, xaxis='#mu Jet Btag'  , maxy=None, project=proj_range, project_axis='X')
-            plotter.add_cms_blurb(sqrts)
-            plotter.save('final-f3-mJetBtag-%s' % label)
+                #Jet BTag
+                plotter.plot_final_f3("eJetBtag#LT", 2, xaxis='e Jet Btag'  , maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-eJetBtag-%s' % label)
+
+                plotter.plot_final_f3("mJetBtag#LT", 2, xaxis='#mu Jet Btag'  , maxy=None, project=proj_range, 
+                                      project_axis='X', tau_charge=tau_charge)
+                plotter.add_cms_blurb(sqrts)
+                plotter.save('final-f3-mJetBtag-%s' % label)
 
         plotter.set_subdir('f3')
         plotter.plot_final_f3('LT', 5, xaxis='LT (GeV)', qcd_weight_fraction=0.5, show_error=True)
@@ -390,19 +367,6 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-mJetBtag')
 
-
-        #plotter.plot_final_f3('e_t_Mass', 20, xaxis='m_{e#tau_{#mu}} (GeV)', qcd_weight_fraction=0.5, show_error=True)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-f3-etMass')
-        #
-        #plotter.plot_final_f3('e_m_Mass', 20, xaxis='m_{e#mu} (GeV)', qcd_weight_fraction=0.5, show_error=True)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-f3-emMass')
-
-        #plotter.plot_final_f3('m_t_Mass', 20, xaxis='m_{#mu#tau} (GeV)', qcd_weight_fraction=0.5, show_error=True)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-f3-emMass')
-
         plotter.plot_final_f3('mPt#LT', 10, xaxis='p_{T#mu} (GeV)', qcd_weight_fraction=0.5, show_error=True, project=[0, 650], project_axis='X')
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-mPt')
@@ -423,14 +387,6 @@ if __name__ == "__main__":
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-tLeadDR')
 
-        #plotter.plot_final_f3('e_t_DR', 10, xaxis='#DeltaR_{e#tau}', show_error=True)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-f3-etDR')
-        #
-        #plotter.plot_final_f3('m_t_DR', 10, xaxis='#DeltaR_{#mu#tau}', show_error=True)
-        #plotter.add_cms_blurb(sqrts)
-        #plotter.save('final-f3-mtDR')
-
         plotter.plot_final_f3('subPt', 10, xaxis='p_{Tl_{2}} (GeV)', show_error=True)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-subPt')
@@ -446,18 +402,6 @@ if __name__ == "__main__":
         plotter.plot_final_f3('eChargeIdTight', 1, xaxis='Charge ID Tight', maxy=None)
         plotter.add_cms_blurb(sqrts)
         plotter.save('final-f3-eChargeIdTight')
-
-        plotter.plot_final_f3('subMass#LT', 20, xaxis='subleading mass from projection', maxy=None, project=[0, 650], project_axis='X')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-subMassProj')
-
-        plotter.plot_final_f3('subMass#LT', 20, xaxis='M_{l_{2}#tau} (GeV)', maxy=None, project=[0, 90], project_axis='X')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-subMass-LTLo')
-
-        plotter.plot_final_f3('subMass#LT', 20, xaxis='M_{l_{2}#tau} (GeV)', maxy=None, project=[90, 650], project_axis='X')
-        plotter.add_cms_blurb(sqrts)
-        plotter.save('final-f3-subMass-LTHi')
 
         #END OF if not options.dry_run:
     ###########################################################################
