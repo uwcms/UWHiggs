@@ -186,7 +186,7 @@ fr_fits = Hash[
     "variables" => rise_vars,
   #  "corr"      => "--noCorrection true",
     "rebin" => 10,
-    "range" => "10 60",
+    "range" => "10 150",
   ],
   "e_zlt_pt10_looseId_electronJetPt" => Hash[
     "samples" => Array["data_mm", "data_ee", "diboson"], #],#"ewk", 
@@ -195,7 +195,7 @@ fr_fits = Hash[
     "variables" => rise_vars,
     #"corr"      => "--noCorrection true",
     "rebin" => 10,
-    "range" => "10 60",
+    "range" => "10 150",
   ],
   ##
   ## E/MU TIGHT ID JETPT
@@ -207,7 +207,7 @@ fr_fits = Hash[
     "variables" => rise_vars,
   #  "corr"      => "--noCorrection true",
     "rebin" => 10,
-    "range" => "10 60",
+    "range" => "10 150",
   ],
   #"e_zlt_pt10_tightId_electronJetPt" => Hash[
   #  "samples" => Array["data_mm", "data_ee", "diboson"], #],#"ewk", 
@@ -272,12 +272,12 @@ fr_fits = Hash[
   #  "range" => "15 100",
   #],
   "t_ztt_pt10_LooseIso3Hits_tauJetPt" =>  Hash[
-    "samples" => Array["diboson", "data_mm"],
+    "samples" => Array["diboson", "data_mm", "data_ee"],
     "analyzer" => "TauFakeRates??TT",
     "function" => exponential,
     "variables" => exponential_vars,
     "rebin" => 5,
-    "range" => "15 100",
+    "range" => "15 150",
   ],
   #"t_ztt_pt10_MediumIso_tauJetPt" =>  Hash[
   #  "samples" => Array["diboson", "data_mm", "data_ee"],

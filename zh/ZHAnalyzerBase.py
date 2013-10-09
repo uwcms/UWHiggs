@@ -145,7 +145,7 @@ class ZHAnalyzerBase(MegaBase):
             
     def process(self):
         # output text file with run:lumi:evt info for syncing purposes
-        sync_file = open("sync_file_%s.txt" % self.name, 'w')
+        #sync_file = open("sync_file_%s.txt" % self.name, 'w')
   
 
         # For speed, map the result of the region cuts to a folder path
@@ -249,12 +249,12 @@ class ZHAnalyzerBase(MegaBase):
                     if folder[1] == 'All_Passed_Leg4Real' and not self.leg4IsReal(row): continue
                     if folder[1] == 'All_Passed_Leg3Real' and not self.leg3IsReal(row): continue
 
-                    # add fully passed events to sync file
-                    if folder[1] == 'All_Passed':
-                        hmass = round(getattr(row, "%s_%s_SVfitMass" % self.H_decay_products()), 1) # should switch to SVfitMas when ready
-                        zmass = round(getattr(row, "%s_%s_Mass" % self.Z_decay_products()), 1)
-                        sync_info = str(self.name) + ' ' + str(row.run) + ' ' + str(row.lumi) + ' ' + str(row.evt) + ' '+ str(zmass) + ' ' + str(hmass) + '\n'
-                        sync_file.write(sync_info)
+                    ## add fully passed events to sync file
+                    #if folder[1] == 'All_Passed':
+                    #    hmass = round(getattr(row, "%s_%s_SVfitMass" % self.H_decay_products()), 1) # should switch to SVfitMas when ready
+                    #    zmass = round(getattr(row, "%s_%s_Mass" % self.Z_decay_products()), 1)
+                    #    sync_info = str(self.name) + ' ' + str(row.run) + ' ' + str(row.lumi) + ' ' + str(row.evt) + ' '+ str(zmass) + ' ' + str(hmass) + '\n'
+                    #    sync_file.write(sync_info)
                      
                     fill_histos(histos, folder, row, event_weight)
                     wToApply = [ (w, w(row) )  for w in region_info['weights'] ]
@@ -265,7 +265,7 @@ class ZHAnalyzerBase(MegaBase):
                     if len(wToApply) > 1:
                         w_prod = reduce(lambda x, y: x*y, [x for y,x in wToApply])
                         fill_histos(histos, folder+('all_weights_applied',), row, event_weight*w_prod)
-        sync_file.close()
+        #sync_file.close()
 
     def book_general_histos(self, folder):
         '''Book general histogram, valid for each analyzer'''
@@ -299,6 +299,9 @@ class ZHAnalyzerBase(MegaBase):
             for obj2 in args[pos+1:]:
                 self.book(folder, "%s_%s_Mass" % (obj1, obj2), "%s %s - %s %s Mass" % (get_name(obj1) + get_name(obj2) ), 150, 0, 150)
 
+        self.book(folder, "Mass", "ZH Mass", 200, 0, 200)
+        self.book(folder, "%s_%s_SVfitMass" % self.H_decay_products(), "H candidate SVMass", 200, 0, 200)
+
     def book_resonance_histos(self, folder, products, name):
         self.book(folder, "%s_%s_Pt"     % products, "%s candidate Pt"              % name, 100, 0, 100)
         #self.book(folder, "%s_%s_AbsEta" % products, "%s candidate AbsEta"          % name, 100, 0, 2.4)
@@ -312,7 +315,7 @@ class ZHAnalyzerBase(MegaBase):
 
     def book_H_histos(self, folder):
         self.book_resonance_histos(folder, self.H_decay_products(), 'H')
-        self.book(folder, "%s_%s_SVfitMass"   % self.H_decay_products(), "H candidate SVfit Mass", 200, 0, 200)
+        #self.book(folder, "%s_%s_SVfitMass"   % self.H_decay_products(), "H candidate SVfit Mass", 200, 0, 200)
             
     def fill_histos(self, histos, folder, row, weight):
         '''fills histograms'''
