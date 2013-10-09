@@ -276,6 +276,7 @@ class ZHAnalyzerBase(MegaBase):
         self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
         self.book(folder, "kinematicDiscriminant1", "pT(ZH)/(pT(Z) + pT(H))", 10, 0, 1)
         self.book(folder, "kinematicDiscriminant2", "pT(H)/(pT(Tau1) + pT(Tau2))", 10, 0, 1)
+        self.book(folder, "Mass", "A Candidate Mass", 200, 0, 1600) 
         return None
 
     def book_kin_histos(self, folder, Id):
@@ -288,6 +289,7 @@ class ZHAnalyzerBase(MegaBase):
         return None        
 
     def book_mass_histos(self, folder, *args):
+        
         IdToName = {'m' : 'Muon', 'e' : 'Electron', 't' : 'Tau'}
         def get_name(Id):
             number  = Id[1] if len(Id) == 2 else ''
