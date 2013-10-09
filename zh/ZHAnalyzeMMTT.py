@@ -7,7 +7,7 @@ Analyze MMMT events for the ZH analysis
 import glob
 from MuMuTauTauTree import MuMuTauTauTree
 import os
-import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
+#import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
 import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
 import baseSelections as selections
 import mcCorrectors

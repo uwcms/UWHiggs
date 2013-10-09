@@ -8,7 +8,7 @@ Analyze MMET events for the ZH analysis
 import glob
 from MuMuETauTree import MuMuETauTree
 import os
-import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
+#import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
 import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
 import baseSelections as selections
 import mcCorrectors
