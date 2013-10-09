@@ -8,7 +8,7 @@ Analyze MMMT events for the ZH analysis
 import glob
 from MuMuMuTauTree import MuMuMuTauTree
 import os
-import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
+#import FinalStateAnalysis.TagAndProbe.MuonPOGCorrections as MuonPOGCorrections
 import FinalStateAnalysis.TagAndProbe.PileupWeight as PileupWeight
 import baseSelections as selections
 import mcCorrectors
@@ -74,6 +74,7 @@ class ZHAnalyzeMMMT(ZHAnalyzerBase.ZHAnalyzerBase):
         if not bool(row.tAntiElectronLoose): return False
        # if row.LT < 45: return False
         if row.m3Pt + row.tPt < 35: return False
+        #if (row.m3_t_SVfitMass < 100 or row.m3_t_SVfitMass > 150): return False # for MSSM
         return selections.signalMuonSelection(row,'m3')
 
     def sign_cut(self, row):

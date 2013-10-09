@@ -27,7 +27,7 @@ class EFakeRateEEET(EMUFakeRatesBase.EMUFakeRatesBase):
         if not selections.signalTauSelection(row,'t',5): return False
         if not bool(row.tAntiMuonLoose): return False
         if not bool(row.tAntiElectronMVA2Tight): return False
-        if not selections.signalElectronSelection(row,'e3'): return Fals
+        if not selections.signalElectronSelection(row,'e3'): return False
         return True
 
     def lepton_passes_tight_iso(self, row):
