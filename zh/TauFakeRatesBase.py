@@ -38,8 +38,8 @@ class TauFakeRatesBase(MegaBase):
                     num_histos[name] = self.book(os.path.join(
                         region, denom, numerator), name, *args)
 
-                book_histo('tauPt', 'Tau Pt', 100, 0, 100)
-                book_histo('tauJetPt', 'Tau Jet Pt', 100, 0, 100)
+                book_histo('tauPt', 'Tau Pt', 150, 0, 150)
+                book_histo('tauJetPt', 'Tau Jet Pt', 150, 0, 150)
                 book_histo('tauAbsEta', 'Tau Abs Eta', 100, -2.5, 2.5)
                 book_histo('tauTauInvMass', ';M_{#tau #tau} [GeV/c^{2}];Events/10 [GeV/c^{2}]', 51, 0., 255)
 
@@ -60,7 +60,7 @@ class TauFakeRatesBase(MegaBase):
             if not bool(row.t2AntiMuonLoose2): return False
             if not bool(row.t2AntiElectronLoose): return False
             if row.t1Pt < row.t2Pt: return False #Avoid double counting
-            if row.LT < 75: return False
+            if row.t1Pt + row.t2Pt < 60: return False
             if not bool(row.t1_t2_SS):       return False
             return True
 
