@@ -38,11 +38,11 @@ mu_tight_jetpt_fr = build_roofunctor( #lambda x: 0.1
     'efficiency'
 )
 
-e_tight_jetpt_fr =build_roofunctor( #lambda x: 0.2
-    frfit_dir + '/e_zlt_pt10_tightId_electronJetPt.root',
-    'fit_efficiency', # workspace name
-    'efficiency'
-)
+#e_tight_jetpt_fr =build_roofunctor( #lambda x: 0.2
+#    frfit_dir + '/e_zlt_pt10_tightId_electronJetPt.root',
+#    'fit_efficiency', # workspace name
+#    'efficiency'
+#)
 
 mu_loose_jetpt_fr = build_roofunctor( #lambda x: 0.1
     frfit_dir + '/m_zlt_pt10_looseId_muonJetPt.root',
