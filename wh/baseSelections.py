@@ -16,7 +16,6 @@ def muSelection(row, name):
     if getattr( row, getVar(name,'AbsEta')) > 2.4:  return False
     if not getattr( row, getVar(name,'PixHits')):   return False
     if getattr( row, getVar(name,'JetCSVBtag')) > 0.8: return False
-    #if getattr( row, getVar(name,'JetBtag')) > 3.3: return False #was 3.3 
     if abs(getattr( row, getVar(name,'DZ'))) > 0.2: return False
     return True
 
@@ -24,10 +23,9 @@ def eSelection(row, name):
     if getattr( row, getVar(name,'Pt')) < 10:           return False
     if getattr( row, getVar(name,'AbsEta')) > 2.5:      return False
     if getattr( row, getVar(name,'MissingHits')):       return False
-    if getattr( row, getVar(name,'HasConversion')):     return False
+    if getattr( row, getVar(name,'HasMatchedConversion')):     return False
     if not getattr( row, getVar(name,'ChargeIdTight')): return False
     if getattr( row, getVar(name,'JetCSVBtag')) > 0.8: return False
-    #if getattr( row, getVar(name,'JetBtag')) > 3.3:     return False
     if abs(getattr( row, getVar(name,'DZ'))) > 0.2:     return False
     return True
     
@@ -39,12 +37,18 @@ def tauSelection(row, name):
 
 
 #VETOS
-def vetos(row):
+def vetos(row, tracker=None):
     if row.muVetoPt5IsoIdVtx: return False
+    if tracker: tracker.Fill('muon veto')
+
     if row.bjetCSVVetoZHLike: return False
-        #if row.bjetCSVVeto:       return False
+    if tracker: tracker.Fill('bjet veto')
+
     if row.eVetoMVAIsoVtx:    return False
+    if tracker: tracker.Fill('electron veto')
+
     if row.tauVetoPt20Loose3HitsVtx: return False
+    if tracker: tracker.Fill('tau veto')
     return True
 
 def lepton_id_iso(row, name, label): #label in the format eidtype_isotype
