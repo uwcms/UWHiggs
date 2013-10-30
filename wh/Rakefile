@@ -12,7 +12,8 @@ if $jobid.include? '7TeV'
   $period = '7TeV'
 end
 
-check_luminosity(['data_DoubleElectron', 'data_DoubleMu', 'data_MuEG'], $period, $jobid)
+#check_luminosity(['data_DoubleElectron', 'data_DoubleMu', 'data_MuEG'], $period, $jobid)
+check_luminosity(['data_DoubleMu'], $period, $jobid)
 
 task :getlumi, [:sample] do |t, args|
   puts get_lumi(args.sample, $jobid)
@@ -209,10 +210,10 @@ elewps.select{|x| x.start_with?('eid12Medium')}.each do |ele_wp|
   emcrs.each do |cr|
     neighbors.each do |k|
       pt_regions.each do |ptr|
-        key = "e_#{cr}_#{ptr}_#{ele_wp}_eJetPt"
+        key = "em_#{cr}_#{ptr}_#{ele_wp}_eJetPt"
         #fr_fits[key] =  make_exponential('em', 'em') #fit EVERYTHING with exponential, in case change afterwards
         
-        key = "e_#{cr}_#{ptr}_#{ele_wp}_electronInfo_k#{k}"
+        key = "em_#{cr}_#{ptr}_#{ele_wp}_electronInfo_k#{k}"
         kNN_trains[key] =  make_kNN('em', 'em') 
         kNN_trains[key]['vars'] = electron_kNN_vars
       end
@@ -226,7 +227,7 @@ muonwps.each do |mu_wp|
   mmcrs.each do |cr|
     neighbors.each do |k|
       pt_regions.each do |ptr|
-        key = "m_M#{cr}_#{ptr}_#{mu_wp}_muonInfo_k#{k}"
+        key = "em_M#{cr}_#{ptr}_#{mu_wp}_muonInfo_k#{k}"
         kNN_trains[key] =  make_kNN('em', 'em') 
         kNN_trains[key]['vars'] = muon_kNN_vars
       end
@@ -264,10 +265,10 @@ muonwps.each do |mu_wp|
   mmcrs.each do |cr|
     neighbors.each do |k|
       pt_regions.each do |ptr|
-        key = "m_#{cr}_#{ptr}_#{mu_wp}_muonJetPt"
+        key = "mm_#{cr}_#{ptr}_#{mu_wp}_muonJetPt"
         #fr_fits[key] =  make_landau('mm', 'mm')
         
-        key = "m_#{cr}_#{ptr}_#{mu_wp}_muonInfo_k#{k}"
+        key = "mm_#{cr}_#{ptr}_#{mu_wp}_muonInfo_k#{k}"
         kNN_trains[key] =  make_kNN('mm', 'mm')
         kNN_trains[key]['vars'] = muon_kNN_vars
       end
@@ -430,17 +431,18 @@ task :fits => :charge_fakes
 fake_rate_files = fr_fits.keys.map{|x| "#{$frfit_dir}/#{x}.root"}
 
 # IF the FR fits change, make sure we re-run the analyses
-file "WHAnalyzeEMT.py" => kNN_files.select{|x| x.start_with?("#{$frfit_dir}/e_")} + \
-               kNN_files.select{|x| x.start_with?("#{$frfit_dir}/m_")} + \
+file "WHAnalyzeEMT.py" => kNN_files.select{|x| x.start_with?("#{$frfit_dir}/em_")} + \
+               #kNN_files.select{|x| x.start_with?("#{$frfit_dir}/m_")} + \
                fake_rate_files.select{|x| x.start_with?("#{$frfit_dir}/t_")} + \
                Array["optimizer.py",
                      'WHAnalyzerBase.py',
                      "fakerate_functions.py",
                      "mcCorrectors.py"] do |t|
+  puts t.investigation
   sh "touch #{t.name}"
 end
 
-file "WHAnalyzeMMT.py" => kNN_files.select{|x| x.start_with?("#{$frfit_dir}/m_")} + \
+file "WHAnalyzeMMT.py" => kNN_files.select{|x| x.start_with?("#{$frfit_dir}/mm_")} + \
                fake_rate_files.select{|x| x.start_with?("#{$frfit_dir}/t_")} + \
                ["optimizer.py",
                 'WHAnalyzerBase.py',
@@ -459,7 +461,7 @@ file "WHAnalyzeEET.py" => kNN_files.select{|x| x.start_with?( "#{$frfit_dir}/ee_
   sh "touch #{t.name}"
 end
 
-mmt_results = get_analyzer_results("WHAnalyzeMMT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
+mmt_results = get_analyzer_results("WHAnalyzeMMT.py", samples['diboson'] + samples['data_mm'] + samples['signal'])
 emt_results = get_analyzer_results("WHAnalyzeEMT.py", samples['ewk'] + samples['data_em'] + samples['signal'])
 eet_results = get_analyzer_results("WHAnalyzeEET.py", samples['ewk'] + samples['data_ee'] + samples['signal'])
 
@@ -474,7 +476,7 @@ task :eet => eet_results
 
 task :mmcontrol => get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm'])
 task :emcontrol => get_analyzer_results("ControlEM.py", samples['ewk'] + samples['data_em'])
-task :eecontrol => get_analyzer_results("ControlZEE.py", samples['data_ee'] + samples["zjets"]) + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") #samples['ewk'] +
+task :eecontrol => get_analyzer_results("ControlZEE.py", samples['data_ee'] + samples["ewk"]) + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") #samples['ewk'] +
 
 task :mmt_signal => get_analyzer_results("WHAnalyzeMMT.py", samples['signal'])
 task :emt_signal => get_analyzer_results("WHAnalyzeEMT.py", samples['signal'])
@@ -939,6 +941,10 @@ file "#{$carddir}/llt/.creation_timestamp" => cardmasses.map{|x| combine_channel
   sh "mkdir -p `dirname #{t.name}`"
   sh "touch #{t.name}"
 end
+
+task :cards_mmt => make_timestamp_task(cardmasses, 'mmt')
+task :cards_emt => make_timestamp_task(cardmasses, 'emt')
+task :cards_eet => make_timestamp_task(cardmasses, 'eet')
 
 task :cards => [make_timestamp_task(cardmasses, 'mmt'),
                 make_timestamp_task(cardmasses, 'emt'),
