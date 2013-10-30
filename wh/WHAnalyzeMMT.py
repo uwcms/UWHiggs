@@ -23,20 +23,23 @@ grid_search = {}
 if len(optimizer_keys) > 1:
         grid_search[key] = optimizer.grid_search[key]
 
-for key in optimizer_keys:
-    frfits.highpt_mu_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
-    frfits.highpt_mu_qcd_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
-    frfits.lowpt_mu_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
-    frfits.lowpt_mu_qcd_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
+NO_HISTO_FILL = ('NO_HISTO_FILL' in os.environ) and eval(os.environ['NO_HISTO_FILL']) 
 
+if not NO_HISTO_FILL:
+    for key in optimizer_keys:
+        frfits.highpt_mu_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
+        frfits.highpt_mu_qcd_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
+        frfits.lowpt_mu_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
+        frfits.lowpt_mu_qcd_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
 
+SYNC = ('SYNC' in os.environ) and eval(os.environ['SYNC'])
 
 ################################################################################
 #### Analysis logic ############################################################
 ################################################################################
 
 class WHAnalyzeMMT(WHAnalyzerBase):
-    tree = 'mmt/final/Ntuple'
+    tree = 'mmt/final/Ntuple' if not SYNC else 'Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         self.channel = 'MMT'
         super(WHAnalyzeMMT, self).__init__(tree, outfile, MuMuTauTree, **kwargs)
@@ -85,6 +88,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
 
         self.hfunc['subMTMass'] = lambda row, weight: (row.m2_t_Mass, weight) if row.m1MtToMET > row.m2MtToMET else (row.m1_t_Mass, weight) #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.m2Pt/row.m1Pt, weight)
+        self.hfunc['DEBUG'] = lambda row, weight: (array("f", [row.run, row.lumi, row.m2_t_Mass, row.LT, row.m1Pt, row.m2Pt, row.tPt] ), None)
         
         self.pucorrector = mcCorrectors.make_puCorrector('doublemu')
 
@@ -100,7 +104,8 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         if len(self.grid_search.keys()) == 1:
 
             self.book(folder, "m2_t_Mass#LT" , "subleadingMass", 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
-            self.book(folder, "Event_ID", "Event ID", 'run:lumi:evt1:evt2', type=ROOT.TNtuple)
+            #self.book(folder, "Event_ID", "Event ID", 'run:lumi:evt1:evt2', type=ROOT.TNtuple)
+            self.book(folder, "DEBUG", "DEBUG", 'run:lumi:m2_t_Mass:LT:m1Pt:m2Pt:tPt', type=ROOT.TNtuple)
             #Pt
             self.book(folder, "m1Pt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
             self.book(folder, "tPt#LT"  , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
@@ -128,37 +133,24 @@ class WHAnalyzeMMT(WHAnalyzerBase):
             self.book(folder, "m1MtToMET#LT", "Muon 2 Pt", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
             self.book(folder, "m2MtToMET#LT", "Muon 2 Pt", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
 
+            #tau ISO 
+            self.book(folder, "tRawIso3Hits#LT", "Muon 2 Pt", 200, 0, 200, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, "tRawIsoMVA2#LT", "Muon 2 Pt" , 200, -1, -1, nLTBins, LTBinning, type=ROOT.TH2F)
+
             self.book(folder, "m2RelPFIsoDB", "m2Iso", 100, 0, 0.3)
             self.book(folder, "m1_t_Mass", "leadingMass", 200, 0, 200)
             self.book(folder, "m1_m2_Mass", "Muon 1-2 Mass", 120, 0, 120)
-            #self.book(folder, "m2_t_DR", "m2_t_DR", 100, 0, 5)
-            #self.book(folder, "m1_t_DR", "m1_t_DR", 100, 0, 5)
 
-            #self.book(folder, "m1JetPt", "Muon 1 Jet Pt", 100, 0, 200)
-            #self.book(folder, "m2JetPt", "Muon 2 Jet Pt", 100, 0, 200)
             # Rank muons by less MT to MET, for WZ control region
             self.book(folder, "weight", "Event weight", 100, 0, 5)
             self.book(folder, "rho", "Fastjet #rho", 100, 0, 25)
             self.book(folder, "nvtx", "Number of vertices", 31, -0.5, 30.5)
-            #self.book(folder, "m1Pt", "Muon 1 Pt", 100, 0, 100)
-            #self.book(folder, "m2Pt", "Muon 2 Pt", 100, 0, 100)
-            #self.book(folder, "m1AbsEta", "Muon 1 AbsEta", 100, 0, 2.4)
-            #self.book(folder, "m2AbsEta", "Muon 2 AbsEta", 100, 0, 2.4)
-            #self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
-            #self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
             self.book(folder, "subMTMass", "subMTMass", 200, 0, 200)
-            #self.book(folder, "tDecayMode", "Tau AbsEta", 15, -0.5, 14.5)
             self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
             self.book(folder, "m1DZ",  "m1DZ", 100, 0., 1)
             self.book(folder, "m2DZ",  "m2DZ", 100, 0., 1)
             self.book(folder, "tDZ" ,  "tDZ" , 100, 0., 1)
             self.book(folder, "doubleMuPrescale", "HLT prescale", 26, -5.5, 20.5)
-
-            #let's look for osme other possible selections
-            #self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
-            #self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
-            #self.book(folder, "Mass"          , "mass"          , 800, 0, 800 )
-            #self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
 
     def preselection(self, row, cut_flow_trk = None, LT_threshold = 80., taupt_thr = 0.):
         ''' Preselection applied to events.
@@ -166,28 +158,31 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         Excludes FR object IDs and sign cut.
         '''
 
+        #
+        # NEW EXPLICIT CUT, BEFORE IT WAS IMPLICIT AND MADE WHILE PLOTTING!
+        #
+        if row.m1_t_DR < 0.5 or row.m2_t_DR < 0.5 or row.m1_m2_DR < 0.5: return False
+        cut_flow_trk.Fill('DR separation')
+
+        if row.m2_t_Mass < 20: return False
+        cut_flow_trk.Fill('sub mass cut')
+
         double_mu_pass =  row.doubleMuPass and \
             row.m1MatchesDoubleMuPaths > 0 and \
             row.m2MatchesDoubleMuPaths > 0
         double_muTrk_pass = row.doubleMuTrkPass and \
-             row.m1MatchesDoubleMuTrkPaths > 0 and \
-             row.m2MatchesDoubleMuTrkPaths > 0
+             row.m1MatchesMu17TrkMu8Path  > 0 and \
+             row.m2MatchesMu17TrkMu8Path  > 0
         if not ( double_mu_pass or double_muTrk_pass ): return False
         cut_flow_trk.Fill('trigger')
-
-        #TEST
-        if row.m2_t_DR < 1: return False
 
         if row.m1Pt < row.m2Pt:                   return False
         if row.m1Pt < 20:                         return False
         if not selections.muSelection(row, 'm1'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         cut_flow_trk.Fill('obj1 Presel')
-        #cut_flow_trk.Fill('pt requirements 1', 'eta requirements 1', 'MissingHits 1', 'HasConversion 1', 'JetBtag 1', 'DZ 1',)
-
 
         if not selections.muSelection(row, 'm2'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         cut_flow_trk.Fill('obj2 Presel')
-        #cut_flow_trk.Fill('pt requirements 2', 'eta requirements 2', 'MissingHits 2', 'HasConversion 2', 'JetBtag 2', 'DZ 2',)
 
         if not selections.tauSelection(row, 't'): return False #applies basic selection (eta, pt > 20, DZ)
         if not row.tAntiElectronMVA3Loose:        return False
@@ -197,24 +192,10 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         if row.LT < LT_threshold: return False
         cut_flow_trk.Fill('LT')
 
-        #if row.m1_m2_SS and row.m1_t_SS: return False #remove three SS leptons
         if row.m1_m2_Mass < 20:          return False
-        if not selections.vetos(row):    return False #applies mu bjet e additional tau vetoes
-        cut_flow_trk.Fill('vetos')
-        #cut_flow_trk.Fill('ChargeIdTight')
-        cut_flow_trk.Fill('charge_fakes') #no charge fakes here
+        cut_flow_trk.Fill('dilepton mass cut')
 
-        #FIXME: ONLY FOR CUT-FLOW PRODUCTION
-        #if not row.m1PFIDTight: return False
-        #cut_flow_trk.Fill('obj1 ID')
-        #if not selections.lepton_id_iso(row, 'm1', 'h2taucuts'): return False
-        #cut_flow_trk.Fill('obj1 Iso')
-        #if not row.m2PFIDTight: return False
-        #cut_flow_trk.Fill('obj2 ID')
-        #if not selections.lepton_id_iso(row, 'm2', 'h2taucuts'): return False
-        #cut_flow_trk.Fill('obj2 Iso')
-        #if not row.tLooseIso3Hits: return False
-        #cut_flow_trk.Fill('obj3 IDIso')
+        if not selections.vetos(row, cut_flow_trk):    return False #applies mu bjet e additional tau vetoes
         
         return True
 
@@ -247,7 +228,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
     
     @staticmethod
     def anti_wz(row):
-        return row.tAntiMuonTight # and not row.tMuOverlap
+        return bool(row.tAntiMuonTight and (( row.tDecayMode == 0 and row.tLeadChargeCandEMFraction > 0.2 ) or row.tDecayMode <> 0)) # and not row.tMuOverlap
 
     def enhance_wz(self, row):
         # Require the "tau" to be a muon, and require the third muon
