@@ -32,15 +32,21 @@ grid_search = {}
 if len(optimizer_keys) > 1:
     grid_search[key] = optimizer.grid_search[key]
 
-for key in optimizer_keys:
-    frfits.highpt_mu_fr[optimizer.grid_search[key]['leading_iso']]
-    frfits.highpt_mu_qcd_fr[optimizer.grid_search[key]['leading_iso']]
-    frfits.lowpt_mu_fr[optimizer.grid_search[key]['leading_iso']]
-    frfits.lowpt_mu_qcd_fr[optimizer.grid_search[key]['leading_iso']]
-    frfits.highpt_e_fr[optimizer.grid_search[key]['subleading_iso']]
-    frfits.highpt_e_qcd_fr[optimizer.grid_search[key]['subleading_iso']]
-    frfits.lowpt_e_fr[optimizer.grid_search[key]['subleading_iso']]
-    frfits.lowpt_e_qcd_fr[optimizer.grid_search[key]['subleading_iso']]
+NO_HISTO_FILL = ('NO_HISTO_FILL' in os.environ) and eval(os.environ['NO_HISTO_FILL']) 
+
+if not NO_HISTO_FILL:
+    for key in optimizer_keys:
+        frfits.highpt_mue_fr[optimizer.grid_search[key]['leading_iso']]
+        frfits.highpt_mue_qcd_fr[optimizer.grid_search[key]['leading_iso']]
+        frfits.lowpt_mue_fr[optimizer.grid_search[key]['leading_iso']]
+        frfits.lowpt_mue_qcd_fr[optimizer.grid_search[key]['leading_iso']]
+        frfits.highpt_e_fr[optimizer.grid_search[key]['subleading_iso']]
+        frfits.highpt_e_qcd_fr[optimizer.grid_search[key]['subleading_iso']]
+        frfits.lowpt_e_fr[optimizer.grid_search[key]['subleading_iso']]
+        frfits.lowpt_e_qcd_fr[optimizer.grid_search[key]['subleading_iso']]
+
+SYNC = ('SYNC' in os.environ) and eval(os.environ['SYNC'])
+
 
 ################################################################################
 #### Analysis logic ############################################################
@@ -49,7 +55,7 @@ is7TeV = bool('7TeV' in os.environ['jobid'])
 use_iso_trigger = not is7TeV
 
 class WHAnalyzeEMT(WHAnalyzerBase):
-    tree = 'emt/final/Ntuple'
+    tree = 'emt/final/Ntuple' if not SYNC else 'Ntuple'
 
     def __init__(self, tree, outfile, **kwargs):
         self.channel = 'EMT'
@@ -168,32 +174,19 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             self.book(folder, "mJetBtag#LT", "Muon 2 Pt", 30, -10, 5, nLTBins, LTBinning, type=ROOT.TH2F)
             self.book(folder, "eJetBtag#LT", "Muon 2 Pt", 30, -10, 5, nLTBins, LTBinning, type=ROOT.TH2F)
 
+            #tau ISO 
+            self.book(folder, "tRawIso3Hits#LT", "Muon 2 Pt", 200, 0, 200, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, "tRawIsoMVA2#LT", "Muon 2 Pt" , 200, -1, -1, nLTBins, LTBinning, type=ROOT.TH2F)
+
             self.book(folder, "subPt"   , "SubLeading Pt", 100, 0, 100)
             self.book(folder, "leadPt"  , "Leading Pt"   , 100, 0, 100)
             self.book(folder, "subJetPt"   , "SubLeading Pt", 100, 0, 100)
             self.book(folder, "leadJetPt"  , "Leading Pt"   , 100, 0, 100)
             self.book(folder, "nTruePU", "NPU", 62, -1.5, 60.5)
-            #self.book(folder, "mPt", "Muon Pt", 100, 0, 100)
-            #self.book(folder, "ePt", "Electron Pt", 100, 0, 100)
-            #self.book(folder, "mJetPt", "Muon Pt", 100, 0, 100)
-            #self.book(folder, "eJetPt", "Electron Pt", 100, 0, 100)
-            #self.book(folder, "tPt", "Tau Pt", 100, 0, 100)
-            #self.book(folder, "mAbsEta", "Muon AbsEta", 100, 0, 2.4)
-            #self.book(folder, "eAbsEta", "Electron AbsEta", 100, 0, 2.5)
-            #self.book(folder, "tAbsEta", "Tau AbsEta", 100, 0, 2.3)
             self.book(folder, "eChargeIdTight", "Elec charge ID tight", 2, -0.5, 1.5)
             self.book(folder, "tLeadDR", "DR between leading lepton and tau", 100, 0, 5)
             self.book(folder, "tSubDR", "DR between subleading lepton and tau", 100, 0, 5)
             self.book(folder, "e_m_DR", "", 200, 0, 5)
-            #self.book(folder, "m_t_DR", "", 200, 0, 5)
-            #self.book(folder, "e_t_DR", "", 200, 0, 5)
-
-        
-            #let's look for osme other possible selections
-            #self.book(folder, "Mass"          , "mass"          , 800, 0, 800 )
-            #self.book(folder, "pt_ratio"      , "pt_ratio"      , 100, 0, 1)
-            #self.book(folder, "tToMETDPhi"    , "tToMETDPhi"    , 100, 0, 4)
-            #self.book(folder, "type1_pfMetEt"         , "metEt"         , 300, 0, 2000)
 
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
@@ -202,6 +195,12 @@ class WHAnalyzeEMT(WHAnalyzerBase):
 
         Excludes FR object IDs and sign cut.
         '''
+        if row.e_t_DR < 0.5 or row.m_t_DR < 0.5 or row.e_m_DR < 0.5: return False
+        cut_flow_trk.Fill('DR separation')
+
+        if self.hfunc['subMass'](row, 1)[0] < 20: return False
+        cut_flow_trk.Fill('sub mass cut')
+
         mu17e8, mu8e17 = False, False
         if use_iso_trigger:
             mu17e8 = row.mu17ele8isoPass and \
@@ -226,56 +225,24 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         cut_flow_trk.Fill('trigger')
 
         if not selections.muSelection(row, 'm'):  return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
-        #cut_flow_trk.Fill('pt requirements 1', 'eta requirements 1', 'MissingHits 1', 'HasConversion 1', 'JetBtag 1', 'DZ 1',)
         cut_flow_trk.Fill('obj1 Presel')
 
         if not selections.eSelection(row, 'e'):   return False #applies basic selection (eta, pt > 10, DZ, missingHits, jetBTag, HasConversion and chargedIdTight)
         cut_flow_trk.Fill('obj2 Presel')
-        #FIXME
-        #if row.ePt < 10:           return False
-	#cut_flow_trk.Fill('pt requirements 2')
-    	#if row.eAbsEta > 2.5:      return False
-	#cut_flow_trk.Fill('eta requirements 2')
-    	#if row.eMissingHits:       return False
-	#cut_flow_trk.Fill('MissingHits 2')
-    	#if row.eHasConversion:     return False
-	#cut_flow_trk.Fill('HasConversion 2')
-    	#if row.eJetBtag > 3.3:     return False
-	#cut_flow_trk.Fill('JetBtag 2')
-    	#if abs(row.eDZ) > 0.2:     return False
-	#cut_flow_trk.Fill('DZ 2')
-
 
         if not selections.tauSelection(row, 't'): return False #applies basic selection (eta, pt > 20, DZ)
         if row.tPt < taupt_thr: return False
-        #if row.tMuOverlap:         return False
-        if not row.tAntiMuonLoose: return False
         cut_flow_trk.Fill('obj3 Presel')
 
         if row.LT < LT_threshold:            return False
         cut_flow_trk.Fill('LT')
 
-        #if row.e_m_SS and row.e_t_SS: return False #remove three SS leptons
-        if not selections.vetos(row): return False #applies mu bjet e additional tau vetoes
-        cut_flow_trk.Fill('vetos')
-        #FIXME
-    	if not row.eChargeIdTight: return False
-        #cut_flow_trk.Fill('ChargeIdTight')
-       
         if row.e_m_Mass < 20:          return False
-        cut_flow_trk.Fill('charge_fakes') #no charge fakes here
+        cut_flow_trk.Fill('dilepton mass cut')
 
-        #FIXME: ONLY FOR CUT-FLOW PRODUCTION
-        #if not row.mPFIDTight: return False
-        #cut_flow_trk.Fill('obj1 ID')
-        #if not selections.lepton_id_iso(row, 'm', 'h2taucuts'): return False
-        #cut_flow_trk.Fill('obj1 Iso')
-        #if not selections.summer_2013_eid(row, 'e'): return False
-        #cut_flow_trk.Fill('obj2 ID')
-        #if not selections.lepton_id_iso(row, 'e', 'h2taucuts'): return False
-        #cut_flow_trk.Fill('obj2 Iso')
-        #if not row.tLooseIso3Hits: return False
-        #cut_flow_trk.Fill('obj3 IDIso')
+        if not selections.vetos(row, cut_flow_trk): return False #applies mu bjet e additional tau vetoes
+
+        cut_flow_trk.Fill('charge_fakes') #no charge fakes here
 
         return True
 
@@ -311,14 +278,14 @@ class WHAnalyzeEMT(WHAnalyzerBase):
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def anti_wz( row):
-        if row.e_t_Zcompat < 20:
-            if not row.tAntiElectronMVA3Medium:
-                return False
-        elif not row.tAntiElectronMVA3Loose:
+        if not row.tAntiMuonLoose or not row.tAntiElectronMVA3Loose: 
             return False
-        elif row.m_t_Zcompat < 20:
-            if not row.tAntiMuonTight:
-                return False            
+        if row.e_t_Zcompat < 20 and (not row.tAntiElectronMVA3Medium):
+            return False
+        if row.m_t_Zcompat < 20 and not (row.tAntiMuonTight and \
+                                           (( row.tDecayMode == 0 and row.tLeadChargeCandEMFraction > 0.2 ) \
+                                            or row.tDecayMode <> 0)):
+            return False            
         return True
 
     def enhance_wz(self, row):

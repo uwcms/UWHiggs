@@ -23,11 +23,16 @@ grid_search = {}
 if len(optimizer_keys) > 1:
         grid_search[key] = optimizer.grid_search[key]
 
-for key in optimizer_keys:
-    frfits.highpt_ee_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
-    frfits.highpt_ee_qcd_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
-    frfits.lowpt_ee_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
-    frfits.lowpt_ee_qcd_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
+NO_HISTO_FILL = ('NO_HISTO_FILL' in os.environ) and eval(os.environ['NO_HISTO_FILL']) 
+
+if not NO_HISTO_FILL:
+    for key in optimizer_keys:
+        frfits.highpt_ee_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
+        frfits.highpt_ee_qcd_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
+        frfits.lowpt_ee_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
+        frfits.lowpt_ee_qcd_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
+
+SYNC = ('SYNC' in os.environ) and eval(os.environ['SYNC'])
 
 #mtr = frfits.mt_likelihood_ratio
 ################################################################################
@@ -35,7 +40,7 @@ for key in optimizer_keys:
 ################################################################################
 
 class WHAnalyzeEET(WHAnalyzerBase):
-    tree = 'eet/final/Ntuple'
+    tree = 'eet/final/Ntuple' if not SYNC else 'Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         self.channel = 'EET'	
         super(WHAnalyzeEET, self).__init__(tree, outfile, EETauTree, **kwargs)
@@ -183,11 +188,9 @@ class WHAnalyzeEET(WHAnalyzerBase):
             self.book(folder, "e1JetBtag#LT", "Muon 2 Pt", 30, -10, 5, 60, 0, 600, type=ROOT.TH2F)
             self.book(folder, "e2JetBtag#LT", "Muon 2 Pt", 30, -10, 5, 60, 0, 600, type=ROOT.TH2F)
 
-            #self.book(folder, prefix+"e2_t_Mass#faking_prob" , "subleadingMass", 200, 0, 200, 1100, 0., 1.1, type=ROOT.TH2F)
-            #self.book(folder, prefix+"e2_t_Mass#log_prob"    , "subleadingMass", 200, 0, 200, 1000, -10,  1, type=ROOT.TH2F)
-            #
-            #self.book(folder, prefix+'faking_prob'     , "", 1100, 0., 1.1)
-            #self.book(folder, prefix+'log_prob'        , "", 1000, -10, 1)
+            #tau ISO 
+            self.book(folder, "tRawIso3Hits#LT", "Muon 2 Pt", 200, 0, 200, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, "tRawIsoMVA2#LT", "Muon 2 Pt" , 200, -1, -1, nLTBins, LTBinning, type=ROOT.TH2F)
 
             self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 30, 0, 0.3)
             self.book(folder, "e1RelPFIsoDB", "e1RelPFIsoDB", 30, 0, 0.3)
@@ -228,6 +231,12 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
         Excludes FR object IDs and sign cut.
         '''
+        if row.e1_t_DR < 0.5 or row.e2_t_DR < 0.5 or row.e1_e2_DR < 0.5: return False
+        cut_flow_trk.Fill('DR separation')
+
+        if row.e2_t_Mass < 20: return False
+        cut_flow_trk.Fill('sub mass cut')
+
         if not row.doubleEPass:                   return False
 	if not (row.e1MatchesDoubleEPath > 0 and \
 		row.e2MatchesDoubleEPath > 0): return False 
@@ -236,35 +245,9 @@ class WHAnalyzeEET(WHAnalyzerBase):
 	if row.e1Pt < 20:           return False
         if not selections.eSelection(row, 'e1'):  return False
 	cut_flow_trk.Fill('obj1 Presel')
-        #FIXME
-    	#if row.e1Pt < 20:           return False
-	#cut_flow_trk.Fill('pt requirements 1')
-    	#if row.e1AbsEta > 2.5:      return False
-	#cut_flow_trk.Fill('eta requirements 1')
-    	#if row.e1MissingHits:       return False
-	#cut_flow_trk.Fill('MissingHits 1')
-    	#if row.e1HasConversion:     return False
-	#cut_flow_trk.Fill('HasConversion 1')
-    	#if row.e1JetBtag > 3.3:     return False
-	#cut_flow_trk.Fill('JetBtag 1')
-    	#if abs(row.e1DZ) > 0.2:     return False
-	#cut_flow_trk.Fill('DZ 1')
 
         if not selections.eSelection(row, 'e2'):  return False
         cut_flow_trk.Fill('obj2 Presel')
-        #FIXME
-    	#if row.e2Pt < 10:           return False
-	#cut_flow_trk.Fill('pt requirements 2')
-    	#if row.e2AbsEta > 2.5:      return False
-	#cut_flow_trk.Fill('eta requirements 2')
-    	#if row.e2MissingHits:       return False
-	#cut_flow_trk.Fill('MissingHits 2')
-    	#if row.e2HasConversion:     return False
-	#cut_flow_trk.Fill('HasConversion 2')
-    	#if row.e2JetBtag > 3.3:     return False
-	#cut_flow_trk.Fill('JetBtag 2')
-    	#if abs(row.e2DZ) > 0.2:     return False
-	#cut_flow_trk.Fill('DZ 2')
 
         if not selections.tauSelection(row, 't'): return False
         if row.tPt < taupt_thr: return False
@@ -276,27 +259,9 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
         #if row.e1_e2_SS and row.e1_t_SS: return False #remove three SS leptons
         if row.e1_e2_Mass < 20:          return False
-        if not selections.vetos(row):    return False #applies mu bjet e additional tau vetoes
-        cut_flow_trk.Fill('vetos')
+        cut_flow_trk.Fill('dilepton mass cut')
 
-        #REMOVE CHARGE FAKES!
-        #FIXME
-    	#if not row.e1ChargeIdLoose: return False
-    	#if not row.e2ChargeIdLoose: return False
-	#cut_flow_trk.Fill('ChargeIdLoose')
-        #cut_flow_trk.Fill('charge_fakes')  
-
-        #FIXME: ONLY FOR CUT-FLOW PRODUCTION
-        #if not selections.summer_2013_eid(row, 'e1'): return False
-        #cut_flow_trk.Fill('obj1 ID')
-        #if not selections.lepton_id_iso(row, 'e1', 'eid13Looseh2taucuts'): return False
-        #cut_flow_trk.Fill('obj1 Iso')
-        #if not selections.summer_2013_eid(row, 'e2'): return False
-        #cut_flow_trk.Fill('obj2 ID')
-        #if not selections.lepton_id_iso(row, 'e2', 'eid13Looseh2taucuts'): return False
-        #cut_flow_trk.Fill('obj2 Iso')
-        #if not row.tLooseIso3Hits: return False
-        #cut_flow_trk.Fill('obj3 IDIso')
+        if not selections.vetos(row, cut_flow_trk):    return False #applies mu bjet e additional tau vetoes
 
         return True
 
@@ -346,11 +311,12 @@ class WHAnalyzeEET(WHAnalyzerBase):
         return row.tCiCTightElecOverlap
 
     def event_weight(self, row):
-        if row.run > 2:
+        if row.run > 2: #FIXME! add tight ID correction
             return 1.
         return self.pucorrector(row.nTruePU) * \
-            mcCorrectors.get_electron_corrections(row,'e1','e2') *\
-            mcCorrectors.double_electron_trigger(row)
+                mcCorrectors.get_electron_corrections(row,'e2') *\
+                mcCorrectors.electron_tight_corrections(row.e1Pt, row.e1AbsEta) *\
+                mcCorrectors.double_electron_trigger(row)
    
     def obj1_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
         return frfits.highpt_ee_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt, numJets20=row.jetVeto20+1)
