@@ -106,3 +106,35 @@ def get_electron_corrections(row,*args):
         ret   *= electron_corrections(pt,abseta)
     return ret
 
+
+
+
+
+########################################################################
+##
+##                            MC MATCHING
+##
+########################################################################
+
+
+from FinalStateAnalysis.PlotTools.decorators import memo
+
+@memo
+def getVar(name, var):
+    return name+var
+
+def match_mc_object(row, obj_name):
+    '''check that muons are real muons, electrons are real electrons, 
+    had taus are real had taus and little furry creatures from alpha 
+    centauri are real little furry creatures form alpha centauri'''
+    if obj_name[0] == 'm':
+        return (abs( getattr(row, getVar(obj_name, 'GenPdgId')) ) == 13) 
+    elif obj_name[0] == 'e':
+        return (abs( getattr(row, getVar(obj_name, 'GenPdgId')) ) == 11)
+    elif obj_name[0] == 't':
+        return ( getattr(row, getVar(obj_name, 'GenDecayMode')) > -1)
+    return False
+
+def mc_matching(row, *args):
+    'matches object to the gen-level object'
+    return all( match_mc_object(row, i) for i in args )
