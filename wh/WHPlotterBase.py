@@ -24,6 +24,8 @@ from FinalStateAnalysis.PlotTools.RebinView  import RebinView
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 from FinalStateAnalysis.PlotTools.decorators import memo
 from FinalStateAnalysis.MetaData.datacommon  import br_w_leptons, br_z_leptons
+from FinalStateAnalysis.Utilities.floatformatting import smart_float_format
+from pdb import set_trace
 from optparse import OptionParser
 import os
 import ROOT
@@ -36,6 +38,13 @@ from yellowhiggs import xs, br, xsbr
 parser = OptionParser(description=__doc__)
 parser.add_option('--dry-run', action='store_true', dest='dry_run', default = False,
                   help='produces only shape file and minimal histograms')
+
+parser.add_option('--no-mc-data', action='store_true', dest='no_mc_data', default = False)
+parser.add_option('--no-wz', action='store_true', dest='no_wz', default = False)
+parser.add_option('--no-signal', action='store_true', dest='no_signal', default = False)
+parser.add_option('--no-f3', action='store_true', dest='no_f3', default = False)
+parser.add_option('--no-shapes', action='store_true', dest='no_shapes', default = False)
+
 parser.add_option('--prefix', metavar='label', type=str, dest='prefix', default = '',
                   help='prefix to eppend before histogram name o be used to make the shapes' )
 parser.add_option('--prefixes', metavar='label', type=str, dest='prefixes', default = '',
@@ -92,6 +101,37 @@ def fake_rate_estimate(histograms): #always, ALWAYS give as 1,2,0
             ret.SetBinError(i,quad(e1,e2,e0))
     return ret
             
+
+class MultyErrorView(object): #FIXME
+    '''takes a StackView and adds systematics'''
+    def __init__(self, stackview, systematics_map):
+        self.stack_view = stackview
+        self.systematics_map = systematics_map
+
+    def Get(self, path):
+        stack_components = self.stack_view.Get(path).GetHists()
+        stack_sum = sum(stack_components)
+        
+        for bin in range(1, stack_sum.GetNbinsX() + 1):
+            #sys_errors = [ sum(hist.GetBinContent(bin)*value for hist in stack_components if fnmatch(hist.GetTitle(), key)) for key, value in self.systematics_map ]
+            sys_errors = []
+            for key, value in self.systematics_map.iteritems():
+                it = 0
+                for hist in stack_components:
+                    if fnmatch(hist.GetTitle(), key):
+                        print '%s matches %s' % (hist.GetTitle(), key)
+                        it += hist.GetBinContent(bin)*value
+                sys_errors.append(it)
+
+            error = quad( stack_sum.GetBinError(bin), *sys_errors )
+            stack_sum.SetBinError(bin, error)
+
+        stack_sum.SetMarkerSize(0)
+        stack_sum.SetFillColor(1)
+        stack_sum.SetFillStyle(3013)
+        stack_sum.legendstyle = 'f'
+        return stack_sum
+
 
 class BackgroundErrorView(object):
     ''' Compute the total background error in each bin. '''
@@ -286,20 +326,19 @@ class WHPlotterBase(Plotter):
                 ret = ProjectionView(ret, project_axis, project)
             return RebinView( ret, rebin )
 
-        wz_view_tautau = preprocess(
-            views.SubdirectoryView(
-                self.get_view('WZJetsTo3LNu*ZToTauTau*'),
+        all_wz_view_tautau = preprocess( self.get_view('WZJetsTo3LNu*ZToTauTau*') )
+        wz_view_tautau = views.SubdirectoryView(
+                all_wz_view_tautau,
                 'ss/%s/p1p2p3/' % tau_charge
-            )
         )
 
         tomatch = 'WZJetsTo3LNu' if self.sqrts == 7 else 'WZJetsTo3LNu_pythia'
-        wz_view_3l = preprocess(
-            views.SubdirectoryView(
-                self.get_view(tomatch),
+        all_wz_view_3l = preprocess( self.get_view(tomatch) )
+        wz_view_3l = views.SubdirectoryView(
+                all_wz_view_3l,
                 'ss/%s/p1p2p3/' % tau_charge
-            )
         )
+        all_wz_view = views.SumView(all_wz_view_tautau, all_wz_view_3l)
 
         zz_view = preprocess(
             views.SubdirectoryView(
@@ -317,7 +356,10 @@ class WHPlotterBase(Plotter):
 
         def make_fakes(qcd_fraction):
             def make_fakes_view(weight_type, scale):
-                scaled_data = views.ScaleView(all_data_view, scale)
+                scaled_bare_data = views.ScaleView(all_data_view, scale)
+                scaled_wz_data   = views.ScaleView(all_wz_view, -1*scale)
+                scaled_data      = views.SumView(scaled_bare_data, scaled_wz_data)
+
                 # View of weighted obj1-fails data
                 obj1_view = views.SubdirectoryView(
                     scaled_data, 'ss/%s/f1p2p3/%s1' % (tau_charge, weight_type))
@@ -478,15 +520,21 @@ class WHPlotterBase(Plotter):
             f1p2f3 '''
         other_tau_sign = 'tau_os' if tau_charge == 'tau_ss' else 'tau_ss'
 
+        all_wz_ztt_view = self.get_view('WZJetsTo3LNu*ZToTauTau*')
         wz_view = views.SubdirectoryView(
-            self.get_view('WZJetsTo3LNu*ZToTauTau*'),
+            all_wz_ztt_view,
             'ss/%s/p1p2f3/' % tau_charge
         )
+
         tomatch = 'WZJetsTo3LNu' if self.sqrts == 7 else 'WZJetsTo3LNu_pythia'
+        all_wz_3l_view = self.get_view(tomatch)
         wz_view_3l = views.SubdirectoryView(
-            self.get_view(tomatch),
+            all_wz_3l_view,
             'ss/%s/p1p2f3/' % tau_charge
         )
+
+        all_wz_view = views.SumView(all_wz_ztt_view, all_wz_3l_view)
+
         zz_view = views.SubdirectoryView(
             self.get_view('ZZJetsTo4L*'),
             'ss/%s/p1p2f3/' % tau_charge
@@ -496,7 +544,9 @@ class WHPlotterBase(Plotter):
 
         def make_fakes(qcd_fraction):
             def make_fakes_view(weight_type, scale):
-                scaled_data = views.ScaleView(all_data_view, scale)
+                scaled_bare_data = views.ScaleView(all_data_view, scale)
+                wz_data          = views.ScaleView(all_wz_view, -1*scale)
+                scaled_data      = views.SumView(scaled_bare_data, wz_data)
                 # View of weighted obj1-fails data
                 obj1_view = views.SubdirectoryView(
                     scaled_data, 'ss/%s/f1p2f3/%s1' % (tau_charge, weight_type))
@@ -918,7 +968,8 @@ class WHPlotterBase(Plotter):
                       qcd_weight_fraction=0.5, x_range=None, #):
                       show_chi2=False,project=None, 
                       project_axis=None, differential=False, 
-                      yaxis='Events', tau_charge='tau_os', **kwargs):
+                      yaxis='Events', tau_charge='tau_os', show_ratio=False,
+                      ratio_range=None, fit=None, **kwargs):
         ''' Plot the final F3 control region - with bkg. estimation '''
         show_chi2 = False #broken
         sig_view = self.make_obj3_fail_cr_views(
@@ -954,6 +1005,7 @@ class WHPlotterBase(Plotter):
         #pad     = ROOT.TPad('da','fuq',0.1,0.8,0.5,0.9)
         #self.canvas.cd()
         #latexit = ''
+        bkg_error = None
         if show_error:
             correct_qcd_view = None
             if qcd_weight_fraction == 0:
@@ -992,15 +1044,30 @@ class WHPlotterBase(Plotter):
             histo.SetMaximum(2 * max(data.GetMaximum(), histo.GetMaximum()))
         self.keep.append(data)
         self.keep.append(histo)
-        #if latexit:
-        #    pad.cd()
-        #    latex.DrawLatex(0.01, 0.01, latexit)
-        #    self.canvas.cd()
-        #    pad.Draw()
-        #self.keep.append(latex)
-        #self.keep.append(pad)
-        #legend.AddEntry(data)
         legend.Draw()
+        if show_ratio:
+            ratio_plot = self.add_ratio_plot(data, bkg_error, x_range, ratio_range=ratio_range)
+            if fit:
+                #set_trace()
+                fitrange = fit.get('range', False)
+                if not fitrange:
+                    nbins = ratio_plot.GetNbinsX()
+                    fitrange = x_range if x_range else [ ratio_plot.GetBinLowEdge(1), 
+                       ratio_plot.GetBinLowEdge(nbins)+ratio_plot.GetBinWidth(nbins)]
+                self.lower_pad.cd()
+                function = self.fit_shape(ratio_plot, fit['model'], fitrange, fit.get('options','IRMENS'))
+                toprint  = '#chi^{2} / DoF = %.2f / %i\n' % (function.GetChisquare() , function.GetNDF())
+                for i in range(function.GetNpar()):
+                    name  = function.GetParName(i) 
+                    value = function.GetParameter(i)
+                    error = function.GetParError(i)
+                    toprint += '%s = %s\n' % (name, smart_float_format((value, error))) #%f #pm %f
+            
+                stat_box = self.make_text_box(toprint[:-1],fit.get('stat position','bottom-left'))
+                stat_box.Draw()
+                self.keep.append(stat_box)
+                #print toprint
+                self.pad.cd()
 
     def plot_final_f3_split(self, variable, rebin=1, xaxis='', maxy=None):
         ''' Plot the final F3 control region - with bkg. estimation '''
