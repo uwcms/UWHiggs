@@ -147,6 +147,7 @@ class FakeRatesEM(MegaBase):
             if not selections.muSelection(row, 'm'):  return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
             if not selections.eSelection(row, 'e'):   return False #applies basic selection (eta, pt > 10, DZ, missingHits, jetBTag, HasConversion and chargedIdTight)
             if not row.eChargeIdTight:                return False
+            if row.e_m_DR < 0.5:                      return False
             #if not (row.jetVeto40_DR05 >= 1):         return False
             if not (row.jetVeto20 > 1): return False
             if not selections.vetos(row):             return False #applies mu bjet e additional tau vetoes

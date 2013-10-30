@@ -100,6 +100,7 @@ class FakeRatesEE(MegaBase):
             if not (row.e1MatchesDoubleEPath > 0 and \
                 row.e2MatchesDoubleEPath > 0): return False 
             if not row.e1Pt > 20: return False
+            if row.e1_e2_DR < 0.5: return False
             if not selections.eSelection(row, 'e1'): return False
             if not row.e1MVAIDH2TauWP: return False
             if not selections.eSelection(row, 'e2'): return False

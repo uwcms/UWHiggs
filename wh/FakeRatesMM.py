@@ -32,6 +32,7 @@ def control_region(row):
     else:
         return None
 
+region_for_event_list = os.environ.get('EVTLIST_REGION','')
 
 class FakeRatesMM(MegaBase):
     tree = 'mm/final/Ntuple'
@@ -104,11 +105,12 @@ class FakeRatesMM(MegaBase):
                 row.m1MatchesDoubleMuPaths > 0 and \
                 row.m2MatchesDoubleMuPaths > 0
             double_muTrk_pass = row.doubleMuTrkPass and \
-                 row.m1MatchesDoubleMuTrkPaths > 0 and \
-                 row.m2MatchesDoubleMuTrkPaths > 0
+                 row.m1MatchesMu17TrkMu8Path > 0 and \
+                 row.m2MatchesMu17TrkMu8Path > 0
             if not ( double_mu_pass or double_muTrk_pass ): return False
 
             if not row.m1_m2_SS: return False
+            if row.m1_m2_DR < 0.5: return False
             if row.m2Pt > row.m1Pt: return False
             if row.m1_m2_Mass < 20: return False
             if not row.m1Pt > 20: return False
@@ -156,6 +158,10 @@ class FakeRatesMM(MegaBase):
                 continue
             region = control_region(row)
             if region is None:
+                continue
+
+            if region_for_event_list and region == region_for_event_list:
+                print '%i:%i:%i' % (row.run, row.lumi, row.evt)
                 continue
 
             def fill_region(region, tag):
