@@ -62,6 +62,18 @@ import array
 from FinalStateAnalysis.PlotTools.decorators import memo
 from FinalStateAnalysis.Utilities.struct import struct
 
+#Makes the cut flow histogram
+cut_flow_step = ['bare', 'WH Event',
+                 #'obj1 GenMatching', 'obj2 GenMatching', 'obj3 GenMatching',
+                 'DR separation', 'sub mass cut', 'trigger', 
+                 'obj1 Presel', 'obj2 Presel', 'obj3 Presel',
+                 'LT', 'dilepton mass cut', 'muon veto', 'bjet veto', 'electron veto',
+                 'tau veto', 'sign cut', 'tau sign', 
+                 'obj1 IDIso', 'obj2 IDIso', 'obj3 IDIso', 
+                 'anti WZ', 'anti charge flip',
+]
+
+
 @memo
 def joinDirs(*args):
     return '/'.join(args)
@@ -82,9 +94,8 @@ class cut_flow_tracker(object):
         self.cut_flow = dict([ (i, False) for i in self.labels])
         self.hist     = hist
         self.evt_info = [-1, -1, -1]
-        self.disabled = True #'CutFlow' not in os.environ
-        if not self.disabled:
-            print "running cut flow"
+        self.disabled = 'CutFlow' not in os.environ
+        self.sync_mode = 'SYNC' in os.environ
 
     def fill(self, label):
         self.cut_flow[label] = True
@@ -98,11 +109,20 @@ class cut_flow_tracker(object):
     def flush(self):
         if self.disabled:
             return
+        final_i = -1
         for i, label in enumerate(self.labels):
             val = self.cut_flow[label]
             if val:
                 self.hist.Fill(i+0.5)
-
+                final_i = i
+        if self.sync_mode:
+            fails = ''
+            try:
+                fails = 'fails %s' % (self.labels[final_i+1])
+            except IndexError:
+                fails = 'passes the selection' #if len(self.labels) == final_i else 'passes the selection'
+            print 'Event %i:%i:%i ' % tuple(self.evt_info) + fails
+            
     def new_row(self, *args):
         if self.disabled:
             return
@@ -243,57 +263,43 @@ class WHAnalyzerBase(MegaBase):
     def begin(self):
         # Loop over regions, book histograms, book the minimal amount
         book_charge_flip_cr = hasattr(self, 'anti_charge_flip')
-        for _, folders in self.build_wh_folder_structure().iteritems():
-            base_folder, weight_folders = folders
-            folder = "/".join(base_folder)
-            self.book_histos(folder) # in subclass
-            if book_charge_flip_cr:
-                self.book_histos(folder+'/charge_flip_CR')
-            # Each of the weight subfolders
-            for weight_folder in weight_folders:
-                hfolder = "/".join(base_folder + (weight_folder,))
-                self.book_histos(hfolder)
+        no_histo_fill  = ('NO_HISTO_FILL' in os.environ) and eval(os.environ['NO_HISTO_FILL']) 
+        if not no_histo_fill:
+            for _, folders in self.build_wh_folder_structure().iteritems():
+                base_folder, weight_folders = folders
+                folder = "/".join(base_folder)
+                self.book_histos(folder) # in subclass
                 if book_charge_flip_cr:
-                    self.book_histos(hfolder+'/charge_flip_CR')
+                    self.book_histos(folder+'/charge_flip_CR')
+                # Each of the weight subfolders
+                for weight_folder in weight_folders:
+                    hfolder = "/".join(base_folder + (weight_folder,))
+                    self.book_histos(hfolder)
+                    if book_charge_flip_cr:
+                        self.book_histos(hfolder+'/charge_flip_CR')
 
-        # Add WZ control region
-        self.book_histos('ss/tau_os/p1p2p3_enhance_wz')
-        # Where second light lepton fails
-        self.book_histos('ss/tau_os/p1f2p3_enhance_wz')
-        self.book_histos('ss/tau_os/p1f2p3_enhance_wz/w2')
+            # Add WZ control region
+            self.book_histos('ss/tau_os/p1p2p3_enhance_wz')
+            # Where second light lepton fails
+            self.book_histos('ss/tau_os/p1f2p3_enhance_wz')
+            self.book_histos('ss/tau_os/p1f2p3_enhance_wz/w2')
 
-        # Add charge-fake control region - probability that obj1 will flip into
-        # ss/p1p2p3
-        for i in itertools.product(['tau_os','tau_ss'],['p3','f3'],['c1','c2','c1_sysup','c2_sysup']):
-            self.book_histos('os/%s/p1p2%s/%s' % i)
-            self.book_histos('os/%s/p1p2%s/%s/charge_flip_CR' % i)
+            # Add charge-fake control region - probability that obj1 will flip into
+            # ss/p1p2p3
+            for i in itertools.product(['tau_os','tau_ss'],['p3','f3'],['c1','c2','c1_sysup','c2_sysup']):
+                self.book_histos('os/%s/p1p2%s/%s' % i)
+                self.book_histos('os/%s/p1p2%s/%s/charge_flip_CR' % i)
 
-        for key in self.histograms:
-            charpos  = key.rfind('/')
-            location = key[ : charpos]+'/'
-            name     = key[ charpos + 1 :]
-            if location in self.histo_locations:
-                self.histo_locations[location].append(name)
-            else:
-                self.histo_locations[location] = [name]
+            for key in self.histograms:
+                charpos  = key.rfind('/')
+                location = key[ : charpos]+'/'
+                name     = key[ charpos + 1 :]
+                if location in self.histo_locations:
+                    self.histo_locations[location].append(name)
+                else:
+                    self.histo_locations[location] = [name]
+        #END   if not no_histo_fill:
 
-        #Makes the cut flow histogram
-        cut_flow_step = ['bare', 'WH Event',
-                         #'obj1 GenMatching', 'obj2 GenMatching', 'obj3 GenMatching',
-                         'trigger',
-                         'obj1 Presel', 'obj2 Presel',
-##                          'pt requirements 1', 'eta requirements 1',
-##                          'MissingHits 1', 'HasConversion 1', 'JetBtag 1', 'DZ 1',
-##                          'pt requirements 2', 'eta requirements 2',
-##                          'MissingHits 2', 'HasConversion 2', 'JetBtag 2', 'DZ 2',
-                         'obj3 Presel',
-                         'LT', 'vetos',
-##                          'ChargeIdLoose',
-##                          'charge_fakes',
-                         #'obj1 ID', 'obj1 Iso', 'obj2 ID', 'obj2 Iso',
-                         'obj1 IDIso', 'obj2 IDIso', 'obj3 IDIso',
-                         'sign cut', 'anti WZ', 
-                         ]
         self.book('ss', "CUT_FLOW", "Cut Flow", len(cut_flow_step), 0, len(cut_flow_step))
         xaxis = self.histograms['ss/CUT_FLOW'].GetXaxis()
         self.cut_flow_histo = self.histograms['ss/CUT_FLOW']
@@ -307,6 +313,8 @@ class WHAnalyzerBase(MegaBase):
         # string using a dictionary
         # key = (sign, obj1, obj2, obj3)
         cut_region_map = self.build_wh_folder_structure()
+        region_for_event_list = os.environ.get('EVTLIST_REGION','')
+        no_histo_fill  = ('NO_HISTO_FILL' in os.environ) and eval(os.environ['NO_HISTO_FILL']) 
 
         # Reduce number of self lookups and get the derived functions here
         histos = self.histograms
@@ -366,9 +374,9 @@ class WHAnalyzerBase(MegaBase):
                 cut_flow_trk.Fill('bare')
                 # Apply basic preselection
                 #
-                if not cut_flow_trk.disabled:
-                    if row.processID != 26:
-                        continue
+                #if not cut_flow_trk.disabled:
+                #    if row.processID != 26:
+                #        continue
 
                 #if row.lumi == 2348 and row.evt == 704038:
                 #    print 'preselection', preselection(row, cut_flow_trk, cut_settings['LT'] if lt_tpt_in_presel else 0., cut_settings['tauPT'] if lt_tpt_in_presel else 0.)
@@ -403,16 +411,21 @@ class WHAnalyzerBase(MegaBase):
                 #    #from pdb import set_trace; set_trace()
                 #from pdb import set_trace; set_trace()
                 #if not cut_flow_trk.disabled:
-                if obj1_id_result:
-                    cut_flow_trk.Fill('obj1 IDIso')
-                    if obj2_id_result:
-                        cut_flow_trk.Fill('obj2 IDIso')
-                        if obj3_id_result:
-                            cut_flow_trk.Fill('obj3 IDIso')
-                            if sign_result:
-                                cut_flow_trk.Fill('sign cut')
-                                if anti_wz :
-                                    cut_flow_trk.Fill('anti WZ')
+                if sign_result:                      
+                    cut_flow_trk.Fill('sign cut')    
+                    if tau_sign_result:              
+                        cut_flow_trk.Fill('tau sign')
+                        if obj1_id_result:
+                            cut_flow_trk.Fill('obj1 IDIso')
+                            if obj2_id_result:
+                                cut_flow_trk.Fill('obj2 IDIso')
+                                if obj3_id_result:
+                                    cut_flow_trk.Fill('obj3 IDIso')
+                                    if anti_wz :
+                                        cut_flow_trk.Fill('anti WZ')
+                                        if anti_charge_flip:
+                                            cut_flow_trk.Fill('anti charge flip')
+                                        
 
                 # Figure out which folder/region we are in
                 region_result = cut_region_map.get(
@@ -424,10 +437,13 @@ class WHAnalyzerBase(MegaBase):
 
                 if anti_wz:
                     base_folder, weights = region_result
-                    #if base_folder == ('ss', 'p1p2f3'):
-                    #    print row.run, row.lumi, row.evt
 
                     base_folder = joinDirs(*base_folder)
+                    if region_for_event_list and base_folder == region_for_event_list:
+                        print '%i:%i:%i' % (row.run, row.lumi, row.evt)
+                    if no_histo_fill:
+                        continue
+
                     # Fill the un-fr-weighted histograms
                     for i in to_fill:
                         folder = joinDirs(base_folder,i)
@@ -462,6 +478,9 @@ class WHAnalyzerBase(MegaBase):
                                     fill_histos(histos, joinDirs(directory_up,i), row, event_weight*charge_flip_sysu, cut_label)
 
                 elif sign_result and obj1_id_result and obj3_id_result and tau_sign_result:
+                    if no_histo_fill:
+                        continue
+
                     # WZ object topology fails. Check if we are in signal region.
                     if self.enhance_wz(row):
                         # Signal region
