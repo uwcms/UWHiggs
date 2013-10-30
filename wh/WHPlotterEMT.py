@@ -34,6 +34,7 @@ categories = {
     'LTHigh': [130, 650],
     'Full'  : [0, 650],
 }
+rebin_slim = [20]+range(30, 81, 10)+[100,130,300]
 
 if __name__ == "__main__":
     plotter = WHPlotterEMT()
@@ -116,7 +117,6 @@ if __name__ == "__main__":
         ##  Signal region plots    ################################################
         ###########################################################################
         plotter.set_subdir('')
-        rebin_slim = [20]+range(30, 81, 10)+[100,130,300]
 
         for label, proj_range in categories.iteritems():
             for tau_charge in ['tau_os', 'tau_ss']:
@@ -147,7 +147,8 @@ if __name__ == "__main__":
                 plotter.save('final-e_t_Mass-%s' % label)
 
                 plotter.plot_final('subMass#LT', 300, xaxis='m_{l_{2}#tau} (GeV)', maxy=None, 
-                                   project=proj_range, project_axis='X', tau_charge=tau_charge)
+                                   project=proj_range, project_axis='X', tau_charge=tau_charge, 
+                                   show_error=True)
                 plotter.add_cms_blurb(sqrts)
                 plotter.save('final-subMass-%s-counting' % label, dotc=True, dotroot=True)
 
