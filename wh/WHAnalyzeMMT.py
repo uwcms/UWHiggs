@@ -15,6 +15,7 @@ import math
 from array import array
 from FinalStateAnalysis.PlotTools.decorators import memo_last
 import optimizer
+import FinalStateAnalysis.PlotTools.pytree as pytree
 
 #initialize FRFits
 optimizer_keys   = [ i for i in optimizer.grid_search.keys() if i.startswith('MMT') ]
@@ -88,7 +89,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
 
         self.hfunc['subMTMass'] = lambda row, weight: (row.m2_t_Mass, weight) if row.m1MtToMET > row.m2MtToMET else (row.m1_t_Mass, weight) #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in WHAnalyzerBase.fill_histos later
         self.hfunc['pt_ratio' ] = lambda row, weight: (row.m2Pt/row.m1Pt, weight)
-        self.hfunc['DEBUG'] = lambda row, weight: (array("f", [row.run, row.lumi, row.m2_t_Mass, row.LT, row.m1Pt, row.m2Pt, row.tPt] ), None)
+        self.hfunc['SYNC'] = lambda row, weight: (row, None)#((row.run, row.lumi, row.evt, row.m1Pt, row.m1Eta, row.m1Phi, row.m2Pt, row.m2Eta, row.m2Phi, row.tPt, row.tEta, row.tPhi, weight), None)
         
         self.pucorrector = mcCorrectors.make_puCorrector('doublemu')
 
@@ -103,9 +104,17 @@ class WHAnalyzeMMT(WHAnalyzerBase):
 
         if len(self.grid_search.keys()) == 1:
 
+            self.book(folder, 'SYNC', 'SYNC', 
+                      'run/l:lumi/l:evt/l' +\
+                      ':m1Pt/D:m1Eta/D:m1Phi/D:m1PFIDTight/D:m1RelPFIsoDB/D' +\
+                      ':m2Pt/D:m2Eta/D:m2Phi/D:m2PFIDTight/D:m2RelPFIsoDB/D' +\
+                      ':tPt/D:tEta/D:tPhi/D:tAntiMuonTight/D:tDecayMode/D:tLooseIso3Hits/D:tAntiElectronMVA3Loose/D' +\
+                      ':m1_m2_Mass/D:m2_t_Mass/D:LT/D:m1_m2_SS/D:m1_t_SS/D',
+                      type=pytree.PyTree)
+
             self.book(folder, "m2_t_Mass#LT" , "subleadingMass", 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
             #self.book(folder, "Event_ID", "Event ID", 'run:lumi:evt1:evt2', type=ROOT.TNtuple)
-            self.book(folder, "DEBUG", "DEBUG", 'run:lumi:m2_t_Mass:LT:m1Pt:m2Pt:tPt', type=ROOT.TNtuple)
+            #self.book(folder, "DEBUG", "DEBUG", 'run:lumi:m2_t_Mass:LT:m1Pt:m2Pt:tPt', type=ROOT.TNtuple)
             #Pt
             self.book(folder, "m1Pt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
             self.book(folder, "tPt#LT"  , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
@@ -225,6 +234,18 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         else:
             retval = bool( getattr(row, tauId) )
         return retval
+
+    @staticmethod
+    def obj1_matches_gen(row):
+        return row.m1GenPdgId == -1*row.m1Charge*13
+
+    @staticmethod
+    def obj2_matches_gen(row):
+        return row.m2GenPdgId == -1*row.m2Charge*13
+
+    @staticmethod
+    def obj3_matches_gen(row):
+        return t.genDecayMode != -2 
     
     @staticmethod
     def anti_wz(row):
@@ -253,7 +274,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         return frfits.lowpt_mu_fr[subledleptonId](muonJetPt=max(row.m2JetPt, row.m2Pt), muonPt=row.m2Pt, numJets20=row.jetVeto20+1) #
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
-        return frfits.tau_fr(row.tPt)
+        return frfits.tau_fr(row.tPt, row.tAbsEta)
 
     def obj1_qcd_weight(self, row, ledleptonId='h2taucuts', subledleptonId=None):
         return frfits.highpt_mu_qcd_fr[ledleptonId](muonJetPt=max(row.m1JetPt, row.m1Pt), muonPt=row.m1Pt, numJets20=row.jetVeto20+1) #
@@ -262,7 +283,7 @@ class WHAnalyzeMMT(WHAnalyzerBase):
         return frfits.lowpt_mu_qcd_fr[subledleptonId](muonJetPt=max(row.m2JetPt, row.m2Pt), muonPt=row.m2Pt, numJets20=row.jetVeto20+1) #
 
     def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
-        return frfits.tau_qcd_fr(row.tPt)
+        return frfits.tau_qcd_fr(row.tPt, row.tAbsEta)
 
     # For measuring charge flip probability
     # Not really used in this channel
