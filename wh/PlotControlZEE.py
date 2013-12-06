@@ -8,7 +8,9 @@ import os
 import glob
 from FinalStateAnalysis.PlotTools.Plotter import Plotter
 from FinalStateAnalysis.PlotTools.MedianView import MedianView
+from FinalStateAnalysis.PlotTools.DifferentialView import DifferentialView
 import rootpy.plotting.views as views
+import rootpy.plotting as plotting
 from FinalStateAnalysis.PlotTools.HistToTGRaphErrors import HistStackToTGRaphErrors
 from FinalStateAnalysis.MetaData.data_styles import data_styles, colors
 import ROOT
@@ -17,7 +19,8 @@ import sys
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 
 ROOT.gROOT.SetBatch(True)
-
+ROOT.gStyle.SetOptStat(0)
+ROOT.gStyle.SetOptTitle(0)
 
 class ControlZEEPlotter(Plotter):
     def __init__(self):
@@ -72,28 +75,42 @@ class ControlZEEPlotter(Plotter):
         #    return obj1_view, obj2_view, subtract_obj12_view
 
         #Get fakes according to WJets or QCD
-        ss_f1p2_qcd_view, ss_p1f2_qcd_view, ss_f1f2_qcd_view = self.make_fakes_view(data_view, 'ss','qcd_w')
+        #ss_f1p2_qcd_view, ss_p1f2_qcd_view, ss_f1f2_qcd_view = self.make_fakes_view(data_view, 'ss','qcd_w')
         ss_f1p2_wje_view, ss_p1f2_wje_view, ss_f1f2_wje_view = self.make_fakes_view(data_view, 'ss','wjet_w')
 
-        ss_fakes_1   = MedianView(lowv=ss_f1p2_qcd_view, highv=ss_f1p2_wje_view)
-        ss_fakes_2   = MedianView(lowv=ss_p1f2_qcd_view, highv=ss_p1f2_wje_view)
-        ss_fakes_12  = MedianView(lowv=ss_f1f2_qcd_view, highv=ss_f1f2_wje_view)
+        ss_fakes_1   = ss_f1p2_wje_view  #MedianView(lowv=ss_f1p2_qcd_view, highv=ss_f1p2_wje_view)
+        ss_fakes_2   = ss_p1f2_wje_view  #MedianView(lowv=ss_p1f2_qcd_view, highv=ss_p1f2_wje_view)
+        ss_fakes_12  = ss_f1f2_wje_view  #MedianView(lowv=ss_f1f2_qcd_view, highv=ss_f1f2_wje_view)
         ss_fakes_est = views.SumView(ss_fakes_1, ss_fakes_2, ss_fakes_12)
         ss_fakes_est = views.TitleView( views.StyleView(ss_fakes_est, **data_styles['Zjets*']), 'Fakes;%s' % xaxis)
 
         os_flip_est_up  = views.SubdirectoryView( data_view, 'os/p1p2/charge_weightSysUp')
         os_flip_est     = views.SubdirectoryView( data_view, 'os/p1p2/charge_weight')
-        os_flip_est     = MedianView(highv=os_flip_est_up, centv=os_flip_est)
+        #os_flip_est     = MedianView(highv=os_flip_est_up, centv=os_flip_est)
         os_flip_est_nofake = os_flip_est#views.SumView(os_flip_est, neg_os_fakes)
         os_flip_est_nofake = views.TitleView( views.StyleView(os_flip_est_nofake, **data_styles['WZ*']), 'charge-fakes;%s' % xaxis)
         return ss_p1p2_view, ss_fakes_est, os_flip_est_nofake
             
-    def make_charge_flip_control_plot(self, variable, xaxis='', rebin=1, legend_on_the_left=False, data_type='data', x_range=None):
-        ss_p1p2_view, ss_fakes_est, os_flip_est_nofake = self.get_flip_data(rebin,xaxis,data_type)
-        events_estimate = views.StackView( ss_fakes_est,os_flip_est_nofake)
+    def make_charge_flip_control_plot(self, variable, xaxis='', rebin=1, legend_on_the_left=False, 
+                                      data_type='data', x_range=None, apply_scale='', show_ratio=False,
+                                      differential=False):
+        ss_p1p2_view, ss_fakes_est, os_flip_est_nofake = self.get_flip_data(rebin, xaxis, data_type)
+        
+        if differential:
+            ss_p1p2_view       = DifferentialView(ss_p1p2_view      )
+            ss_fakes_est       = DifferentialView(ss_fakes_est      )
+            os_flip_est_nofake = DifferentialView(os_flip_est_nofake)
+
+        fakes_hist = ss_fakes_est.Get(variable)
+        flip_hist  = os_flip_est_nofake.Get(variable)
+        if apply_scale:
+            flip_hist = MedianView.apply_view(flip_hist, os_flip_est_nofake.Get(variable+apply_scale))
         
         obs_hist       = ss_p1p2_view.Get(variable)
-        estimate_hist  = events_estimate.Get(variable)
+        estimate_hist  = plotting.HistStack()
+        estimate_hist.Add(fakes_hist)
+        estimate_hist.Add(flip_hist)
+
         estimate_error = HistStackToTGRaphErrors( estimate_hist )
         estimate_error.SetFillStyle(3013)
         estimate_error.SetFillColor(ROOT.EColor.kBlack)
@@ -125,6 +142,9 @@ class ControlZEEPlotter(Plotter):
         #legend.AddEntry(estimate_error,'f')        
         legend.Draw()
         self.add_cms_blurb(self.sqrts)
+        if show_ratio:
+            self.add_ratio_plot(obs_hist, estimate_hist, x_range, ratio_range=0.2)
+
     
     def plot_zee_control(self, variable, xaxis='', rebin=1, legend_on_the_left=False, 
                          x_range=None, show_ratio=False, logscale=False):
@@ -137,11 +157,11 @@ class ControlZEEPlotter(Plotter):
         zee_data  = views.SubdirectoryView( data_view, 'os/p1p2/')
         zee_mcs   = [ views.SubdirectoryView( i, 'os/p1p2/') for i in mc_views]
         
-        os_f1p2_qcd_view, os_p1f2_qcd_view, os_f1f2_qcd_view = self.make_fakes_view(data_view, 'os','qcd_w')
+        #os_f1p2_qcd_view, os_p1f2_qcd_view, os_f1f2_qcd_view = self.make_fakes_view(data_view, 'os','qcd_w')
         os_f1p2_wje_view, os_p1f2_wje_view, os_f1f2_wje_view = self.make_fakes_view(data_view, 'os','wjet_w')
-        os_fakes_1   = MedianView(lowv=os_f1p2_qcd_view, highv=os_f1p2_wje_view)
-        os_fakes_2   = MedianView(lowv=os_p1f2_qcd_view, highv=os_p1f2_wje_view)
-        os_fakes_12  = MedianView(lowv=os_f1f2_qcd_view, highv=os_f1f2_wje_view)
+        os_fakes_1   = os_f1p2_wje_view  #MedianView(lowv=os_f1p2_qcd_view, highv=os_f1p2_wje_view)
+        os_fakes_2   = os_p1f2_wje_view  #MedianView(lowv=os_p1f2_qcd_view, highv=os_p1f2_wje_view)
+        os_fakes_12  = os_f1f2_wje_view  #MedianView(lowv=os_f1f2_qcd_view, highv=os_f1f2_wje_view)
         os_fakes_est = views.SumView(os_fakes_1, os_fakes_2, os_fakes_12)
         os_fakes_est = views.TitleView( views.StyleView(os_fakes_est, **data_styles['WplusJets*']), 'Fakes;%s' % xaxis)
 
@@ -185,10 +205,16 @@ plotter = ControlZEEPlotter()
 ###########################################################################
 
 #Charge flip control plots
-plotter.make_charge_flip_control_plot('TrkMass','Tracker Inv Mass (GeV)',2)
+plotter.make_charge_flip_control_plot('TrkMass','Tracker Inv Mass (GeV)', 
+                                      [40,50,60,70,75,80]+[80+i for i in range(1,21,2)]+[105,110,120,130,140], 
+                                      apply_scale='_high', show_ratio=True, differential=True)
 plotter.save('EE_Charge_Flip_xcheck_trk_invMass')
 plotter.canvas.SaveAs('test.root')
 #plotter.save('EE_Charge_Flip_xcheck_trk_invMass_log')
+
+plotter.make_charge_flip_control_plot('TrkMass','Tracker Inv Mass (GeV)',[40, 150],apply_scale='_high', 
+                                      show_ratio=True)
+plotter.save('EE_Charge_Flip_xcheck_trk_invMass_counting')
 
 plotter.make_charge_flip_control_plot('TrkMass_NOSCALE','Tracker Inv Mass (GeV)',2)
 plotter.save('EE_Charge_Flip_xcheck_trk_invMass_NoScale')
