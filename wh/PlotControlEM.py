@@ -133,12 +133,12 @@ for suffix, samples in [('', os_ss_samples), ('-fakes', fakes_samples)]:
 
     #from pdb import set_trace; set_trace()
     plotter.plot_mc_vs_data('em', 'emMass', rebin=5, leftside=False,
-                            xaxis='m_{e#mu} (GeV)', show_ratio=True)
+                            xaxis='m_{e#mu} (GeV)')#, show_ratio=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mass' + suffix)
 
     plotter.plot_mc_vs_data('em', 'emMass', rebin=10, leftside=False,
-                            xaxis='m_{e#mu} (GeV)', show_ratio=True)
+                            xaxis='m_{e#mu} (GeV)')#, show_ratio=True)
     plotter.add_cms_blurb(sqrts)
     plotter.save('mass_rebin' + suffix)
 
