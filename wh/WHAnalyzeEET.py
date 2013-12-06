@@ -16,6 +16,7 @@ import math
 from array import array
 from chargeflipcuts import charge_flip_funcs
 from FinalStateAnalysis.PlotTools.decorators import memo_last
+import FinalStateAnalysis.PlotTools.pytree as pytree
 
 #initialize FRFits
 optimizer_keys   = [ i for i in optimizer.grid_search.keys() if i.startswith('EET') ]
@@ -133,6 +134,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
         self.hfunc["e*1_t_Mass" ] = mass_scaler( attr_getter('e1_t_Mass')) 
         self.hfunc["e1_e*2_Mass"] = mass_scaler( attr_getter('e1_e2_Mass'))
         self.hfunc["e*2_t_Mass" ] = mass_scaler( attr_getter('e2_t_Mass')) 
+        self.hfunc['SYNC'] = lambda row, weight: (row, None) #((row.run, row.lumi, row.evt, row.e1Pt, row.e1Eta, row.e1Phi, row.e2Pt, row.e2Eta, row.e2Phi, row.tPt, row.tEta, row.tPhi, weight), None)
 
         #self.hfunc['evt_info'] = lambda row, weight: (array.array("f", [row.e1Pt, row.e2Pt, row.tPt, row.LT, weight] ), None)
         self.pucorrector = mcCorrectors.make_puCorrector('doublee')
@@ -144,7 +146,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
     def book_histos(self, folder):
 	#PLOTS TO FILL IN ANY CASE
-        LTBinning = array('d',[0, 80, 130, 600])
+        LTBinning = array('d',[0, 80, 100, 600])
         nLTBins   = len(LTBinning) -1
 	for key in self.grid_search:
 	    prefix = key+'$' if key else ''
@@ -167,6 +169,15 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
 
             self.book(folder, prefix+"e2_t_Mass#LT" , "subleadingMass", 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
+
+            self.book(folder, 'SYNC', 'SYNC', 
+                      'run/l:lumi/l:evt/l' +\
+                      ':e1Pt/D:e1Eta/D:e1Phi/D:e1RelPFIsoDB/D:e1MVANonTrig/D' +\
+                      ':e2Pt/D:e2Eta/D:e2Phi/D:e2RelPFIsoDB/D:e2MVANonTrig/D' +\
+                      ':tPt/D:tEta/D:tPhi/D:tAntiMuonTight/D:tDecayMode/D:tLooseIso3Hits/D:tAntiElectronMVA3Loose/D' +\
+                      ':tAntiMuonLoose/D:tAntiElectronMVA3Medium/D:tAntiElectronMVA3Tight/D' +\
+                      ':e1_e2_Mass/D:e2_t_Mass/D:LT/D:e1_e2_SS/D:e1_t_SS/D',
+                      type=pytree.PyTree)
 
             #Pt
             self.book(folder, prefix+"e1Pt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
@@ -294,6 +305,18 @@ class WHAnalyzeEET(WHAnalyzerBase):
         else:
             return bool( getattr(row, tauId) )
 
+    @staticmethod
+    def obj1_matches_gen(row):
+        return row.e1GenPdgId == -1*row.e1Charge*11
+
+    @staticmethod
+    def obj2_matches_gen(row):
+        return row.e2GenPdgId == -1*row.e2Charge*11
+
+    @staticmethod
+    def obj3_matches_gen(row):
+        return t.genDecayMode != -2 
+
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def anti_wz(row):
@@ -325,7 +348,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
 	return frfits.lowpt_ee_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt, numJets20=row.jetVeto20+1)
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
-        return frfits.tau_fr(row.tPt)
+        return frfits.tau_fr(row.tPt, row.tAbsEta)
 
     def obj1_qcd_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
         return frfits.highpt_ee_qcd_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt, numJets20=row.jetVeto20+1)
@@ -334,7 +357,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
         return frfits.lowpt_ee_qcd_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt, numJets20=row.jetVeto20+1)
 
     def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
-        return frfits.tau_qcd_fr(row.tPt)
+        return frfits.tau_qcd_fr(row.tPt, row.tAbsEta)
 
     # For measuring charge flip probability
     # Not really used in this channel

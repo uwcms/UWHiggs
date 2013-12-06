@@ -16,6 +16,7 @@ from array import array
 import ROOT
 import math
 import optimizer
+import FinalStateAnalysis.PlotTools.pytree as pytree
 from FinalStateAnalysis.PlotTools.decorators import memo_last
 
 #def make_bins(n, xlow, xhigh):
@@ -53,6 +54,7 @@ SYNC = ('SYNC' in os.environ) and eval(os.environ['SYNC'])
 ################################################################################
 is7TeV = bool('7TeV' in os.environ['jobid'])
 use_iso_trigger = not is7TeV
+region_for_event_list = os.environ.get('EVTLIST_REGION','')
 
 class WHAnalyzeEMT(WHAnalyzerBase):
     tree = 'emt/final/Ntuple' if not SYNC else 'Ntuple'
@@ -127,10 +129,13 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         self.hfunc["subMass*" ] = mass_scaler( sub_mass ) 
         self.hfunc["_recoilDaught" ] = lambda row, weight: (math.sqrt(row.recoilDaught) , weight)
         self.hfunc["_recoilWithMet"] = lambda row, weight: (math.sqrt(row.recoilWithMet), weight)
+        self.hfunc['SYNC'] = lambda row, weight: (row, None) #((row.run, row.lumi, row.evt, row.mPt, row.mEta, row.mPhi, row.ePt, row.eEta, row.ePhi, row.tPt, row.tEta, row.tPhi, weight), None )
 
         self.pucorrector = mcCorrectors.make_puCorrector('mueg')
 
     def book_histos(self, folder):
+        if region_for_event_list and region_for_event_list != folder:
+            return
         for key in self.grid_search:
             prefix = key+'$' if key else ''
             #self.book(folder, prefix+"subMass", "Subleading Mass", 200, 0, 200)
@@ -148,6 +153,15 @@ class WHAnalyzeEMT(WHAnalyzerBase):
                 #self.book(folder, "subMass*#faking_prob", '', 200, 0, 200, 220, 0., 1.1, type=ROOT.TH2F)
                 #self.book(folder, "subMass*#log_prob"   , '', 200, 0, 200, 200, -2,  1, type=ROOT.TH2F)
                 self.book(folder, "subMass*#LT"         , '', 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
+
+            self.book(folder, 'SYNC', 'SYNC', 
+                      'run/l:lumi/l:evt/l' +\
+                      ':mPt/D:mEta/D:mPhi/D:mPFIDTight/D:mRelPFIsoDB/D' +\
+                      ':ePt/D:eEta/D:ePhi/D:eRelPFIsoDB/D:eMVANonTrig/D' +\
+                      ':tPt/D:tEta/D:tPhi/D:tAntiMuonTight/D:tDecayMode/D:tLooseIso3Hits/D:tAntiElectronMVA3Loose/D' +\
+                      ':tAntiMuonLoose/D:tAntiElectronMVA3Medium/D' +\
+                      ':e_m_Mass/D:m_t_Mass/D:e_t_Mass/D:LT/D:e_m_SS/D:m_t_SS/D',
+                      type=pytree.PyTree)
 
             self.book(folder, prefix+"subMass#LT" , "subleadingMass", 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
             self.book(folder, "e_m_Mass#LT", "Electron-Muon Mass", 200, 0, 200, nLTBins, LTBinning, type=ROOT.TH2F)
@@ -275,6 +289,18 @@ class WHAnalyzeEMT(WHAnalyzerBase):
         else:
             return bool( getattr(row, tauId) )
 
+    @staticmethod
+    def obj1_matches_gen(row):
+        return row.mGenPdgId == -1*row.mCharge*13
+
+    @staticmethod
+    def obj2_matches_gen(row):
+        return row.eGenPdgId == -1*row.eCharge*11
+
+    @staticmethod
+    def obj3_matches_gen(row):
+        return t.genDecayMode != -2 
+
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def anti_wz( row):
@@ -317,7 +343,7 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             return frfits.highpt_e_fr[subledleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt, numJets20=row.jetVeto20+1)
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
-        return frfits.tau_fr(row.tPt)
+        return frfits.tau_fr(row.tPt, row.tAbsEta)
 
     def obj1_qcd_weight(self, row, ledleptonId='h2taucuts', subledleptonId='h2taucuts'):
         mu17e8 = (row.mu17ele8isoPass and row.mPt >= 20) if use_iso_trigger else (row.mu17ele8Pass and row.mPt >= 20)
@@ -334,7 +360,7 @@ class WHAnalyzeEMT(WHAnalyzerBase):
             return frfits.highpt_e_qcd_fr[subledleptonId](electronJetPt=max(row.eJetPt, row.ePt), electronPt=row.ePt, numJets20=row.jetVeto20+1)
 
     def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
-        return frfits.tau_qcd_fr(row.tPt)
+        return frfits.tau_qcd_fr(row.tPt, row.tAbsEta)
 
     # For measuring charge flip probability
     # Not really used in this channel
