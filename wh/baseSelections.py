@@ -11,12 +11,22 @@ def splitEid(label):
     return label.split('_')[-1], label.split('_')[0] 
 
 #OBJECT SELECTION
-def muSelection(row, name):
+def muSelection(row, name, tracker=None):
     if getattr( row, getVar(name,'Pt')) < 10:       return False
+    if tracker: tracker.Fill('muon Pt')
+
     if getattr( row, getVar(name,'AbsEta')) > 2.4:  return False
+    if tracker: tracker.Fill('muon AbsEta')
+
     if not getattr( row, getVar(name,'PixHits')):   return False
+    if tracker: tracker.Fill('muon PixHits')
+
     if getattr( row, getVar(name,'JetCSVBtag')) > 0.8: return False
+    if tracker: tracker.Fill('muon JetCSVBtag')
+
     if abs(getattr( row, getVar(name,'DZ'))) > 0.2: return False
+    if tracker: tracker.Fill('muon DZ')
+
     return True
 
 def eSelection(row, name):
@@ -33,16 +43,21 @@ def tauSelection(row, name):
     if getattr( row, getVar(name,'Pt')) < 20:          return False
     if getattr( row, getVar(name,'AbsEta')) > 2.3:     return False
     if abs(getattr( row, getVar(name,'DZ'))) > 0.2:    return False
+    if getattr( row, 
+                getVar( name,
+                        'ElectronPt10IdIsoVtxOverlap')
+            ): return False
     return True
 
 
 #VETOS
-def vetos(row, tracker=None):
+def vetos(row, tracker=None, bveto=True):
     if row.muVetoPt5IsoIdVtx: return False
     if tracker: tracker.Fill('muon veto')
 
-    if row.bjetCSVVetoZHLike: return False
-    if tracker: tracker.Fill('bjet veto')
+    if bveto:
+        if row.bjetCSVVetoZHLike: return False
+        if tracker: tracker.Fill('bjet veto')
 
     if row.eVetoMVAIsoVtx:    return False
     if tracker: tracker.Fill('electron veto')
@@ -72,8 +87,8 @@ def lepton_id_iso(row, name, label): #label in the format eidtype_isotype
 
 def control_region_ee(row):
     '''Figure out what control region we are in. Shared among two codes, to avoid mismatching copied here'''
-    if  row.e1_e2_SS and lepton_id_iso(row, 'e1', 'eid12Medium_h2taucuts') and row.e1MtToMET > 30: 
-        return 'wjets'
+    if  row.e1_e2_SS and lepton_id_iso(row, 'e1', 'eid12Medium_h2taucuts') and row.e1MtToMET > 35: 
+        return 'wjetsLtLow'
     elif row.e1_e2_SS and row.e1RelPFIsoDB > 0.3 and row.type1_pfMetEt < 25: #and row.metSignificance < 3: #
         return 'qcd'
     elif lepton_id_iso(row,'e1', 'eid12Medium_h2taucuts') and lepton_id_iso(row,'e2', 'eid12Medium_h2taucuts') \
