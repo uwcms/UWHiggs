@@ -28,9 +28,32 @@ import os
 from array import array
 from pprint import pprint
 import ROOT
- 
+import FinalStateAnalysis.PlotTools.pytree as pytree
+from cutflowtracker import cut_flow_tracker
+import math
+
+def inv_mass(pt1,eta1,phi1,pt2,eta2,phi2):
+    return math.sqrt(
+        2*pt1*pt2*(math.cosh(eta1 - eta2) - math.cos(phi1 - phi2))
+    )
+
+cut_flow_step = ['bare', 'trigger', 'e1_e2_DR',
+                 'e1 presel', 'e2 presel', 'jet requirement',
+                 'muon veto', 'bjet veto', 'electron veto', 'tau veto',
+                 'region assignment',
+]
+
+
+region_for_event_list = os.environ.get('EVTLIST_REGION','')
+zMassCut              = 'NoZmass' in region_for_event_list
+if zMassCut:
+    cut_flow_step.append('zMassCut')
+region_for_event_list = region_for_event_list.replace('NoZmass','')
+SYNC = ('SYNC' in os.environ) and eval(os.environ['SYNC'])
+print region_for_event_list
+
 class FakeRatesEE(MegaBase):
-    tree = 'ee/final/Ntuple'
+    tree = 'ee/final/Ntuple' if not SYNC else 'Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         super(FakeRatesEE, self).__init__(tree, outfile, **kwargs)
         # Use the cython wrapper
@@ -47,7 +70,13 @@ class FakeRatesEE(MegaBase):
                           for j in self.iso_points]
 
     def begin(self):
-        for region in ['wjets', 'qcd', 'wjetsNoZmass', 'qcdNoZmass']:
+        self.book('', "CUT_FLOW", "Cut Flow", len(cut_flow_step), 0, len(cut_flow_step))
+        xaxis = self.histograms['CUT_FLOW'].GetXaxis()
+        self.cut_flow_histo = self.histograms['CUT_FLOW']
+        for i, name in enumerate(cut_flow_step):
+            xaxis.SetBinLabel(i+1, name)
+
+        for region in ['wjetsLtLow', 'qcd', 'wjetsNoZmass', 'wjetsLtLowNoZmass', 'qcdNoZmass']:
             for denom in ['pt10', 'pt20']:
                 denom_key = (region, denom)
                 denom_histos = {}
@@ -57,8 +86,16 @@ class FakeRatesEE(MegaBase):
                 denom_histos['electronInfo'] = self.book(
                     os.path.join(region, denom),
                     'electronInfo', "electronInfo", 
-                    'electronPt:electronJetPt:electronJetCSVBtag:numJets20:numJets40:weight:'+':'.join(self.lepIds), 
+                    'electronPt:electronJetPt:electronJetCSVBtag:electronJetMass:numJets20:numJets40:weight:'+':'.join(self.lepIds), 
                     type=ROOT.TNtuple)
+
+                denom_histos['evtInfo'] = self.book(
+                    os.path.join(region, denom),
+                    'evtInfo', 'evtInfo',
+                    'run/l:lumi/l:evt/l:e1Pt/D:e1Eta/D:e1Phi/D:e2Pt/D:e2Eta/D:e2Phi/D:e1ChargeIdTight/D' +\
+                    ':e2ChargeIdTight/D:e2RelPFIsoDB/D:e2MtToMET/D:e1MtToMET/D:bjetCSVVetoZHLike/D'+\
+                    ':e1RelPFIsoDB/D:e2MVAIDH2TauWP/D:e1MVAIDH2TauWP/D:e1_e2_SS/D:e1MVANonTrig/D:e2MVANonTrig/D',
+                    type=pytree.PyTree)
 
                 for numerator in self.lepIds:
                     num_key = (region, denom, numerator)
@@ -94,19 +131,32 @@ class FakeRatesEE(MegaBase):
 
 
     def process(self):
+        cut_flow_histo = self.cut_flow_histo
+        cut_flow_trk   = cut_flow_tracker(cut_flow_histo)
 
-        def preselection(row):
+        def preselection(row, cut_flow_trk):
             if not row.doubleEPass: return False
             if not (row.e1MatchesDoubleEPath > 0 and \
                 row.e2MatchesDoubleEPath > 0): return False 
-            if not row.e1Pt > 20: return False
+            cut_flow_trk.Fill('trigger')
+
             if row.e1_e2_DR < 0.5: return False
+            cut_flow_trk.Fill('e1_e2_DR')
+
+            if not row.e1Pt > 20: return False
             if not selections.eSelection(row, 'e1'): return False
             if not row.e1MVAIDH2TauWP: return False
+            cut_flow_trk.Fill('e1 presel')
+
             if not selections.eSelection(row, 'e2'): return False
+            cut_flow_trk.Fill('e2 presel')
+
             #if not (row.jetVeto40_DR05 >= 1):             return False
-            if not (row.jetVeto20 > 1): return False
-            if not selections.vetos(row): return False
+            if row.jetVeto20 == 0: return False
+            cut_flow_trk.Fill('jet requirement')
+
+            if not selections.vetos(row, cut_flow_trk): return False
+
             return True
 
         def fill(the_histos, row, fillNtuple=False):
@@ -137,14 +187,20 @@ class FakeRatesEE(MegaBase):
                 #print id_iso_vals
                 #print self.lepIds
                 id_iso_vals = [float( i ) for i in id_iso_vals ]
+                electron_jet_mass = -1 #inv_mass(row.e2Pt, row.e2Eta, row.e2Phi, row.leadingJetPt, row.leadingJetEta, row.leadingJetPhi)
+
                 the_histos['electronInfo'].Fill( array("f", [row.e2Pt, max(row.e2Pt, row.e2JetPt), max(0, row.e2JetCSVBtag),
-                                                             row.jetVeto20, row.jetVeto40_DR05, weight]+id_iso_vals) )
+                                                             electron_jet_mass, row.jetVeto20, row.jetVeto40_DR05, weight]+id_iso_vals) )
+                the_histos['evtInfo'].Fill( row )
 
 
         histos = self.histograms
         #pprint( histos)
         for row in self.tree:
-            if not preselection(row):
+            cut_flow_trk.new_row(row.run,row.lumi,row.evt)
+            cut_flow_trk.Fill('bare')
+
+            if not preselection(row, cut_flow_trk):
                 continue
 
             region = selections.control_region_ee(row)
@@ -153,7 +209,18 @@ class FakeRatesEE(MegaBase):
 
             if region == 'zee':
                 continue
+
+            if region_for_event_list and region == region_for_event_list:
+                cut_flow_trk.Fill('region assignment')
+                if zMassCut and not (60 < row.e1_e2_Mass < 120):
+                    cut_flow_trk.Fill('zMassCut')
+
             # This is a QCD or Wjets
+            if region_for_event_list and region == region_for_event_list\
+               and (not zMassCut or not (60 < row.e1_e2_Mass < 120)) \
+               and not SYNC:
+                print '%i:%i:%i' % (row.run, row.lumi, row.evt)
+                continue
 
             def make_region_plots(full_region):
                 fill(histos[full_region], row, True)
@@ -172,11 +239,15 @@ class FakeRatesEE(MegaBase):
             make_region_plots((region, 'pt10'))
             if not (row.e1_e2_Mass > 60 and row.e1_e2_Mass < 120):
                 make_region_plots((region+'NoZmass', 'pt10'))
-
+                if region == 'wjetsLtLow' and row.e1MtToMET > 55:
+                    make_region_plots(('wjetsNoZmass', 'pt10'))
+                    
             if row.e2Pt > 20:
                 make_region_plots((region, 'pt20'))
                 if not (row.e1_e2_Mass > 60 and row.e1_e2_Mass < 120):
                     make_region_plots((region+'NoZmass', 'pt20'))
+                    if region == 'wjetsLtLow' and row.e1MtToMET > 55:
+                        make_region_plots(('wjetsNoZmass', 'pt20'))
             
 
     def finish(self):
