@@ -57,20 +57,21 @@ import optimizer
 import os
 import ROOT
 import math
+from pdb import set_trace
 import itertools
 import array
 from FinalStateAnalysis.PlotTools.decorators import memo
 from FinalStateAnalysis.Utilities.struct import struct
-
+from cutflowtracker import cut_flow_tracker
 #Makes the cut flow histogram
 cut_flow_step = ['bare', 'WH Event',
                  #'obj1 GenMatching', 'obj2 GenMatching', 'obj3 GenMatching',
                  'DR separation', 'sub mass cut', 'trigger', 
                  'obj1 Presel', 'obj2 Presel', 'obj3 Presel',
                  'LT', 'dilepton mass cut', 'muon veto', 'bjet veto', 'electron veto',
-                 'tau veto', 'sign cut', 'tau sign', 
+                 'tau veto', 'sign cut', 'tau sign', 'anti WZ', 
                  'obj1 IDIso', 'obj2 IDIso', 'obj3 IDIso', 
-                 'anti WZ', 'anti charge flip',
+                 'anti charge flip',
 ]
 
 
@@ -88,48 +89,6 @@ def inv_mass(*args):
         v.SetPtEtaPhiM(*i)
     return sum(lorentz_vecs,ROOT.TLorentzVector()).M() #We need to give the staring point otherwise it starts from an int and it does not work
 
-class cut_flow_tracker(object):
-    def __init__(self, hist):
-        self.labels   = [hist.GetXaxis().GetBinLabel(i+1) for i in range(hist.GetNbinsX())]
-        self.cut_flow = dict([ (i, False) for i in self.labels])
-        self.hist     = hist
-        self.evt_info = [-1, -1, -1]
-        self.disabled = 'CutFlow' not in os.environ
-        self.sync_mode = 'SYNC' in os.environ
-
-    def fill(self, label):
-        self.cut_flow[label] = True
-
-    def Fill(self, *labels):
-        if self.disabled:
-            return
-        for label in labels:
-            self.fill(label)
-
-    def flush(self):
-        if self.disabled:
-            return
-        final_i = -1
-        for i, label in enumerate(self.labels):
-            val = self.cut_flow[label]
-            if val:
-                self.hist.Fill(i+0.5)
-                final_i = i
-        if self.sync_mode:
-            fails = ''
-            try:
-                fails = 'fails %s' % (self.labels[final_i+1])
-            except IndexError:
-                fails = 'passes the selection' #if len(self.labels) == final_i else 'passes the selection'
-            print 'Event %i:%i:%i ' % tuple(self.evt_info) + fails
-            
-    def new_row(self, *args):
-        if self.disabled:
-            return
-        if self.evt_info != list(args):
-            self.flush()
-            self.evt_info = list(args)
-            self.cut_flow = dict([ (i, False) for i in self.labels])
                         
 class WHAnalyzerBase(MegaBase):
     def __init__(self, tree, outfile, wrapper, **kwargs):
@@ -231,6 +190,8 @@ class WHAnalyzerBase(MegaBase):
         #find all keys matching
         for attr in self.histo_locations[folder_str]:
             name = attr
+            #if attr=='DEBUG':
+            #    set_trace()
             if filter_label:
                 if not attr.startswith(filter_label+'$'):
                     continue
@@ -315,6 +276,8 @@ class WHAnalyzerBase(MegaBase):
         cut_region_map = self.build_wh_folder_structure()
         region_for_event_list = os.environ.get('EVTLIST_REGION','')
         no_histo_fill  = ('NO_HISTO_FILL' in os.environ) and eval(os.environ['NO_HISTO_FILL']) 
+        print_region   = ('PRINT_REGION' in os.environ) and eval(os.environ['PRINT_REGION']) 
+        debug_mode     = ('DEBUG_MODE' in os.environ) and eval(os.environ['DEBUG_MODE'])
 
         # Reduce number of self lookups and get the derived functions here
         histos = self.histograms
@@ -324,6 +287,9 @@ class WHAnalyzerBase(MegaBase):
         obj1_id = self.obj1_id
         obj2_id = self.obj2_id
         obj3_id = self.obj3_id
+        obj1_matches_gen = self.obj1_matches_gen
+        obj2_matches_gen = self.obj2_matches_gen
+        obj3_matches_gen = self.obj3_matches_gen
         fill_histos = self.fill_histos
         anti_wz_cut = self.anti_wz
         anti_charge_flip_cut = self.anti_charge_flip if hasattr(self,'anti_charge_flip') else None
@@ -385,6 +351,10 @@ class WHAnalyzerBase(MegaBase):
                 lt_tpt_in_presel = not bool(cut_settings['tauID'])
                 if not preselection(row, cut_flow_trk, cut_settings['LT'] if lt_tpt_in_presel else 0., cut_settings['tauPT'] if lt_tpt_in_presel else 0.):
                     continue
+
+                if os.environ['megatarget'].startswith('Zjets') and not obj3_matches_gen(row):
+                    continue
+                
                 # Get the generic event weight
                 event_weight = weight_func(row)
 
@@ -402,34 +372,35 @@ class WHAnalyzerBase(MegaBase):
                     if not anti_charge_flip_cut else \
                     ('','charge_flip_CR/') if anti_charge_flip else ('charge_flip_CR/',)
                 
-                #if row.lumi == 2348 and row.evt == 704038:
-                #    print 'sign_result   ', sign_result     
-                #    print 'obj1_id_result', obj1_id_result 
-                #    print 'obj2_id_result', obj2_id_result 
-                #    print 'obj3_id_result', obj3_id_result 
-                #    print 'anti_wz       ', anti_wz        
-                #    #from pdb import set_trace; set_trace()
-                #from pdb import set_trace; set_trace()
-                #if not cut_flow_trk.disabled:
                 if sign_result:                      
                     cut_flow_trk.Fill('sign cut')    
                     if tau_sign_result:              
                         cut_flow_trk.Fill('tau sign')
-                        if obj1_id_result:
-                            cut_flow_trk.Fill('obj1 IDIso')
-                            if obj2_id_result:
-                                cut_flow_trk.Fill('obj2 IDIso')
-                                if obj3_id_result:
-                                    cut_flow_trk.Fill('obj3 IDIso')
-                                    if anti_wz :
-                                        cut_flow_trk.Fill('anti WZ')
+                        if anti_wz :
+                            cut_flow_trk.Fill('anti WZ')
+                            if obj1_id_result:
+                                cut_flow_trk.Fill('obj1 IDIso')
+                                if obj2_id_result:
+                                    cut_flow_trk.Fill('obj2 IDIso')
+                                    if obj3_id_result:
+                                        cut_flow_trk.Fill('obj3 IDIso')
                                         if anti_charge_flip:
                                             cut_flow_trk.Fill('anti charge flip')
                                         
 
+                if os.environ['megatarget'].startswith('Zjets'):
+                    #remove matched but not id/Iso leptons
+                    if obj1_matches_gen(row) and not obj1_id_result:
+                        continue
+                    if obj2_matches_gen(row) and not obj2_id_result:
+                        continue
+
                 # Figure out which folder/region we are in
                 region_result = cut_region_map.get(
                     (sign_result, tau_sign_result, obj1_id_result, obj2_id_result, obj3_id_result))
+
+                if debug_mode:
+                    set_trace() 
 
                 # Ignore stupid regions we don't care about
                 if region_result is None:
@@ -439,9 +410,18 @@ class WHAnalyzerBase(MegaBase):
                     base_folder, weights = region_result
 
                     base_folder = joinDirs(*base_folder)
-                    if region_for_event_list and base_folder == region_for_event_list:
-                        print '%i:%i:%i' % (row.run, row.lumi, row.evt)
-                    if no_histo_fill:
+                    if print_region:
+                        print 'event %i:%i:%i assigned to region(s) %s' % \
+                            (row.run, row.lumi, row.evt, \
+                             ', '.join( joinDirs(base_folder,i) for i in to_fill) )
+                    if region_for_event_list:
+                        if base_folder == region_for_event_list and \
+                           '' in to_fill:
+                            print '%i:%i:%i' % (row.run, row.lumi, row.evt)
+                        else:
+                            continue
+                    if no_histo_fill: # and region_for_event_list and \
+                       #base_folder == region_for_event_list:
                         continue
 
                     # Fill the un-fr-weighted histograms
@@ -478,7 +458,7 @@ class WHAnalyzerBase(MegaBase):
                                     fill_histos(histos, joinDirs(directory_up,i), row, event_weight*charge_flip_sysu, cut_label)
 
                 elif sign_result and obj1_id_result and obj3_id_result and tau_sign_result:
-                    if no_histo_fill:
+                    if no_histo_fill or region_for_event_list:
                         continue
 
                     # WZ object topology fails. Check if we are in signal region.
