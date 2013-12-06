@@ -37,11 +37,11 @@ plotter.mc_samples = filter(lambda x: 'data' not in x.lower(), samples) #['Zjets
 
 sqrts = 7 if '7TeV' in jobid else 8
 
-plotter.plot_mc_vs_data('zmm', 'm1m2Mass', rebin=2, xaxis='m_{#mu#mu} (GeV)', show_ratio=True)
+plotter.plot_mc_vs_data('zmm', 'm1m2Mass', rebin=2, xaxis='m_{#mu#mu} (GeV)')#, show_ratio=True)
 plotter.add_cms_blurb(sqrts)
 plotter.save('mass')
 
-plotter.plot_mc_vs_data('zmm', 'm1m2Mass', rebin=6, xaxis='m_{#mu#mu} (GeV)', show_ratio=True)
+plotter.plot_mc_vs_data('zmm', 'm1m2Mass', rebin=6, xaxis='m_{#mu#mu} (GeV)')#, show_ratio=True)
 plotter.add_cms_blurb(sqrts)
 plotter.save('mass_rebin')
 
