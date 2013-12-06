@@ -1,6 +1,6 @@
+from rootpy.utils import asrootpy
 from FinalStateAnalysis.Utilities.rootbindings import ROOT
 import os
-from rootpy.utils import asrootpy
 from FinalStateAnalysis.PlotTools.RebinView  import RebinView
 import rootpy.plotting as plotting
 import logging
@@ -50,38 +50,38 @@ sources = {
     ##MMT
     'm_mmt_subleading_kNN' : {
         'vars'  : {'muonPt':rebinPt, 'muonJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/m_wjets_pt10_h2taucuts020_muonInfo_k100.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/m_qcd_pt10_h2taucuts020_muonInfo_k100.kNN.root'   % jobid,
+        'wjets' : 'results/%s/fakerate_fits/mm_wjets_pt10_h2taucuts020_muonInfo_k50.data.kNN.root' % jobid,
+        'qcd'   : 'results/%s/fakerate_fits/mm_qcd_pt10_h2taucuts020_muonInfo_k50.data.kNN.root'   % jobid,
         },
     'm_mmt_leading_kNN' : {
         'vars'  : {'muonPt':rebinPt, 'muonJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/m_wjets_pt10_h2taucuts_muonInfo_k100.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/m_qcd_pt10_h2taucuts_muonInfo_k100.kNN.root'   % jobid,
+        'wjets' : 'results/%s/fakerate_fits/mm_wjets_pt10_h2taucuts_muonInfo_k50.data.kNN.root' % jobid,
+        'qcd'   : 'results/%s/fakerate_fits/mm_qcd_pt10_h2taucuts_muonInfo_k50.data.kNN.root'   % jobid,
         },
 
     #EMT
     'm_emt_kNN' : {
         'vars'  : {'muonPt':rebinPt, 'muonJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/m_Mwjets_pt10_h2taucuts_muonInfo_k100.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/m_Mqcd_pt10_h2taucuts_muonInfo_k100.kNN.root'   % jobid,
+        'wjets' : 'results/%s/fakerate_fits/em_Mwjets_pt10_h2taucuts_muonInfo_k50.data.kNN.root' % jobid,
+        'qcd'   : 'results/%s/fakerate_fits/em_Mqcd_pt10_h2taucuts_muonInfo_k50.data.kNN.root'   % jobid,
         },
     'e_emt_kNN' : {
         'vars'  : {'electronPt':rebinPt, 'electronJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/e_wjets_pt10_eid12Medium_h2taucuts_electronInfo_k100.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/e_qcd_pt10_eid12Medium_h2taucuts_electronInfo_k100.kNN.root'   % jobid,
+        'wjets' : 'results/%s/fakerate_fits/em_wjets_pt10_eid12Medium_h2taucuts_electronInfo_k50.data.kNN.root' % jobid,
+        'qcd'   : 'results/%s/fakerate_fits/em_qcd_pt10_eid12Medium_h2taucuts_electronInfo_k50.data.kNN.root'   % jobid,
         },
 
     #EET
-    'e_eet_subleading_kNN' : {
-        'vars'  : {'electronPt':rebinPt, 'electronJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronInfo_k100.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/ee_qcd_pt10_eid12Medium_h2taucuts020_electronInfo_k100.kNN.root'   % jobid,
-        },
-    'e_eet_leading_kNN' : {
-        'vars'  : {'electronPt':rebinPt, 'electronJetPt':rebinPt, 'numJets20':rebinJet},
-        'wjets' : 'results/%s/fakerate_fits/ee_wjetsNoZmass_pt10_eid12Tight_h2taucuts_electronInfo_k100.kNN.root' % jobid,
-        'qcd'   : 'results/%s/fakerate_fits/ee_qcd_pt10_eid12Tight_h2taucuts_electronInfo_k100.kNN.root'   % jobid,
-        },
+    #'e_eet_subleading_kNN' : {
+    #    'vars'  : {'electronPt':rebinPt, 'electronJetPt':rebinPt, 'numJets20':rebinJet},
+    #    'wjets' : 'results/%s/fakerate_fits/ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronInfo_k50.kNN.root' % jobid,
+    #    'qcd'   : 'results/%s/fakerate_fits/ee_qcd_pt10_eid12Medium_h2taucuts020_electronInfo_k50.kNN.root'   % jobid,
+    #    },
+    #'e_eet_leading_kNN' : {
+    #    'vars'  : {'electronPt':rebinPt, 'electronJetPt':rebinPt, 'numJets20':rebinJet},
+    #    'wjets' : 'results/%s/fakerate_fits/ee_wjetsNoZmass_pt10_eid12Tight_h2taucuts_electronInfo_k50.kNN.root' % jobid,
+    #    'qcd'   : 'results/%s/fakerate_fits/ee_qcd_pt10_eid12Tight_h2taucuts_electronInfo_k50.kNN.root'   % jobid,
+    #    },
 }
 
 canvas = plotting.Canvas(800, 800, name='adsf', title='asdf')
@@ -91,13 +91,13 @@ canvas.SetLogy(True)
 for output, info in sources.iteritems():
     logging.info("analyzing %s" % output)
     wjets_name = info['wjets']
-    qcd_name   = info['qcd']
+    #qcd_name   = info['qcd']
     variables  = info['vars']
 
     wjets_file = ROOT.TFile.Open(wjets_name)
     logging.debug('filename: %s instance: %s' % (wjets_name, wjets_file.__repr__()))
-    qcd_file   = ROOT.TFile.Open(qcd_name)
-    logging.debug('filename: %s instance: %s' % (qcd_name, qcd_file.__repr__()))
+    #qcd_file   = ROOT.TFile.Open(qcd_name)
+    #logging.debug('filename: %s instance: %s' % (qcd_name, qcd_file.__repr__()))
 
     for var, rebins in variables.iteritems():
         logging.debug('variable %s' % var)
@@ -118,16 +118,16 @@ for output, info in sources.iteritems():
         #####
         #QCD fake rate
         #####
-        qcd_view = RebinView(qcd_file, rebins[0])
-        qcd_eff = asrootpy( 
-            ROOT.TGraphAsymmErrors( 
-                round_to_ints(qcd_view.Get('%s_pass' % var)), 
-                round_to_ints(qcd_view.Get('%s_all' % var))
-            ) 
-        )
-        qcd_eff.SetTitle('QCD fake rate')
-        qcd_eff.markerstyle = 20
-        qcd_eff.markercolor = ROOT.EColor.kRed
+        #qcd_view = RebinView(qcd_file, rebins[0])
+        #qcd_eff = asrootpy( 
+        #    ROOT.TGraphAsymmErrors( 
+        #        round_to_ints(qcd_view.Get('%s_pass' % var)), 
+        #        round_to_ints(qcd_view.Get('%s_all' % var))
+        #    ) 
+        #)
+        #qcd_eff.SetTitle('QCD fake rate')
+        #qcd_eff.markerstyle = 20
+        #qcd_eff.markercolor = ROOT.EColor.kRed
 
 
         #####
@@ -151,20 +151,20 @@ for output, info in sources.iteritems():
         #####
         #QCD kNN output
         #####
-        qcd_view = RebinView(qcd_file, rebins[1])
-        qcd_estimate = asrootpy( 
-            qcd_view.Get('%s_estimate' % var)
-        )
-        qcd_estimate_denom = asrootpy( 
-            qcd_view.Get('%s_estimate_all' % var)
-        )
-        qcd_estimate.Divide(qcd_estimate_denom)
-        qcd_estimate.SetTitle('QCD kNN output')
-        qcd_estimate.linecolor = ROOT.kRed
-        qcd_estimate.linewidth = 2
-        qcd_estimate.fillstyle = 0
-        qcd_estimate.legendstyle = 'l'
-        qcd_estimate.drawstyle = 'hist'
+        #qcd_view = RebinView(qcd_file, rebins[1])
+        #qcd_estimate = asrootpy( 
+        #    qcd_view.Get('%s_estimate' % var)
+        #)
+        #qcd_estimate_denom = asrootpy( 
+        #    qcd_view.Get('%s_estimate_all' % var)
+        #)
+        #qcd_estimate.Divide(qcd_estimate_denom)
+        #qcd_estimate.SetTitle('QCD kNN output')
+        #qcd_estimate.linecolor = ROOT.kRed
+        #qcd_estimate.linewidth = 2
+        #qcd_estimate.fillstyle = 0
+        #qcd_estimate.legendstyle = 'l'
+        #qcd_estimate.drawstyle = 'hist'
         
         canvas.SetGrid()
 
@@ -177,19 +177,19 @@ for output, info in sources.iteritems():
             #axis.SetTitleOffset( axis.GetTitleOffset()*0.6 )
 
         wjets_estimate.Draw()
-        qcd_estimate.Draw('same')
+        #qcd_estimate.Draw('same')
 
         wjets_eff.Draw('P SAME')
-        qcd_eff.Draw('P SAME')
+        #qcd_eff.Draw('P SAME')
 
         #####
         #Legend
         #####
-        legend = plotting.Legend(4, rightmargin=0.02, topmargin=0.05, leftmargin=0.45)
+        legend = plotting.Legend(2, rightmargin=0.02, topmargin=0.05, leftmargin=0.45)
         legend.AddEntry(wjets_estimate)
-        legend.AddEntry(qcd_estimate)
+        #legend.AddEntry(qcd_estimate)
         legend.AddEntry(wjets_eff)
-        legend.AddEntry(qcd_eff)
+        #legend.AddEntry(qcd_eff)
         legend.SetTextSize(0.5*legend.GetTextSize())
         legend.SetEntrySeparation(0.0)
         legend.SetMargin(0.35)
@@ -203,4 +203,4 @@ for output, info in sources.iteritems():
 
 
     wjets_file.Close()
-    qcd_file.Close()  
+    #qcd_file.Close()  
