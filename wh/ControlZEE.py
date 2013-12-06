@@ -47,9 +47,9 @@ charge_flip_down_sub  = make_weight(frfits.e_charge_flip_down[subleading_iso] )
 
 
 leading_e_fr_wjets    = make_weight(frfits.highpt_ee_fr[leading_iso] )
-leading_e_fr_qcd      = make_weight(frfits.highpt_ee_qcd_fr[leading_iso] )
+leading_e_fr_qcd      = None #make_weight(frfits.highpt_ee_qcd_fr[leading_iso] )
 subleading_e_fr_wjets = make_weight(frfits.lowpt_ee_fr[subleading_iso] )
-subleading_e_fr_qcd   = make_weight(frfits.lowpt_ee_qcd_fr[subleading_iso] )
+subleading_e_fr_qcd   = None #make_weight(frfits.lowpt_ee_qcd_fr[subleading_iso] )
 
 def assign_charge_weight_one_maps(dir_, row):
     if "charge_weightSysUp"  in dir_: return charge_flip_up_lead(row.e1AbsEta,row.e1Pt)   + charge_flip_up_sub(row.e2AbsEta,row.e2Pt)
@@ -89,6 +89,8 @@ class ControlZEE(MegaBase):
             self.book(dirname, 'SCEnergy', 'electron Super Cluster energy', 500, 0, 1000)
             self.book(dirname, 'SCDPhi'  , 'electron Super Cluster DeltaPhi', 180, 0, math.Pi())
             self.book(dirname, 'TrkMass' , 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
+            self.book(dirname, 'TrkMass_low' , 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
+            self.book(dirname, 'TrkMass_high', 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
             self.book(dirname, 'TrkMass_NoWeight', 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
             self.book(dirname, 'TrkMass_NOSCALE' , 'Dielectrons invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
             self.book(dirname, 'SCMass'  , 'Dielectrons Super Cluster invariant mass; M_{ee} [GeV];counts', 110, 40, 150)
@@ -105,7 +107,7 @@ class ControlZEE(MegaBase):
 
         self.dirs = ['/'.join([sign,id_,weight,ch_weight]) for sign in ['os','ss']
                 for id_ in [h+k for h in ['p1','f1'] for k in ['p2','f2'] ]
-                for weight in ['','wjet_w','qcd_w']
+                for weight in ['','wjet_w'] #,'qcd_w']
                 for ch_weight in ["","charge_weight","charge_weightSysUp","charge_weightSysDwn"]
                 if 'f' in id_ or weight == ''
                 if ch_weight == '' or sign == 'os'
@@ -163,7 +165,10 @@ class ControlZEE(MegaBase):
         histos    = self.dir_based_histograms
         mc_weight = self.mc_weight
         def fill_histos(dirname, row, weight):
-            mass = frfits.mass_scaler[leading_iso](row.e1_e2_Mass) if "charge_weight" in dirname else row.e1_e2_Mass
+            mass = frfits.default_scaler(row.e1_e2_Mass) if "charge_weight" in dirname else row.e1_e2_Mass
+            mass_up = frfits.default_scaler_up(row.e1_e2_Mass) if "charge_weight" in dirname else row.e1_e2_Mass
+            mass_dw = frfits.default_scaler_down(row.e1_e2_Mass) if "charge_weight" in dirname else row.e1_e2_Mass
+
             histos[dirname]['ePt'     ].Fill(row.e1Pt,weight)
             histos[dirname]['eAbsEta' ].Fill(row.e1AbsEta,weight)
             histos[dirname]['SCEnergy'].Fill(row.e1SCEnergy,weight)
@@ -171,6 +176,8 @@ class ControlZEE(MegaBase):
             histos[dirname]['eAbsEta' ].Fill(row.e2AbsEta,weight)
             histos[dirname]['SCEnergy'].Fill(row.e2SCEnergy,weight)
             histos[dirname]['TrkMass' ].Fill(mass, weight)
+            histos[dirname]['TrkMass_low' ].Fill(mass_dw, weight)
+            histos[dirname]['TrkMass_high' ].Fill(mass_up, weight)
             #histos[dirname]['SCMass'  ].Fill(sc_inv_mass(row),weight)
             histos[dirname]["e1Pt"    ].Fill(row.e1Pt,weight)
             histos[dirname]["e2Pt"    ].Fill(row.e2Pt,weight)
