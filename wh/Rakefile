@@ -2,6 +2,7 @@
 recipes = ENV['CMSSW_BASE'] + '/src/FinalStateAnalysis/PlotTools/rake/recipes.rake'
 import recipes
 require ENV['CMSSW_BASE'] + '/src/FinalStateAnalysis/PlotTools/rake/tools.rb'
+require 'pathname'
 
 $jobid = ENV['jobid']
 $blind = ENV['blind']
@@ -36,8 +37,11 @@ end
 samples = Hash[
   "ewk" => Array['Zjets_M50', 'WplusJets_madgraph'] + get_sample_names('TTplusJets') + get_sample_names('WZ') + get_sample_names('WWJet')+ get_sample_names('ZZ'),     #'ZZJetsTo4L_pythia',
   "wjets" => Array['WplusJets_madgraph'],
+  "ttbar" => get_sample_names('TTplusJets'),
   "zjets" => Array['Zjets_M50'],
   "diboson" => get_sample_names('ZZ')+get_sample_names('WZ') + get_sample_names('WWJet'),
+  "diboson4fakes" => get_sample_names('ZZ')+get_sample_names('WZJetsTo3LNu_ZToTauTau'),
+  "WZ" => get_sample_names('WZJetsTo3LNu_ZToTauTau'),
   "signal" => get_sample_names('VH') + get_sample_names('WH'),
   # Automagically figure out what data samples we have
   "data_m" =>  get_sample_names("data_SingleMu"),
@@ -183,7 +187,7 @@ end
 
 def make_kNN(chan, datas)
   return Hash[
-              "samples" => Array["diboson", "data_#{datas.downcase}"],
+              "samples" => Array["diboson4fakes", "data_#{datas.downcase}"],
               "analyzer" => "FakeRates#{chan.upcase}",
               'fitter' => 'train_kNN.py',
               #'neighbors' => neighbors,
@@ -194,19 +198,23 @@ iso_points   = ['h2taucuts', 'h2taucuts020'] #'idiso02',
 electronIds  = ['eid12Medium', 'eid12Tight'] #, 'eid13Loose', 'eid12Loose', 'eid13Tight']
 elewps       = electronIds.product(iso_points)
 elewps       = elewps.map{|x,y| "#{x}_#{y}"}
+ee_wps       = ['eid12Medium_h2taucuts020', 'eid12Tight_h2taucuts']
+em_wps       = ['eid12Medium_h2taucuts']
+
 pt_regions   = ['pt10']#, 'pt20']
 muonwps      = ['h2taucuts', 'h2taucuts020'] #, 'pfidiso02']
 fr_fits      = Hash.new
 kNN_trains   = Hash.new
 muon_kNN_vars= ['muonJetPt', 'muonPt', 'numJets20'] 
 electron_kNN_vars= ['electronJetPt', 'electronPt', 'numJets20']
-neighbors        = ['100'] #, '50']
+neighbors        = ['50'] # '100'] #, ]
 
 #############
 #  EM datas
 #############
-emcrs = ['qcd', 'wjets']
-elewps.select{|x| x.start_with?('eid12Medium')}.each do |ele_wp|
+emcrs = [ 'wjets', 'ttbar']#'qcd',
+#elewps.select{|x| x.start_with?('eid12Medium')}.each do |ele_wp|
+em_wps.each do |ele_wp|
   emcrs.each do |cr|
     neighbors.each do |k|
       pt_regions.each do |ptr|
@@ -216,20 +224,29 @@ elewps.select{|x| x.start_with?('eid12Medium')}.each do |ele_wp|
         key = "em_#{cr}_#{ptr}_#{ele_wp}_electronInfo_k#{k}"
         kNN_trains[key] =  make_kNN('em', 'em') 
         kNN_trains[key]['vars'] = electron_kNN_vars
+
+        if cr == 'ttbar'
+          kNN_trains[key]['samples'] = Array['data_em']            
+        end
       end
     end
   end
 end
 
 #muon fakes from em
-mmcrs = ['qcd', 'wjets']
-muonwps.each do |mu_wp|
+mmcrs = [ 'wjets', 'ttbar']#'qcd',
+#muonwps.each do |mu_wp|
+['h2taucuts'].each do |mu_wp|
   mmcrs.each do |cr|
     neighbors.each do |k|
       pt_regions.each do |ptr|
         key = "em_M#{cr}_#{ptr}_#{mu_wp}_muonInfo_k#{k}"
         kNN_trains[key] =  make_kNN('em', 'em') 
         kNN_trains[key]['vars'] = muon_kNN_vars
+
+        if cr == 'ttbar'
+          kNN_trains[key]['samples'] = Array['data_em']            
+        end
       end
     end
   end
@@ -239,8 +256,9 @@ end
 #############
 #  EE datas
 #############
-eecrs = ['qcd', 'wjetsNoZmass']
-elewps.each do |ele_wp|
+eecrs = [ 'wjetsNoZmass'] #['qcd',
+#elewps.each do |ele_wp|
+ee_wps.each do |ele_wp|
   neighbors.each do |k|
     eecrs.each do |cr|
       pt_regions.each do |ptr|
@@ -250,6 +268,12 @@ elewps.each do |ele_wp|
         key = "ee_#{cr}_#{ptr}_#{ele_wp}_electronInfo_k#{k}"
         kNN_trains[key] =  make_kNN('ee', 'ee')
         kNN_trains[key]['vars'] = electron_kNN_vars
+        #if ele_wp == 'eid12Tight_h2taucuts':
+        #    kNN_trains[key]['samples'] = Array["WZ", 'data_ee']
+        #end
+        if cr == 'qcd'
+          kNN_trains[key]['samples'] = Array['data_ee']            
+        end
       end
     end
   end
@@ -260,7 +284,7 @@ end
 #  MM datas
 #############
 muon_kNN_vars= ['muonJetPt', 'muonPt', 'numJets20']
-mmcrs = ['qcd', 'wjets']
+mmcrs = [ 'wjets']#'qcd',
 muonwps.each do |mu_wp|
   mmcrs.each do |cr|
     neighbors.each do |k|
@@ -271,6 +295,10 @@ muonwps.each do |mu_wp|
         key = "mm_#{cr}_#{ptr}_#{mu_wp}_muonInfo_k#{k}"
         kNN_trains[key] =  make_kNN('mm', 'mm')
         kNN_trains[key]['vars'] = muon_kNN_vars
+
+        if cr == 'qcd'
+          kNN_trains[key]['samples'] = Array['data_mm']            
+        end
       end
     end
   end
@@ -379,7 +407,6 @@ kNN_trains.each do |kNN, info|
     neigh = kNN_configuration[5].sub('k','')
   end
 
-  knn_output = $frfit_dir + "/#{kNN}.kNN.root"
 
   # Expand sample list
   subsample_inputs = []
@@ -387,18 +414,42 @@ kNN_trains.each do |kNN, info|
     subsample_inputs += samples[sample]
   end
   subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{info['analyzer']}/#{x}.root"}
-  subsample_input_list = subsamples_inputs_result_list.join(" ")
+
+  data_list = subsamples_inputs_result_list.select{|x| x.include? 'data_'}
+  mc_list   = subsamples_inputs_result_list.select{|x| not x.include? 'data_'}
+  #subsample_input_list = subsamples_inputs_result_list.join(" ")
 
   # Path to tree in root files
   tree_path = Array[region, denom, var].join("/")
   vars_str  = info['vars'].join(" ")
 
-  file knn_output => subsamples_inputs_result_list + [info['analyzer'] + '.py',] do |t|
+
+  knn_all_output = $frfit_dir + "/#{kNN}.ALL.kNN.root"
+  file knn_all_output => data_list + [info['analyzer'] + '.py',] do |t|
     sh "mkdir -p #{$frfit_dir}"
-    sh "train_kNN.py --files #{subsample_input_list} --outputfile #{knn_output} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 1 --neighbors #{neigh}"
+    sh "train_kNN.py --files #{data_list.join(' ')} #{mc_list.join(' ')} --outputfile #{t.name} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 1 --neighbors 100" #{neigh}"
   end
-  task :kNN => knn_output
-  kNN_files << knn_output
+  task :kNN => knn_all_output
+  kNN_files << knn_all_output
+
+  knn_data_output = $frfit_dir + "/#{kNN}.data.kNN.root"
+  file $frfit_dir + "/#{kNN}.data.kNN.root" => data_list + [info['analyzer'] + '.py',] do |t|
+    sh "mkdir -p #{$frfit_dir}"
+    sh "train_kNN.py --files #{data_list.join(' ')} --outputfile #{t.name} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 1 --neighbors #{neigh}"
+  end
+  task :kNN => knn_data_output
+  kNN_files << knn_data_output
+  
+  mc_list.each do |mc_input|
+    base = Pathname.new(mc_input).basename.sub('.root','')
+    kNN_mc_output = $frfit_dir + "/#{kNN}.#{base}.kNN.root"
+    file kNN_mc_output => [mc_input] + [info['analyzer'] + '.py',] do |t|
+      sh "mkdir -p #{$frfit_dir}"
+      sh "train_kNN.py --files #{mc_input} --outputfile #{t.name} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 0 --neighbors #{neigh} --forceLumi -1"
+    end    
+    task :kNN => kNN_mc_output
+    kNN_files << kNN_mc_output
+  end
 end
 
 #Rake.application.tasks.each do |t|
@@ -461,9 +512,9 @@ file "WHAnalyzeEET.py" => kNN_files.select{|x| x.start_with?( "#{$frfit_dir}/ee_
   sh "touch #{t.name}"
 end
 
-mmt_results = get_analyzer_results("WHAnalyzeMMT.py", samples['diboson'] + samples['data_mm'] + samples['signal'])
-emt_results = get_analyzer_results("WHAnalyzeEMT.py", samples['ewk'] + samples['data_em'] + samples['signal'])
-eet_results = get_analyzer_results("WHAnalyzeEET.py", samples['ewk'] + samples['data_ee'] + samples['signal'])
+mmt_results = get_analyzer_results("WHAnalyzeMMT.py", samples['diboson'] + samples['data_mm'] + samples['signal'] + samples["ttbar"] + samples['zjets'])
+emt_results = get_analyzer_results("WHAnalyzeEMT.py", samples['diboson'] + samples['data_em'] + samples['signal'] + samples["ttbar"] + samples['zjets'])
+eet_results = get_analyzer_results("WHAnalyzeEET.py", samples['diboson'] + samples['data_ee'] + samples['signal'] + samples["ttbar"] + samples['zjets'])
 
 mmt_debug   = get_analyzer_results("WHAnalyzeMMT.py", Array['Zjets_M50'] )
 task :mmt_dbg => mmt_debug
@@ -892,7 +943,7 @@ task :eet_shapes => eet_shape_file
 $carddir = "results/#{$jobid}/cards"
 
 cardmasses = get_sample_names('VH') #get all the VH samples available
-cardmasses = cardmasses.select{|x| not x.include? "HWW"} #get only the H2Tau, to avid repetition
+cardmasses = cardmasses.select{|x| (not x.include? "HWW") and (not x.include? "lepdecay")} #get only the H2Tau, to avid repetition
 if $period == '8TeV' 
   cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
 else
