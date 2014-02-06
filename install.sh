@@ -21,11 +21,13 @@ fi
 
 echo "Checking out FSA dependencies"
 pushd FinalStateAnalysis/recipe
-source environment.sh
-LUMI=1 LIMITS=1 PATPROD=${PATPROD:-0} ./recipe.sh
+# Do no do this - make sure you first run the FSA installation
+#source environment.sh
+#LUMI=1 LIMITS=1 PATPROD=${PATPROD:-0} ./recipe.sh
 
-echo "Deleting unneeded PAT dependencies"
-FORCENUKE=1 ./nuke_pat_tools.sh
+# The Nuke idea is great, but it needs fixing now...
+#echo "Deleting unneeded PAT dependencies"
+#FORCENUKE=1 ./nuke_pat_tools.sh
 
 echo "Manually creating FinalStateAnalysis python symlinks"
 ./symlink_python.sh
