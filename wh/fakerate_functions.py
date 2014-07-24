@@ -1,10 +1,14 @@
 import os
-from FinalStateAnalysis.StatTools.RooFunctorFromWS import build_roofunctor, make_corrector_from_th2, build_uncorr_2Droofunctor, FunctorFromMVA
+from FinalStateAnalysis.StatTools.RooFunctorFromWS import build_roofunctor, make_corrector_from_th2,\
+    build_uncorr_2Droofunctor, FunctorFromMVA, MultiFunctorFromMVA, MultiFunctorFromTF1
 from FinalStateAnalysis.StatTools.VariableScaler import make_scaler
 from FinalStateAnalysis.Utilities.smartdict import SmartDict
+from FinalStateAnalysis.MetaData.data_views import read_lumi
 import itertools
 import optimizer
 import re
+import glob
+from fnmatch import fnmatch
 #from optimizer import leading_lepton_iso_tag, subleading_lepton_iso_tag
 
 ################################################################################
@@ -12,7 +16,27 @@ import re
 ################################################################################
 
 # Get fitted fake rate functions
-frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')
+frfit_dir = os.path.join('results', os.environ['jobid'], 'fakerate_fits')+'/'
+is7TeV = '7TeV' in os.environ['jobid']
+
+def get_lumis(pattern):
+    lumi_files  = glob.glob( os.path.join('inputs', os.environ['jobid'], '*.lumicalc.sum') )
+    ret = 0.
+    #print pattern
+    for lumi_file in lumi_files:
+        sample_name = os.path.basename(lumi_file).split('.')[0]
+        #print lumi_file, sample_name
+        if fnmatch(sample_name, pattern):
+            #print 'Matches!'
+            ret += read_lumi(lumi_file)
+    return ret
+
+double_e_lumi  = get_lumis('data_DoubleElectron*')
+double_mu_lumi = get_lumis('data_DoubleMu*')
+mueg_lumi      = get_lumis('data_MuEG*')
+wz_lumi        = get_lumis('WZ*ZToTauTau*')
+zz_lumi        = get_lumis('ZZ*')
+
 
 def make_simple_mapper(tomap):
     def f_(string):
@@ -77,10 +101,10 @@ def make_corrector_dict(filename, mapname, mapper=None):
         ret[i] = make_corrector_from_th2(filename % lepid, mapname)
     return ret
     
-def make_scaler_dict(filename, mapname):
+def make_scaler_dict(filename, mapname, **kwargs):
     ret = {}
     for i in optimizer.lep_id:
-        ret[i] = make_scaler(filename % i, 'mass_scale')
+        ret[i] = make_scaler(filename % i, 'mass_scale', **kwargs)
     return ret
 
 def make_mva_functor_dict(template, variables, mapper=None):
@@ -96,64 +120,232 @@ def make_mva_functor_dict(template, variables, mapper=None):
         )
     return ret
 
+def null(*args, **kwargs):
+    return 0.
 
-##################
-## 1D Muon Func ##
-##################
+def make_null_dict(template, variables, mapper=None):
+    ret = {}
+    for i in optimizer.lep_id:
+        lepid = i
+        if mapper:
+            lepid = mapper(lepid)
+        ret[i] = null
+    return ret
 
-#no changes in muonID in 2013
-mapper    = {'eid1[0-9][A-Z][a-z]+_':'', 'idiso02' : 'pfidiso02'}
-variables = ['muonJetPt', 'muonPt', 'muonJetCSVBtag'] #'muonPVDXY']#, 'muonJetBtag']
-highpt_mu_fr = make_mva_functor_dict(frfit_dir + '/m_wjets_pt20_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
-lowpt_mu_fr  = make_mva_functor_dict(frfit_dir + '/m_wjets_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+SKIP_MMT=eval( os.environ.get('SKIP_MMT','False') )
+SKIP_EMT=eval( os.environ.get('SKIP_EMT','False') )
+SKIP_EET=eval( os.environ.get('SKIP_EET','False') )
 
-highpt_mu_qcd_fr = make_mva_functor_dict(frfit_dir + '/m_qcd_pt20_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
-lowpt_mu_qcd_fr  = make_mva_functor_dict(frfit_dir + '/m_qcd_pt10_%s_muonInfo.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+###################
+## MMT FUNCTIONS ##
+###################
+
+wz_sample = 'WZJetsTo3LNu_ZToTauTau_pythia' if '8TeV' in os.environ['jobid'] else 'WZJetsTo3LNu_ZToTauTau'
+
+if not SKIP_MMT:
+    #no changes in muonID in 2013
+    mapper    = {'eid1[0-9][A-Z][a-z]+_':'', 'idiso02' : 'pfidiso02'}
+    variables = ['muonJetPt', 'muonPt', 'numJets20'] #, 'muonJetCSVBtag']
+    lowpt_mu_fr = SmartDict()
+    lowpt_mu_fr.book( 'eid12Medium_h2taucuts020', 
+                      MultiFunctorFromMVA,
+                      'lowpt_mu_fr',
+                      (frfit_dir + 'mm_wjets_pt10_h2taucuts020_muonInfo_k50.data.kNN.weights.xml', double_mu_lumi),
+                      [ (frfit_dir + 'mm_wjets_pt10_h2taucuts020_muonInfo_k50.%s.kNN.weights.xml' % wz_sample, wz_lumi),
+                        (frfit_dir + 'mm_wjets_pt10_h2taucuts020_muonInfo_k50.ZZJetsTo4L_pythia.kNN.weights.xml', zz_lumi)],
+                      *variables)
+    
+    highpt_mu_fr = SmartDict()
+    highpt_mu_fr.book( 'eid12Medium_h2taucuts', 
+                      MultiFunctorFromMVA,
+                      'highpt_mu_fr',
+                      (frfit_dir + 'mm_wjets_pt10_h2taucuts_muonInfo_k50.data.kNN.weights.xml', double_mu_lumi),
+                      [ (frfit_dir + 'mm_wjets_pt10_h2taucuts_muonInfo_k50.%s.kNN.weights.xml' % wz_sample, wz_lumi),
+                        (frfit_dir + 'mm_wjets_pt10_h2taucuts_muonInfo_k50.ZZJetsTo4L_pythia.kNN.weights.xml', zz_lumi)],
+                       *variables,
+                       phase_space='muonPt > 20'
+    )
+    
+    lowpt_mu_qcd_fr  = SmartDict() 
+    lowpt_mu_qcd_fr.book( 'eid12Medium_h2taucuts020', 
+                      FunctorFromMVA,
+                      'lowpt_mu_qcd_fr',
+                      frfit_dir + 'mm_qcd_pt10_h2taucuts020_muonInfo_k50.data.kNN.weights.xml',
+                      *variables)
+
+    highpt_mu_qcd_fr = SmartDict() 
+    highpt_mu_qcd_fr.book( 'eid12Medium_h2taucuts', 
+                      FunctorFromMVA,
+                      'highpt_mu_qcd_fr',
+                      frfit_dir + 'mm_qcd_pt10_h2taucuts_muonInfo_k50.data.kNN.weights.xml',
+                      *variables)
 
 
-#######################
-## 1D Electrons Func ##
-#######################
 
-variables = ['electronJetPt', 'electronPt']
-#EMT
-highpt_e_fr = make_mva_functor_dict(frfit_dir + '/e_wjets_pt20_%s_electronInfo.kNN.weights.xml', variables)
-lowpt_e_fr  = make_mva_functor_dict(frfit_dir + '/e_wjets_pt10_%s_electronInfo.kNN.weights.xml', variables)
+    #lowpt_mu_fr  = make_mva_functor_dict(frfit_dir + '/mm_wjets_pt10_%s_muonInfo_k100.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+    #highpt_mu_fr = lowpt_mu_fr
+    #
+    #lowpt_mu_qcd_fr  = make_mva_functor_dict(frfit_dir + '/mm_qcd_pt10_%s_muonInfo_k100.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+    #highpt_mu_qcd_fr = lowpt_mu_qcd_fr
+    
+###################
+## EMT FUNCTIONS ##
+###################
 
-highpt_e_qcd_fr = make_mva_functor_dict(frfit_dir + '/e_qcd_pt20_%s_electronInfo.kNN.weights.xml', variables)
-lowpt_e_qcd_fr  = make_mva_functor_dict(frfit_dir + '/e_qcd_pt10_%s_electronInfo.kNN.weights.xml', variables)
+if not SKIP_EMT:
+    variables = ['muonJetPt', 'muonPt', 'numJets20']
 
-#EET
-highpt_ee_fr = make_mva_functor_dict(frfit_dir + '/ee_wjetsNoZmass_pt20_%s_electronInfo.kNN.weights.xml', variables) 
-lowpt_ee_fr  = make_mva_functor_dict(frfit_dir + '/ee_wjetsNoZmass_pt10_%s_electronInfo.kNN.weights.xml', variables) 
+    lowpt_mue_fr = SmartDict()
+    lowpt_mue_fr.book( 'eid12Medium_h2taucuts',
+                      MultiFunctorFromMVA,
+                      'lowpt_mue_fr',
+                      (frfit_dir + 'em_Mwjets_pt10_h2taucuts_muonInfo_k50.data.kNN.weights.xml', mueg_lumi),
+                      [ (frfit_dir + 'em_Mwjets_pt10_h2taucuts_muonInfo_k50.%s.kNN.weights.xml' % wz_sample, wz_lumi),
+                        (frfit_dir + 'em_Mwjets_pt10_h2taucuts_muonInfo_k50.ZZJetsTo4L_pythia.kNN.weights.xml', zz_lumi)],
+                      *variables)
 
-highpt_ee_qcd_fr = make_mva_functor_dict(frfit_dir + '/ee_qcd_pt20_%s_electronInfo.kNN.weights.xml', variables) 
-lowpt_ee_qcd_fr  = make_mva_functor_dict(frfit_dir + '/ee_qcd_pt10_%s_electronInfo.kNN.weights.xml', variables) 
+    highpt_mue_fr = SmartDict()
+    highpt_mue_fr.book( 'eid12Medium_h2taucuts',
+                        MultiFunctorFromMVA,
+                        'lowpt_mue_fr',
+                        (frfit_dir + 'em_Mwjets_pt10_h2taucuts_muonInfo_k50.data.kNN.weights.xml', mueg_lumi),
+                        [ (frfit_dir + 'em_Mwjets_pt10_h2taucuts_muonInfo_k50.%s.kNN.weights.xml' % wz_sample, wz_lumi),
+                          (frfit_dir + 'em_Mwjets_pt10_h2taucuts_muonInfo_k50.ZZJetsTo4L_pythia.kNN.weights.xml', zz_lumi)],
+                        *variables,
+                       phase_space='muonPt > 20'
+    )
+
+
+    lowpt_mue_qcd_fr = SmartDict()
+    lowpt_mue_qcd_fr.book( 'eid12Medium_h2taucuts',
+                           FunctorFromMVA,
+                           'lowpt_mue_qcd_fr',
+                           frfit_dir + 'em_Mqcd_pt10_h2taucuts_muonInfo_k50.data.kNN.weights.xml',
+                           *variables )
+    highpt_mue_qcd_fr = lowpt_mue_qcd_fr
+
+
+    variables = ['electronJetPt', 'electronPt', 'numJets20']
+    lowpt_e_fr  = SmartDict()
+    lowpt_e_fr.book( 'eid12Medium_h2taucuts',
+                      MultiFunctorFromMVA,
+                      'lowpt_e_fr',
+                      (frfit_dir + 'em_wjets_pt10_eid12Medium_h2taucuts_electronInfo_k50.data.kNN.weights.xml', mueg_lumi),
+                      [ (frfit_dir + 'em_wjets_pt10_eid12Medium_h2taucuts_electronInfo_k50.%s.kNN.weights.xml' % wz_sample, wz_lumi),
+                        (frfit_dir + 'em_wjets_pt10_eid12Medium_h2taucuts_electronInfo_k50.ZZJetsTo4L_pythia.kNN.weights.xml', zz_lumi)],
+                      *variables)
+
+    highpt_e_fr = SmartDict()
+    highpt_e_fr.book( 'eid12Medium_h2taucuts',
+                      MultiFunctorFromMVA,
+                      'lowpt_e_fr',
+                      (frfit_dir + 'em_wjets_pt10_eid12Medium_h2taucuts_electronInfo_k50.data.kNN.weights.xml', mueg_lumi),
+                      [ (frfit_dir + 'em_wjets_pt10_eid12Medium_h2taucuts_electronInfo_k50.%s.kNN.weights.xml' % wz_sample, wz_lumi),
+                        (frfit_dir + 'em_wjets_pt10_eid12Medium_h2taucuts_electronInfo_k50.ZZJetsTo4L_pythia.kNN.weights.xml', zz_lumi)],
+                      *variables,
+                       phase_space='electronPt > 20'
+    )
+    
+    lowpt_e_qcd_fr  = SmartDict()
+    lowpt_e_qcd_fr.book( 'eid12Medium_h2taucuts',
+                         FunctorFromMVA,
+                         'lowpt_e_qcd_fr',
+                         frfit_dir + 'em_qcd_pt10_eid12Medium_h2taucuts_electronInfo_k50.data.kNN.weights.xml',
+                         *variables )
+    highpt_e_qcd_fr = lowpt_e_qcd_fr
+
+                       
+    #lowpt_mue_fr  = make_mva_functor_dict(frfit_dir + '/em_Mwjets_pt10_%s_muonInfo_k100.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+    #highpt_mue_fr = lowpt_mue_fr
+    #
+    #lowpt_mue_qcd_fr  = make_mva_functor_dict(frfit_dir + '/em_Mqcd_pt10_%s_muonInfo_k100.kNN.weights.xml', variables, mapper=make_regex_mapper(mapper))
+    #highpt_mue_qcd_fr = lowpt_mue_qcd_fr
+    #
+    #variables = ['electronJetPt', 'electronPt', 'numJets20']
+    #lowpt_e_fr  = make_mva_functor_dict(frfit_dir + '/em_wjets_pt10_%s_electronInfo_k100.kNN.weights.xml', variables)
+    #highpt_e_fr = lowpt_e_fr
+    #
+    #lowpt_e_qcd_fr  = make_mva_functor_dict(frfit_dir + '/em_qcd_pt10_%s_electronInfo_k100.kNN.weights.xml', variables)
+    #highpt_e_qcd_fr = lowpt_e_qcd_fr
+
+
+###################
+## EET FUNCTIONS ##
+###################
+
+if not SKIP_EET:
+    variables = ['electronJetPt', 'electronPt', 'numJets20']
+    lowpt_ee_fr  = SmartDict()
+    lowpt_ee_fr.book( 'eid12Medium_h2taucuts020',
+                      MultiFunctorFromMVA,
+                      'lowpt_ee_fr',
+                      (frfit_dir + 'ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronInfo_k50.data.kNN.weights.xml', double_e_lumi),
+                      [ (frfit_dir + 'ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronInfo_k50.%s.kNN.weights.xml' % wz_sample, wz_lumi),
+                        (frfit_dir + 'ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronInfo_k50.ZZJetsTo4L_pythia.kNN.weights.xml', zz_lumi)],
+                      *variables)
+        
+    highpt_ee_fr = SmartDict()
+    highpt_ee_fr.book( 'eid12Tight_h2taucuts',
+                       MultiFunctorFromMVA,
+                       'highpt_ee_fr',
+                       (frfit_dir + 'ee_wjetsNoZmass_pt10_eid12Tight_h2taucuts_electronInfo_k50.data.kNN.weights.xml', double_e_lumi),
+                       [ (frfit_dir + 'ee_wjetsNoZmass_pt10_eid12Tight_h2taucuts_electronInfo_k50.%s.kNN.weights.xml' % wz_sample, wz_lumi),
+                         (frfit_dir + 'ee_wjetsNoZmass_pt10_eid12Tight_h2taucuts_electronInfo_k50.ZZJetsTo4L_pythia.kNN.weights.xml', zz_lumi)],
+                       *variables,
+                       phase_space='electronPt > 20'
+    )
+
+
+    lowpt_ee_qcd_fr  = SmartDict()
+    lowpt_ee_qcd_fr.book( 'eid12Medium_h2taucuts020',
+                      FunctorFromMVA,
+                      'lowpt_ee_qcd_fr',
+                      frfit_dir + 'ee_qcd_pt10_eid12Medium_h2taucuts020_electronInfo_k50.data.kNN.weights.xml',
+                      *variables)
+
+    highpt_ee_qcd_fr = SmartDict()
+    highpt_ee_qcd_fr.book( 'eid12Tight_h2taucuts',
+                           FunctorFromMVA,
+                           'highpt_ee_qcd_fr',
+                           frfit_dir + 'ee_qcd_pt10_eid12Tight_h2taucuts_electronInfo_k50.data.kNN.weights.xml',
+                           *variables)
+
+
+
+
+    #lowpt_ee_fr  = make_mva_functor_dict(frfit_dir + '/ee_wjetsNoZmass_pt10_%s_electronInfo_k100.kNN.weights.xml', variables) 
+    #highpt_ee_fr = lowpt_ee_fr
+    #
+    #lowpt_ee_qcd_fr  = make_mva_functor_dict(frfit_dir + '/ee_qcd_pt10_%s_electronInfo_k100.kNN.weights.xml', variables) 
+    #highpt_ee_qcd_fr = lowpt_ee_qcd_fr
 
 
 ##################
 ## 1D Taus Func ##
 ##################
 
-tau_fr = build_roofunctor(
-    frfit_dir + '/t_ztt_pt20_mvaloose_tauPt.root',
-    'fit_efficiency', # workspace name
-    'efficiency'
+filename = '2011.root' if is7TeV else '2012.root'
+date     = '2011' if is7TeV else '2012'
+tau_fr = MultiFunctorFromTF1(
+    'external/%s' % filename,
+    [('%s_wmuJetsAll_electronLooseMVA3_muonTight_lepTauOS_fakeable_combinedIsolationLoose3Hits_byEta_projX_barrel/landau'     % date, [-1, 0.8]),
+     ('%s_wmuJetsAll_electronLooseMVA3_muonTight_lepTauOS_fakeable_combinedIsolationLoose3Hits_byEta_projX_transition/landau' % date, [0.8, 1.6]),
+     ('%s_wmuJetsAll_electronLooseMVA3_muonTight_lepTauOS_fakeable_combinedIsolationLoose3Hits_byEta_projX_forward/landau'    % date, [1.6, 100])]
 )
 
 tau_qcd_fr = tau_fr 
 
-e_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.root", "efficiency_map")         
-e_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.root", "efficiency_map_statUp")  
-e_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.root", "efficiency_map_statDown")
-mass_scaler        = make_scaler_dict(frfit_dir+"/charge_flip_prob_map_%s.root", 'mass_scale')
-default_scaler     = mass_scaler[mass_scaler.keys()[0]]
+############################
+## CHARGE FLIP FUNCTIONS  ##
+############################
 
-
-e1_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map")         
-e1_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map_statUp")  
-e1_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e1_%s.root", "efficiency_map_statDown")
-
-e2_charge_flip      = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map")         
-e2_charge_flip_up   = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map_statUp")  
-e2_charge_flip_down = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_e2_%s.root", "efficiency_map_statDown")
+if not (SKIP_EMT or SKIP_EET):
+    e_charge_flip       = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.root", "efficiency_map")         
+    e_charge_flip_up    = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.root", "efficiency_map_statUp")  
+    e_charge_flip_down  = make_corrector_dict(frfit_dir+"/charge_flip_prob_map_%s.root", "efficiency_map_statDown")
+    mass_scaler         = make_scaler_dict(frfit_dir+"/charge_flip_prob_map_%s.root", 'mass_scale')
+    mass_scaler_up      = make_scaler_dict(frfit_dir+"/charge_flip_prob_map_%s.root", 'mass_scale', error_scale=1 )
+    mass_scaler_down    = make_scaler_dict(frfit_dir+"/charge_flip_prob_map_%s.root", 'mass_scale', error_scale=-1)
+    default_scaler      = mass_scaler[     mass_scaler.keys()[0]]
+    default_scaler_up   = mass_scaler_up[  mass_scaler.keys()[0]]
+    default_scaler_down = mass_scaler_down[mass_scaler.keys()[0]]

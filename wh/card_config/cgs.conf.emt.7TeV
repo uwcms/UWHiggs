@@ -8,10 +8,12 @@
 #data: data_obs
 
 $ GROUP signal WH
-$ GROUP all_background wz,zz,fakes,charge_fakes,WH_hww125
+#
+$ GROUP background wz,zz,fakes,WH_hww125
 $ GROUP simulated WH,wz,zz,WH_hww125
+#,WH_hww
 
 categories: emtCatHigh,emtCatLow
 signals: signal
-backgrounds: all_background
+backgrounds: background
 data: data_obs

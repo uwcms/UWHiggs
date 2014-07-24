@@ -13,9 +13,27 @@ import baseSelections as selections
 import fakerate_functions as frfits
 import optimizer
 import math
-import array
+from array import array
 from chargeflipcuts import charge_flip_funcs
 from FinalStateAnalysis.PlotTools.decorators import memo_last
+import FinalStateAnalysis.PlotTools.pytree as pytree
+
+#initialize FRFits
+optimizer_keys   = [ i for i in optimizer.grid_search.keys() if i.startswith('EET') ]
+grid_search = {}
+if len(optimizer_keys) > 1:
+        grid_search[key] = optimizer.grid_search[key]
+
+NO_HISTO_FILL = ('NO_HISTO_FILL' in os.environ) and eval(os.environ['NO_HISTO_FILL']) 
+
+if not NO_HISTO_FILL:
+    for key in optimizer_keys:
+        frfits.highpt_ee_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
+        frfits.highpt_ee_qcd_fr.__activate__(optimizer.grid_search[key]['leading_iso'])
+        frfits.lowpt_ee_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
+        frfits.lowpt_ee_qcd_fr.__activate__(optimizer.grid_search[key]['subleading_iso'])
+
+SYNC = ('SYNC' in os.environ) and eval(os.environ['SYNC'])
 
 #mtr = frfits.mt_likelihood_ratio
 ################################################################################
@@ -23,7 +41,7 @@ from FinalStateAnalysis.PlotTools.decorators import memo_last
 ################################################################################
 
 class WHAnalyzeEET(WHAnalyzerBase):
-    tree = 'eet/final/Ntuple'
+    tree = 'eet/final/Ntuple' if not SYNC else 'Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         self.channel = 'EET'	
         super(WHAnalyzeEET, self).__init__(tree, outfile, EETauTree, **kwargs)
@@ -116,6 +134,7 @@ class WHAnalyzeEET(WHAnalyzerBase):
         self.hfunc["e*1_t_Mass" ] = mass_scaler( attr_getter('e1_t_Mass')) 
         self.hfunc["e1_e*2_Mass"] = mass_scaler( attr_getter('e1_e2_Mass'))
         self.hfunc["e*2_t_Mass" ] = mass_scaler( attr_getter('e2_t_Mass')) 
+        self.hfunc['SYNC'] = lambda row, weight: (row, None) #((row.run, row.lumi, row.evt, row.e1Pt, row.e1Eta, row.e1Phi, row.e2Pt, row.e2Eta, row.e2Phi, row.tPt, row.tEta, row.tPhi, weight), None)
 
         #self.hfunc['evt_info'] = lambda row, weight: (array.array("f", [row.e1Pt, row.e2Pt, row.tPt, row.LT, weight] ), None)
         self.pucorrector = mcCorrectors.make_puCorrector('doublee')
@@ -127,14 +146,16 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
     def book_histos(self, folder):
 	#PLOTS TO FILL IN ANY CASE
+        LTBinning = array('d',[0, 80, 100, 600])
+        nLTBins   = len(LTBinning) -1
 	for key in self.grid_search:
 	    prefix = key+'$' if key else ''
 	    self.book(folder, prefix+"LT", "L_T", 100, 0, 300)
-            self.book(folder, prefix+"e2_t_Mass", "subleadingMass", 200, 0, 200)
+            self.book(folder, prefix+"e2_t_Mass", "subleadingMass", 300, 0, 300)
             self.book(folder, prefix+"e2_t_Pt",   "subleadingPt", 400, 0, 400)
             #Charge mis-id special histograms
             if 'c2' in folder:
-                self.book(folder, prefix+"e*2_t_Mass", "subleadingMass with misid sclaing correction", 200, 0, 200)
+                self.book(folder, prefix+"e*2_t_Mass", "subleadingMass with misid sclaing correction", 300, 0, 300)
 
         if len(self.grid_search.keys()) == 1:
             if 'c1' in folder:
@@ -144,38 +165,43 @@ class WHAnalyzeEET(WHAnalyzerBase):
                 self.book(folder, "e1_e*2_Mass", "E 1-2 Mass with misid sclaing correction", 120, 0, 120)
                 #self.book(folder, "e*2_t_Mass#faking_prob", '', 200, 0, 200, 1100, 0., 1.1, type=ROOT.TH2F)
                 #self.book(folder, "e*2_t_Mass#log_prob"   , '', 200, 0, 200, 1000, -10,  1, type=ROOT.TH2F)
-                self.book(folder, "e*2_t_Mass#LT"         , '', 200, 0, 200, 120, 0, 600, type=ROOT.TH2F)
-                self.book(folder, "e*2_t_Mass#tPt"        , '', 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
+                self.book(folder, "e*2_t_Mass#LT"         , '', 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
 
 
-            self.book(folder, prefix+"e2_t_Mass#LT" , "subleadingMass", 200, 0, 200, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e2_t_Mass#tPt", "subleadingMass", 200, 0, 200, 200, 0, 200, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2_t_Mass#LT" , "subleadingMass", 300, 0, 300, nLTBins, LTBinning, type=ROOT.TH2F)
+
+            self.book(folder, 'SYNC', 'SYNC', 
+                      'run/l:lumi/l:evt/l' +\
+                      ':e1Pt/D:e1Eta/D:e1Phi/D:e1RelPFIsoDB/D:e1MVANonTrig/D' +\
+                      ':e2Pt/D:e2Eta/D:e2Phi/D:e2RelPFIsoDB/D:e2MVANonTrig/D' +\
+                      ':tPt/D:tEta/D:tPhi/D:tAntiMuonTight/D:tDecayMode/D:tLooseIso3Hits/D:tAntiElectronMVA3Loose/D' +\
+                      ':tAntiMuonLoose/D:tAntiElectronMVA3Medium/D:tAntiElectronMVA3Tight/D' +\
+                      ':e1_e2_Mass/D:e2_t_Mass/D:LT/D:e1_e2_SS/D:e1_t_SS/D',
+                      type=pytree.PyTree)
 
             #Pt
-            self.book(folder, prefix+"e1Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e2Pt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"tPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e1JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e2JetPt#LT" , "subleadingMass", 150, 0, 150, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"e1Pt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2Pt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"tPt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"e1JetPt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2JetPt#LT" , "subleadingMass", 150, 0, 150, nLTBins, LTBinning, type=ROOT.TH2F)
 
             #eta
-            self.book(folder, prefix+"e1AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e2AbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"tAbsEta#LT" , "subleadingMass", 100, 0, 2.5, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"e1AbsEta#LT" , "subleadingMass", 100, 0, 2.5, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2AbsEta#LT" , "subleadingMass", 100, 0, 2.5, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"tAbsEta#LT" , "subleadingMass", 100, 0, 2.5, nLTBins, LTBinning, type=ROOT.TH2F)
 
             #DR
-            self.book(folder, prefix+"e1_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
-            self.book(folder, prefix+"e2_t_DR#LT" , "subleadingMass", 100, 0, 10, 120, 0, 600, type=ROOT.TH2F)
+            self.book(folder, prefix+"e1_t_DR#LT" , "subleadingMass", 100, 0, 10, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, prefix+"e2_t_DR#LT" , "subleadingMass", 100, 0, 10, nLTBins, LTBinning, type=ROOT.TH2F)
 
             #Jet BTag
             self.book(folder, "e1JetBtag#LT", "Muon 2 Pt", 30, -10, 5, 60, 0, 600, type=ROOT.TH2F)
             self.book(folder, "e2JetBtag#LT", "Muon 2 Pt", 30, -10, 5, 60, 0, 600, type=ROOT.TH2F)
 
-            #self.book(folder, prefix+"e2_t_Mass#faking_prob" , "subleadingMass", 200, 0, 200, 1100, 0., 1.1, type=ROOT.TH2F)
-            #self.book(folder, prefix+"e2_t_Mass#log_prob"    , "subleadingMass", 200, 0, 200, 1000, -10,  1, type=ROOT.TH2F)
-            #
-            #self.book(folder, prefix+'faking_prob'     , "", 1100, 0., 1.1)
-            #self.book(folder, prefix+'log_prob'        , "", 1000, -10, 1)
+            #tau ISO 
+            self.book(folder, "tRawIso3Hits#LT", "Muon 2 Pt", 200, 0, 200, nLTBins, LTBinning, type=ROOT.TH2F)
+            self.book(folder, "tRawIsoMVA2#LT", "Muon 2 Pt" , 200, -1, -1, nLTBins, LTBinning, type=ROOT.TH2F)
 
             self.book(folder, "e2RelPFIsoDB", "e2RelPFIsoDB", 30, 0, 0.3)
             self.book(folder, "e1RelPFIsoDB", "e1RelPFIsoDB", 30, 0, 0.3)
@@ -216,6 +242,12 @@ class WHAnalyzeEET(WHAnalyzerBase):
 
         Excludes FR object IDs and sign cut.
         '''
+        if row.e1_t_DR < 0.5 or row.e2_t_DR < 0.5 or row.e1_e2_DR < 0.5: return False
+        cut_flow_trk.Fill('DR separation')
+
+        if row.e2_t_Mass < 20: return False
+        cut_flow_trk.Fill('sub mass cut')
+
         if not row.doubleEPass:                   return False
 	if not (row.e1MatchesDoubleEPath > 0 and \
 		row.e2MatchesDoubleEPath > 0): return False 
@@ -224,35 +256,9 @@ class WHAnalyzeEET(WHAnalyzerBase):
 	if row.e1Pt < 20:           return False
         if not selections.eSelection(row, 'e1'):  return False
 	cut_flow_trk.Fill('obj1 Presel')
-        #FIXME
-    	#if row.e1Pt < 20:           return False
-	#cut_flow_trk.Fill('pt requirements 1')
-    	#if row.e1AbsEta > 2.5:      return False
-	#cut_flow_trk.Fill('eta requirements 1')
-    	#if row.e1MissingHits:       return False
-	#cut_flow_trk.Fill('MissingHits 1')
-    	#if row.e1HasConversion:     return False
-	#cut_flow_trk.Fill('HasConversion 1')
-    	#if row.e1JetBtag > 3.3:     return False
-	#cut_flow_trk.Fill('JetBtag 1')
-    	#if abs(row.e1DZ) > 0.2:     return False
-	#cut_flow_trk.Fill('DZ 1')
 
         if not selections.eSelection(row, 'e2'):  return False
         cut_flow_trk.Fill('obj2 Presel')
-        #FIXME
-    	#if row.e2Pt < 10:           return False
-	#cut_flow_trk.Fill('pt requirements 2')
-    	#if row.e2AbsEta > 2.5:      return False
-	#cut_flow_trk.Fill('eta requirements 2')
-    	#if row.e2MissingHits:       return False
-	#cut_flow_trk.Fill('MissingHits 2')
-    	#if row.e2HasConversion:     return False
-	#cut_flow_trk.Fill('HasConversion 2')
-    	#if row.e2JetBtag > 3.3:     return False
-	#cut_flow_trk.Fill('JetBtag 2')
-    	#if abs(row.e2DZ) > 0.2:     return False
-	#cut_flow_trk.Fill('DZ 2')
 
         if not selections.tauSelection(row, 't'): return False
         if row.tPt < taupt_thr: return False
@@ -262,29 +268,11 @@ class WHAnalyzeEET(WHAnalyzerBase):
         if row.LT < LT_threshold: return False
         cut_flow_trk.Fill('LT')
 
-        if row.e1_e2_SS and row.e1_t_SS: return False #remove three SS leptons
+        #if row.e1_e2_SS and row.e1_t_SS: return False #remove three SS leptons
         if row.e1_e2_Mass < 20:          return False
-        if not selections.vetos(row):    return False #applies mu bjet e additional tau vetoes
-        cut_flow_trk.Fill('vetos')
+        cut_flow_trk.Fill('dilepton mass cut')
 
-        #REMOVE CHARGE FAKES!
-        #FIXME
-    	#if not row.e1ChargeIdLoose: return False
-    	#if not row.e2ChargeIdLoose: return False
-	#cut_flow_trk.Fill('ChargeIdLoose')
-        #cut_flow_trk.Fill('charge_fakes')  
-
-        #FIXME: ONLY FOR CUT-FLOW PRODUCTION
-        #if not selections.summer_2013_eid(row, 'e1'): return False
-        #cut_flow_trk.Fill('obj1 ID')
-        #if not selections.lepton_id_iso(row, 'e1', 'eid13Looseh2taucuts'): return False
-        #cut_flow_trk.Fill('obj1 Iso')
-        #if not selections.summer_2013_eid(row, 'e2'): return False
-        #cut_flow_trk.Fill('obj2 ID')
-        #if not selections.lepton_id_iso(row, 'e2', 'eid13Looseh2taucuts'): return False
-        #cut_flow_trk.Fill('obj2 Iso')
-        #if not row.tLooseIso3Hits: return False
-        #cut_flow_trk.Fill('obj3 IDIso')
+        if not selections.vetos(row, cut_flow_trk):    return False #applies mu bjet e additional tau vetoes
 
         return True
 
@@ -293,6 +281,11 @@ class WHAnalyzeEET(WHAnalyzerBase):
     def sign_cut(row):
         ''' Returns true if muons are SS '''
         return bool(row.e1_e2_SS)
+
+    @staticmethod
+    def tau_sign_cut(row):
+        ''' Returns true if muons are SS '''
+        return not bool(row.e1_t_SS)
 
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
@@ -312,6 +305,18 @@ class WHAnalyzeEET(WHAnalyzerBase):
         else:
             return bool( getattr(row, tauId) )
 
+    @staticmethod
+    def obj1_matches_gen(row):
+        return row.e1GenPdgId == -1*row.e1Charge*11
+
+    @staticmethod
+    def obj2_matches_gen(row):
+        return row.e2GenPdgId == -1*row.e2Charge*11
+
+    @staticmethod
+    def obj3_matches_gen(row):
+        return t.genDecayMode != -2 
+
     #There is no call to self, so just promote it to statucmethod, to allow usage by other dedicated analyzers
     @staticmethod
     def anti_wz(row):
@@ -326,36 +331,33 @@ class WHAnalyzeEET(WHAnalyzerBase):
     def enhance_wz(self, row):
         # Require the "tau" to be a electron, and require the third electron
         # to have M_Z +- 20 
-        if self.anti_wz(row):
-            return False
-        # Make sure any Z is from e1
-        e2_good_Z = bool(71 < row.e2_t_Mass < 111)
-        return not e2_good_Z
+        return row.tCiCTightElecOverlap
 
     def event_weight(self, row):
-        if row.run > 2:
+        if row.run > 2: #FIXME! add tight ID correction
             return 1.
         return self.pucorrector(row.nTruePU) * \
-            mcCorrectors.get_electron_corrections(row,'e1','e2')
-
+                mcCorrectors.get_electron_corrections(row,'e2') *\
+                mcCorrectors.electron_tight_corrections(row.e1Pt, row.e1AbsEta) *\
+                mcCorrectors.double_electron_trigger(row)
    
     def obj1_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
-        return frfits.highpt_ee_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt)
+        return frfits.highpt_ee_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt, numJets20=row.jetVeto20+1)
 
     def obj2_weight(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
-	return frfits.lowpt_ee_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt)
+	return frfits.lowpt_ee_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt, numJets20=row.jetVeto20+1)
 
     def obj3_weight(self, row, notUsed1=None, notUsed2=None):
-        return frfits.tau_fr(row.tPt)
+        return frfits.tau_fr(row.tPt, row.tAbsEta)
 
     def obj1_qcd_weight(self, row, leadleptonId='eid13Looseh2taucuts', subleadleptonId=None):
-        return frfits.highpt_ee_qcd_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt)
+        return frfits.highpt_ee_qcd_fr[leadleptonId](electronJetPt=max(row.e1JetPt, row.e1Pt), electronPt=row.e1Pt, numJets20=row.jetVeto20+1)
 
     def obj2_qcd_weight(self, row, leadleptonId=None, subleadleptonId='eid13Looseh2taucuts'):
-        return frfits.lowpt_ee_qcd_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt)
+        return frfits.lowpt_ee_qcd_fr[subleadleptonId](electronJetPt=max(row.e2JetPt, row.e2Pt), electronPt=row.e2Pt, numJets20=row.jetVeto20+1)
 
     def obj3_qcd_weight(self, row, notUsed1=None, notUsed2=None):
-        return frfits.tau_qcd_fr(row.tPt)
+        return frfits.tau_qcd_fr(row.tPt, row.tAbsEta)
 
     # For measuring charge flip probability
     # Not really used in this channel

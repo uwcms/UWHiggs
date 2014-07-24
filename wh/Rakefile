@@ -2,6 +2,7 @@
 recipes = ENV['CMSSW_BASE'] + '/src/FinalStateAnalysis/PlotTools/rake/recipes.rake'
 import recipes
 require ENV['CMSSW_BASE'] + '/src/FinalStateAnalysis/PlotTools/rake/tools.rb'
+require 'pathname'
 
 $jobid = ENV['jobid']
 $blind = ENV['blind']
@@ -12,7 +13,8 @@ if $jobid.include? '7TeV'
   $period = '7TeV'
 end
 
-check_luminosity(['data_DoubleElectron', 'data_DoubleMu', 'data_MuEG'], $period, $jobid)
+#check_luminosity(['data_DoubleElectron', 'data_DoubleMu', 'data_MuEG'], $period, $jobid)
+check_luminosity(['data_DoubleMu'], $period, $jobid)
 
 task :getlumi, [:sample] do |t, args|
   puts get_lumi(args.sample, $jobid)
@@ -33,10 +35,13 @@ end
 #puts get_sample_names('data_DoubleMu')
 
 samples = Hash[
-  "ewk" => Array['Zjets_M50', 'WplusJets_madgraph', 'TTplusJets_madgraph'] + get_sample_names('WZ') + get_sample_names('WWJet')+ get_sample_names('ZZ'),     #'ZZJetsTo4L_pythia',
+  "ewk" => Array['Zjets_M50', 'WplusJets_madgraph'] + get_sample_names('TTplusJets') + get_sample_names('WZ') + get_sample_names('WWJet')+ get_sample_names('ZZ'),     #'ZZJetsTo4L_pythia',
   "wjets" => Array['WplusJets_madgraph'],
+  "ttbar" => get_sample_names('TTplusJets'),
   "zjets" => Array['Zjets_M50'],
   "diboson" => get_sample_names('ZZ')+get_sample_names('WZ') + get_sample_names('WWJet'),
+  "diboson4fakes" => get_sample_names('ZZ')+get_sample_names('WZJetsTo3LNu_ZToTauTau'),
+  "WZ" => get_sample_names('WZJetsTo3LNu_ZToTauTau'),
   "signal" => get_sample_names('VH') + get_sample_names('WH'),
   # Automagically figure out what data samples we have
   "data_m" =>  get_sample_names("data_SingleMu"),
@@ -182,71 +187,95 @@ end
 
 def make_kNN(chan, datas)
   return Hash[
-              "samples" => Array["diboson", "data_#{datas.downcase}"],
+              "samples" => Array["diboson4fakes", "data_#{datas.downcase}"],
               "analyzer" => "FakeRates#{chan.upcase}",
               'fitter' => 'train_kNN.py',
+              #'neighbors' => neighbors,
              ]
 end
 
-iso_points   = ['idiso02', 'h2taucuts', 'h2taucuts020']
-electronIds  = ['eid12Loose', 'eid12Medium', 'eid12Tight'] #, 'eid13Loose', 'eid13Tight']
+iso_points   = ['h2taucuts', 'h2taucuts020'] #'idiso02', 
+electronIds  = ['eid12Medium', 'eid12Tight'] #, 'eid13Loose', 'eid12Loose', 'eid13Tight']
 elewps       = electronIds.product(iso_points)
 elewps       = elewps.map{|x,y| "#{x}_#{y}"}
-pt_regions   = ['pt10', 'pt20']
-muonwps      = ['h2taucuts', 'h2taucuts020', 'pfidiso02']
+ee_wps       = ['eid12Medium_h2taucuts020', 'eid12Tight_h2taucuts']
+em_wps       = ['eid12Medium_h2taucuts']
+
+pt_regions   = ['pt10']#, 'pt20']
+muonwps      = ['h2taucuts', 'h2taucuts020'] #, 'pfidiso02']
 fr_fits      = Hash.new
 kNN_trains   = Hash.new
-muon_kNN_vars= ['muonJetPt', 'muonPt', 'muonJetCSVBtag'] #'muonPVDXY']
-electron_kNN_vars= ['electronJetPt', 'electronPt']
-
+muon_kNN_vars= ['muonJetPt', 'muonPt', 'numJets20'] 
+electron_kNN_vars= ['electronJetPt', 'electronPt', 'numJets20']
+neighbors        = ['50'] # '100'] #, ]
 
 #############
 #  EM datas
 #############
-emcrs = ['qcd', 'wjets']
-elewps.each do |ele_wp|
+emcrs = [ 'wjets', 'ttbar']#'qcd',
+#elewps.select{|x| x.start_with?('eid12Medium')}.each do |ele_wp|
+em_wps.each do |ele_wp|
   emcrs.each do |cr|
-    pt_regions.each do |ptr|
-      key = "e_#{cr}_#{ptr}_#{ele_wp}_eJetPt"
-      #fr_fits[key] =  make_exponential('em', 'em') #fit EVERYTHING with exponential, in case change afterwards
+    neighbors.each do |k|
+      pt_regions.each do |ptr|
+        key = "em_#{cr}_#{ptr}_#{ele_wp}_eJetPt"
+        #fr_fits[key] =  make_exponential('em', 'em') #fit EVERYTHING with exponential, in case change afterwards
+        
+        key = "em_#{cr}_#{ptr}_#{ele_wp}_electronInfo_k#{k}"
+        kNN_trains[key] =  make_kNN('em', 'em') 
+        kNN_trains[key]['vars'] = electron_kNN_vars
 
-      key = "e_#{cr}_#{ptr}_#{ele_wp}_electronInfo"
-      kNN_trains[key] =  make_kNN('em', 'em') 
-      kNN_trains[key]['vars'] = electron_kNN_vars
+        if cr == 'ttbar'
+          kNN_trains[key]['samples'] = Array['data_em']            
+        end
+      end
     end
   end
 end
 
 #muon fakes from em
-#mmcrs = ['qcd', 'wjets']
+mmcrs = [ 'wjets', 'ttbar']#'qcd',
 #muonwps.each do |mu_wp|
-#  mmcrs.each do |cr|
-#    pt_regions.each do |ptr|
-#      key = "m_M#{cr}_#{ptr}_#{mu_wp}_muonInfo"
-#      kNN_trains[key] =  make_kNN('em', 'em') 
-#      kNN_trains[key]['vars'] = muon_kNN_vars
-#    end
-#  end
-#end
+['h2taucuts'].each do |mu_wp|
+  mmcrs.each do |cr|
+    neighbors.each do |k|
+      pt_regions.each do |ptr|
+        key = "em_M#{cr}_#{ptr}_#{mu_wp}_muonInfo_k#{k}"
+        kNN_trains[key] =  make_kNN('em', 'em') 
+        kNN_trains[key]['vars'] = muon_kNN_vars
+
+        if cr == 'ttbar'
+          kNN_trains[key]['samples'] = Array['data_em']            
+        end
+      end
+    end
+  end
+end
 
 
 #############
 #  EE datas
 #############
-eecrs = ['qcd', 'wjetsNoZmass']
-elewps.each do |ele_wp|
-  eecrs.each do |cr|
-    key = "ee_#{cr}_pt10_#{ele_wp}_electronJetPt"
-    #fr_fits[key] =  make_landau('ee', 'ee') #fit pt10 with landau
-    key = "ee_#{cr}_pt20_#{ele_wp}_electronJetPt"
-    #fr_fits[key] =  make_exponential('ee', 'ee') #fit pt20 with expo
-
-    key = "ee_#{cr}_pt10_#{ele_wp}_electronInfo"
-    kNN_trains[key] =  make_kNN('ee', 'ee')
-    kNN_trains[key]['vars'] = electron_kNN_vars
-    key = "ee_#{cr}_pt20_#{ele_wp}_electronInfo"
-    kNN_trains[key] =  make_kNN('ee', 'ee')
-    kNN_trains[key]['vars'] = electron_kNN_vars
+eecrs = [ 'wjetsNoZmass'] #['qcd',
+#elewps.each do |ele_wp|
+ee_wps.each do |ele_wp|
+  neighbors.each do |k|
+    eecrs.each do |cr|
+      pt_regions.each do |ptr|
+        key = "ee_#{cr}_#{ptr}_#{ele_wp}_electronJetPt"
+        #fr_fits[key] =  make_landau('ee', 'ee') #fit pt10 with landau
+        
+        key = "ee_#{cr}_#{ptr}_#{ele_wp}_electronInfo_k#{k}"
+        kNN_trains[key] =  make_kNN('ee', 'ee')
+        kNN_trains[key]['vars'] = electron_kNN_vars
+        #if ele_wp == 'eid12Tight_h2taucuts':
+        #    kNN_trains[key]['samples'] = Array["WZ", 'data_ee']
+        #end
+        if cr == 'qcd'
+          kNN_trains[key]['samples'] = Array['data_ee']            
+        end
+      end
+    end
   end
 end
 #fr_fits["ee_wjetsNoZmass_pt10_eid12Medium_h2taucuts020_electronJetPt"] = make_constant('ee', 'ee')
@@ -254,21 +283,26 @@ end
 #############
 #  MM datas
 #############
-mmcrs = ['qcd', 'wjets']
+muon_kNN_vars= ['muonJetPt', 'muonPt', 'numJets20']
+mmcrs = [ 'wjets']#'qcd',
 muonwps.each do |mu_wp|
   mmcrs.each do |cr|
-    pt_regions.each do |ptr|
-      key = "m_#{cr}_#{ptr}_#{mu_wp}_muonJetPt"
-      #fr_fits[key] =  make_landau('mm', 'mm')
+    neighbors.each do |k|
+      pt_regions.each do |ptr|
+        key = "mm_#{cr}_#{ptr}_#{mu_wp}_muonJetPt"
+        #fr_fits[key] =  make_landau('mm', 'mm')
+        
+        key = "mm_#{cr}_#{ptr}_#{mu_wp}_muonInfo_k#{k}"
+        kNN_trains[key] =  make_kNN('mm', 'mm')
+        kNN_trains[key]['vars'] = muon_kNN_vars
 
-      key = "m_#{cr}_#{ptr}_#{mu_wp}_muonInfo"
-      kNN_trains[key] =  make_kNN('mm', 'mm')
-      kNN_trains[key]['vars'] = muon_kNN_vars
+        if cr == 'qcd'
+          kNN_trains[key]['samples'] = Array['data_mm']            
+        end
+      end
     end
   end
 end
-#fr_fits["m_qcd_pt20_h2taucuts_muonJetPt"] = make_cruijff('mm', 'mm')
-#fr_fits["m_qcd_pt20_h2taucuts020_muonJetPt"] = make_cruijff('mm', 'mm')
 
 
 #Tau stuff (by hand, they are just 2)
@@ -359,19 +393,20 @@ kNN_trains.each do |kNN, info|
   cut    = ''
   var    = ''
 
-  if kNN_configuration.size() == 6 #check if we have an idIso with _ separation
+  if kNN_configuration.size() == 7 #check if we have an idIso with _ separation
     region = kNN_configuration[1]
     denom = kNN_configuration[2]
     cut = "#{kNN_configuration[3]}_#{kNN_configuration[4]}"
     var = kNN_configuration[5]
+    neigh = kNN_configuration[6].sub('k','')
   else #otherwise as usual
     region = kNN_configuration[1]
     denom = kNN_configuration[2]
     cut = kNN_configuration[3]
     var = kNN_configuration[4]
+    neigh = kNN_configuration[5].sub('k','')
   end
 
-  knn_output = $frfit_dir + "/#{kNN}.kNN.root"
 
   # Expand sample list
   subsample_inputs = []
@@ -379,18 +414,42 @@ kNN_trains.each do |kNN, info|
     subsample_inputs += samples[sample]
   end
   subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{info['analyzer']}/#{x}.root"}
-  subsample_input_list = subsamples_inputs_result_list.join(" ")
+
+  data_list = subsamples_inputs_result_list.select{|x| x.include? 'data_'}
+  mc_list   = subsamples_inputs_result_list.select{|x| not x.include? 'data_'}
+  #subsample_input_list = subsamples_inputs_result_list.join(" ")
 
   # Path to tree in root files
   tree_path = Array[region, denom, var].join("/")
   vars_str  = info['vars'].join(" ")
 
-  file knn_output => subsamples_inputs_result_list + [info['analyzer'] + '.py',] do |t|
+
+  knn_all_output = $frfit_dir + "/#{kNN}.ALL.kNN.root"
+  file knn_all_output => data_list + [info['analyzer'] + '.py',] do |t|
     sh "mkdir -p #{$frfit_dir}"
-    sh "train_kNN.py --files #{subsample_input_list} --outputfile #{knn_output} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 0"
+    sh "train_kNN.py --files #{data_list.join(' ')} #{mc_list.join(' ')} --outputfile #{t.name} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 1 --neighbors 100" #{neigh}"
   end
-  task :kNN => knn_output
-  kNN_files << knn_output
+  task :kNN => knn_all_output
+  kNN_files << knn_all_output
+
+  knn_data_output = $frfit_dir + "/#{kNN}.data.kNN.root"
+  file $frfit_dir + "/#{kNN}.data.kNN.root" => data_list + [info['analyzer'] + '.py',] do |t|
+    sh "mkdir -p #{$frfit_dir}"
+    sh "train_kNN.py --files #{data_list.join(' ')} --outputfile #{t.name} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 1 --neighbors #{neigh}"
+  end
+  task :kNN => knn_data_output
+  kNN_files << knn_data_output
+  
+  mc_list.each do |mc_input|
+    base = Pathname.new(mc_input).basename.sub('.root','')
+    kNN_mc_output = $frfit_dir + "/#{kNN}.#{base}.kNN.root"
+    file kNN_mc_output => [mc_input] + [info['analyzer'] + '.py',] do |t|
+      sh "mkdir -p #{$frfit_dir}"
+      sh "train_kNN.py --files #{mc_input} --outputfile #{t.name} --tree #{tree_path} --cut #{cut} --variables #{vars_str} --makePlots 0 --neighbors #{neigh} --forceLumi -1"
+    end    
+    task :kNN => kNN_mc_output
+    kNN_files << kNN_mc_output
+  end
 end
 
 #Rake.application.tasks.each do |t|
@@ -423,17 +482,18 @@ task :fits => :charge_fakes
 fake_rate_files = fr_fits.keys.map{|x| "#{$frfit_dir}/#{x}.root"}
 
 # IF the FR fits change, make sure we re-run the analyses
-file "WHAnalyzeEMT.py" => kNN_files.select{|x| x.start_with?("#{$frfit_dir}/e_")} + \
-               kNN_files.select{|x| x.start_with?("#{$frfit_dir}/m_")} + \
+file "WHAnalyzeEMT.py" => kNN_files.select{|x| x.start_with?("#{$frfit_dir}/em_")} + \
+               #kNN_files.select{|x| x.start_with?("#{$frfit_dir}/m_")} + \
                fake_rate_files.select{|x| x.start_with?("#{$frfit_dir}/t_")} + \
                Array["optimizer.py",
                      'WHAnalyzerBase.py',
                      "fakerate_functions.py",
                      "mcCorrectors.py"] do |t|
+  puts t.investigation
   sh "touch #{t.name}"
 end
 
-file "WHAnalyzeMMT.py" => kNN_files.select{|x| x.start_with?("#{$frfit_dir}/m_")} + \
+file "WHAnalyzeMMT.py" => kNN_files.select{|x| x.start_with?("#{$frfit_dir}/mm_")} + \
                fake_rate_files.select{|x| x.start_with?("#{$frfit_dir}/t_")} + \
                ["optimizer.py",
                 'WHAnalyzerBase.py',
@@ -452,9 +512,9 @@ file "WHAnalyzeEET.py" => kNN_files.select{|x| x.start_with?( "#{$frfit_dir}/ee_
   sh "touch #{t.name}"
 end
 
-mmt_results = get_analyzer_results("WHAnalyzeMMT.py", samples['ewk'] + samples['data_mm'] + samples['signal'])
-emt_results = get_analyzer_results("WHAnalyzeEMT.py", samples['ewk'] + samples['data_em'] + samples['signal'])
-eet_results = get_analyzer_results("WHAnalyzeEET.py", samples['ewk'] + samples['data_ee'] + samples['signal'])
+mmt_results = get_analyzer_results("WHAnalyzeMMT.py", samples['diboson'] + samples['data_mm'] + samples['signal'] + samples["ttbar"] + samples['zjets'])
+emt_results = get_analyzer_results("WHAnalyzeEMT.py", samples['diboson'] + samples['data_em'] + samples['signal'] + samples["ttbar"] + samples['zjets'])
+eet_results = get_analyzer_results("WHAnalyzeEET.py", samples['diboson'] + samples['data_ee'] + samples['signal'] + samples["ttbar"] + samples['zjets'])
 
 mmt_debug   = get_analyzer_results("WHAnalyzeMMT.py", Array['Zjets_M50'] )
 task :mmt_dbg => mmt_debug
@@ -467,7 +527,7 @@ task :eet => eet_results
 
 task :mmcontrol => get_analyzer_results("ControlZMM.py", samples['ewk'] + samples['data_mm'])
 task :emcontrol => get_analyzer_results("ControlEM.py", samples['ewk'] + samples['data_em'])
-task :eecontrol => get_analyzer_results("ControlZEE.py", samples['data_ee'] + samples["zjets"]) + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") #samples['ewk'] +
+task :eecontrol => get_analyzer_results("ControlZEE.py", samples['data_ee'] + samples["ewk"]) + Dir.glob("#{$frfit_dir}/ee*h2taucuts_electronJetPt.root") #samples['ewk'] +
 
 task :mmt_signal => get_analyzer_results("WHAnalyzeMMT.py", samples['signal'])
 task :emt_signal => get_analyzer_results("WHAnalyzeEMT.py", samples['signal'])
@@ -523,6 +583,7 @@ file "#{$zeedir}/.plot_timestamp" => Array["PlotControlZEE.py"]+get_analyzer_res
 end
 task :plot_zee => "#{$zeedir}/.plot_timestamp"
 
+
 ################################################################################
 # Recipes to make signal plots
 #  targets:
@@ -555,15 +616,14 @@ file "#{$eetdir}/eet_shapes_#{$period}.root" => ['WHPlotterEET.py', 'WHPlotterBa
 end
 task :plot_eet => "#{$eetdir}/eet_shapes_#{$period}.root"
 
-################################################################################
-# Recipes to make data cards (plots come for free)
-#  targets:
-#      mmt_shapes
-#      emt_shapes
-#      eet_shapes
-#      cards
-#      copycards -> move cards to official HTT CVS area
-################################################################################
+
+#################################################################################
+####    
+####         HELPER FUNCTIONS TO COMPUTE LIMITS 
+#### 
+#################################################################################
+$carddir = "FIXME" #TO BE CHANGED BY THE DIFFERENT PARTS
+
 
 #categories
 $categories_map = Hash[
@@ -571,6 +631,7 @@ $categories_map = Hash[
    'emt' => File.open("card_config/cgs.conf.emt.#{$period}").select {|x| x.start_with? 'categories'}[0].split(':')[1].split(',').map{|x| x.strip},
    'mmt' => File.open("card_config/cgs.conf.mmt.#{$period}").select {|x| x.start_with? 'categories'}[0].split(':')[1].split(',').map{|x| x.strip},
 ]
+
 
 # Recipes for adding stat. error shapes.  Makes a new file task:
 # input_file_stat_errors.root => input_file.root
@@ -582,55 +643,6 @@ def add_fake_errors(input_file, channel, prefix)
   end
   return output_file
 end
-
-mmt_shape_file = "#{$mmtdir}/mmt_shapes_#{$period}.root"
-$categories_map['mmt'].each do |category|
-  mmt_shape_file = add_fake_errors(mmt_shape_file, "mmt", category)
-end
-task :mmt_shapes => mmt_shape_file
-
-emt_shape_file = "#{$emtdir}/emt_shapes_#{$period}.root"
-$categories_map['emt'].each do |category|
-  emt_shape_file = add_fake_errors(emt_shape_file, "emt", category)
-end
-task :emt_shapes => emt_shape_file
-
-eet_shape_file = "#{$eetdir}/eet_shapes_#{$period}.root"
-$categories_map['eet'].each do |category|
-  eet_shape_file = add_fake_errors(eet_shape_file, "eet", category)
-end
-task :eet_shapes => eet_shape_file
-
-$carddir = "results/#{$jobid}/cards"
-
-cardmasses = get_sample_names('VH') #get all the VH samples available
-cardmasses = cardmasses.select{|x| x.include? "H2Tau"} #get only the H2Tau, to avid repetition
-cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
-cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it's really needed but can't harm)
-cardmasses = cardmasses.select{|x| x <= 140} #FIXME! to be removed!
-#puts cardmasses
-
-$to_extrapolate = cardmasses.select{|x| x > 140}
-
-def make_morphing_task(channel, shapefile)
-  ret = "#{$carddir}/#{channel}/shapes.root"
-  file ret => [shapefile] do |t|
-    sh "mkdir -p `dirname #{t.name}`"
-    sh "cp #{t.prerequisites[0]} #{t.name}"
-    sh "horizontal-morphing.py --categories='#{$categories_map[channel].join(',')}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 -i #{t.name}"# --extrapolate=#{$to_extrapolate.join(",")} #{t.name}" #FIXME! to be removed!
-  end
-  return ret
-end
-
-mmt_morphed_shape_file = make_morphing_task('mmt', mmt_shape_file)
-task :mmt_morphed_shapes => mmt_morphed_shape_file
-
-emt_morphed_shape_file = make_morphing_task('emt', emt_shape_file)
-task :emt_morphed_shapes => emt_morphed_shape_file
-
-eet_morphed_shape_file = make_morphing_task('eet', eet_shape_file)
-task :eet_morphed_shapes => eet_morphed_shape_file
-
 
 def make_cgs_conf_task(channel)
   ret = "#{$carddir}/#{channel}/cgs.conf"
@@ -659,10 +671,11 @@ def make_unc_conf_task(channel, opttag='')
   return ret
 end
 
-def make_unc_vals_task(channel, opttag='')
+def make_unc_vals_task(channel, opttag='', use_postfit=false)
   ret = "#{$carddir}/#{channel}/unc.vals"
+  additional = Array[]
   file ret => ["card_config/unc.vals.#{channel}.#{$period}", 
-    "#{$carddir}/#{channel}/shapes.root"]  do |t| #+ Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.root") shapes.root depends on statshapes, so are redundant
+    "#{$carddir}/#{channel}/shapes.root"] do |t| #+ Dir.glob("results/#{$jobid}/plots/#{channel}/*_statshapes.root") shapes.root depends on statshapes, so are redundant
     # Copy the basic template
     carddir_channel = File.dirname(t.name)
     sh "mkdir -p #{carddir_channel}"
@@ -673,8 +686,13 @@ def make_unc_vals_task(channel, opttag='')
     Dir.glob("results/#{$jobid}/plots/#{channel}/#{channel}#{opttag}_shapes_*_statshapes.txt").each do |list|
       category = list.split('/')[-1].split('_')[-2]
       sh "cat #{list} | xargs -n 1 -I {} echo '#{category} fakes {} 1.0' >> #{t.name}"
+      #sh "python get_fake_systematic.py #{carddir_channel}/shapes.root #{$categories_map[channel].join(',')} CMS_vhtt_#{category}_fakes_#{$period} >> #{t.name}"
     end
-    sh "python get_fake_systematic.py #{carddir_channel}/shapes.root #{$categories_map[channel].join(',')} CMS_vhtt_#{channel}_fakes_#{$period} >> #{t.name}"
+    if !use_postfit
+      sh "echo #{$categories_map[channel].join(',')} fakes CMS_vhtt_#{channel}_fakes_#{$period} 1.50 >> #{t.name}"
+    else
+      sh "./get_fake_systematic.py results/#{$jobid}/plots/#{channel}/f3/postfit/#{channel}.pulls.all.raw_txt CMS_vhtt_#{channel}_fakes_#{$period} 1.50 '#{$categories_map[channel].join(',')} fakes' >> #{t.name}"
+    end
   end
 end
 
@@ -721,20 +739,263 @@ def combine_channels(mass)
   return card
 end
 
+def copy_file(source, target)
+  file target => [source] do |t|
+    sh "mkdir -p `dirname #{t.name}`"
+    sh "cp -v #{t.prerequisites[0]} #{t.name}"
+  end
+  return target
+end
+
+
+
+#################################################################################
+#### Background-only f3 pulls, to convince yourself and the others  #############
+#### (but mostly the others) that the background estimation is fine #############
+#################################################################################
+
+$carddir = "results/#{$jobid}/bkg-only-pulls" #change global var so we can reuse the functions
+
+mmt_f3_shape_file = "#{$mmtdir}/mmt_f3_shapes_#{$period}.root"
+$categories_map['mmt'].each do |category|
+  mmt_f3_shape_file = add_fake_errors(mmt_f3_shape_file, "mmt_f3", category)
+end
+task :mmt_f3_shapes => mmt_f3_shape_file
+
+emt_f3_shape_file = "#{$emtdir}/emt_f3_shapes_#{$period}.root"
+$categories_map['emt'].each do |category|
+  emt_f3_shape_file = add_fake_errors(emt_f3_shape_file, "emt_f3", category)
+end
+task :emt_f3_shapes => emt_f3_shape_file
+
+eet_f3_shape_file = "#{$eetdir}/eet_f3_shapes_#{$period}.root"
+$categories_map['eet'].each do |category|
+  eet_f3_shape_file = add_fake_errors(eet_f3_shape_file, "eet_f3", category)
+end
+task :eet_f3_shapes => eet_f3_shape_file
+
+def make_copy_task(channel, shapefile)
+  ret = "#{$carddir}/#{channel}/shapes.root"
+  file ret => [shapefile] do |t|
+    sh "mkdir -p `dirname #{t.name}`"
+    sh "cp #{t.prerequisites[0]} #{t.name}"
+  end
+  return ret
+end
+
+task :mmt_copied_f3_shapes => copy_file(mmt_f3_shape_file, "#{$carddir}/mmt/shapes.root")
+task :emt_copied_f3_shapes => copy_file(emt_f3_shape_file, "#{$carddir}/emt/shapes.root")
+task :eet_copied_f3_shapes => copy_file(eet_f3_shape_file, "#{$carddir}/eet/shapes.root")
+
+def make_f3_timestamp_task(channel)
+  timestamp = "#{$carddir}/#{channel}/.creation_timestamp"
+  #creates the tasks
+  make_unc_conf_task(channel, '_f3')
+  make_unc_vals_task(channel, '_f3')
+  make_cgs_conf_task(channel)
+  file timestamp => make_datacard_task(120, channel) do |t|
+    sh "touch #{t.name}"
+  end
+end
+
+file "#{$carddir}/llt/.creation_timestamp" => combine_channels(120) do |t|
+  sh "touch #{t.name}"
+end
+
+
+task :f3_cards_mmt => make_f3_timestamp_task('mmt')
+task :f3_cards_emt => make_f3_timestamp_task('emt')
+task :f3_cards_eet => make_f3_timestamp_task('eet')
+task :f3_cards_llt => "#{$carddir}/llt/.creation_timestamp"
+
+task :f3_cards => [:f3_cards_mmt,
+                :f3_cards_emt,
+                :f3_cards_eet,
+                :f3_cards_llt
+               ]
+
+
+def make_pulls_task(channel)
+  pulls_timestamp = "#{$carddir}/#{channel}/.pulls_computed"
+  carddir = $carddir #makes a copy so that if $cardir changes this does not
+  file pulls_timestamp => "#{$carddir}/#{channel}/.creation_timestamp" do |t|
+    chdir("#{carddir}/#{channel}") do
+      sh "limit.py --max-likelihood --stable --rMin 0 --rMax 0 120"
+      sh "python $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py 120/out/mlfit.root -f html > #{channel}.pulls.html"
+      sh "python $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py 120/out/mlfit.root -a -f html > #{channel}.pulls.all.html"
+      sh "python $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py 120/out/mlfit.root -a -f txt > #{channel}.pulls.all.raw_txt"
+    end
+    sh "touch #{t.name}"
+  end
+  return pulls_timestamp
+end
+
+task :f3_pulls_mmt => make_pulls_task('mmt')
+task :f3_pulls_emt => make_pulls_task('emt')
+task :f3_pulls_eet => make_pulls_task('eet')
+task :f3_pulls_llt => make_pulls_task('llt')
+task :f3_pulls => Array[:f3_pulls_mmt,
+                        :f3_pulls_emt,
+                        :f3_pulls_eet,
+                        :f3_pulls_llt]
+
+
+
+
+
+#################################################################################
+#### Background-only f3 post-fit plots, to convince yourself and the       ######
+#### others (but mostly the others) that the background estimation is fine ######
+#################################################################################
+
+def make_f3_postfit_shapes_task(channel)
+  shape_file = "results/#{$jobid}/plots/#{channel}/f3/postfit/#{channel}_f3_postfit_shapes.root"
+  carddir = $carddir #makes a copy so that if $cardir changes this does not
+  file shape_file => "#{carddir}/#{channel}/.pulls_computed" do |t|
+    sh "mkdir -p `dirname #{t.name}`"
+    sh "cp #{carddir}/#{channel}/shapes.root #{t.name}" #FIXME this may create to rake some problems if next command fails!
+    sh "#{ENV['CMSSW_BASE']}/src/HiggsAnalysis/HiggsToTauTau/test/postfit.py  #{t.name} #{carddir}/#{channel}/120/vhtt_#{channel}.txt --verbose --bins #{$categories_map[channel].join(' ')} --fitresults #{carddir}/#{channel}/120/out/mlfit.txt"
+  end
+  return shape_file
+end
+
+task :f3_postfit_shapes_mmt => make_f3_postfit_shapes_task('mmt')
+task :f3_postfit_shapes_emt => make_f3_postfit_shapes_task('emt')
+task :f3_postfit_shapes_eet => make_f3_postfit_shapes_task('eet')
+#task :f3_postfit_shapes_llt => make_f3_postfit_shapes_task('llt')
+task :f3_postfit_shapes => Array[:f3_postfit_shapes_mmt,
+                                 :f3_postfit_shapes_emt,
+                                 :f3_postfit_shapes_eet]
+
+
+#categories
+$xlabels_map = Hash[
+   'eet' => '"M_{e_{2}#tau} (GeV)"',
+   'emt' => '"M_{l_{2}#tau} (GeV)"',
+   'mmt' => '"M_{#mu_{2}#tau} (GeV)"',
+]
+
+
+def make_f3_postfit_plots_task(channel)
+  resultdir  = "results/#{$jobid}/plots/#{channel}/f3/postfit"
+  shape_file = "#{resultdir}/#{channel}_f3_postfit_shapes.root"
+  plot_timestamp = "#{resultdir}/.postfit_plots_timestamp"
+  carddir = $carddir #makes a copy so that if $cardir changes this does not
+  file plot_timestamp => shape_file do |t|
+    sh "mkdir -p `dirname #{t.name}`"
+    $categories_map[channel].each do |category|
+      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.png -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV' --show-errors"
+      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.pdf -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV' --show-errors"
+    end
+    sh "cp -v #{carddir}/#{channel}/#{channel}.pulls* #{resultdir}/."
+    sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.png -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV' --show-errors"
+    sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.pdf -x #{$xlabels_map[channel]} -d 1 -y 'Events / GeV' --show-errors"
+    sh "touch #{t.name}"
+  end
+  return plot_timestamp
+end
+
+task :f3_postfit_plots_mmt => make_f3_postfit_plots_task('mmt')
+task :f3_postfit_plots_emt => make_f3_postfit_plots_task('emt')
+task :f3_postfit_plots_eet => make_f3_postfit_plots_task('eet')
+#task :f3_postfit_plots_llt => make_f3_postfit_plots_task('llt')
+task :f3_postfit_plots => Array[:f3_postfit_plots_mmt,
+                                :f3_postfit_plots_emt,
+                                :f3_postfit_plots_eet]
+
+
+
+
+
+
+
+
+################################################################################
+# Recipes to make data cards (plots come for free)
+#  targets:
+#      mmt_shapes
+#      emt_shapes
+#      eet_shapes
+#      cards
+#      copycards -> move cards to official HTT CVS area
+################################################################################
+
+$carddir = "results/#{$jobid}/cards"
+
+mmt_shape_file = "#{$mmtdir}/mmt_shapes_#{$period}.root"
+$categories_map['mmt'].each do |category|
+  mmt_shape_file = add_fake_errors(mmt_shape_file, "mmt", category)
+end
+task :mmt_shapes => mmt_shape_file
+
+emt_shape_file = "#{$emtdir}/emt_shapes_#{$period}.root"
+$categories_map['emt'].each do |category|
+  emt_shape_file = add_fake_errors(emt_shape_file, "emt", category)
+end
+task :emt_shapes => emt_shape_file
+
+eet_shape_file = "#{$eetdir}/eet_shapes_#{$period}.root"
+$categories_map['eet'].each do |category|
+  eet_shape_file = add_fake_errors(eet_shape_file, "eet", category)
+end
+task :eet_shapes => eet_shape_file
+
+$carddir = "results/#{$jobid}/cards"
+
+cardmasses = get_sample_names('VH') #get all the VH samples available
+cardmasses = cardmasses.select{|x| (not x.include? "HWW") and (not x.include? "lepdecay")} #get only the H2Tau, to avid repetition
+if $period == '8TeV' 
+  cardmasses = cardmasses.map{|x| x.sub("VH_H2Tau_M-","")} #remove trailing name, the leftover is the mass (as a string)
+else
+  cardmasses = cardmasses.map{|x| x.sub("VH_","")} #remove trailing name, the leftover is the mass (as a string)
+end
+cardmasses = cardmasses.map{|x| Integer(x)} #maps to integers (don't know if it's really needed but can't harm)
+cardmasses = cardmasses.select{|x| x <= 140} #FIXME! to be removed!
+#puts cardmasses
+
+$to_extrapolate = cardmasses.select{|x| x > 140}
+
+def make_morphing_task(channel, shapefile)
+  ret = "#{$carddir}/#{channel}/shapes.root"
+  file ret => [shapefile] do |t|
+    sh "mkdir -p `dirname #{t.name}`"
+    sh "cp #{t.prerequisites[0]} #{t.name}"
+    sh "horizontal-morphing.py --categories='#{$categories_map[channel].join(',')}' --samples='WH_hww{MASS}' --uncerts='' --masses='110,120,130,140' --step-size=5 #{t.name}"# --extrapolate=#{$to_extrapolate.join(",")} #{t.name}" #FIXME! to be removed!
+  end
+  return ret
+end
+
+mmt_morphed_shape_file = make_morphing_task('mmt', mmt_shape_file)
+task :mmt_morphed_shapes => mmt_morphed_shape_file
+
+emt_morphed_shape_file = make_morphing_task('emt', emt_shape_file)
+task :emt_morphed_shapes => emt_morphed_shape_file
+
+eet_morphed_shape_file = make_morphing_task('eet', eet_shape_file)
+task :eet_morphed_shapes => eet_morphed_shape_file
+
+
+
 def make_timestamp_task(cardmasses, channel)
   timestamp = "#{$carddir}/#{channel}/.creation_timestamp"
   #creates the tasks
   make_unc_conf_task(channel)
-  make_unc_vals_task(channel)
+  make_unc_vals_task(channel, '', true)
   make_cgs_conf_task(channel)
   file timestamp => cardmasses.map{|x| make_datacard_task(x, channel)} do |t|
+    sh "mkdir -p `dirname #{t.name}`"
     sh "touch #{t.name}"
   end
 end
 
 file "#{$carddir}/llt/.creation_timestamp" => cardmasses.map{|x| combine_channels(x)} do |t|
+  sh "mkdir -p `dirname #{t.name}`"
   sh "touch #{t.name}"
 end
+
+task :cards_mmt => make_timestamp_task(cardmasses, 'mmt')
+task :cards_emt => make_timestamp_task(cardmasses, 'emt')
+task :cards_eet => make_timestamp_task(cardmasses, 'eet')
 
 task :cards => [make_timestamp_task(cardmasses, 'mmt'),
                 make_timestamp_task(cardmasses, 'emt'),
@@ -860,15 +1121,16 @@ end
 #### Copying card configuration to official place ###############################
 #################################################################################
 $httcombodir = "#{ENV['CMSSW_BASE']}/src/HiggsAnalysis/HiggsToTauTau/setup/vhtt/"
-$auxdir      = "#{ENV['CMSSW_BASE']}/src/auxiliaries/datacards/collected/vhtt/"
+$auxdir      = "#{ENV['CMSSW_BASE']}/src/auxiliaries/shapes/VHTT/"
 
-def copy_file(source, target)
+def copy_and_trim_file(source, target)
   file target => [source] do |t|
     sh "mkdir -p `dirname #{t.name}`"
-    sh "cp -v #{t.prerequisites[0]} #{t.name}"
+    sh "grep -v -E 'CMS_vhtt_.*_bin_[0-9]+' #{source} > #{t.name}"
   end
   return target
 end
+
 
 def copy_configs(channel, vhtt_number)
   dir    = "#{$carddir}/#{channel}"
@@ -878,10 +1140,10 @@ def copy_configs(channel, vhtt_number)
   copy_file("#{dir}/cgs.conf", "#{$httcombodir}/cgs-#{htt_id}.conf")
 
   #copies unc.conf
-  copy_file("#{dir}/unc.conf", "#{$httcombodir}/unc-#{htt_id}.conf")
+  copy_and_trim_file("#{dir}/unc.conf", "#{$httcombodir}/unc-#{htt_id}.conf")
 
   #copies unc.vals
-  copy_file("#{dir}/unc.vals", "#{$httcombodir}/unc-#{htt_id}.vals")
+  copy_and_trim_file("#{dir}/unc.vals", "#{$httcombodir}/unc-#{htt_id}.vals")
 
   return ["#{$httcombodir}/cgs-#{htt_id}.conf", "#{$httcombodir}/unc-#{htt_id}.conf", "#{$httcombodir}/unc-#{htt_id}.vals"]
 end
@@ -903,149 +1165,3 @@ task :copycards => ["#{$auxdir}/vhtt_llt.inputs-sm-#{$period}.root"] +
 end
 
 
-#################################################################################
-#### Background-only f3 pulls, to convince yourself and the others  #############
-#### (but mostly the others) that the background estimation is fine #############
-#################################################################################
-
-$carddir = "results/#{$jobid}/bkg-only-pulls" #change global var so we can reuse the functions
-
-mmt_f3_shape_file = "#{$mmtdir}/mmt_f3_shapes_#{$period}.root"
-$categories_map['mmt'].each do |category|
-  mmt_f3_shape_file = add_fake_errors(mmt_f3_shape_file, "mmt_f3", category)
-end
-task :mmt_f3_shapes => mmt_f3_shape_file
-
-emt_f3_shape_file = "#{$emtdir}/emt_f3_shapes_#{$period}.root"
-$categories_map['emt'].each do |category|
-  emt_f3_shape_file = add_fake_errors(emt_f3_shape_file, "emt_f3", category)
-end
-task :emt_f3_shapes => emt_f3_shape_file
-
-eet_f3_shape_file = "#{$eetdir}/eet_f3_shapes_#{$period}.root"
-$categories_map['eet'].each do |category|
-  eet_f3_shape_file = add_fake_errors(eet_f3_shape_file, "eet_f3", category)
-end
-task :eet_f3_shapes => eet_f3_shape_file
-
-def make_copy_task(channel, shapefile)
-  ret = "#{$carddir}/#{channel}/shapes.root"
-  file ret => [shapefile] do |t|
-    sh "mkdir -p `dirname #{t.name}`"
-    sh "cp #{t.prerequisites[0]} #{t.name}"
-  end
-  return ret
-end
-
-task :mmt_copied_f3_shapes => copy_file(mmt_f3_shape_file, "#{$carddir}/mmt/shapes.root")
-task :emt_copied_f3_shapes => copy_file(emt_f3_shape_file, "#{$carddir}/emt/shapes.root")
-task :eet_copied_f3_shapes => copy_file(eet_f3_shape_file, "#{$carddir}/eet/shapes.root")
-
-def make_f3_timestamp_task(cardmasses, channel)
-  timestamp = "#{$carddir}/#{channel}/.creation_timestamp"
-  #creates the tasks
-  make_unc_conf_task(channel, '_f3')
-  make_unc_vals_task(channel, '_f3')
-  make_cgs_conf_task(channel)
-  file timestamp => cardmasses.map{|x| make_datacard_task(x, channel)} do |t|
-    sh "touch #{t.name}"
-  end
-end
-
-file "#{$carddir}/llt/.creation_timestamp" => combine_channels(120) do |t|
-  sh "touch #{t.name}"
-end
-
-
-task :f3_cards_mmt => make_f3_timestamp_task([120], 'mmt')
-task :f3_cards_emt => make_f3_timestamp_task([120], 'emt')
-task :f3_cards_eet => make_f3_timestamp_task([120], 'eet')
-task :f3_cards_llt => "#{$carddir}/llt/.creation_timestamp"
-
-task :f3_cards => [:f3_cards_mmt,
-                :f3_cards_emt,
-                :f3_cards_eet,
-                :f3_cards_llt
-               ]
-
-
-def make_pulls_task(channel)
-  pulls_timestamp = "#{$carddir}/#{channel}/.pulls_computed"
-  carddir = $carddir #makes a copy so that if $cardir changes this does not
-  file pulls_timestamp => "#{$carddir}/#{channel}/.creation_timestamp" do |t|
-    chdir("#{carddir}/#{channel}") do
-      sh "limit.py --max-likelihood --stable --rMin 0 --rMax 0 120"
-      sh "python $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py 120/out/mlfit.root -f html > #{channel}.pulls.html"
-      sh "python $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py 120/out/mlfit.root -a -f html > #{channel}.pulls.all.html"
-      sh "python $CMSSW_BASE/src/HiggsAnalysis/CombinedLimit/test/diffNuisances.py 120/out/mlfit.root -a -f txt > #{channel}.pulls.all.raw_txt"
-    end
-    sh "touch #{t.name}"
-  end
-  return pulls_timestamp
-end
-
-task :f3_pulls_mmt => make_pulls_task('mmt')
-task :f3_pulls_emt => make_pulls_task('emt')
-task :f3_pulls_eet => make_pulls_task('eet')
-task :f3_pulls_llt => make_pulls_task('llt')
-task :f3_pulls => Array[:f3_pulls_mmt,
-                        :f3_pulls_emt,
-                        :f3_pulls_eet,
-                        :f3_pulls_llt]
-
-#################################################################################
-#### Background-only f3 post-fit plots, to convince yourself and the       ######
-#### others (but mostly the others) that the background estimation is fine ######
-#################################################################################
-
-def make_f3_postfit_shapes_task(channel)
-  shape_file = "results/#{$jobid}/plots/#{channel}/f3/postfit/#{channel}_f3_postfit_shapes.root"
-  carddir = $carddir #makes a copy so that if $cardir changes this does not
-  file shape_file => "#{$carddir}/#{channel}/.pulls_computed" do |t|
-    sh "mkdir -p `dirname #{t.name}`"
-    sh "cp #{carddir}/#{channel}/shapes.root #{t.name}" #FIXME this may create to rake some problems if next command fails!
-    sh "#{ENV['CMSSW_BASE']}/src/HiggsAnalysis/HiggsToTauTau/test/postfit.py  #{t.name} #{$carddir}/#{channel}/120/vhtt_#{channel}.txt --verbose --bins #{$categories_map[channel].join(' ')} --fitresults #{$carddir}/#{channel}/120/out/mlfit.txt"
-  end
-  return shape_file
-end
-
-task :f3_postfit_shapes_mmt => make_f3_postfit_shapes_task('mmt')
-task :f3_postfit_shapes_emt => make_f3_postfit_shapes_task('emt')
-task :f3_postfit_shapes_eet => make_f3_postfit_shapes_task('eet')
-#task :f3_postfit_shapes_llt => make_f3_postfit_shapes_task('llt')
-task :f3_postfit_shapes => Array[:f3_postfit_shapes_mmt,
-                                 :f3_postfit_shapes_emt,
-                                 :f3_postfit_shapes_eet]
-
-
-#categories
-$xlabels_map = Hash[
-   'eet' => '"M_{e_{2}#tau} (GeV)"',
-   'emt' => '"M_{l_{2}#tau} (GeV)"',
-   'mmt' => '"M_{#mu_{2}#tau} (GeV)"',
-]
-
-
-def make_f3_postfit_plots_task(channel)
-  resultdir  = "results/#{$jobid}/plots/#{channel}/f3/postfit"
-  shape_file = "#{resultdir}/#{channel}_f3_postfit_shapes.root"
-  plot_timestamp = "#{resultdir}/.postfit_plots_timestamp"
-  file plot_timestamp => shape_file do |t|
-    sh "mkdir -p `dirname #{t.name}`"
-    $categories_map[channel].each do |category|
-      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.png -x #{$xlabels_map[channel]}"
-      sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{category} -e 'WH*' -o #{resultdir}/#{category}.pdf -x #{$xlabels_map[channel]}"
-    end
-    sh "shapes2hist.py #{resultdir}/#{channel}_f3_postfit_shapes.root #{$categories_map[channel].join(' ')} -e 'WH*' -o #{resultdir}/#{channel}_categories_summed.png -x #{$xlabels_map[channel]}"
-    sh "touch #{t.name}"
-  end
-  return plot_timestamp
-end
-
-task :f3_postfit_plots_mmt => make_f3_postfit_plots_task('mmt')
-task :f3_postfit_plots_emt => make_f3_postfit_plots_task('emt')
-task :f3_postfit_plots_eet => make_f3_postfit_plots_task('eet')
-#task :f3_postfit_plots_llt => make_f3_postfit_plots_task('llt')
-task :f3_postfit_plots => Array[:f3_postfit_plots_mmt,
-                                 :f3_postfit_plots_emt,
-                                 :f3_postfit_plots_eet]
