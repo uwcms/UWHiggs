@@ -4,5 +4,7 @@
 #export jobid8='MCntuples_13May'
 #export jobid8='newNtuple_3JuneLfvHnoteXsec'
 #export jobid8='newNtuple_2Sept'
-export jobid8='newNtuple_1Oct'
+#export jobid8='newNtuple_1Oct'
 export jobidmt='MCntuples_8April'
+export jobid8='newNtuple_10Oct'
+export jobidSync='newNtuple_Sync'

@@ -52,6 +52,7 @@ samples = Hash[
                "signalMCMuTauvbf" => get_sample_names('vbfHiggsToMuTau'),
                "ggHiggsTo2Taus" => get_sample_names('GluGluToHToTauTau_M-125_8TeV-powheg-pythia6'),
                "vbfHiggsTo2Taus" => get_sample_names('VBF_HToTauTau_M-125_8TeV-powheg-pythia6'),
+               "Zembedded" => get_sample_names('ZetauEmbedded'),
                "dataSingleE" => get_sample_names('data_SingleElectron_Run2012')
                
 ]
@@ -229,7 +230,7 @@ task :genkinEMu => get_analyzer_results("LFVHAnalyzeGENEMu.py", samples['signalM
 
 task :recoplots => get_analyzer_results("LFVHETauAnalyzer.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'])# + samples['dataSingleE'] )
 
-task :recoplotsMVA => get_analyzer_results("LFVHETauAnalyzerMVA.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + 
+task :recoplotsMVA => get_analyzer_results("LFVHETauAnalyzerMVA.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + samples['Zembedded']+
                                            samples['dataSingleE'] )
 
 task :recoplotsMVAeMtcut => get_analyzer_results("LFVHETauAnalyzerMVA_eMTCut.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + 
@@ -241,18 +242,18 @@ task :recoplotsMuTau => get_analyzer_results("LFVHMuTauAnalyzer.py", samples['si
 task :controlplots => get_analyzer_results("EEAnalyzer.py",samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + samples['dataSingleE'])
 
 task :controlplotsMVA => get_analyzer_results("EEAnalyzerMVA.py", #samples['signalMCvbf'] )#samples['zjets'])
-                                              samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + samples['dataSingleE'])
+                                              samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] +  samples['Zembedded']+ samples['dataSingleE'])
 
 
 task :fakeeet => get_analyzer_results("TauFakeRateAnalyzer.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets']  +
                                       samples['wwjets']  + samples['zzjets'] + 
                                       samples['wzjets'] +
-                                      samples['zjets'] +  samples['dataSingleE'])
+                                      samples['zjets'] +   samples['Zembedded']+samples['dataSingleE'])
 
 task :fakeeetMVA => get_analyzer_results("TauFakeRateAnalyzerMVA.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets']  +
                                       samples['wwjets']  + samples['zzjets'] + 
                                       samples['wzjets'] +
-                                      samples['zjets'] +  samples['dataSingleE'])
+                                      samples['zjets'] +   samples['Zembedded']+samples['dataSingleE'])
 
 
 $etdir = "plots/#{$jobid}/LFVHETauAnalyzer/et/"

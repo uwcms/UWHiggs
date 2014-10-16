@@ -74,7 +74,8 @@ class BasePlotter(Plotter):
             'WZJets*',
             'ZZJets*',
             'Fake*',
-            'data*', 
+            'data_Zetau*',
+            'data_Single*'
             
         ]
         
