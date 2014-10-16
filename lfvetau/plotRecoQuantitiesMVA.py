@@ -54,7 +54,8 @@ mc_samples = [
     'WZJets*',
     'ZZJets*',
     'Fake*',
-    'data*'
+    'data_Zetau*',
+    'data_Single*'
 ]
 
         
@@ -62,7 +63,7 @@ files = []
 lumifiles = []
 
 for x in mc_samples:
-        files.extend(glob.glob('results/%s/LFVHETauAnalyzerMVA_noOverlap/%s.root' % (jobid, x)))
+        files.extend(glob.glob('results/%s/LFVHETauAnalyzerMVA/%s.root' % (jobid, x)))
         lumifiles.extend(glob.glob('inputs/%s/%s.lumicalc.sum' % (jobid, x)))
 
 sign = ['os', 'ss']
@@ -103,6 +104,8 @@ DYLLfake = views.SubdirectoryView(views.SumView( *[ plotter.get_view(regex) for 
 
 DYTT = views.TitleView(views.StyleView(views.SumView( *[ plotter.get_view(regex) for regex in filter(lambda x :  x.endswith('jets_M50_skimmedTT'), mc_samples )]), **remove_name_entry(data_styles['Z*jets*TT'])), 
 'DY (#rightarrow #tau#tau)  + jets')
+DYTTfake =views.SubdirectoryView(views.SumView( *[ plotter.get_view(regex) for regex in filter(lambda x :  x.startswith('data_Zetau'), mc_samples )]), 'tLoose')
+
 TT = views.TitleView(views.StyleView(views.SumView(  *[ plotter.get_view(regex) for regex in  filter(lambda x : x.startswith('TT') , mc_samples)]), **remove_name_entry(data_styles['TTJets*'])), 't#bar{t}')
 singleT = views.TitleView(views.StyleView(views.SumView(  *[ plotter.get_view(regex) for regex in  filter(lambda x : x.startswith('T_') or x.startswith('Tbar_'), mc_samples)]), **remove_name_entry(data_styles['T*_t*'])), 'Single Top')
 SMH = views.TitleView(views.StyleView(views.SumView( *[ plotter.get_view(regex) for regex in filter(lambda x : 'HToTauTau' in x , mc_samples)]), **remove_name_entry(data_styles['GluGluToHToTauTau*'])), 'SM Higgs')
@@ -111,16 +114,20 @@ SMH = views.TitleView(views.StyleView(views.SumView( *[ plotter.get_view(regex) 
 plotter.views['EWKDiboson']={'view' : EWKDiboson }
 plotter.views['Wplus']={'view' : Wplus }
 #plotter.views['DYLL']={'view' : DYLL }
-plotter.views['DYTT']={'view' : DYTT }
+#plotter.views['DYTT']={'view' : DYTT }
 plotter.views['singleT']={'view' : singleT }
 plotter.views['SMH']={'view' : SMH }
 plotter.views['TT']={'view' : TT }
 #plotter.views['DY']={'view' : DY }
 new_mc_samples =[]
-
+plotter.views['DYTT']={'view' : DYTTfake }
 #DYLL  = views.TitleView(views.StyleView(views.SubtractionView(views.SumView( *[ plotter.get_view(regex) for regex in filter(lambda x :  x.endswith('jets_M50_skimmedTT'), mc_samples )]), views.SubdirectoryView(views.SumView( *[ plotter.get_view(regex) for regex in filter(lambda x :  x.endswith('jets_M50_skimmedLL'), mc_samples )]), 'tLoose')), **remove_name_entry(data_styles['Z*jets*LL'])), 'DY (#rightarrow ll)  + jets')
 finalDYLL = SubtractionView(DYLL,DYLLfake)
 plotter.views['finalDYLL']={'view' : finalDYLL }
+finalDYTT = SubtractionView(DYTT,DYTTfake)
+plotter.views['finalDYTT']={'view' : finalDYTT }
+
+
 
 new_mc_samples.extend(['EWKDiboson', 
                        'SMH', 'singleT',#'Wplus',  
