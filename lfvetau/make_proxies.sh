@@ -18,6 +18,7 @@ fi
 
 echo "Building cython wrappers from file: $afile"
 
+rake "make_wrapper[$afile, eee/final/Ntuple, EEETree]"
 rake "make_wrapper[$afile, ee/final/Ntuple, EETree]"
 rake "make_wrapper[$afile, eet/final/Ntuple, EETauTree]"
 rake "make_wrapper[$afile, et/final/Ntuple, ETauTree]"

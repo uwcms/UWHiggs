@@ -1,5 +1,5 @@
 ##Correction Factor still to add
-from EETauTree import EETauTree
+from EEETree import EEETree
 import os
 import ROOT
 import math
@@ -36,11 +36,11 @@ def deltaR(phi1, phi2, eta1, eta2):
     return sqrt(deta*deta + dphi*dphi);
     
 def etDR(row):
-    return row.e1_t_DR if row.e1_t_DR < row.e2_t_DR else row.e2_t_DR
+    return row.e1_e3_DR if row.e1_e3_DR < row.e2_e3_DR else row.e2_e3_DR
 
 def etDPhi(row):
-    e1tDPhi=deltaPhi(row.e1Phi, row.tPhi)
-    e2tDPhi=deltaPhi(row.e2Phi, row.tPhi)
+    e1tDPhi=deltaPhi(row.e1Phi, row.e3Phi)
+    e2tDPhi=deltaPhi(row.e2Phi, row.e3Phi)
     return e1tDPhi if e1tDPhi < e2tDPhi else e2tDPhi
 
 def Z(row):
@@ -52,12 +52,12 @@ def Z(row):
     return zFourVector
 
 
-class TauFakeRateAnalyzerMVA(MegaBase):
-    tree = 'eet/final/Ntuple'
+class EleFakeRateAnalyzerMVA(MegaBase):
+    tree = 'eee/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
         self.channel='EET'
-        super(TauFakeRateAnalyzerMVA, self).__init__(tree, outfile, **kwargs)
-        self.tree = EETauTree(tree)
+        super(EleFakeRateAnalyzerMVA, self).__init__(tree, outfile, **kwargs)
+        self.tree = EEETree(tree)
         self.out=outfile
         self.histograms = {}
         self.pucorrector = mcCorrections.make_puCorrector('singlee')
@@ -80,28 +80,32 @@ class TauFakeRateAnalyzerMVA(MegaBase):
         if bool(row.e1MatchesSingleE27WP80) and  not bool(row.e2MatchesSingleE27WP80) : etrig = 'e1'
         if not bool(row.e1MatchesSingleE27WP80) and  bool(row.e2MatchesSingleE27WP80) :  etrig = 'e2'
 
+        if bool(row.e3MatchesSingleE27WP80) and not bool(row.e1MatchesSingleE27WP80)  and not bool(row.e2MatchesSingleE27WP80) : etrig ='e3'
+                
+ 
         #if bool(row.e1MatchesEle27WP80) and  not bool(row.e2MatchesEle27WP80) : etrig = 'e1'
         #if not bool(row.e1MatchesEle27WP80) and  bool(row.e2MatchesEle27WP80) :  etrig = 'e2'
         return self.pucorrector(row.nTruePU) * \
             mcCorrections.get_electronId_corrections13_MVA(row, 'e1') * \
             mcCorrections.get_electronIso_corrections13_MVA(row, 'e1') * \
             mcCorrections.get_electronId_corrections13_MVA(row, 'e2') * \
-            mcCorrections.get_electronIso_corrections13_MVA(row, 'e2')* mcCorrections.get_trigger_corrections_MVA(row, etrig) 
+            mcCorrections.get_electronIso_corrections13_MVA(row, 'e2')* \
+            mcCorrections.get_electronId_corrections13_MVA(row, 'e3') * \
+            mcCorrections.get_electronIso_corrections13_MVA(row, 'e3') * \
+            mcCorrections.get_trigger_corrections_MVA(row, etrig) 
 ##add the trigger correction 
 
     def begin(self):
         
-        tauiso = ['tNoCuts', 'tSuperSuperLoose', 'tSuperLoose', 'tLoose', 'tTigh']
+        eiso = ['eLoose', 'eTigh']
         folder = []
         sign = ['ss','os']
-        for iso in tauiso:
+        for iso in eiso:
             for s in sign:
                 folder.append(s+'/'+iso)
-                folder.append(s+'/'+iso+'/tptregion')
                 j=0
                 while j < 4 :
                     folder.append(s+'/'+iso+'/'+str(j))
-                    folder.append(s+'/'+iso+'/'+str(j)+'/tptregion')
                     j+=1
                     
         for f in folder: 
@@ -114,23 +118,21 @@ class TauFakeRateAnalyzerMVA(MegaBase):
             self.book(f,"e2Phi", "e2 phi",  100, -3.2, 3.2)
             self.book(f,"e2Eta", "e2 eta", 50, -2.5, 2.5)
 
+            self.book(f,"e3Pt", "e3 p_{T}", 200, 0, 200)
+            self.book(f,"e3Phi", "e3 phi",  100, -3.2, 3.2)
+            self.book(f,"e3Eta", "e3 eta", 50, -2.5, 2.5)
+            self.book(f,"e3AbsEta", "e3 abs eta", 25, 0, 2.5)
+
             self.book(f, "e1e2Mass",  "e1e2 Inv Mass",  32, 0, 320)
 
-            self.book(f, "tMtToPFMET", "#tau Met MT", 100, 0, 100)
+            self.book(f, "e3MtToPFMET", "e3 Met MT", 100, 0, 100)
             
-            self.book(f,"tRawIso3Hits", "tRawIso3Hits", 500, 0, 100) 
-            self.book(f,"tPt", "t p_{T}", 200, 0, 200)
-            self.book(f,"tPtbarrel", "t p_{T} barrel", 200, 0, 200)
-            self.book(f,"tPtendcap", "t p_{T} endcap", 200, 0, 200)
-            self.book(f,"tPhi", "t phi",  100, -3.2, 3.2)
-            self.book(f,"tEta", "t eta", 50, -2.5, 2.5)
-            self.book(f,"tAbsEta", "t abs eta", 50, -2.5, 2.5)
  
-            self.book(f,"etDR", "e t DR", 50, 0, 10)
-            self.book(f,"etDPhi", "e t DPhi", 32, 0, 3.2)
+            self.book(f,"ee3DR", "e e3 DR", 50, 0, 10)
+            self.book(f,"ee3DPhi", "e e3 DPhi", 32, 0, 3.2)
 
-            self.book(f,"ztDR", "Z #tau DR", 50, 0, 10)
-            self.book(f,"ztDPhi", "Z #tau DPhi", 32, 0, 3.2)
+            self.book(f,"ze3DR", "Z e3 DR", 50, 0, 10)
+            self.book(f,"ze3DPhi", "Z e3 DPhi", 32, 0, 3.2)
             self.book(f,"Zpt", "Z p_{T}", 200, 0, 200)
 
             
@@ -161,25 +163,23 @@ class TauFakeRateAnalyzerMVA(MegaBase):
         histos[folder+'/e2Eta'].Fill(row.e2Eta, weight)
         histos[folder+'/e2Phi'].Fill(row.e2Phi, weight)
 
+        histos[folder+'/e3Pt'].Fill(row.e3Pt, weight)
+        histos[folder+'/e3Eta'].Fill(row.e3Eta, weight)
+        histos[folder+'/e3AbsEta'].Fill(abs(row.e3Eta), weight)
+        histos[folder+'/e3Phi'].Fill(row.e3Phi, weight)
+
         histos[folder+'/e1e2Mass'].Fill(row.e1_e2_Mass, weight)
         histos[folder+'/tMtToPFMET'].Fill(row.tMtToPFMET,weight)
     
-        #histos[folder+'/tRawIso3Hits'].Fill(row.tRawIso3Hits, weight)
-        histos[folder+'/tPt'].Fill(row.tPt, weight)
-        if abs(row.tEta) < 1.5 :  histos[folder+'/tPtbarrel'].Fill(row.tPt, weight)
-        if abs(row.tEta) > 1.5 :  histos[folder+'/tPtendcap'].Fill(row.tPt, weight)
-        histos[folder+'/tEta'].Fill(row.tEta, weight)
-        histos[folder+'/tAbsEta'].Fill(abs(row.tEta), weight)
-        histos[folder+'/tPhi'].Fill(row.tPhi, weight) 
- 
+         
         histos[folder+'/type1_pfMetEt'].Fill(row.type1_pfMetEt)
-        histos[folder+'/etDR'].Fill(etDR(row)) 
-        histos[folder+'/etDPhi'].Fill(etDPhi(row)) 
+        histos[folder+'/ee3DR'].Fill(ee3DR(row)) 
+        histos[folder+'/ee3DPhi'].Fill(ee3DPhi(row)) 
         histos[folder+'/jetN_30'].Fill(row.jetVeto30, weight) 
         histos[folder+'/bjetCSVVeto30'].Fill(row.bjetCSVVeto30, weight) 
        
-        histos[folder+'/ztDR'].Fill(deltaR(Z(row).Phi(), row.tPhi, Z(row).Eta(), row.tEta))
-        histos[folder+'/ztDPhi'].Fill(deltaPhi(Z(row).Phi(), row.tPhi))
+        histos[folder+'/ze3DR'].Fill(deltaR(Z(row).Phi(), row.tPhi, Z(row).Eta(), row.e3Eta))
+        histos[folder+'/ze3DPhi'].Fill(deltaPhi(Z(row).Phi(), row.e3Phi))
         histos[folder+'/Zpt'].Fill(Z(row).Pt())
             
 
@@ -199,7 +199,7 @@ class TauFakeRateAnalyzerMVA(MegaBase):
             #if not bool(row.e1MatchesEle27WP80) and not bool(row.e2MatchesEle27WP80) : continue
             
             #else :
-            if not bool(row.e1MatchesSingleE27WP80) and  not bool(row.e2MatchesSingleE27WP80) : continue
+            if not bool(row.e3MatchesSingleE27WP80) : continue
                 #if not bool(row.singleEPass) : continue
                 #if not bool(row.e1MatchesSingleE) and  not bool(row.e2MatchesSingleE) : continue
                 
@@ -229,93 +229,40 @@ class TauFakeRateAnalyzerMVA(MegaBase):
             cut_flow_trk.Fill('e2IDiso')
             if not abs(row.e1_e2_Mass-91.2) < 20: continue
             cut_flow_trk.Fill('ZMass')
-            if not selections.tauSelection(row, 't'): continue
+
+            if not selections.lepton_id_iso(row, 'e3', 'eid13Tight_idiso02'): continue
+
             cut_flow_trk.Fill('tsel')
 
-            if not row.tAntiMuon2Loose: continue
-            cut_flow_trk.Fill('tAntiMuon')
-            if not row.tAntiElectronMVA5Tight: continue #was 3
-            cut_flow_trk.Fill('tAntiEle')
 
             if row.tauVetoPt20EleTight3MuLoose : continue 
             #if row.tauHpsVetoPt20 : continue
             if row.muVetoPt5IsoIdVtx : continue
             if row.eVetoCicLooseIso : continue # change it with Loose
             
-           # if not row.tMtToMET < 50:  continue
+            #if not row.e3MtToMET < 50:  continue
             cut_flow_trk.Fill('MtToMet')
             
             #            if  etDR(row) < 1. : continue 
             if (row.run, row.lumi, row.evt, row.e1Pt, row.e2Pt)==myevent: continue
             myevent=(row.run, row.lumi, row.evt, row.e1Pt, row.e2Pt)
 
-            tauiso = 'tNoCuts'
+            eleiso = 'eLoose'
             sign = 'ss' if row.e1_e2_SS else 'os'
-            folder = sign+'/'+tauiso
+            folder = sign+'/'+eleiso
           
             self.fill_histos(row, folder)
             folder=folder+'/'+str(int(jn))
             self.fill_histos(row, folder)
             
-            
-            if  row.tPt < 90 and row.tPt>65 : 
-                folder = folder+'/tptregion'
-                self.fill_histos(row, folder)
-                folder = sign+'/'+tauiso+'/tptregion'
-                self.fill_histos(row, folder)
-                
-            if not row.tRawIso3Hits < 10 : continue
-            cut_flow_trk.Fill('tRawIso10')
-            tauiso = 'tSuperSuperLoose'
-            folder = sign+'/'+tauiso
-            self.fill_histos(row, folder)
-            folder=folder+'/'+str(int(jn))
-            self.fill_histos(row, folder)
-            if  row.tPt < 90 and row.tPt>65 : 
-                folder = folder+'/tptregion'
-                self.fill_histos(row, folder)
-                folder = sign+'/'+tauiso+'/tptregion'
-                self.fill_histos(row, folder)
-                
-            if not row.tRawIso3Hits < 5 : continue
-            cut_flow_trk.Fill('tRawIso5')
-            tauiso = 'tSuperLoose'
-            folder = sign+'/'+tauiso
-            self.fill_histos(row, folder)
-            folder=folder+'/'+str(int(jn))
-            self.fill_histos(row, folder)
-            if  row.tPt < 90 and row.tPt>65 : 
-                folder = folder+'/tptregion'
-                self.fill_histos(row, folder)
-                folder = sign+'/'+tauiso+'/tptregion'
-                self.fill_histos(row, folder)
-
-                        
-            if  row.tLooseIso3Hits : 
-                tauiso = 'tLoose'
-                folder = sign+'/'+tauiso
-                self.fill_histos(row,  folder)
-                cut_flow_trk.Fill('tLooseIso')
-                folder=folder+'/'+str(int(jn))
-                self.fill_histos(row, folder)
-                if  row.tPt < 90 and row.tPt>65 : 
-                    folder = folder+'/tptregion'
-                    self.fill_histos(row, folder)
-                    folder = sign+'/'+tauiso+'/tptregion'
-                    self.fill_histos(row, folder)
-
-            if row.tTightIso3Hits :
-                tauiso = 'tTigh' 
-                folder = sign+'/'+tauiso
+            if selections.lepton_id_iso(row, 'e3', 'eid13Tight_etauiso01'):
+                eleiso = 'eTigh' 
+                folder = sign+'/'+eleiso
                 self.fill_histos(row,  folder)
                 cut_flow_trk.Fill('tTightIso')
                 folder=folder+'/'+str(int(jn))
                 self.fill_histos(row, folder)
-                if  row.tPt < 90 and row.tPt>65 : 
-                    folder = folder+'/tptregion'
-                    self.fill_histos(row, folder)
-                    folder = sign+'/'+tauiso+'/tptregion'
-                    self.fill_histos(row, folder)
+                
                     
  
              

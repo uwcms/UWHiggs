@@ -12,12 +12,13 @@ export jobid=$jobid8
 #export jobid='newNtuple_3JuneOldWXJetsXsec'
 #rake genkin
 #rake recoplots
-rake recoplotsMVA
+#rake recoplotsMVA
 #rake recoplotsMVAeMtcut
 #rake controlplots
 #rake controlplotsMVA
 #rake fakeeet
 #rake fakeeetMVA
+rake fakeeeeMVA
 #rake fits
 #rake drawTauFakeRate
 #export jobid=$jobidmt

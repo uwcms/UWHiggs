@@ -250,10 +250,15 @@ task :fakeeet => get_analyzer_results("TauFakeRateAnalyzer.py", samples['signalM
                                       samples['wzjets'] +
                                       samples['zjets'] +   samples['Zembedded']+samples['dataSingleE'])
 
-task :fakeeetMVA => get_analyzer_results("TauFakeRateAnalyzerMVA.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets']  +
-                                      samples['wwjets']  + samples['zzjets'] + 
-                                      samples['wzjets'] +
-                                      samples['zjets'] +   samples['Zembedded']+samples['dataSingleE'])
+task :fakeeetMVA => get_analyzer_results("TauFakeRateAnalyzerMVA.py",# samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets']  + samples['Zembedded']+ samples['zjets'] +  
+                                         samples['wwjets']  + samples['zzjets'] + 
+                                         samples['wzjets'] +
+                                         samples['dataSingleE'])
+
+task :fakeeeeMVA => get_analyzer_results("EleFakeRateAnalyzerMVA.py", #samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets']  + samples['zjets'] +   samples['Zembedded']+
+                                         samples['wwjets']  + samples['zzjets'] + 
+                                         samples['wzjets']  +
+                                         samples['dataSingleE'])
 
 
 $etdir = "plots/#{$jobid}/LFVHETauAnalyzer/et/"
