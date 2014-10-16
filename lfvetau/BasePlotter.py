@@ -11,6 +11,7 @@ import re
 import os
 import math
 import rootpy.plotting.views as views
+from pdb import set_trace
 from rootpy.plotting.hist import HistStack
 import rootpy.plotting as plotting
 from FinalStateAnalysis.MetaData.data_views import data_views
@@ -21,7 +22,9 @@ import FinalStateAnalysis.Utilities.prettyjson as prettyjson
 from FinalStateAnalysis.MetaData.data_styles import data_styles
 from FinalStateAnalysis.PlotTools.Plotter  import Plotter
 from FinalStateAnalysis.PlotTools.SubtractionView      import SubtractionView, PositiveView
-
+from FinalStateAnalysis.PlotTools.MedianView     import MedianView
+from FinalStateAnalysis.PlotTools.SystematicsView     import SystematicsView
+from FinalStateAnalysis.StatTools.quad     import quad
 import ROOT
 import glob
 from pdb import set_trace
@@ -35,72 +38,67 @@ def create_mapper(mapping):
         return path
     return _f
 
+def remove_name_entry(dictionary):
+    return dict( [ i for i in dictionary.iteritems() if i[0] != 'name'] )
+
+def histo_diff_quad(mc_err, *systematics):
+    nbins = mc_err.GetNbinsX()
+    clone = mc_err.Clone()
+    sys_up = [i for i, _ in systematics]
+    sys_dw = [i for _, i in systematics]
+
+    #bin loop
+    for ibin in range(nbins+2): #from uflow to oflow
+        content = clone.GetBinContent(ibin)
+        error   = clone.GetBinError(ibin)
+
+        shifts_up = [abs(i.GetBinContent(ibin) - content) for i in sys_up]
+        shifts_dw = [abs(i.GetBinContent(ibin) - content) for i in sys_dw]
+        max_shift = [max(i, j) for i, j in zip(shifts_up, shifts_dw)]
+        
+        new_err = quad(error, *max_shift)
+        clone.SetBinError(ibin, new_err)
+
+    return clone
 
 class BasePlotter(Plotter):
-    def __init__ (self, channel, files, lumifiles, outputdir,forceLumi=-1): 
+    def __init__ (self, blind_region=None, forceLumi=-1): 
         cwd = os.getcwd()
-        self.channel = channel
+        self.period = '8TeV'
+        self.sqrts  = 8
         jobid = os.environ['jobid']
-        period = '7TeV' if '7TeV' in jobid else '8TeV'
-        self.period = period
-        self.sqrts = 7 if '7TeV' in jobid else 8
+        print "\nPlotting e tau for %s\n" % jobid
+
+        files     = glob.glob('results/%s/LFVHETauAnalyzerMVA/*.root' % jobid)
+        lumifiles = glob.glob('inputs/%s/*.lumicalc.sum' % jobid)
+
+        outputdir = 'plots/%s/lfvet' % jobid
+        if not os.path.exists(outputdir):
+            os.makedirs(outputdir)
+
+        samples = [os.path.basename(i).split('.')[0] for i in files]
+        
+        self.blind_region=blind_region
+        if self.blind_region:
+            # Don't look at the SS all pass region
+            blinder = lambda x: BlindView(x, "os/.*",blind_in_range(*self.blind_region))
+
+        super(BasePlotter, self).__init__(files, lumifiles, outputdir, blinder, forceLumi=forceLumi)
+
+        self.views['fakes'] = {'view' : self.make_fakes()}
         self.mc_samples = [
-            'ggHiggsToETau',
-            'vbfHiggsToETau',
-            'GluGluToHToTauTau_M-125_8TeV-powheg-pythia6',
-            'VBF_HToTauTau_M-125_8TeV-powheg-pythia6',
-            #'Zjets_M50', 
-            'Zjets_M50_skimmedLL',
-            'Z1jets_M50_skimmedLL',
-            'Z2jets_M50_skimmedLL',
-            'Z3jets_M50_skimmedLL',
-            'Z4jets_M50_skimmedLL',
-            'Zjets_M50_skimmedTT',
-            'Z1jets_M50_skimmedTT',
-            'Z2jets_M50_skimmedTT',
-            'Z3jets_M50_skimmedTT',
-            'Z4jets_M50_skimmedTT',
+            'GluGluToHToTauTau_M-125*', 
+            'VBF_HToTauTau_M-125*',
             'TTJets*',
-            'T_t*',
-            'Tbar_t*', 
-            'WplusJets_madgraph_skimmed',
-            'Wplus1Jets_madgraph',
-            # 'Wplus1Jets_madgraph_tapas',
-            'Wplus2Jets_madgraph',
-            # 'Wplus2Jets_madgraph_tapas',
-            'Wplus3Jets_madgraph',
-            'Wplus4Jets_madgraph',
-            'WWJets*',
-            'WZJets*',
-            'ZZJets*',
-            'Fake*',
-            'data*', 
-            
+            'T*_t*',
+            '[WZ][WZ]Jets',
+            #'Wplus*Jets_madgraph*', #superseded by fakes
+            'Z*jets_M50_skimmedLL',
+            'Z*jets_M50_skimmedTT',
         ]
         
-##        files = []
-##        lumifiles = []
-##  
-##        for x in mc_samples:
-##            files.extend(glob.glob('results/%s/LFVHETauAnalyzerMVA/%s.root' % (jobid, x)))
-##            lumifiles.extend(glob.glob('inputs/%s/%s.lumicalc.sum' % (jobid, x)))
-##        self.outputdir = 'plots/%s/LFVHETauAnalyzerMVA/%s' % (jobid, channel)
-##        self.base_out_dir = self.outputdir
-##        if not os.path.exists(self.outputdir):
-##            os.makedirs(self.outputdir)
-##
-        self.blindstart=100
-        self.blindend=150
 
-        blinder = None
-        blind   = 'blind' not in os.environ or os.environ['blind'] == 'YES'
-        print '\n\nRunning Blind: %s\n\n' % blind
-        self.blind = blind
 
-        if blind:
-            # Don't look at the SS all pass region
-            blinder = lambda x: BlindView(x, "os/.*",blind_in_range(100, 150))
-        super(BasePlotter, self).__init__(files, lumifiles, outputdir,   blinder)
     def simpleplot_mc(self, folder, signal, variable, rebin=1, xaxis='',
                       leftside=True, xrange=None, preprocess=None, sort=True,forceLumi=-1):
         ''' Compare Monte Carlo signal to bkg '''
@@ -282,56 +280,6 @@ class BasePlotter(Plotter):
         return data_clone
 
  
-
-    def get_isoid_unc (self, folder, variable, rebin, preprocess, obj=['e1', 'e2']):
-       # 'e1idp1s/','e1idm1s/',  'e1isop1s/','e1isom1s/','e2idp1s/','e2idm1s/',  'e2isop1s/','e2isom1s/'
-        unc_list = []
-        for n, lep in enumerate(obj):
-            
-            bkg_lep_iso_p1s_stack_view = self.make_stack(rebin, preprocess, lep+'isop1s/'+folder)
-            bkg_lep_iso_p1s_stack= bkg_lep_iso_p1s_stack_view.Get(variable)
-            histo_lep_iso_p1s =  bkg_lep_iso_p1s_stack.GetStack().Last().Clone()
-            
-            bkg_lep_iso_m1s_stack_view = self.make_stack(rebin, preprocess, lep+'isom1s/'+folder)
-            bkg_lep_iso_m1s_stack=bkg_lep_iso_m1s_stack_view.Get(variable)
-            histo_lep_iso_m1s = bkg_lep_iso_m1s_stack.GetStack().Last().Clone()
-
-            bkg_lep_id_p1s_stack_view = self.make_stack(rebin, preprocess, lep+'idp1s/'+folder)
-            bkg_lep_id_p1s_stack= bkg_lep_id_p1s_stack_view.Get(variable)
-            histo_lep_id_p1s =  bkg_lep_id_p1s_stack.GetStack().Last().Clone()
-        
-            bkg_lep_id_m1s_stack_view = self.make_stack(rebin, preprocess, lep+'idm1s/'+folder)
-            bkg_lep_id_m1s_stack=bkg_lep_id_m1s_stack_view.Get(variable)
-            histo_lep_id_m1s = bkg_lep_id_m1s_stack.GetStack().Last().Clone()
-        
-            #bkg_obj2_iso_p1s_stack_view = self.make_stack(rebin, preprocess, obj2+'isop1s/'+folder)
-            #bkg_obj2_iso_p1s_stack= bkg_obj2_iso_p1s_stack_view.Get(variable)
-            #histo_obj2_iso_p1s =  bkg_obj2_iso_p1s_stack.GetStack().Last().Clone()
-        
-            #bkg_obj2_iso_m1s_stack_view = self.make_stack(rebin, preprocess, obj2+'isom1s/'+folder)
-            #bkg_obj2_iso_m1s_stack=bkg_obj2_iso_m1s_stack_view.Get(variable)
-            #histo_obj2_iso_m1s = bkg_obj2_iso_m1s_stack.GetStack().Last().Clone()
-
-            #bkg_obj2_id_p1s_stack_view = self.make_stack(rebin, preprocess, obj2+'idp1s/'+folder)
-            #bkg_obj2_id_p1s_stack= bkg_obj2_id_p1s_stack_view.Get(variable)
-            #histo_obj2_id_p1s =  bkg_obj2_id_p1s_stack.GetStack().Last().Clone()
-        
-            #bkg_obj2_id_m1s_stack_view = self.make_stack(rebin, preprocess, obj2+'idm1s/'+folder)
-            #bkg_obj2_id_m1s_stack=bkg_obj2_id_m1s_stack_view.Get(variable)
-            #histo_obj2_id_m1s = bkg_obj2_id_m1s_stack.GetStack().Last().Clone()
-        
-            self.keep.append(histo_lep_iso_p1s)
-            self.keep.append(histo_lep_iso_m1s)
-            self.keep.append(histo_lep_id_p1s)
-            self.keep.append(histo_lep_id_m1s)
-            #self.keep.append(histo_obj2_iso_p1s)
-            #self.keep.append(histo_obj2_iso_m1s)
-            #self.keep.append(histo_obj2_id_p1s)
-            #self.keep.append(histo_obj2_id_m1s)
-
-            unc_list.extend([(histo_lep_iso_p1s, histo_lep_iso_m1s), (histo_lep_id_p1s, histo_lep_id_m1s)])
-        return unc_list
-#[(histo_obj1_iso_p1s, histo_obj1_iso_m1s), (histo_obj1_id_p1s, histo_obj1_id_m1s), (histo_obj2_iso_p1s, histo_obj2_iso_m1s), (histo_obj2_id_p1s, histo_obj2_id_m1s)]
     def add_ratio_diff(self, data_hist, mc_stack, err_hist,  x_range=None, ratio_range=0.2):
         #resize the canvas and the pad to fit the second pad
         self.canvas.SetCanvasSize( self.canvas.GetWw(), int(self.canvas.GetWh()*1.3) )
@@ -369,11 +317,10 @@ class BasePlotter(Plotter):
         #print err
         for ibin in err:
             band.SetBinError(ibin[0], ibin[1])
-        blind=None
-        blind   = 'blind' not in os.environ or os.environ['blind'] == 'YES'
-        if blind<>None:
+
+        if self.blind_region:
             for ibin in err:
-                if ibin>=band.FindBin(self.blindstart) and ibin <= band.FindBin(self.blindend):
+                if ibin >= band.FindBin(self.blind_region[0]) and ibin <= band.FindBin(self.blind_region[1]):
                     band.SetBinError(ibin, 10)
 
         if not x_range:
@@ -395,7 +342,7 @@ class BasePlotter(Plotter):
         ref_function.Draw('same')
         band.SetMarkerStyle(0)
         band.SetLineColor(1)
-        band.SetFillStyle(3001)
+        band.SetFillStyle('x')
         band.SetFillColor(1)
 
         band.Draw('samee2')
@@ -406,220 +353,163 @@ class BasePlotter(Plotter):
         self.pad.cd()
         return data_clone
 
+    def make_fakes(self):
+        data_view = self.get_view('data')
+        central_fakes = views.SubdirectoryView(data_view, 'tLoose')
+        up_fakes = views.SubdirectoryView(data_view, 'tLooseUp')
+        style = data_styles['Fakes*']
+        return views.TitleView(
+            views.StyleView(
+                MedianView(highv=up_fakes, centv=central_fakes),
+                **remove_name_entry(style)
+            ),
+            style['name']
+        )
+        
     def plot_with_bkg_uncert (self, folder, variable, rebin=1, xaxis='',
-                        leftside=True, xrange=None, preprocess=None,
+                              leftside=True, xrange=None, preprocess=None,
                               show_ratio=False, ratio_range=0.2, sort=True, obj=['e1', 'e2']):
-        
-        
+        #xsection uncertainties
+        #names must match with what defined in self.mc_samples
+        xsec_unc_mapper = {
+            'TTJets*' : 0.026,
+            'T*_t*' : 0.041,
+            '[WZ][WZ]Jets' : 0.056, #diboson
+            'Wplus*Jets_madgraph*' : 0.035, #WJets
+            'Z*jets_M50_skimmedLL' : 0.032,
+        }
 
-        mc_stack_view = self.make_stack(rebin, preprocess, folder, sort)
+        path = os.path.join(folder,variable)
 
-        mc_stack = mc_stack_view.Get(variable)
+        #make MC views with xsec error
+        mc_views_nosys = self.mc_views(rebin, preprocess)
+        mc_views = []
+        for view, name in zip(mc_views_nosys, self.mc_samples):
+            new = SystematicsView(
+                view,
+                xsec_unc_mapper.get(name, 0.) #default to 0
+            )
+            mc_views.append(new)
+
+        #make MC stack
+        mc_stack_view = views.StackView(*mc_views, sorted=sort) 
+        mc_stack = mc_stack_view.Get( path )
+
+        #make histo clone for err computation
+        mc_sum_view = views.SumView(*mc_views)
+        mc_err = mc_sum_view.Get( path )
+
+        #add lumi uncertainty
+        mc_err = SystematicsView.add_error( mc_err, 0.026 )
+        
+        #Add MC systematics
+        folder_systematics = [
+            ('p1s', 'm1s'), #PU correction
+            ('trp1s', 'trm1s'), #trig scale factor
+        ]
+
+        #Add as many eid sys as requested
+        for name in obj:
+            folder_systematics.extend([
+                ('%sidp1s'  % name, '%sidm1s'  % name), #eID scale factor
+                ('%sisop1s' % name, '%sisop1s' % name), #e Iso scale factor
+            ])
+
+        met_systematics = [
+            ('_jes', '_jes_minus'), 
+            ('_mes', '_mes_minus'), 
+            ('_ees', '_ees_minus'), 
+            ('_tes', '_tes_minus'), 
+            ('_ues', '_ues_minus'), 
+        ]
+
+        name_systematics = [] #which are not MET
+        #add MET sys if necessary
+        if 'collmass' in variable.lower() or \
+           'met' in variable.lower():
+            c = 1
+            #name_systematics.extend(met_systematics)
+
+        systematics = []
+        for sys_up, sys_dw in folder_systematics:
+            h_up = mc_sum_view.Get(os.path.join(sys_up, path))
+            h_dw = mc_sum_view.Get(os.path.join(sys_dw, path))
+            systematics.append(
+                (h_up, h_dw)
+                )
+
+        #check if we have to apply met uncertainties
+        for sys_up, sys_dw in name_systematics:
+            h_up = mc_sum_view.Get(path + sys_up)
+            h_dw = mc_sum_view.Get(path + sys_dw)
+            systematics.append(
+                (h_up, h_dw)
+            )
+        
+        #ADD systematics
+        mc_err = histo_diff_quad(mc_err, *systematics)
+        
+        #get fakes
+        fakes_view = RebinView(self.get_view('fakes'), rebin)
+        fakes = fakes_view.Get(path)
+
+        #add them to backgrounds
+        mc_stack.Add(fakes)
+        mc_err += fakes
+        #set_trace()
+
+        #draw stack
         mc_stack.Draw()
+        self.keep.append(mc_stack)
         
+        #set cosmetics
         self.canvas.SetLogy(True)
         mc_stack.GetHistogram().GetXaxis().SetTitle(xaxis)
         if xrange:
             mc_stack.GetXaxis().SetRangeUser(xrange[0], xrange[1])
             mc_stack.Draw()
-        self.keep.append(mc_stack)
-        
-
-        finalhisto= mc_stack.GetStack().Last().Clone()
-        finalhisto.Sumw2()
-
-        histlist = mc_stack.GetHists();
-        bkg_stack = mc_stack_view.Get(variable)
-        bkg_stack.GetStack().RemoveLast()## mettere il check se c'e` il fake altirmenti histo=mc_stack.GetStack().Last().Clone()
-        histo=bkg_stack.GetStack().Last().Clone()
-        histo.Sumw2()
-        
-        fake_p1s_histo=None
-      
-        if not folder.startswith('tLoose'):
-            ##if folder.startswith('os'):
-            ## newfolder=folder#.replace('os','ss')
-                ##      print 'newfolder', newfolder
-                ##      #tau fake error
-                ##  
-                ##fake_stack_view = self.make_stack(rebin, preprocess, 'tLoose/'+newfolder, sort)
-                ##      fake_p1s_stack_view = self.make_stack(rebin, preprocess, 'tLooseUp/'+newfolder, sort)
-                ##      fake_m1s_stack_view = self.make_stack(rebin, preprocess, 'tLooseDown/'+newfolder, sort)
-                ##                
-                ##  #if (type(fake_stack_view)==ROOT.THStack):
-                ##  #print 'adding tau fakerate uncertainty'
-                ##  
-                ##  try:
-                ##fake_stack = fake_stack_view.Get(variable)
-                ##fakehisto = fake_stack.GetStack().Last().Clone()
-          ##      
-          ##      fake_p1s_stack = fake_p1s_stack_view.Get(variable) 
-          ##      fake_p1s_histo = fake_p1s_stack.GetStack().Last().Clone()
-          ##      fake_m1s_stack = fake_m1s_stack_view.Get(variable) 
-          ##      fake_m1s_histo = fake_m1s_stack.GetStack().Last().Clone()
-          ##      
-          ##  except:
-          ##      print 'no fake taus'
-          ##      fake_diffup = 0
-          ##      fake_diffdown = 0
-                
-            
-            print folder
-            print self.mc_samples
-            isFakesIn= False
-            if 'Fakes' in self.mc_samples:
-                self.mc_samples.remove('Fakes')  
-                self.mc_samples.remove('finalDYLL')
-                isFakesIn=True
-            
-            bkg_p1s_stack_view = self.make_stack(rebin, preprocess, 'p1s/'+folder, sort)
-            bkg_p1s_stack=bkg_p1s_stack_view.Get(variable)
-            histo_p1s = bkg_p1s_stack.GetStack().Last().Clone()
-        
-            bkg_m1s_stack_view = self.make_stack(rebin, preprocess, 'm1s/'+folder, sort)
-            bkg_m1s_stack=bkg_m1s_stack_view.Get(variable)
-            histo_m1s = bkg_m1s_stack.GetStack().Last().Clone()
-        
-            tr_p1s_stack_view = self.make_stack(rebin, preprocess, 'trp1s/'+folder, sort)
-            tr_p1s_stack=tr_p1s_stack_view.Get(variable)
-            histotr_p1s = tr_p1s_stack.GetStack().Last().Clone()
-        
-            tr_m1s_stack_view = self.make_stack(rebin, preprocess, 'trm1s/'+folder, sort)
-            tr_m1s_stack=tr_m1s_stack_view.Get(variable)
-            histotr_m1s = tr_m1s_stack.GetStack().Last().Clone()
-            #if os.path.exists(folder+'tLoose/') :
-            #    fr_tau_stack_view = self.make_stack(rebin, preprocess, 'tLoose/'+folder, sort)
-            #    fr_tau_stack=fr_tau_stack_view.Get(variable)
-            #    histofr_tau = fr_tau_stack.GetStack().Last().Clone()
-            #    histofr_tau.SetTitle('Fakes')
-            
-            xsec_unc_mapper = {
-                'EWK Dibosons': 0.056,
-                'SM Higgs': 0.0, #still to add
-                't#bar{t}' : 0.026,
-                'Single Top' : 0.041,
-                'DY (#rightarrow #tau#tau)  + jets' : 0., 
-                'DY (#rightarrow ll)  + jets' : 0.032,
-                'W + jets': 0.035,
-                'QCD' : 0.0,
-                'Fakes' :0.0,
-            }
-            
-        ibin =1
-            
-        iso_id_unc = self.get_isoid_unc( folder, variable, rebin, preprocess, obj)
-        if isFakesIn:
-            self.mc_samples.append('Fakes')
-            self.mc_samples.append('finalDYLL')
-          
-        met_histos=[]
-        if 'Met' in variable or 'MET' in variable:
-            if not 'mva' in variable or not 'MVA' in variable:
-                if 'type1_' in variable or '_Ty1' in variable:
-                    ##print variable
-                    newMetName=variable.replace('type1_', '') if 'type1_' in variable  else variable.replace('_Ty', '')
-                    met_histos.extend([mc_stack_view.Get(newMetName+'_jes'),mc_stack_view.Get(newMetName+'_mes'),mc_stack_view.Get(newMetName+'_tes'),mc_stack_view.Get(newMetName+'_ues'), mc_stack_view.Get(newMetName+'_ees') ]) ##add the ees
-                else:
-                    met_histos.extend([mc_stack_view.Get(variable+'_jes'),mc_stack_view.Get(variable+'_mes'),mc_stack_view.Get(variable+'_tes'),mc_stack_view.Get(variable+'_ues'),mc_stack_view.Get(variable+'_ees')]) ##add the ees
-            
-        while ibin < histo.GetXaxis().GetNbins()+1: 
-            ##print ibin,histo.GetXaxis().GetNbins()
-            err2=0
-
-            #if isFakesIn:
-                #diff_fake_up= abs(fakehisto.GetBinContent(ibin)-fake_p1s_histo.GetBinContent(ibin))
-                #diff_fake_down= abs(fakehisto.GetBinContent(ibin)-fake_m1s_histo.GetBinContent(ibin))
-                #print ibin, fakehisto.GetBinContent(ibin), fake_p1s_histo.GetBinContent(ibin), fake_m1s_histo.GetBinContent(ibin)
-                #diff_fake = diff_fake_up if  diff_fake_up >  diff_fake_down else  diff_fake_down
-
-                #err2+= pow(diff_fake,2)
-                ##err2+=pow(fakehisto.GetBinContent(ibin) * 0.3)
-                #print 'TAU SYSTEMATICS:', fakehisto.GetBinContent(ibin), diff_fake 
-
-            for h in histlist:
-                err2 += h.GetBinError(ibin)**2
-                
-                err2 += h.GetBinContent(ibin)*xsec_unc_mapper[h.GetTitle()]
               
-                     
-                    
-                #tau fake rake, I approximate with 5%. Redo it in the correct way
-                #diff_fake = abs(histo.GetBinContent(ibin) - finalhisto.GetBinContent(ibin))
-                #err2 += pow(diff_fake*0.05,2)
-                
-                #why is not working?
-                #diff_fake = abs(fake_diffup.GetBinContent(ibin)) if abs(fake_diffup.GetBinContent(ibin)) > abs(fake_diffdown.GetBinContent(ibin)) else abs(fake_diffdown.GetBinContent(ibin))
- 
-            if not folder.startswith('tLoose'):
-                diff_p = abs(histo.GetBinContent(ibin) - histo_p1s.GetBinContent(ibin))
-                diff_m = abs(histo.GetBinContent(ibin) - histo_m1s.GetBinContent(ibin))
-                err2 += diff_p**2  if diff_p > diff_m  else diff_m**2  
-                diff_tr_p = abs(histo.GetBinContent(ibin) - histotr_p1s.GetBinContent(ibin))
-                diff_tr_m = abs(histo.GetBinContent(ibin) - histotr_m1s.GetBinContent(ibin))
-                err2 += diff_tr_p**2  if diff_tr_p > diff_tr_m  else diff_tr_m**2  
-                err2 += (0.026*h.GetBinContent(ibin))**2 #lumi error
+        #set cosmetics and draw error
+        mc_err.SetMarkerStyle(0)
+        mc_err.SetLineColor(1)
+        mc_err.SetFillStyle('x')
+        mc_err.SetFillColor(1)
+        mc_err.Draw('pe2 same')
+        self.keep.append(mc_err)
 
- 
-                for h in iso_id_unc :
-                    diff_isoid_p = abs(histo.GetBinContent(ibin) - h[0].GetBinContent(ibin))
-                    diff_isoid_m = abs(histo.GetBinContent(ibin) - h[1].GetBinContent(ibin))
-                    err2 += diff_isoid_p**2  if diff_isoid_p > diff_isoid_m  else diff_isoid_m**2  
- 
-                #add met unc https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePATTools#MET_Systematics_Tools only to met plots (no cut on the met)
-            if 'Met' in variable  or 'MET' in variable:
-                if not 'mva' in variable or not 'MVA' in variable:
-                    if not '_jes' in variable and not '_mes' in variable and not '_tes' in variable \
-                       and not '_ees' in variable  and not '_ues' in variable:
-                        if not 'type1_' in variable and not '_Ty1' in variable:
-                            for h in met_histos:
-                                diff = abs(histo.GetBinContent(ibin) - h.GetStack().Last().GetBinContent(ibin))
-                                ##print variable, diff, histo.GetBinContent(ibin), h.GetStack().Last().GetBinContent(ibin), h.GetName()
-                                err2+=diff**2
-                        else: 
-                            myh = mc_stack_view.Get(variable.replace('type1_', '')) if 'type1_' in variable else variable.replace('_Ty', '')
-                            for h in met_histos:
-                                diff = abs(h.GetStack().Last().GetBinContent(ibin) - myh.GetStack().Last().GetBinContent(ibin))
-                                err2+=diff**2
+        #Get signal
+        signals = [
+            'ggHiggsToETau',
+            'vbfHiggsToETau',
+        ]
+        for name in signals:
+            sig_view = self.get_view(name)
+            if preprocess:
+                sig_view = preprocess(sig_view)
+            sig_view = RebinView(sig_view, rebin)
             
-            #histo.SetBinError(ibin, math.sqrt(err2))
-            #finalhisto.SetBinError(ibin, math.sqrt(err2))
-            
+            histogram = sig_view.Get(path)
+            histogram.Draw('same')
+            self.keep.append(histogram)
 
-
-            ibin+=1
-
-
-        finalhisto.Draw('samee2')
-        finalhisto.SetMarkerStyle(0)
-        finalhisto.SetLineColor(1)
-        finalhisto.SetFillStyle(3001)
-        finalhisto.SetFillColor(1)
-
-        
-        self.keep.append(finalhisto)
         # Draw data
         data_view = self.get_view('data')
         if preprocess:
             data_view = preprocess( data_view )
-        data_view = self.get_wild_dir(
-            self.rebin_view(data_view, rebin),
-            folder
-            )
-        data = data_view.Get(variable)
+        data_view = self.rebin_view(data_view, rebin)
+        data = data_view.Get(path)
+
         data.Draw('same')
         print 'data', data.Integral()
         self.keep.append(data)
+
         ## Make sure we can see everything
         if data.GetMaximum() > mc_stack.GetMaximum():
             mc_stack.SetMaximum(1.2*data.GetMaximum()) 
-            #mc_stack.SetMinimum(0.00001*data.GetMaximum())
-            
-            # # Ad legend
-        #allentries = [data]
-        #allentries.append( x for x in mc_stack.GetHists() )
+
         self.add_legend([data, mc_stack], leftside, entries=len(mc_stack.GetHists())+1)
         if show_ratio:
-           self.add_ratio_diff(data, mc_stack, finalhisto, xrange, ratio_range)
+           self.add_ratio_plot(data, mc_err, xrange, ratio_range, True) # add_ratio_diff(data, mc_stack, mc_err, xrange, ratio_range)
                        
 ##-----
 
