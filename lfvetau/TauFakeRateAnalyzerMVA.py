@@ -185,7 +185,6 @@ class TauFakeRateAnalyzerMVA(MegaBase):
 
     def process(self):
         
-        print 'LINE', get_linenumber()
         cut_flow_histo = self.cut_flow_histo
         cut_flow_trk   = cut_flow_tracker(cut_flow_histo)
         myevent =()
@@ -194,24 +193,20 @@ class TauFakeRateAnalyzerMVA(MegaBase):
             jn = row.jetVeto30
             if jn > 3 : jn = 3
             
-            print 'LINE', get_linenumber()
-           #if row.run > 2: 
+            #if row.run > 2: 
             if not bool(row.singleE27WP80Pass) : continue
-            print 'LINE', get_linenumber()
             #            if hasattr(self.tree, 'row.e1MatchesEle27WP80') and hasattr(self.tree, 'row.e2MatchesEle27WP80') :
             #if not bool(row.e1MatchesEle27WP80) and not bool(row.e2MatchesEle27WP80) : continue
-            print 'LINE', get_linenumber()
-
+            
             #else :
             if not bool(row.e1MatchesSingleE27WP80) and  not bool(row.e2MatchesSingleE27WP80) : continue
                 #if not bool(row.singleEPass) : continue
                 #if not bool(row.e1MatchesSingleE) and  not bool(row.e2MatchesSingleE) : continue
-            print 'LINE', get_linenumber()
+                
             if row.bjetCSVVeto30!=0 : continue 
             if row.e1Pt < 30 : continue
             if row.e2Pt < 30 : continue
-            print 'LINE', get_linenumber()
-           
+                       
 #        for i, row in enumerate(self.tree):
 #            if  i >= 100:
 #                return
@@ -224,8 +219,7 @@ class TauFakeRateAnalyzerMVA(MegaBase):
             if not selections.lepton_id_iso(row, 'e1', 'eid13Tight_etauiso01'): continue
             if abs(row.e1Eta) > 1.4442 and abs(row.e1Eta < 1.566) : continue
             
-            print 'LINE', get_linenumber()
-
+            
             cut_flow_trk.Fill('e1IDiso')
             if not selections.eSelection(row, 'e2'): continue
             cut_flow_trk.Fill('e2sel')
@@ -247,8 +241,7 @@ class TauFakeRateAnalyzerMVA(MegaBase):
             #if row.tauHpsVetoPt20 : continue
             if row.muVetoPt5IsoIdVtx : continue
             if row.eVetoCicLooseIso : continue # change it with Loose
-            print 'LINE', get_linenumber()
-
+            
             if not row.tMtToMET < 50:  continue
             cut_flow_trk.Fill('MtToMet')
             
@@ -260,13 +253,11 @@ class TauFakeRateAnalyzerMVA(MegaBase):
             sign = 'ss' if row.e1_e2_SS else 'os'
             folder = sign+'/'+tauiso
           
-            print 'LINE', get_linenumber()
             self.fill_histos(row, folder)
             folder=folder+'/'+str(int(jn))
             self.fill_histos(row, folder)
             
-            print 'LINE', get_linenumber()
-           
+            
             if  row.tPt < 90 and row.tPt>65 : 
                 folder = folder+'/tptregion'
                 self.fill_histos(row, folder)
@@ -299,9 +290,7 @@ class TauFakeRateAnalyzerMVA(MegaBase):
                 folder = sign+'/'+tauiso+'/tptregion'
                 self.fill_histos(row, folder)
 
-            print 'LINE', get_linenumber()
-            
-            
+                        
             if  row.tLooseIso3Hits : 
                 tauiso = 'tLoose'
                 folder = sign+'/'+tauiso
