@@ -62,11 +62,12 @@ def histo_diff_quad(mc_err, *systematics):
     return clone
 
 class BasePlotter(Plotter):
-    def __init__ (self, blind_region=None, forceLumi=-1): 
+    def __init__ (self, blind_region=None, forceLumi=-1, use_embedded=False): 
         cwd = os.getcwd()
         self.period = '8TeV'
         self.sqrts  = 8
         jobid = os.environ['jobid']
+        self.use_embedded = use_embedded
         print "\nPlotting e tau for %s\n" % jobid
 
         files     = glob.glob('results/%s/LFVHETauAnalyzerMVA/*.root' % jobid)
@@ -96,8 +97,39 @@ class BasePlotter(Plotter):
             'Z*jets_M50_skimmedLL',
             'Z*jets_M50_skimmedTT',
         ]
-        
 
+        if use_embedded:
+            self.mc_samples.pop()
+            self.views['Ztt_embedded'] = {'view' : self.make_embedded('os/gg/ept30/h_collmass_pfmet')}
+        
+    def make_fakes(self):
+        '''Sets up the fakes view'''
+        data_view = self.get_view('data')
+        central_fakes = views.SubdirectoryView(data_view, 'tLoose')
+        up_fakes = views.SubdirectoryView(data_view, 'tLooseUp')
+        style = data_styles['Fakes*']
+        return views.TitleView(
+            views.StyleView(
+                MedianView(highv=up_fakes, centv=central_fakes),
+                **remove_name_entry(style)
+            ),
+            style['name']
+        )
+        
+    def make_embedded(self, normalization_path):
+        '''Configures the embedded view'''
+        embedded_view = self.get_view('ZetauEmbedded_Run2012*', 'unweighted_view')
+        zjets_view = self.get_view('Z*jets_M50_skimmedTT')
+
+        embedded_histo = embedded_view.Get(normalization_path)
+        zjets_histo = zjets_view.Get(normalization_path)
+
+        embed_int = embedded_histo.Integral()
+        zjets_int = zjets_histo.Integral()
+
+        scale_factor = zjets_int / embed_int
+        scaled_view = views.ScaleView(embedded_view, scale_factor)
+        return scaled_view
 
     def simpleplot_mc(self, folder, signal, variable, rebin=1, xaxis='',
                       leftside=True, xrange=None, preprocess=None, sort=True,forceLumi=-1):
@@ -353,19 +385,35 @@ class BasePlotter(Plotter):
         self.pad.cd()
         return data_clone
 
-    def make_fakes(self):
-        data_view = self.get_view('data')
-        central_fakes = views.SubdirectoryView(data_view, 'tLoose')
-        up_fakes = views.SubdirectoryView(data_view, 'tLooseUp')
-        style = data_styles['Fakes*']
-        return views.TitleView(
-            views.StyleView(
-                MedianView(highv=up_fakes, centv=central_fakes),
-                **remove_name_entry(style)
-            ),
-            style['name']
-        )
+    def add_shape_systematics(self, histo, path, view, folder_systematics = [], name_systematics = []):
+        '''Adds shape systematics
+        add_shape_systematics(self, histo, path, view, folder_systematics = [], name_systematics = []) --> histo
+        histo is the central value 
+        path is the path if the central value histo
+        view contains all the systematics. 
+        folder_systematics is a list of tuples with the folders containing shifts (up, down)
+        name_systematics is a list of tuples containing the postfix to obtain the shifts (up, down)
+        '''
+        systematics = []
+        for sys_up, sys_dw in folder_systematics:
+            h_up = view.Get(os.path.join(sys_up, path))
+            h_dw = view.Get(os.path.join(sys_dw, path))
+            systematics.append(
+                (h_up, h_dw)
+                )
+
+        #check if we have to apply met uncertainties
+        for sys_up, sys_dw in name_systematics:
+            h_up = view.Get(path + sys_up)
+            h_dw = view.Get(path + sys_dw)
+            systematics.append(
+                (h_up, h_dw)
+            )
         
+        #ADD systematics
+        return histo_diff_quad(histo, *systematics)
+        
+
     def plot_with_bkg_uncert (self, folder, variable, rebin=1, xaxis='',
                               leftside=True, xrange=None, preprocess=None,
                               show_ratio=False, ratio_range=0.2, sort=True, obj=['e1', 'e2']):
@@ -377,6 +425,7 @@ class BasePlotter(Plotter):
             '[WZ][WZ]Jets' : 0.056, #diboson
             'Wplus*Jets_madgraph*' : 0.035, #WJets
             'Z*jets_M50_skimmedLL' : 0.032,
+            'Z*jets_M50_skimmedTT' : 0.032,
         }
 
         path = os.path.join(folder,variable)
@@ -398,22 +447,11 @@ class BasePlotter(Plotter):
         #make histo clone for err computation
         mc_sum_view = views.SumView(*mc_views)
         mc_err = mc_sum_view.Get( path )
-
-        #add lumi uncertainty
-        mc_err = SystematicsView.add_error( mc_err, 0.026 )
         
-        #Add MC systematics
+        #Add MC-only systematics
         folder_systematics = [
             ('p1s', 'm1s'), #PU correction
-            ('trp1s', 'trm1s'), #trig scale factor
         ]
-
-        #Add as many eid sys as requested
-        for name in obj:
-            folder_systematics.extend([
-                ('%sidp1s'  % name, '%sidm1s'  % name), #eID scale factor
-                ('%sisop1s' % name, '%sisop1s' % name), #e Iso scale factor
-            ])
 
         met_systematics = [
             ('_jes', '_jes_minus'), 
@@ -430,27 +468,58 @@ class BasePlotter(Plotter):
             c = 1
             #name_systematics.extend(met_systematics)
 
-        systematics = []
-        for sys_up, sys_dw in folder_systematics:
-            h_up = mc_sum_view.Get(os.path.join(sys_up, path))
-            h_dw = mc_sum_view.Get(os.path.join(sys_dw, path))
-            systematics.append(
-                (h_up, h_dw)
-                )
+        #add them
+        mc_err = self.add_shape_systematics(
+            mc_err, 
+            path, 
+            mc_sum_view, 
+            folder_systematics,
+            name_systematics)
 
-        #check if we have to apply met uncertainties
-        for sys_up, sys_dw in name_systematics:
-            h_up = mc_sum_view.Get(path + sys_up)
-            h_dw = mc_sum_view.Get(path + sys_dw)
-            systematics.append(
-                (h_up, h_dw)
-            )
-        
-        #ADD systematics
-        mc_err = histo_diff_quad(mc_err, *systematics)
+        #check if we are using the embedded sample
+        if self.use_embedded:
+            embed_view = self.get_view('Ztt_embedded')
+            if preprocess:
+                embed_view = preprocess(embed_view)
+            embed_view = RebinView( embed_view, rebin)
+
+            embed = embed_view.Get(path)
+
+            #add xsec error
+            embed = SystematicsView.add_error( embed, xsec_unc_mapper['Z*jets_M50_skimmedTT'])
+            
+            #add them to backgrounds
+            mc_stack.Add(embed)
+            mc_err += embed
+            mc_sum_view = views.SumView(mc_sum_view, embed_view)
+
+        #Add MC and embed systematics
+        folder_systematics = [
+            ('trp1s', 'trm1s'), #trig scale factor
+        ]
+
+        #Add as many eid sys as requested
+        for name in obj:
+            folder_systematics.extend([
+                ('%sidp1s'  % name, '%sidm1s'  % name), #eID scale factor
+                ('%sisop1s' % name, '%sisop1s' % name), #e Iso scale factor
+            ])
+
+        mc_err = self.add_shape_systematics(
+            mc_err, 
+            path, 
+            mc_sum_view, 
+            folder_systematics)
+
+        #add lumi uncertainty
+        mc_err = SystematicsView.add_error( mc_err, 0.026 )
         
         #get fakes
-        fakes_view = RebinView(self.get_view('fakes'), rebin)
+        fakes_view = self.get_view('fakes')
+        if preprocess:
+            fakes_view = preprocess(fakes_view)
+        fakes_view = RebinView(fakes_view, rebin)
+
         fakes = fakes_view.Get(path)
 
         #add them to backgrounds
