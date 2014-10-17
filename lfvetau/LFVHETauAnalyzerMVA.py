@@ -44,7 +44,10 @@ class LFVHETauAnalyzerMVA(MegaBase):
         self.pucorrector = mcCorrections.make_puCorrector('singlee')
         self.pucorrectorUp = mcCorrections.make_puCorrectorUp('singlee')
         self.pucorrectorDown = mcCorrections.make_puCorrectorDown('singlee')
-     
+        target = os.path.basename(os.environ['megatarget'])
+        self.is_data = target.startswith('data_')
+        self.is_embedded = ('Embedded' in target)
+        self.is_mc = not (self.is_data or self.is_embedded)
 
     @staticmethod 
     def tau_veto(row):
@@ -60,51 +63,77 @@ class LFVHETauAnalyzerMVA(MegaBase):
 
     
     def event_weight(self, row):
-        if row.run > 2: #FIXME! add tight ID correction
+        if self.is_data: #FIXME! add tight ID correction
             return [1.]
+
         allmcCorrections=    mcCorrections.get_electronId_corrections13_MVA(row, 'e') * \
-                          mcCorrections.get_electronIso_corrections13_MVA(row, 'e') * mcCorrections.get_trigger_corrections_MVA(row,'e') 
-                       
-
-        trUp_mcCorrections =   mcCorrections.get_electronId_corrections13_MVA(row, 'e') * \
-                          mcCorrections.get_electronIso_corrections13_MVA(row, 'e') *  mcCorrections.get_trigger_corrections_p1s_MVA(row,'e') 
-        trDown_mcCorrections = mcCorrections.get_electronId_corrections13_MVA(row, 'e') * \
-                               mcCorrections.get_electronIso_corrections13_MVA(row, 'e') *  mcCorrections.get_trigger_corrections_m1s_MVA(row,'e') 
-
+                                 mcCorrections.get_electronIso_corrections13_MVA(row, 'e')
+        trUp_mcCorrections = 1.
+        trDown_mcCorrections = 1.
         eidUp_mcCorrections=  mcCorrections.get_electronId_corrections13_p1s_MVA(row, 'e') *\
-                              mcCorrections.get_electronIso_corrections13_MVA(row, 'e') *  mcCorrections.get_trigger_corrections_MVA(row,'e') 
+                              mcCorrections.get_electronIso_corrections13_MVA(row, 'e') 
         eidDown_mcCorrections= mcCorrections.get_electronId_corrections13_m1s_MVA(row, 'e') * \
-                                mcCorrections.get_electronIso_corrections13_MVA(row, 'e') *  mcCorrections.get_trigger_corrections_MVA(row,'e') 
+                               mcCorrections.get_electronIso_corrections13_MVA(row, 'e')
         eisoUp_mcCorrections=    mcCorrections.get_electronId_corrections13_MVA(row, 'e') * \
-                               mcCorrections.get_electronIso_corrections13_p1s_MVA(row, 'e') * mcCorrections.get_trigger_corrections_MVA(row,'e') 
+                                 mcCorrections.get_electronIso_corrections13_p1s_MVA(row, 'e') 
         eisoDown_mcCorrections= mcCorrections.get_electronId_corrections13_m1s_MVA(row, 'e') * \
-                                 mcCorrections.get_electronIso_corrections13_p1s_MVA(row, 'e') * mcCorrections.get_trigger_corrections_MVA(row,'e') 
-    
-        #pucorrlist = self.pucorrector(row.nTruePU)
-        
-        weight =  self.pucorrector(row.nTruePU) *\
-                 allmcCorrections
-        weight_up =  self.pucorrectorUp(row.nTruePU) *\
-                    allmcCorrections
-        weight_down =  self.pucorrectorDown(row.nTruePU) *\
-                      allmcCorrections
-        
-        weight_tr_up = self.pucorrector(row.nTruePU) *\
-                       trUp_mcCorrections
-        weight_tr_down = self.pucorrector(row.nTruePU) *\
-                         trDown_mcCorrections
+                                mcCorrections.get_electronIso_corrections13_p1s_MVA(row, 'e') 
+  
 
+        if self.is_embedded:
+            allmcCorrections= allmcCorrections*mcCorrections.get_trigger_efficiency_MVA(row,'e') 
+            trUp_mcCorrections =    allmcCorrections*mcCorrections.get_trigger_efficiency_p1s_MVA(row,'e') 
+            trDown_mcCorrections  = allmcCorrections*mcCorrections.get_trigger_efficiency_m1s_MVA(row,'e') 
+            eidUp_mcCorrections=  eidUp_mcCorrections*  mcCorrections.get_trigger_efficiency_MVA(row,'e') 
+            eidDown_mcCorrections= eidDown_mcCorrections*  mcCorrections.get_trigger_efficiency_MVA(row,'e') 
+            eisoUp_mcCorrections=   eisoUp_mcCorrections * mcCorrections.get_trigger_efficiency_MVA(row,'e') 
+            eisoDown_mcCorrections= eisoDown_mcCorrections* mcCorrections.get_trigger_efficiency_MVA(row,'e') 
+            
+            return [allmcCorrections, allmcCorrections, allmcCorrections, trUp_mcCorrections, trDown_mcCorrections ,eidUp_mcCorrections, eidDown_mcCorrections, eisoUp_mcCorrections,eisoDown_mcCorrections]
+
+
+            
+
+                       
+        else:
+            allmcCorrections=    allmcCorrections * mcCorrections.get_trigger_corrections_MVA(row,'e') 
+            
+            
+            trUp_mcCorrections =    allmcCorrections*  mcCorrections.get_trigger_corrections_p1s_MVA(row,'e') 
+            trDown_mcCorrections =  allmcCorrections*  mcCorrections.get_trigger_corrections_m1s_MVA(row,'e') 
+            
+            eidUp_mcCorrections=  eidUp_mcCorrections*  mcCorrections.get_trigger_corrections_MVA(row,'e') 
+            eidDown_mcCorrections= eidDown_mcCorrections*  mcCorrections.get_trigger_corrections_MVA(row,'e') 
+            eisoUp_mcCorrections=   eisoUp_mcCorrections * mcCorrections.get_trigger_corrections_MVA(row,'e') 
+            eisoDown_mcCorrections= eisoDown_mcCorrections* mcCorrections.get_trigger_corrections_MVA(row,'e') 
+            
+            #pucorrlist = self.pucorrector(row.nTruePU)
+            
+            weight =  self.pucorrector(row.nTruePU) *\
+                      allmcCorrections
+            weight_up =  self.pucorrectorUp(row.nTruePU) *\
+                         allmcCorrections
+            weight_down =  self.pucorrectorDown(row.nTruePU) *\
+                           allmcCorrections
+            
+            weight_tr_up = self.pucorrector(row.nTruePU) *\
+                           trUp_mcCorrections
+            weight_tr_down = self.pucorrector(row.nTruePU) *\
+                             trDown_mcCorrections
+            
+            
+            weight_eid_up =  self.pucorrector(row.nTruePU) *\
+                             eidUp_mcCorrections
+            weight_eid_down =  self.pucorrector(row.nTruePU) *\
+                               eidDown_mcCorrections
+            weight_eiso_up =  self.pucorrector(row.nTruePU) *\
+                            eisoUp_mcCorrections
+            weight_eiso_down =  self.pucorrector(row.nTruePU) *\
+                                eisoDown_mcCorrections
         
-        weight_eid_up =  self.pucorrector(row.nTruePU) *\
-                 eidUp_mcCorrections
-        weight_eid_down =  self.pucorrector(row.nTruePU) *\
-                 eidDown_mcCorrections
-        weight_eiso_up =  self.pucorrector(row.nTruePU) *\
-                 eisoUp_mcCorrections
-        weight_eiso_down =  self.pucorrector(row.nTruePU) *\
-                 eisoDown_mcCorrections
-        
-        return  [weight, weight_up, weight_down, weight_tr_up,  weight_tr_down, weight_eid_up, weight_eid_down, weight_eiso_up,  weight_eiso_down,]
+                    
+            return [weight, weight_up, weight_down, weight_tr_up,  weight_tr_down, weight_eid_up, weight_eid_down, weight_eiso_up,  weight_eiso_down]
+
 
 ## 
     def begin(self):
@@ -467,6 +496,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
     def process(self):
         
         
+
         central_weights = fakerate_central_histogram(25,0, 2.5)
         
         p1s_weights = fakerate_p1s_histogram(25,0, 2.5)#fakerate_p1s_histogram(25,0, 2.5)
@@ -493,9 +523,13 @@ class LFVHETauAnalyzerMVA(MegaBase):
             if jn_jes_minus >3 : jn_jes_minus=3
 
             #if row.run > 2 : #apply the trigger to data only (MC triggers enter in the scale factors)
-            if not bool(row.singleE27WP80Pass) : continue
+            
+            if self.is_embedded :
 
-            if  not  bool(row.eMatchesSingleE27WP80): continue
+                if not bool(row.doubleMuPass) : continue
+            else: 
+                if not bool(row.singleE27WP80Pass) : continue
+                if  not  bool(row.eMatchesSingleE27WP80): continue
                         
             if not selections.eSelection(row, 'e'): continue
                
@@ -504,7 +538,6 @@ class LFVHETauAnalyzerMVA(MegaBase):
             if abs(row.eEta) > 1.4442 and abs(row.eEta) < 1.566 : continue
             if not selections.tauSelection(row, 't'): continue
                         
-            if row.bjetCSVVeto30!=0 : continue 
             if row.ePt < 30 : continue
             #if row.eMtToPFMET <40 : continue
             
@@ -514,9 +547,6 @@ class LFVHETauAnalyzerMVA(MegaBase):
             
             #isTauTight = False
             frw=self.fakerate_weights(row.tEta, central_weights, p1s_weights, m1s_weights )
-            
-            #print bool(row.tTightIso3Hits)
-
 
             #if row.tauVetoPt20EleTight3MuLoose : continue 
             #if row.muVetoPt5IsoIdVtx : continue
@@ -559,6 +589,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
             if dirpaths[0][0] == True and sign=='os':
                 self.fill_histos(row, folder,isTauTight, frw)
             
+            if row.bjetCSVVeto30!=0 : continue # it is better vetoing on b-jets  after the histo for the DY embedded
+
             for n,dirpath in enumerate(dirpaths):
                 jetlist = [(int(jn), str(int(jn)))]
                 if  dirpath[0]==False : continue 
