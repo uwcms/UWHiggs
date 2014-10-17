@@ -35,13 +35,13 @@ def deltaR(phi1, phi2, eta1, eta2):
     if (dphi>pi) : dphi = 2*pi-dphi
     return sqrt(deta*deta + dphi*dphi);
     
-def etDR(row):
+def ee3DR(row):
     return row.e1_e3_DR if row.e1_e3_DR < row.e2_e3_DR else row.e2_e3_DR
 
-def etDPhi(row):
-    e1tDPhi=deltaPhi(row.e1Phi, row.e3Phi)
-    e2tDPhi=deltaPhi(row.e2Phi, row.e3Phi)
-    return e1tDPhi if e1tDPhi < e2tDPhi else e2tDPhi
+def ee3DPhi(row):
+    e1e3DPhi=deltaPhi(row.e1Phi, row.e3Phi)
+    e2e3DPhi=deltaPhi(row.e2Phi, row.e3Phi)
+    return e1e3DPhi if e1e3DPhi < e2e3DPhi else e2e3DPhi
 
 def Z(row):
     e1p=ROOT.TVector3(row.e1Pt*cos(row.e1Phi),row.e1Pt*sin(row.e1Phi),row.e1Pt*sinh(row.e1Eta))
@@ -169,7 +169,7 @@ class EleFakeRateAnalyzerMVA(MegaBase):
         histos[folder+'/e3Phi'].Fill(row.e3Phi, weight)
 
         histos[folder+'/e1e2Mass'].Fill(row.e1_e2_Mass, weight)
-        histos[folder+'/tMtToPFMET'].Fill(row.tMtToPFMET,weight)
+        #histos[folder+'/tMtToPFMET'].Fill(row.tMtToPFMET,weight)
     
          
         histos[folder+'/type1_pfMetEt'].Fill(row.type1_pfMetEt)

@@ -74,7 +74,7 @@ def get_plotter_results(analyzer)
 end
 
 
-$frfit_dir = "results/#{$jobid}/fakerate_fits"
+$frfit_dir = "results/#{$jobid}/fakerate_fits_MtCut"
 directory $frfit_dir
 exponential = "scale*TMath::Exp(x*decay)+offset"
 exponential_vars =  "scale[4., 0, 10],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
@@ -108,18 +108,18 @@ fr_fits      = Hash.new
 #mysamples = [ "zjets_skimmedLL", "zjets_skimmedTT"]
 #for s in mysamples
 
-fr_fits["t_os_tNoCuts_tTigh_tPt"] = Hash[ 
-                                         "samples" => Array["diboson",  "dataSingleE"],
-                                         "analyzer" => $fr_analyzer,
-                                         "function" => pol0,
-                                         "variables" => pol0_vars,
-                                         #"rebin" => 1,
-                                         "rebin" => $fr_binning,
-                                         "range" => "30 200",
-                                         "title" => "#tau p_{T} (GeV)",
-                                         "min"=>"0",
-                                         "max"=>"0.1"
-                                        ]
+#fr_fits["t_os_tNoCuts_tTigh_tPt"] = Hash[ 
+#                                         "samples" => Array["diboson",  "dataSingleE"],
+#                                         "analyzer" => $fr_analyzer,
+#                                         "function" => pol0,
+#                                         "variables" => pol0_vars,
+#                                         #"rebin" => 1,
+#                                         "rebin" => $fr_binning,
+#                                         "range" => "30 200",
+#                                         "title" => "#tau p_{T} (GeV)",
+#                                         "min"=>"0",
+#                                         "max"=>"0.1"
+#                                        ]
 fr_fits["t_os_tLoose_tTigh_tPt"] = Hash[ 
                                           "samples" => Array["diboson",  "dataSingleE"],
                                           "analyzer" => $fr_analyzer,
@@ -135,18 +135,18 @@ fr_fits["t_os_tLoose_tTigh_tPt"] = Hash[
                                         "max"=>"1"
                                          ]
 
-fr_fits["t_os_tNoCuts_tTigh_tAbsEta"] = Hash[ 
-                                               "samples" => Array["diboson", "dataSingleE"],
-                                               "analyzer" => $fr_analyzer,
-                                               "function" => pol2,
-                                               "variables" => pol2_vars,
-                                               "rebin" => 1,
-                                               #"range" => "-2.3 2.3",
-                                               "range" => "0 2.3",
-                                               "title" => "#tau #eta",
-                                               "min"=>"0",
-                                               "max"=>"0.1"
-                                            ]
+#fr_fits["t_os_tNoCuts_tTigh_tAbsEta"] = Hash[ 
+#                                               "samples" => Array["diboson", "dataSingleE"],
+#                                               "analyzer" => $fr_analyzer,
+#                                               "function" => pol2,
+#                                               "variables" => pol2_vars,
+#                                               "rebin" => 1,
+#                                               #"range" => "-2.3 2.3",
+#                                               "range" => "0 2.3",
+#                                               "title" => "#tau #eta",
+#                                               "min"=>"0",
+#                                               "max"=>"0.1"
+#                                            ]
 fr_fits["t_os_tLoose_tTigh_tAbsEta"] = Hash[ 
                                               "samples" => Array["diboson",  "dataSingleE"],
                                               "analyzer" => $fr_analyzer,
@@ -179,7 +179,7 @@ fr_fits.each do |fit, fit_info|
     
     
   fit_output = $frfit_dir + "/#{fit}.root"
-  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}/#{x}.root"}
+  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}_tMtCut/#{x}.root"}
   # subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/TauFakeRateAnalyzerMVA_eTight/#{x}.root"}
   subsample_input_list = subsamples_inputs_result_list.join(" ")
   
