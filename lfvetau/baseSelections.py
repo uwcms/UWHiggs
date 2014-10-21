@@ -22,7 +22,7 @@ def muSelection(row, name):
 
 def eSelection(row, name):
     if getattr( row, getVar(name,'Pt')) < 20:           return False #was 20
-    if getattr( row, getVar(name,'AbsEta')) > 2.1:      return False#as in H->tau_etau_h # was 2.3
+    if getattr( row, getVar(name,'AbsEta')) > 2.3:      return False#as in H->tau_etau_h # was 2.3
     if getattr( row, getVar(name,'MissingHits')):       return False
     if getattr( row, getVar(name,'HasConversion')):     return False
 #    if not getattr( row, getVar(name,'ChargeIdTight')): return False
