@@ -82,13 +82,14 @@ class TauFakeRateAnalyzerMVA(MegaBase):
 
         #if bool(row.e1MatchesEle27WP80) and  not bool(row.e2MatchesEle27WP80) : etrig = 'e1'
         #if not bool(row.e1MatchesEle27WP80) and  bool(row.e2MatchesEle27WP80) :  etrig = 'e2'
+            
+            
+            
         return self.pucorrector(row.nTruePU) * \
-            mcCorrections.get_electronId_corrections13_MVA(row, 'e1') * \
-            mcCorrections.get_electronIso_corrections13_MVA(row, 'e1') * \
-            mcCorrections.get_electronId_corrections13_MVA(row, 'e2') * \
-            mcCorrections.get_electronIso_corrections13_MVA(row, 'e2')* mcCorrections.get_trigger_corrections_MVA(row, etrig) 
-##add the trigger correction 
-
+            mcCorrections.eid_correction( row, 'e1', 'e2') * \
+            mcCorrections.eiso_correction(row, 'e1', 'e2') * \
+            mcCorrections.trig_correction(row, etrig     )
+            
     def begin(self):
         
         tauiso = ['tNoCuts', 'tSuperSuperLoose', 'tSuperLoose', 'tLoose', 'tTigh']

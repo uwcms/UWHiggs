@@ -21,10 +21,12 @@ def muSelection(row, name):
     return True
 
 def eSelection(row, name):
+    eAbsEta = getattr( row, getVar(name,'AbsEta'))
     if getattr( row, getVar(name,'Pt')) < 20:           return False #was 20
-    if getattr( row, getVar(name,'AbsEta')) > 2.1:      return False#as in H->tau_etau_h # was 2.3
+    if eAbsEta > 2.1:      return False#as in H->tau_etau_h # was 2.3
     if getattr( row, getVar(name,'MissingHits')):       return False
     if getattr( row, getVar(name,'HasConversion')):     return False
+    if eAbsEta > 1.4442 and eAbsEta < 1.566: return False
 #    if not getattr( row, getVar(name,'ChargeIdTight')): return False
     if not getattr( row, getVar(name,'ChargeIdLoose')): return False
     if getattr( row, getVar(name,'JetCSVBtag')) > 0.8:  return False
