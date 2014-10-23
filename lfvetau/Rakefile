@@ -74,7 +74,7 @@ def get_plotter_results(analyzer)
 end
 
 
-$frfit_dir = "results/#{$jobid}/fakerate_fits_MtCut"
+$frfit_dir = "results/#{$jobid}/fakerate_fits"
 directory $frfit_dir
 exponential = "scale*TMath::Exp(x*decay)+offset"
 exponential_vars =  "scale[4., 0, 10],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
@@ -179,8 +179,8 @@ fr_fits.each do |fit, fit_info|
     
     
   fit_output = $frfit_dir + "/#{fit}.root"
-  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}_tMtCut/#{x}.root"}
-  # subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/TauFakeRateAnalyzerMVA_eTight/#{x}.root"}
+  #subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}_tMtCut/#{x}.root"}
+  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/TauFakeRateAnalyzerMVA/#{x}.root"}
   subsample_input_list = subsamples_inputs_result_list.join(" ")
   
   # Path to histograms in root files
