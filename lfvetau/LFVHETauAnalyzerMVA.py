@@ -86,8 +86,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
         self.tree = ETauTree(tree)
         self.out=outfile
         self.histograms = {}
-        
-        #undertand what we are running
+
+        #understand what we are running
         target = os.path.basename(os.environ['megatarget'])
         self.is_data = target.startswith('data_')
         self.is_embedded = ('Embedded' in target)
@@ -136,6 +136,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             ['p1s', 'm1s'],
             [mcCorrections.make_puCorrectorUp('singlee'), mcCorrections.make_puCorrectorDown('singlee')]
         )     
+        self.trig_weight = mcCorrections.trig_efficiency if self.is_embedded else mcCorrections.trig_correction
 
     @staticmethod 
     def tau_veto(row):
@@ -145,24 +146,25 @@ class LFVHETauAnalyzerMVA(MegaBase):
     @staticmethod
     def obj1_matches_gen(row):
         return row.eGenPdgId == -1*row.eCharge*11
+
     @staticmethod 
     def obj3_matches_gen(row):
         return t.genDecayMode != -2 
 
-    
     def event_weight(self, row, sys_shifts):
-        if row.run > 2: #FIXME! add tight ID correction
+        if self.is_data:
             return {'' : 1.}
 
         weights = {}
+        embedded_weight = row.EmbPtWeight if self.is_embedded else 1.
         for shift in sys_shifts:
-            weights[shift] = mcCorrections.eid_correction( row, 'e', shift=shift) * \
+            weights[shift] = embedded_weight *\
+                             mcCorrections.eid_correction( row, 'e', shift=shift) * \
                              mcCorrections.eiso_correction(row, 'e', shift=shift) * \
-                             mcCorrections.trig_correction(row, 'e', shift=shift) * \
+                             self.trig_weight(row, 'e', shift=shift) * \
                              self.pucorrector(row.nTruePU, shift=shift)
                        
         return weights
-
 ## 
     def begin(self):
         logging.debug('Booking histograms directory tree')
@@ -324,10 +326,12 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #
             #preselection, common to everything and everyone
             #
-            
             #trigger
-            if not bool(row.singleE27WP80Pass) : continue
-            if not bool(row.eMatchesSingleE27WP80): continue
+            if self.is_embedded :
+                if not bool(row.doubleMuPass) : continue
+            else: 
+                if not bool(row.singleE27WP80Pass) : continue
+                if  not  bool(row.eMatchesSingleE27WP80): continue
 
             #objects
             if not selections.eSelection(row, 'e'): continue
@@ -337,12 +341,29 @@ class LFVHETauAnalyzerMVA(MegaBase):
             if not row.tAntiMuon2Loose : continue
             if not row.tLooseIso3Hits : continue
 
-            #bjet veto
-            if row.bjetCSVVeto30!=0 : continue 
-
             #e ID/ISO
             if not selections.lepton_id_iso(row, 'e', 'eid13Tight_etauiso01'): continue
             logging.debug('Passed preselection')
+
+            #
+            # Compute event weight
+            #
+            #event weight
+            sys_shifts = systematics['trig'] + \
+                         systematics['pu'] + \
+                         systematics['eid'] + \
+                         systematics['eiso']
+
+            #set_trace()
+            weight_map = self.event_weight(row, sys_shifts)
+
+            #Fill embedded sample normalization BEFORE the vetoes
+            if not row.e_t_SS:
+                self.fill_histos('os/gg/ept30/', row, weight_map[''])
+
+            # it is better vetoing on b-jets  after the histo for the DY embedded
+            #bjet veto
+            if row.bjetCSVVeto30!=0 : continue
 
             #tau ID, id Tau is tight then go in full selection, otherwise use for fakes
             tau_id_category = [''] if row.tTightIso3Hits else ['tLoose', 'tLooseUp', 'tLooseDown', 'tLooseUnweight']
@@ -394,6 +415,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
             processtype ='gg'
             ptthreshold = ['ept30']
 
+            #
+            # Lepton vetoes
+            #
             tvetoes = [row.tauVetoPt20EleTight3MuLoose, row.tauVetoPt20EleTight3MuLoose_tes_minus, row.tauVetoPt20EleTight3MuLoose_tes_plus]
             mvetoes = [row.muVetoPt5IsoIdVtx, row.muVetoPt5IsoIdVtx_mes_minus, row.muVetoPt5IsoIdVtx_mes_plus]
             evetoes = [row.eVetoCicLooseIso, row.eVetoCicLooseIso_ees_minus, row.eVetoCicLooseIso_ees_plus]
@@ -412,15 +436,6 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #...and choose only the meaningful ones
             veto_sys = set(systematics['tvetos']+systematics['mvetos']+systematics['evetos'])
             all_dirs = [i for i in all_dirs if i in veto_sys]
-
-            #event weight
-            sys_shifts = systematics['trig'] + \
-                         systematics['pu'] + \
-                         systematics['eid'] + \
-                         systematics['eiso']
-
-            #set_trace()
-            weight_map = self.event_weight(row, sys_shifts)
 
             sys_directories = all_dirs + sys_shifts
             if not isTauTight:

@@ -125,6 +125,10 @@ correct_trigger_mva = make_multiple(HetauCorrection.single_ele_mva, indexed=True
 correct_trigger_mva_up = make_multiple(HetauCorrection.single_ele_mva, indexed=True, shift=1)
 correct_trigger_mva_dw = make_multiple(HetauCorrection.single_ele_mva, indexed=True, shift=-1)
 
+efficiency_trigger_mva    = make_multiple(HetauCorrection.single_ele_eff_mva, indexed=True)
+efficiency_trigger_mva_up = make_multiple(HetauCorrection.single_ele_eff_mva, indexed=True, shift=1)
+efficiency_trigger_mva_dw = make_multiple(HetauCorrection.single_ele_eff_mva, indexed=True, shift=-1)
+
 eiso_correction = make_shifted_weights(
     correct_eiso13_mva, 
     ['eisop1s','eisom1s'], 
@@ -141,4 +145,10 @@ trig_correction = make_shifted_weights(
     correct_trigger_mva,
     ['trp1s', 'trm1s'],
     [correct_trigger_mva_up, correct_trigger_mva_dw]
+)
+
+trig_efficiency = make_shifted_weights(
+    efficiency_trigger_mva,
+    ['trp1s', 'trm1s'],
+    [efficiency_trigger_mva_up, efficiency_trigger_mva_dw]
 )

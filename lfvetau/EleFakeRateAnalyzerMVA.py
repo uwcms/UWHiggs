@@ -112,16 +112,16 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             
             self.book(f,"e1Pt", "e1 p_{T}", 200, 0, 200)
             self.book(f,"e1Phi", "e1 phi",  100, -3.2, 3.2)
-            self.book(f,"e1Eta", "e1 eta", 50, -2.5, 2.5)
+            self.book(f,"e1Eta", "e1 eta", 46, -2.3, 2.3)
 
             self.book(f,"e2Pt", "e2 p_{T}", 200, 0, 200)
             self.book(f,"e2Phi", "e2 phi",  100, -3.2, 3.2)
-            self.book(f,"e2Eta", "e2 eta", 50, -2.5, 2.5)
+            self.book(f,"e2Eta", "e2 eta", 46, -2.3, 2.3)
 
             self.book(f,"e3Pt", "e3 p_{T}", 200, 0, 200)
             self.book(f,"e3Phi", "e3 phi",  100, -3.2, 3.2)
-            self.book(f,"e3Eta", "e3 eta", 50, -2.5, 2.5)
-            self.book(f,"e3AbsEta", "e3 abs eta", 25, 0, 2.5)
+            self.book(f,"e3Eta", "e3 eta", 46, -2.3, 2.3)
+            self.book(f,"e3AbsEta", "e3 abs eta", 23, 0, 2.3)
 
             self.book(f, "e1e2Mass",  "e1e2 Inv Mass",  32, 0, 320)
 
@@ -178,7 +178,7 @@ class EleFakeRateAnalyzerMVA(MegaBase):
         histos[folder+'/jetN_30'].Fill(row.jetVeto30, weight) 
         histos[folder+'/bjetCSVVeto30'].Fill(row.bjetCSVVeto30, weight) 
        
-        histos[folder+'/ze3DR'].Fill(deltaR(Z(row).Phi(), row.tPhi, Z(row).Eta(), row.e3Eta))
+        histos[folder+'/ze3DR'].Fill(deltaR(Z(row).Phi(), row.e3Phi, Z(row).Eta(), row.e3Eta))
         histos[folder+'/ze3DPhi'].Fill(deltaPhi(Z(row).Phi(), row.e3Phi))
         histos[folder+'/Zpt'].Fill(Z(row).Pt())
             
@@ -216,21 +216,21 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             cut_flow_trk.Fill('allEvents')
             if not selections.eSelection(row, 'e1'): continue
             cut_flow_trk.Fill('e1sel')
-            if not selections.lepton_id_iso(row, 'e1', 'eid13Tight_etauiso01'): continue
+            if not selections.lepton_id_iso(row, 'e1', 'eid13Loose_idiso02'): continue
             if abs(row.e1Eta) > 1.4442 and abs(row.e1Eta < 1.566) : continue
             
             
             cut_flow_trk.Fill('e1IDiso')
             if not selections.eSelection(row, 'e2'): continue
             cut_flow_trk.Fill('e2sel')
-            if not selections.lepton_id_iso(row, 'e2', 'eid13Tight_etauiso01'): continue
+            if not selections.lepton_id_iso(row, 'e2', 'eid13Loose_idiso02'): continue
             if abs(row.e2Eta) > 1.4442 and abs(row.e2Eta) < 1.566 : continue
             
             cut_flow_trk.Fill('e2IDiso')
             if not abs(row.e1_e2_Mass-91.2) < 20: continue
             cut_flow_trk.Fill('ZMass')
 
-            if not selections.lepton_id_iso(row, 'e3', 'eid13Tight_idiso02'): continue
+            if not selections.lepton_id_iso(row, 'e3', 'eid13Tight_mvaLoose'): continue
 
             cut_flow_trk.Fill('tsel')
 

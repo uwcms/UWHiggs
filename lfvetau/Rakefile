@@ -76,6 +76,8 @@ end
 
 $frfit_dir = "results/#{$jobid}/fakerate_fits"
 directory $frfit_dir
+$efrfit_dir = "results/#{$jobid}/efakerate_fits"
+directory $efrfit_dir
 exponential = "scale*TMath::Exp(x*decay)+offset"
 exponential_vars =  "scale[4., 0, 10],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
 exponentialpol1 = "scale*TMath::Exp(x*decay)+offset+slope*x"
@@ -102,7 +104,9 @@ erf_vars =  "scale[0.1, 0, 10],shift[1., 0.8, 1.2],steep[100.], offset[1e-2, 0, 
 $fr_binning = "30,40,50,60,70,80,100,120,150,200"
 #$fr_binning = "30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200"
 $fr_analyzer = "TauFakeRateAnalyzerMVA" #was TauFakeRateAnalyzer
+$efr_analyzer = "EleFakeRateAnalyzerMVA"
 fr_fits      = Hash.new
+efr_fits      = Hash.new
 # Fake rate fit configurations
 
 #mysamples = [ "zjets_skimmedLL", "zjets_skimmedTT"]
@@ -134,6 +138,20 @@ fr_fits["t_os_tLoose_tTigh_tPt"] = Hash[
                                           "min"=>"0",
                                         "max"=>"1"
                                          ]
+efr_fits["e_os_eLoose_eTigh_e3Pt"] = Hash[ 
+                                          "samples" => Array["diboson",  "dataSingleE"],
+                                          "analyzer" => $efr_analyzer,
+                                        #"function" => exponential,
+                                          #"variables" => exponential_vars,
+                                          "function" => pol0, 
+                                          "variables"=>pol0_vars, 
+                                          #"rebin" => 1,
+                                          "rebin" => $fr_binning,
+                                          "range" => "30 200",
+                                          "title" => "e p_{T} (GeV)",
+                                          "min"=>"0",
+                                        "max"=>"1.2"
+                                         ]
 
 #fr_fits["t_os_tNoCuts_tTigh_tAbsEta"] = Hash[ 
 #                                               "samples" => Array["diboson", "dataSingleE"],
@@ -161,9 +179,24 @@ fr_fits["t_os_tLoose_tTigh_tAbsEta"] = Hash[
                                            ]
 
 
+efr_fits["e_os_eLoose_eTigh_e3AbsEta"] = Hash[ 
+                                              "samples" => Array["diboson",  "dataSingleE"],
+                                              "analyzer" => $efr_analyzer,
+                                              "function" => pol2,
+                                              "variables" => pol2_vars,
+                                              "rebin" => 1,
+                                              "range" => "0 2.3",
+                                              #"range" => "-2.3 2.3",
+                                              "title" => "e #eta",
+                                              "min"=>"0",
+                                              "max"=>"1.2"
+                                           ]
+
+
 
   
 task :fits => []
+task :efits => []
   
 fr_fits.each do |fit, fit_info|
   fit_configuration = fit.split("_")
@@ -177,10 +210,9 @@ fr_fits.each do |fit, fit_info|
     subsample_inputs += samples[sample]
   end
     
-    
   fit_output = $frfit_dir + "/#{fit}.root"
-  #subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}_tMtCut/#{x}.root"}
-  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/TauFakeRateAnalyzerMVA/#{x}.root"}
+  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}/#{x}.root"}
+  # subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/TauFakeRateAnalyzerMVA_eTight/#{x}.root"}
   subsample_input_list = subsamples_inputs_result_list.join(" ")
   
   # Path to histograms in root files
@@ -210,6 +242,42 @@ fr_fits.each do |fit, fit_info|
 end
 #end
 
+efr_fits.each do |fit, fit_info|
+  fit_configuration = fit.split("_")
+  sign = fit_configuration[1]
+  denom = fit_configuration[2]
+  num = fit_configuration[3]
+  var = fit_configuration[4]
+    
+  subsample_inputs = []
+  fit_info['samples'].each do |sample|
+    subsample_inputs += samples[sample]
+  end
+  fit_output = $efrfit_dir + "/#{fit}.root"
+  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}/#{x}.root"}
+  subsample_input_list = subsamples_inputs_result_list.join(" ")
+  
+  # Path to histograms in root files
+  denom_path = Array[sign, denom,var].join("/")
+  num_path = Array[sign, num, var].join("/")
+  
+  corrected_file = fit_output.sub('.root', '.corrected_inputs.root')
+  file corrected_file => subsamples_inputs_result_list + [fit_info['analyzer'] + '.py', "CorrectFakeRateData.py"] do |t|
+    sh "mkdir -p #{$efrfit_dir}"
+    sh "python CorrectFakeRateData.py --files #{subsample_input_list} --lumifiles inputs/#{$jobid}/*sum --outputfile #{t.name} --numerator '#{num_path}' --denom '#{denom_path}' --rebin #{fit_info['rebin']}"
+      puts ""
+  end
+  
+  file fit_output => corrected_file do |t|
+    sh "fit_efficiency_chi2.py  #{fit_output} numerator denominator \'#{fit_info['function']}\' \'#{fit_info['variables']}\' #{corrected_file} --plot --xrange #{fit_info['range']} --xtitle \'#{fit_info['title']}\' --min \'#{fit_info['min']}\' --max \'#{fit_info['max']}\' --show-error "
+    puts ""
+  end
+  
+    
+  task :efits => fit_output
+  
+end
+
 
 
 ################################################################################
@@ -230,7 +298,8 @@ task :genkinEMu => get_analyzer_results("LFVHAnalyzeGENEMu.py", samples['signalM
 
 task :recoplots => get_analyzer_results("LFVHETauAnalyzer.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'])# + samples['dataSingleE'] )
 
-task :recoplotsMVA => get_analyzer_results("LFVHETauAnalyzerMVA.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + samples['Zembedded']+
+task :recoplotsMVA => get_analyzer_results("LFVHETauAnalyzerMVA.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + 
+                                           samples['Zembedded']+
                                            samples['dataSingleE'] )
 
 task :recoplotsMVAeMtcut => get_analyzer_results("LFVHETauAnalyzerMVA_eMTCut.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + 
