@@ -176,17 +176,17 @@ class LFVHETauAnalyzerMVA(MegaBase):
             self.book(f, "h_collmass_mvamet",  "h_collmass_mvamet",  32, 0, 320)
             self.book(f, "h_collmass_pfmet_Ty1",  "h_collmass_pfmet_Ty1",  32, 0, 320)
 
-            self.book(f, "h_collmass_pfmet_jes_plus", "h_collmass_pfmet_jes_plus", 50, 0, 100)
-            self.book(f, "h_collmass_pfmet_mes_plus", "h_collmass_pfmet_mes_plus", 50, 0, 100 )
-            self.book(f, "h_collmass_pfmet_tes_plus", "h_collmass_pfmet_tes_plus", 50, 0, 100)
-            self.book(f, "h_collmass_pfmet_ees_plus", "h_collmass_pfmet_ees_plus", 50, 0, 100)
-            self.book(f, "h_collmass_pfmet_ues_plus", "h_collmass_pfmet_ues_plus", 50, 0, 100)
+            self.book(f, "h_collmass_pfmet_jes_plus", "h_collmass_pfmet_jes_plus",  32, 0, 320)
+            self.book(f, "h_collmass_pfmet_mes_plus", "h_collmass_pfmet_mes_plus",  32, 0, 320)
+            self.book(f, "h_collmass_pfmet_tes_plus", "h_collmass_pfmet_tes_plus",  32, 0, 320)
+            self.book(f, "h_collmass_pfmet_ees_plus", "h_collmass_pfmet_ees_plus",  32, 0, 320)
+            self.book(f, "h_collmass_pfmet_ues_plus", "h_collmass_pfmet_ues_plus",  32, 0, 320)
 
-            self.book(f, "h_collmass_pfmet_jes_minus", "h_collmass_pfmet_jes_minus", 50, 0, 100)
-            self.book(f, "h_collmass_pfmet_mes_minus", "h_collmass_pfmet_mes_minus", 50, 0, 100 )
-            self.book(f, "h_collmass_pfmet_tes_minus", "h_collmass_pfmet_tes_minus", 50, 0, 100)
-            self.book(f, "h_collmass_pfmet_ees_minus", "h_collmass_pfmet_ees_minus", 50, 0, 100)
-            self.book(f, "h_collmass_pfmet_ues_minus", "h_collmass_pfmet_ues_minus", 50, 0, 100)
+            self.book(f, "h_collmass_pfmet_jes_minus", "h_collmass_pfmet_jes_minus",  32, 0, 320)
+            self.book(f, "h_collmass_pfmet_mes_minus", "h_collmass_pfmet_mes_minus",  32, 0, 320)
+            self.book(f, "h_collmass_pfmet_tes_minus", "h_collmass_pfmet_tes_minus",  32, 0, 320)
+            self.book(f, "h_collmass_pfmet_ees_minus", "h_collmass_pfmet_ees_minus",  32, 0, 320)
+            self.book(f, "h_collmass_pfmet_ues_minus", "h_collmass_pfmet_ues_minus",  32, 0, 320)
 
             self.book(f, "h_collmassSpread_pfmet",  "h_collmassSpread_pfmet",  40, -100, 100)
             self.book(f, "h_collmassSpread_mvamet",  "h_collmassSpread_mvamet",  40, -100, 100)
@@ -278,14 +278,15 @@ class LFVHETauAnalyzerMVA(MegaBase):
         weight = self.event_weight(row)
         histos = self.histograms
         pudir =['']
-        if row.run < 2: pudir.extend( ['p1s/', 'm1s/', 'trp1s/', 'trm1s/', 'eidp1s/','eidm1s/',  'eisop1s/','eisom1s/'])
+        if self.is_data == False : pudir.extend( ['p1s/', 'm1s/', 'trp1s/', 'trm1s/', 'eidp1s/','eidm1s/',  'eisop1s/','eisom1s/'])
         looseList = ['tLoose/', 'tLooseUp/', 'tLooseDown/', 'tLooseUnweight/']
         
         
         if bool(isTauTight) == False:               
             if f.startswith('os') or  f.startswith('ss')  :
                 frweight_bv = frw[0]/(1.-frw[0])
-                err = 0.3/pow(1-frw[0], 2) #tau pog told to mu-tau group to use 30% uncertainty on tau fake rate.
+                #err = 0.3*abs(2-frw[0]/pow(1-frw[0], 2)) #tau pog told to mu-tau group to use 30% uncertainty on tau fake rate.
+                err=0.3
                 frweight_p1s = frweight_bv*(1+err)
                 frweight_m1s = frweight_bv*(1-err)
                 fr_weights = [frweight_bv, frweight_p1s, frweight_m1s]
