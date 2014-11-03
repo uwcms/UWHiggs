@@ -1,7 +1,7 @@
 from ETauTree import ETauTree
 import sys
 import logging
-logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 import os
 from pdb import set_trace
 import ROOT
@@ -18,6 +18,8 @@ from fakerate_functions import tau_fake_rate, tau_fake_rate_up, tau_fake_rate_dw
 import itertools
 import traceback
 from FinalStateAnalysis.PlotTools.decorators import memo
+import FinalStateAnalysis.PlotTools.pytree as pytree
+from FinalStateAnalysis.Utilities.struct import struct
 
 @memo
 def getVar(name, var):
@@ -124,6 +126,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             ),
             'ePFMET_DeltaPhi' : lambda row, weight: (deltaPhi(row.ePhi, getattr(row, metphi())), weight),
             'tPFMET_DeltaPhi' : lambda row, weight: (deltaPhi(row.tPhi, getattr(row, metphi())), weight),
+            'evtInfo' : lambda row, weight: (struct(run=row.run,lumi=row.lumi,evt=row.evt,weight=weight), None)
             }
         for shift in self.systematics['met']:
             #patch name
@@ -203,6 +206,13 @@ class LFVHETauAnalyzerMVA(MegaBase):
         self.book('os/gg/ept30/', "e_t_Mass",  "h_vismass",  32, 0, 320)
                         
         for f in folder: 
+            self.book(
+                f,
+                'evtInfo', 'evtInfo',
+                'run/l:lumi/l:evt/l:weight/D',
+                type=pytree.PyTree
+            )
+
             self.book(f,"tPt", "tau p_{T}", 200, 0, 200)
             self.book(f,"tPhi", "tau phi", 100, -3.2, 3.2)
             self.book(f,"tEta", "tau eta",  50, -2.5, 2.5)
@@ -359,7 +369,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
 
             #Fill embedded sample normalization BEFORE the vetoes
             if not row.e_t_SS:
-                self.fill_histos('os/gg/ept30/', row, weight_map[''])
+                self.fill_histos('os/gg/ept30', row, weight_map[''])
 
             # it is better vetoing on b-jets  after the histo for the DY embedded
             #bjet veto
@@ -373,8 +383,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
             jn = min(row.jetVeto30, 3)
             jn_jes_plus = min(row.jetVeto30jes_plus, 3)
             jn_jes_minus = min(row.jetVeto30jes_minus, 3)
-            jet_category = ['%i' % jn, '%i_jes_plus' % jn_jes_plus, '%i_jes_minus' % jn_jes_minus]
+            jet_category_names = ['%i' % jn, '%i_jes_plus' % jn_jes_plus, '%i_jes_minus' % jn_jes_minus]
             jet_categories = [jn, jn_jes_plus, jn_jes_minus]
+            passes_full_selection = False
 
             #
             # Full tight selection
@@ -387,11 +398,13 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     if deltaPhi(row.ePhi, row.tPhi) < 2.7 : continue
                     if row.tMtToPFMET > 50 : continue
                     full_selection[idx].append('selected')
+                    passes_full_selection = True 
                 elif njet == 1 :
                     if row.tPt < 40: continue 
                     if row.ePt < 35 : continue
                     if row.tMtToPFMET > 35 : continue
                     full_selection[idx].append('selected')
+                    passes_full_selection = True 
                 elif njet == 2 :
                     if row.tPt < 40: continue 
                     if row.ePt < 30 : continue # no cut as only electrons with pt>30 are in the ntuples
@@ -399,11 +412,13 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     if row.vbfMass < 550 : continue
                     if row.vbfDeta < 3.5 : continue
                     full_selection[idx].append('selected')
+                    passes_full_selection = True 
 
-            logging.debug('Passed full selection')
+            if passes_full_selection:
+                logging.debug('Passed full selection')
 
             jet_directories = []
-            for jet_dir, sel_dir in zip(jet_category, full_selection):
+            for jet_dir, sel_dir in zip(jet_category_names, full_selection):
                 jet_directories.extend(
                     [os.path.join(jet_dir, i) for i in sel_dir]
                 )
@@ -418,15 +433,16 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #
             # Lepton vetoes
             #
-            tvetoes = [row.tauVetoPt20EleTight3MuLoose, row.tauVetoPt20EleTight3MuLoose_tes_minus, row.tauVetoPt20EleTight3MuLoose_tes_plus]
-            mvetoes = [row.muVetoPt5IsoIdVtx, row.muVetoPt5IsoIdVtx_mes_minus, row.muVetoPt5IsoIdVtx_mes_plus]
-            evetoes = [row.eVetoCicLooseIso, row.eVetoCicLooseIso_ees_minus, row.eVetoCicLooseIso_ees_plus]
+            tvetoes = [row.tauVetoPt20EleTight3MuLoose, row.tauVetoPt20EleTight3MuLoose_tes_plus, row.tauVetoPt20EleTight3MuLoose_tes_minus]
+            mvetoes = [row.muVetoPt5IsoIdVtx          , row.muVetoPt5IsoIdVtx_mes_plus          , row.muVetoPt5IsoIdVtx_mes_minus          ]
+            evetoes = [row.eVetoCicLooseIso           , row.eVetoCicLooseIso_ees_plus           , row.eVetoCicLooseIso_ees_minus           ]
             
             tdirs = [ i for i, j in zip( systematics['tvetos'], tvetoes) if not j]
             mdirs = [ i for i, j in zip( systematics['mvetos'], mvetoes) if not j]
             edirs = [ i for i, j in zip( systematics['evetos'], evetoes) if not j]
 
             #if any of the lists is empty
+            #set_trace()
             if not tdirs or not mdirs or not edirs:
                 continue
             logging.debug('Passed Vetoes')
@@ -438,6 +454,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
             all_dirs = [i for i in all_dirs if i in veto_sys]
 
             sys_directories = all_dirs + sys_shifts
+            #remove duplicates
+            sys_directories = list(set(sys_directories))
             if not isTauTight:
                 #if is a loose tau just compute the fakes!                            
                 sys_directories = tau_id_category
@@ -452,6 +470,10 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     weight_map[i] *= mc_weight
 
             #Fill histograms in appropriate direcotries
+            #if passes_full_selection:
+            #dirs = [os.path.join(sys, sign, processtype, e_thr, jet_dir) for sys, e_thr, jet_dir in itertools.product(sys_directories, ptthreshold, jet_directories)]
+            #if len(dirs) <> len(set(dirs)):
+            #    set_trace()
             for sys, e_thr, jet_dir in itertools.product(sys_directories, ptthreshold, jet_directories):
                 #if we fill a histogram, lock the event
                 lock = evt_id
@@ -459,7 +481,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
                                         e_thr, jet_dir)
                 if dir_name[-1] == '/':
                     dir_name = dir_name[:-1]
-                logging.debug('Filling %s' % dir_name)
+                if passes_full_selection:
+                    logging.debug('Filling %s' % dir_name)
                 #fill them!
                 weight_to_use = weight_map[sys] if sys in weight_map else weight_map['']
                 self.fill_histos(dir_name, row, weight_to_use)
