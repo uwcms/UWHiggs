@@ -383,8 +383,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
             jn = min(row.jetVeto30, 3)
             jn_jes_plus = min(row.jetVeto30jes_plus, 3)
             jn_jes_minus = min(row.jetVeto30jes_minus, 3)
-            jet_category_names = ['%i' % jn, '%i_jes_plus' % jn_jes_plus, '%i_jes_minus' % jn_jes_minus]
             jet_categories = [jn, jn_jes_plus, jn_jes_minus]
+            jet_category_names = ['%i%s' % i for i in zip(jet_categories, systematics['jes'])]
+
             passes_full_selection = False
 
             #

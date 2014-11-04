@@ -85,12 +85,10 @@ def make_multiple(fcn, indexed=False, shift=0):
     def multiple(row,*args):
         ret = 1.
         for arg in args:
-            abseta = abs(
-                getattr( 
+            abseta = getattr( 
                     row, 
                     getVar(arg,'Eta')
                 ) 
-            )
             pt     = getattr(row, getVar(arg,'Pt'))
             fcn_ret = fcn(pt,abseta)
             if indexed:
@@ -109,19 +107,19 @@ def make_multiple(fcn, indexed=False, shift=0):
 
 ##put here the trigger correction as in https://github.com/mverzett/UWHiggs/blob/WH_At_Paper/wh/mcCorrectors.py
 
-correct_e = make_multiple(HetauCorrection.correct_hamburg_e)
-correct_eid13_mva = make_multiple(HetauCorrection.correct_eid13_mva)
+correct_e             = make_multiple(HetauCorrection.correct_hamburg_e    )
+correct_eid13_mva     = make_multiple(HetauCorrection.correct_eid13_mva    )
 correct_eid13_p1s_mva = make_multiple(HetauCorrection.correct_eid13_p1s_mva)
 correct_eid13_m1s_mva = make_multiple(HetauCorrection.correct_eid13_m1s_mva)
 
-correct_eiso13_mva = make_multiple(HetauCorrection.correct_eiso13_mva)
+correct_eiso13_mva     = make_multiple(HetauCorrection.correct_eiso13_mva    )
 correct_eiso13_p1s_mva = make_multiple(HetauCorrection.correct_eiso13_p1s_mva)
 correct_eiso13_m1s_mva = make_multiple(HetauCorrection.correct_eiso13_m1s_mva)
 
 #correct_eid_mva = make_multiple(HetauCorrection.scale_eleId_hww)
 #correct_eReco_mva = make_multiple(HetauCorrection.scale_elereco_hww)
 #correct_eIso_mva = make_multiple(HetauCorrection.scale_eleIso_hww)
-correct_trigger_mva = make_multiple(HetauCorrection.single_ele_mva, indexed=True)
+correct_trigger_mva    = make_multiple(HetauCorrection.single_ele_mva, indexed=True)
 correct_trigger_mva_up = make_multiple(HetauCorrection.single_ele_mva, indexed=True, shift=1)
 correct_trigger_mva_dw = make_multiple(HetauCorrection.single_ele_mva, indexed=True, shift=-1)
 
