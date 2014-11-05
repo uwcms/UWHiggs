@@ -406,8 +406,7 @@ class BasePlotter(Plotter):
         folder_systematics is a list of tuples with the folders containing shifts (up, down)
         name_systematics is a list of tuples containing the postfix to obtain the shifts (up, down)
         '''
-
-        
+         
         systematics = []
         for sys_up, sys_dw in folder_systematics:
             h_up = view.Get(os.path.join(sys_up, path))
@@ -502,8 +501,9 @@ class BasePlotter(Plotter):
         #add MET sys if necessary
         if 'collmass' in variable.lower() or \
            'met' in variable.lower():
-            c = 1
-            #name_systematics.extend(met_systematics) # TO ADD WHEN RERUN WITH THE NEW BINNING 
+            if not variable.lower().startswith('type1'):
+                c = 1
+                name_systematics.extend(met_systematics) # TO ADD WHEN RERUN WITH THE NEW BINNING 
 
         #add them
         
@@ -580,7 +580,13 @@ class BasePlotter(Plotter):
         #set_trace()
 
         #add jet category uncertainty
-        mc_err = SystematicsView.add_error( mc_err, 0.05 )
+        jetcat_unc_mapper = {
+            0 : 0.017,
+            1 : 0.035,
+            2 : 0.05
+        }
+        jetn = folder[len(folder)-1:] if not '/selected' in folder else folder[len(folder)-10:len(folder)-9]
+        mc_err = SystematicsView.add_error( mc_err, jetcat_unc_mapper.get(jetn, 0. ))
 
 
         #draw stack

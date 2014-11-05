@@ -11,7 +11,7 @@ from FinalStateAnalysis.PlotTools.decorators import  memo_last
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 from math import sqrt, pi, cos
 from fakerate_functions import fakerate_central_histogram, fakerate_p1s_histogram, fakerate_m1s_histogram
-
+from FinalStateAnalysis.Utilities.struct import struct
 
 
 
@@ -89,6 +89,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             eisoUp_mcCorrections=   eisoUp_mcCorrections * mcCorrections.get_trigger_efficiency_MVA(row,'e') 
             eisoDown_mcCorrections= eisoDown_mcCorrections* mcCorrections.get_trigger_efficiency_MVA(row,'e') 
             
+
             return [allmcCorrections, allmcCorrections, allmcCorrections, trUp_mcCorrections, trDown_mcCorrections ,eidUp_mcCorrections, eidDown_mcCorrections, eisoUp_mcCorrections,eisoDown_mcCorrections]
 
 
@@ -131,6 +132,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
             weight_eiso_down =  self.pucorrector(row.nTruePU) *\
                                 eisoDown_mcCorrections
         
+            #if row.evt == 76 :
+            #    print row.evt, weight, self.pucorrector(row.nTruePU) , allmcCorrections, mcCorrections.get_trigger_corrections_MVA(row,'e') , mcCorrections.get_electronId_corrections13_MVA(row, 'e'),  mcCorrections.get_electronIso_corrections13_MVA(row, 'e')
                     
             return [weight, weight_up, weight_down, weight_tr_up,  weight_tr_down, weight_eid_up, weight_eid_down, weight_eiso_up,  weight_eiso_down]
 
@@ -161,6 +164,13 @@ class LFVHETauAnalyzerMVA(MegaBase):
 
                         
         for f in folder: 
+            self.book(
+                f,
+                'evtInfo', 'evtInfo',
+                'run/l:lumi/l:evt/l:weight/D',
+                type=pytree.PyTree
+            )
+            
             self.book(f,"tPt", "tau p_{T}", 200, 0, 200)
             self.book(f,"tPhi", "tau phi", 100, -3.2, 3.2)
             self.book(f,"tEta", "tau eta",  50, -2.5, 2.5)
@@ -202,11 +212,48 @@ class LFVHETauAnalyzerMVA(MegaBase):
             self.book(f, "h_collmass_vs_dPhi_mvamet",  "h_collmass_vs_dPhi_mvamet", 50, 0, 3.2, 32, 0, 320, type=ROOT.TH2F)
             self.book(f, "h_collmassSpread_vs_dPhi_pfmet",  "h_collmassSpread_vs_dPhi_pfmet", 50, 0, 3.2, 20, -100, 100, type=ROOT.TH2F)
             self.book(f, "h_collmassSpread_vs_dPhi_mvamet",  "h_collmassSpread_vs_dPhi_mvamet", 50, 0, 3.2, 20, -100, 100, type=ROOT.TH2F)
+
+                
             
             self.book(f, "h_vismass",  "h_vismass",  32, 0, 320)
             
-            self.book(f, "type1_pfMetEt_vs_dPhi", "PFMet vs #Delta#phi(#tau,PFMet)", 50, 0, 3.2, 64, 0, 320, type=ROOT.TH2F)
-            self.book(f, "mvaMetEt_vs_dPhi", "MVAMet vs #Delta#phi(#tau,MVAMet)", 50, 0, 3.2, 64, 0, 320, type=ROOT.TH2F)
+            self.book(f, "type1_pfMet_Et", "PFMet", 200, 0, 200)
+            self.book(f, "pfMet_Et", "PFMet", 200, 0, 200)
+            self.book(f, "type1_pfMet_Phi", "PFMet #phi", 100, -3.2, 3.2)
+            self.book(f, "pfMet_Phi", "PFMet #phi", 100, -3.2, 3.2)
+            
+            self.book(f, "pfMet_Et_ees_minus",  "pfMet_Et_ees_minus",  200, 0, 200)
+            self.book(f, "pfMet_Et_jes_minus",  "pfMet_Et_jes_minus",  200, 0, 200)
+            self.book(f, "pfMet_Et_mes_minus",  "pfMet_Et_mes_minus",  200, 0, 200)
+            self.book(f, "pfMet_Et_tes_minus",  "pfMet_Et_tes_minus",  200, 0, 200)
+            self.book(f, "pfMet_Et_ues_minus",  "pfMet_Et_ues_minus",  200, 0, 200)
+
+
+            self.book(f, "pfMet_Et_jes_plus",   "pfMet_Et_jes_plus",   200, 0, 200)
+            self.book(f, "pfMet_Et_ees_plus",   "pfMet_Et_ees_plus",   200, 0, 200)
+            self.book(f, "pfMet_Et_mes_plus",   "pfMet_Et_mes_plus",   200, 0, 200)
+            self.book(f, "pfMet_Et_tes_plus",   "pfMet_Et_tes_plus",   200, 0, 200)
+            self.book(f, "pfMet_Et_ues_plus",   "pfMet_Et_ues_plus",   200, 0, 200)
+
+            self.book(f, "pfMet_Phi_ees_plus",  "pfMet_Phi_ees_plus",  100, -3.2, 3.2)
+            self.book(f, "pfMet_Phi_jes_plus",  "pfMet_Phi_jes_plus",  100, -3.2, 3.2)
+            self.book(f, "pfMet_Phi_mes_plus",  "pfMet_Phi_mes_plus",  100, -3.2, 3.2)
+            self.book(f, "pfMet_Phi_tes_plus",  "pfMet_Phi_tes_plus",  100, -3.2, 3.2)
+            self.book(f, "pfMet_Phi_ues_plus",  "pfMet_Phi_ues_plus",  100, -3.2, 3.2)
+
+            self.book(f, "pfMet_Phi_ees_minus", "pfMet_Phi_ees_minus", 100, -3.2, 3.2)
+            self.book(f, "pfMet_Phi_jes_minus", "pfMet_Phi_jes_minus", 100, -3.2, 3.2)
+            self.book(f, "pfMet_Phi_mes_minus", "pfMet_Phi_mes_minus", 100, -3.2, 3.2)
+            self.book(f, "pfMet_Phi_tes_minus", "pfMet_Phi_tes_minus", 100, -3.2, 3.2)
+            self.book(f, "pfMet_Phi_ues_minus", "pfMet_Phi_ues_minus", 100, -3.2, 3.2)
+
+            #self.book(f, "pfMet_jes_Et",        "pfMet_jes_Et",        200, 0, 200)
+            #self.book(f, "pfMet_jes_Phi",       "pfMet_jes_Phi",       100, -3.2, 3.2)
+            #self.book(f, "pfMet_ues_AtanToPhi", "pfMet_ues_AtanToPhi", 100, -3.2, 3.2)
+
+ 
+            self.book(f, "type1_pfMet_Et_vs_dPhi", "PFMet vs #Delta#phi(#tau,PFMet)", 50, 0, 3.2, 64, 0, 320, type=ROOT.TH2F)
+            self.book(f, "mvaMet_Et_vs_dPhi", "MVAMet vs #Delta#phi(#tau,MVAMet)", 50, 0, 3.2, 64, 0, 320, type=ROOT.TH2F)
 
             self.book(f, "tPFMET_DeltaPhi", "tau-PFMET DeltaPhi" , 50, 0, 3.2)
             self.book(f, "tPFMET_Mt", "tau-PFMET M_{T}" , 200, 0, 200)
@@ -337,11 +384,57 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     #histos[folder+'/h_collmass_pfmet_tes'].Fill(collmass(row, row.pfMet_tes_Et, row.pfMet_tes_Phi), frweight)
                     #histos[folder+'/h_collmass_pfmet_ees'].Fill(collmass(row, row.pfMet_ees_Et, row.pfMet_ees_Phi), frweight)
                     #histos[folder+'/h_collmass_pfmet_ues'].Fill(collmass(row, row.pfMet_ues_Et, row.pfMet_ues_Phi), frweight)
-                    
+                    histos[folder+'/h_collmass_pfmet_ees_minus'].Fill(collmass(row, row.pfMet_ees_minus_Et, row.pfMet_ees_minus_Phi), frweight)
+                    histos[folder+'/h_collmass_pfmet_ees_plus' ].Fill(collmass(row, row.pfMet_ees_plus_Et , row.pfMet_ees_plus_Phi ), frweight)
+                    histos[folder+'/h_collmass_pfmet_jes_minus'].Fill(collmass(row, row.pfMet_jes_minus_Et, row.pfMet_jes_minus_Phi), frweight)
+                    histos[folder+'/h_collmass_pfmet_jes_plus' ].Fill(collmass(row, row.pfMet_jes_plus_Et , row.pfMet_jes_plus_Phi ), frweight)
+                    histos[folder+'/h_collmass_pfmet_mes_minus'].Fill(collmass(row, row.pfMet_mes_minus_Et, row.pfMet_mes_minus_Phi), frweight)
+                    histos[folder+'/h_collmass_pfmet_mes_plus' ].Fill(collmass(row, row.pfMet_mes_plus_Et , row.pfMet_mes_plus_Phi ), frweight)
+                    histos[folder+'/h_collmass_pfmet_tes_minus'].Fill(collmass(row, row.pfMet_tes_minus_Et, row.pfMet_tes_minus_Phi), frweight)
+                    histos[folder+'/h_collmass_pfmet_tes_plus' ].Fill(collmass(row, row.pfMet_tes_plus_Et , row.pfMet_tes_plus_Phi ), frweight)
+                    histos[folder+'/h_collmass_pfmet_ues_minus'].Fill(collmass(row, row.pfMet_ues_minus_Et, row.pfMet_ues_minus_Phi), frweight)
+                    histos[folder+'/h_collmass_pfmet_ues_plus' ].Fill(collmass(row, row.pfMet_ues_plus_Et , row.pfMet_ues_plus_Phi ), frweight)
+
                     
                     histos[folder+'/h_vismass'].Fill(row.e_t_Mass, frweight)
-                    histos[folder+'/type1_pfMetEt_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), row.type1_pfMetEt, frweight)
-                    histos[folder+'/mvaMetEt_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), row.mva_metEt, frweight)
+                    
+                    histos[folder+'/type1_pfMet_Et'].Fill(row.type1_pfMetEt, frweight)
+                    histos[folder+'/pfMet_Et'].Fill(row.pfMetEt, frweight)
+                    histos[folder+'/type1_pfMet_Phi'].Fill(row.type1_pfMetPhi, frweight)
+                    histos[folder+'/pfMet_Phi'].Fill(row.pfMetPhi, frweight)
+
+                    histos[folder+'/pfMet_Et_ees_minus'].Fill( row.pfMet_ees_minus_Et ,  frweight)
+                    histos[folder+'/pfMet_Et_jes_minus'].Fill( row.pfMet_jes_minus_Et ,  frweight)
+                    histos[folder+'/pfMet_Et_mes_minus'].Fill( row.pfMet_mes_minus_Et ,  frweight)
+                    histos[folder+'/pfMet_Et_tes_minus'].Fill( row.pfMet_tes_minus_Et ,  frweight)
+                    histos[folder+'/pfMet_Et_ues_minus'].Fill( row.pfMet_ues_minus_Et ,  frweight)
+
+                    histos[folder+'/pfMet_Et_ees_plus'].Fill(  row.pfMet_ees_plus_Et  ,  frweight)
+                    histos[folder+'/pfMet_Et_jes_plus'].Fill(  row.pfMet_jes_plus_Et  ,  frweight)
+                    histos[folder+'/pfMet_Et_mes_plus'].Fill(  row.pfMet_mes_plus_Et  ,  frweight)
+                    histos[folder+'/pfMet_Et_tes_plus'].Fill(  row.pfMet_tes_plus_Et  ,  frweight)
+                    histos[folder+'/pfMet_Et_ues_plus'].Fill(  row.pfMet_ues_plus_Et  ,  frweight)
+                    
+                    
+                    histos[folder+'/pfMet_Phi_ees_minus'].Fill(row.pfMet_ees_minus_Phi,  frweight)
+                    histos[folder+'/pfMet_Phi_jes_minus'].Fill(row.pfMet_jes_minus_Phi,  frweight)
+                    histos[folder+'/pfMet_Phi_mes_minus'].Fill(row.pfMet_mes_minus_Phi,  frweight)
+                    histos[folder+'/pfMet_Phi_tes_minus'].Fill(row.pfMet_tes_minus_Phi,  frweight)
+                    histos[folder+'/pfMet_Phi_ues_minus'].Fill(row.pfMet_ues_minus_Phi,  frweight)
+
+                    histos[folder+'/pfMet_Phi_ees_plus'].Fill( row.pfMet_ees_plus_Phi ,  frweight)
+                    histos[folder+'/pfMet_Phi_jes_plus'].Fill( row.pfMet_jes_plus_Phi ,  frweight)
+                    histos[folder+'/pfMet_Phi_mes_plus'].Fill( row.pfMet_mes_plus_Phi ,  frweight)
+                    histos[folder+'/pfMet_Phi_tes_plus'].Fill( row.pfMet_tes_plus_Phi ,  frweight)
+                    histos[folder+'/pfMet_Phi_ues_plus'].Fill( row.pfMet_ues_plus_Phi ,  frweight)
+
+                    #histos[folder+'/pfMet_jes_Et'].Fill(       row.pfMet_jes_Et       ,  frweight)
+                    #histos[folder+'/pfMet_jes_Phi'].Fill(      row.pfMet_jes_Phi      ,  frweight)
+
+                    #histos[folder+'/pfMet_ues_AtanToPhi'].Fill(rowpfMet_ues_AtanToPhi, frweight)
+ 
+                    histos[folder+'/type1_pfMet_Et_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), row.type1_pfMetEt, frweight)
+                    histos[folder+'/mvaMet_Et_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), row.mva_metEt, frweight)
                         
                     histos[folder+'/ePFMET_DeltaPhi'].Fill(deltaPhi(row.ePhi, row.pfMetPhi), frweight)
                     histos[folder+'/ePFMET_DeltaPhi_Ty1'].Fill(deltaPhi(row.ePhi, row.type1_pfMetPhi), frweight)
@@ -349,24 +442,6 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     histos[folder+'/ePFMET_Mt'].Fill(row.eMtToPFMET, frweight)
                     histos[folder+'/ePFMET_Mt_Ty1'].Fill(row.eMtToPfMet_Ty1, frweight)
                     histos[folder+'/eMVAMET_Mt'].Fill(row.eMtToMVAMET, frweight)
-                    ##histos[folder+'/ePFMET_Mt_Ty1_ues_minus'].Fill(row.eMtToPfMet_Ty1_ues_minus, frweight)
-                    ##histos[folder+'/ePFMET_Mt_Ty1_ues_plus'].Fill(row.eMtToPfMet_Ty1_ues_plus, frweight)
-                    #histos[folder+'/ePFMET_Mt_jes_minus'].Fill(row.eMtToPfMet_jes_minus, frweight)
-                    #histos[folder+'/ePFMET_Mt_jes_plus'].Fill(row.eMtToPfMet_jes_plus, frweight)
-                    #histos[folder+'/ePFMET_Mt_jes'].Fill(row.eMtToPfMet_jes, frweight)
-                    #histos[folder+'/ePFMET_Mt_mes_minus'].Fill(row.eMtToPfMet_mes_minus, frweight)
-                    #histos[folder+'/ePFMET_Mt_mes_plus'].Fill(row.eMtToPfMet_mes_plus, frweight)
-                    #histos[folder+'/ePFMET_Mt_mes'].Fill(row.eMtToPfMet_mes, frweight)
-                    #histos[folder+'/ePFMET_Mt_ees_minus'].Fill(row.eMtToPfMet_ees_minus, frweight)
-                    #histos[folder+'/ePFMET_Mt_ees_plus'].Fill(row.eMtToPfMet_ees_plus, frweight)
-                    #histos[folder+'/ePFMET_Mt_ees'].Fill(row.eMtToPfMet_ees, frweight)
-                    #histos[folder+'/ePFMET_Mt_tes_minus'].Fill(row.eMtToPfMet_tes_minus, frweight)
-                    #histos[folder+'/ePFMET_Mt_tes_plus'].Fill(row.eMtToPfMet_tes_plus, frweight)
-                    #histos[folder+'/ePFMET_Mt_tes'].Fill(row.eMtToPfMet_tes, frweight)
-                    #histos[folder+'/ePFMET_Mt_ues_minus'].Fill(row.eMtToPfMet_ues_minus, frweight)
-                    #histos[folder+'/ePFMET_Mt_ues_plus'].Fill(row.eMtToPfMet_ues_plus, frweight)
-                    #histos[folder+'/ePFMET_Mt_ues'].Fill(row.eMtToPfMet_ues, frweight)
-
                     
                         
                     histos[folder+'/tPFMET_DeltaPhi'].Fill(deltaPhi(row.tPhi, row.pfMetPhi), frweight)
@@ -374,12 +449,47 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     histos[folder+'/tMVAMET_DeltaPhi'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), frweight)
                     histos[folder+'/tPFMET_Mt'].Fill(row.tMtToPFMET, frweight)
                     histos[folder+'/tMVAMET_Mt'].Fill(row.tMtToMVAMET, frweight)
-                    #histos[folder+'/tPFMET_Mt_jes'].Fill(row.tMtToPfMet_jes, frweight)
-                    #histos[folder+'/tPFMET_Mt_mes'].Fill(row.tMtToPfMet_mes, frweight)
-                    #histos[folder+'/tPFMET_Mt_ees'].Fill(row.tMtToPfMet_ees, frweight)
-                    #histos[folder+'/tPFMET_Mt_tes'].Fill(row.tMtToPfMet_tes, frweight)
-                    #histos[folder+'/tPFMET_Mt_ues'].Fill(row.tMtToPfMet_ues, frweight)
                     
+                    histos[folder+'/h_collmass_pfmet_ees_minus'].Fill(collmass(row, row.pfMet_ees_minus_Et, row.pfMet_ees_minus_Phi), frweight)
+                    histos[folder+'/h_collmass_pfmet_ees_plus' ].Fill(collmass(row, row.pfMet_ees_plus_Et , row.pfMet_ees_plus_Phi ), frweight)
+                    histos[folder+'/h_collmass_pfmet_jes_minus'].Fill(collmass(row, row.pfMet_jes_minus_Et, row.pfMet_jes_minus_Phi), frweight)
+                    histos[folder+'/h_collmass_pfmet_jes_plus' ].Fill(collmass(row, row.pfMet_jes_plus_Et , row.pfMet_jes_plus_Phi ), frweight)
+                    histos[folder+'/h_collmass_pfmet_mes_minus'].Fill(collmass(row, row.pfMet_mes_minus_Et, row.pfMet_mes_minus_Phi), frweight)
+                    histos[folder+'/h_collmass_pfmet_mes_plus' ].Fill(collmass(row, row.pfMet_mes_plus_Et , row.pfMet_mes_plus_Phi ), frweight)
+                    histos[folder+'/h_collmass_pfmet_tes_minus'].Fill(collmass(row, row.pfMet_tes_minus_Et, row.pfMet_tes_minus_Phi), frweight)
+                    histos[folder+'/h_collmass_pfmet_tes_plus' ].Fill(collmass(row, row.pfMet_tes_plus_Et , row.pfMet_tes_plus_Phi ), frweight)
+                    histos[folder+'/h_collmass_pfmet_ues_minus'].Fill(collmass(row, row.pfMet_ues_minus_Et, row.pfMet_ues_minus_Phi), frweight)
+                    histos[folder+'/h_collmass_pfmet_ues_plus' ].Fill(collmass(row, row.pfMet_ues_plus_Et , row.pfMet_ues_plus_Phi ), frweight)
+
+                                        
+                    histos[folder+'/ePFMET_Mt_jes_minus'].Fill(row.eMtToPfMet_jes_minus,frweight)
+                    histos[folder+'/ePFMET_Mt_jes_plus'].Fill(row.eMtToPfMet_jes_plus,  frweight)
+                    
+                    histos[folder+'/ePFMET_Mt_mes_minus'].Fill(row.eMtToPfMet_mes_minus,frweight) 
+                    histos[folder+'/ePFMET_Mt_mes_plus'].Fill(row.eMtToPfMet_mes_plus,  frweight) 
+                    
+                    histos[folder+'/ePFMET_Mt_ees_minus'].Fill(row.eMtToPfMet_ees_minus,frweight) 
+                    histos[folder+'/ePFMET_Mt_ees_plus'].Fill(row.eMtToPfMet_ees_plus,  frweight) 
+                    
+                    histos[folder+'/ePFMET_Mt_tes_minus'].Fill(row.eMtToPfMet_tes_minus,frweight) 
+                    histos[folder+'/ePFMET_Mt_tes_plus'].Fill(row.eMtToPfMet_tes_plus,  frweight) 
+                
+                    histos[folder+'/ePFMET_Mt_ues_minus'].Fill(row.eMtToPfMet_ues_minus,frweight) 
+                    histos[folder+'/ePFMET_Mt_ues_plus'].Fill(row.eMtToPfMet_ues_plus,  frweight) 
+                    
+                    histos[folder+'/tPFMET_Mt_jes_plus'].Fill(row.tMtToPfMet_jes_plus,  frweight)
+                    histos[folder+'/tPFMET_Mt_mes_plus'].Fill(row.tMtToPfMet_mes_plus,  frweight)
+                    histos[folder+'/tPFMET_Mt_ees_plus'].Fill(row.tMtToPfMet_ees_plus,  frweight)
+                    histos[folder+'/tPFMET_Mt_tes_plus'].Fill(row.tMtToPfMet_tes_plus,  frweight)
+                    histos[folder+'/tPFMET_Mt_ues_plus'].Fill(row.tMtToPfMet_ues_plus,  frweight)
+                    histos[folder+'/tPFMET_Mt_jes_minus'].Fill(row.tMtToPfMet_jes_minus,frweight)
+                    histos[folder+'/tPFMET_Mt_mes_minus'].Fill(row.tMtToPfMet_mes_minus,frweight)
+                    histos[folder+'/tPFMET_Mt_ees_minus'].Fill(row.tMtToPfMet_ees_minus,frweight)
+                    histos[folder+'/tPFMET_Mt_tes_minus'].Fill(row.tMtToPfMet_tes_minus,frweight)
+                    histos[folder+'/tPFMET_Mt_ues_minus'].Fill(row.tMtToPfMet_ues_minus,frweight)
+                
+
+
                     histos[folder+'/jetN_20'].Fill(row.jetVeto20, frweight) 
                     histos[folder+'/jetN_30'].Fill(row.jetVeto30, frweight) 
                     
@@ -397,6 +507,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     histos[folder+'/h_collmass_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), weight[n])
                     histos[folder+'/h_vismass'].Fill(row.e_t_Mass, weight[n])
                     continue
+
+                histos[folder+'/evtInfo'].Fill( struct(run=row.run,lumi=row.lumi,evt=row.evt,weight=weight[n]))
 
                 histos[folder+'/tPt'].Fill(row.tPt, weight[n])
                 histos[folder+'/tEta'].Fill(row.tEta, weight[n])
@@ -431,12 +543,47 @@ class LFVHETauAnalyzerMVA(MegaBase):
                 histos[folder+'/h_collmass_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi), weight[n])
                 histos[folder+'/h_collmass_pfmet_Ty1'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), weight[n])
                 
-                    
-                    
+                 
                 histos[folder+'/h_vismass'].Fill(row.e_t_Mass, weight[n])
+
+                histos[folder+'/type1_pfMet_Et'].Fill(row.type1_pfMetEt, weight[n])
+                histos[folder+'/pfMet_Et'].Fill(row.pfMetEt, weight[n])
+                histos[folder+'/type1_pfMet_Phi'].Fill(row.type1_pfMetPhi, weight[n])
+                histos[folder+'/pfMet_Phi'].Fill(row.pfMetPhi,weight[n])
                 
-                histos[folder+'/type1_pfMetEt_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), row.type1_pfMetEt, weight[n])
-                histos[folder+'/mvaMetEt_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), row.mva_metEt, weight[n])
+                histos[folder+'/pfMet_Et_ees_minus'].Fill( row.pfMet_ees_minus_Et ,  weight[n])
+                histos[folder+'/pfMet_Et_jes_minus'].Fill( row.pfMet_jes_minus_Et ,  weight[n])
+                histos[folder+'/pfMet_Et_mes_minus'].Fill( row.pfMet_mes_minus_Et ,  weight[n])
+                histos[folder+'/pfMet_Et_tes_minus'].Fill( row.pfMet_tes_minus_Et ,  weight[n])
+                histos[folder+'/pfMet_Et_ues_minus'].Fill( row.pfMet_ues_minus_Et ,  weight[n])
+                
+                histos[folder+'/pfMet_Et_ees_plus'].Fill(  row.pfMet_ees_plus_Et  ,  weight[n])
+                histos[folder+'/pfMet_Et_jes_plus'].Fill(  row.pfMet_jes_plus_Et  ,  weight[n])
+                histos[folder+'/pfMet_Et_mes_plus'].Fill(  row.pfMet_mes_plus_Et  ,  weight[n])
+                histos[folder+'/pfMet_Et_tes_plus'].Fill(  row.pfMet_tes_plus_Et  ,  weight[n])
+                histos[folder+'/pfMet_Et_ues_plus'].Fill(  row.pfMet_ues_plus_Et  ,  weight[n])
+                    
+                
+                histos[folder+'/pfMet_Phi_ees_minus'].Fill(row.pfMet_ees_minus_Phi,  weight[n])
+                histos[folder+'/pfMet_Phi_jes_minus'].Fill(row.pfMet_jes_minus_Phi,  weight[n])
+                histos[folder+'/pfMet_Phi_mes_minus'].Fill(row.pfMet_mes_minus_Phi,  weight[n])
+                histos[folder+'/pfMet_Phi_tes_minus'].Fill(row.pfMet_tes_minus_Phi,  weight[n])
+                histos[folder+'/pfMet_Phi_ues_minus'].Fill(row.pfMet_ues_minus_Phi,  weight[n])
+
+                histos[folder+'/pfMet_Phi_ees_plus'].Fill( row.pfMet_ees_plus_Phi ,  weight[n])
+                histos[folder+'/pfMet_Phi_jes_plus'].Fill( row.pfMet_jes_plus_Phi ,  weight[n])
+                histos[folder+'/pfMet_Phi_mes_plus'].Fill( row.pfMet_mes_plus_Phi ,  weight[n])
+                histos[folder+'/pfMet_Phi_tes_plus'].Fill( row.pfMet_tes_plus_Phi ,  weight[n])
+                histos[folder+'/pfMet_Phi_ues_plus'].Fill( row.pfMet_ues_plus_Phi ,  weight[n])
+
+                #histos[folder+'/pfMet_jes_Et'].Fill(       row.pfMet_jes_Et       , weight[n])
+                #histos[folder+'/pfMet_jes_Phi'].Fill(      row.pfMet_jes_Phi      , weight[n])
+
+                #histos[folder+'/pfMet_ues_AtanToPhi'].Fill(row.pfMet_ues_AtanToPhi, weight[n])
+
+
+                histos[folder+'/type1_pfMet_Et_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), row.type1_pfMetEt, weight[n])
+                histos[folder+'/mvaMet_Et_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), row.mva_metEt, weight[n])
                 
                 histos[folder+'/ePFMET_DeltaPhi'].Fill(deltaPhi(row.ePhi, row.type1_pfMetPhi), weight[n])
                 histos[folder+'/ePFMET_DeltaPhi_Ty1'].Fill(deltaPhi(row.ePhi, row.type1_pfMetPhi), weight[n])
@@ -458,42 +605,45 @@ class LFVHETauAnalyzerMVA(MegaBase):
                 histos[folder+'/jetN_30'].Fill(row.jetVeto30, weight[n]) 
                 
 
-                if n == 0: # if I'm in the dir starting with os or ss I want also the energy scale uncertainties
-                    histos[folder+'/h_collmass_pfmet_jes_plus'].Fill(collmass(row, row.pfMet_jes_Et, row.pfMet_jes_plus_Phi), weight[n])
-                    histos[folder+'/h_collmass_pfmet_jes_minus'].Fill(collmass(row, row.pfMet_jes_Et, row.pfMet_jes_minus_Phi), weight[n])
-                    ### add the minus in the ntuple.
-                    #histos[folder+'/h_collmass_pfmet_mes_plus'].Fill(collmass(row, row.pfMet_mes_Et, row.pfMet_mes_Phi), weight[n])
-                    #histos[folder+'/h_collmass_pfmet_tes_plus'].Fill(collmass(row, row.pfMet_tes_Et, row.pfMet_tes_Phi), weight[n])
-                    #histos[folder+'/h_collmass_pfmet_ees_plus'].Fill(collmass(row, row.pfMet_ees_Et, row.pfMet_ees_Phi), weight[n])
-                    #histos[folder+'/h_collmass_pfmet_ues_plus'].Fill(collmass(row, row.pfMet_ues_Et, row.pfMet_ues_Phi), weight[n])
-                    
-                    
-                    histos[folder+'/ePFMET_Mt_jes_minus'].Fill(row.eMtToPfMet_jes_minus, weight[n])
-                    histos[folder+'/ePFMET_Mt_jes_plus'].Fill(row.eMtToPfMet_jes_plus,   weight[n])
-                    
-                    histos[folder+'/ePFMET_Mt_mes_minus'].Fill(row.eMtToPfMet_mes_minus,weight[n]) 
-                    histos[folder+'/ePFMET_Mt_mes_plus'].Fill(row.eMtToPfMet_mes_plus,  weight[n]) 
-                    
-                    histos[folder+'/ePFMET_Mt_ees_minus'].Fill(row.eMtToPfMet_ees_minus,weight[n]) 
-                    histos[folder+'/ePFMET_Mt_ees_plus'].Fill(row.eMtToPfMet_ees_plus,  weight[n]) 
-                    
-                    histos[folder+'/ePFMET_Mt_tes_minus'].Fill(row.eMtToPfMet_tes_minus,weight[n]) 
-                    histos[folder+'/ePFMET_Mt_tes_plus'].Fill(row.eMtToPfMet_tes_plus,  weight[n]) 
-                    
-                    histos[folder+'/ePFMET_Mt_ues_minus'].Fill(row.eMtToPfMet_ues_minus,weight[n]) 
-                    histos[folder+'/ePFMET_Mt_ues_plus'].Fill(row.eMtToPfMet_ues_plus,  weight[n]) 
-                        
-                    histos[folder+'/tPFMET_Mt_jes_plus'].Fill(row.tMtToPfMet_jes_plus,weight[n])
-                    histos[folder+'/tPFMET_Mt_mes_plus'].Fill(row.tMtToPfMet_mes_plus,weight[n])
-                    histos[folder+'/tPFMET_Mt_ees_plus'].Fill(row.tMtToPfMet_ees_plus,weight[n])
-                    histos[folder+'/tPFMET_Mt_tes_plus'].Fill(row.tMtToPfMet_tes_plus,weight[n])
-                    histos[folder+'/tPFMET_Mt_ues_plus'].Fill(row.tMtToPfMet_ues_plus,weight[n])
-                    histos[folder+'/tPFMET_Mt_jes_minus'].Fill(row.tMtToPfMet_jes_minus,weight[n])
-                    histos[folder+'/tPFMET_Mt_mes_minus'].Fill(row.tMtToPfMet_mes_minus,weight[n])
-                    histos[folder+'/tPFMET_Mt_ees_minus'].Fill(row.tMtToPfMet_ees_minus,weight[n])
-                    histos[folder+'/tPFMET_Mt_tes_minus'].Fill(row.tMtToPfMet_tes_minus,weight[n])
-                    histos[folder+'/tPFMET_Mt_ues_minus'].Fill(row.tMtToPfMet_ues_minus,weight[n])
+                #                if n == 0: # if I'm in the dir starting with os or ss I want also the energy scale uncertainties
+                histos[folder+'/h_collmass_pfmet_ees_minus'].Fill(collmass(row, row.pfMet_ees_minus_Et, row.pfMet_ees_minus_Phi), weight[n])
+                histos[folder+'/h_collmass_pfmet_ees_plus' ].Fill(collmass(row, row.pfMet_ees_plus_Et , row.pfMet_ees_plus_Phi ), weight[n])
+                histos[folder+'/h_collmass_pfmet_jes_minus'].Fill(collmass(row, row.pfMet_jes_minus_Et, row.pfMet_jes_minus_Phi), weight[n])
+                histos[folder+'/h_collmass_pfmet_jes_plus' ].Fill(collmass(row, row.pfMet_jes_plus_Et , row.pfMet_jes_plus_Phi ), weight[n])
+                histos[folder+'/h_collmass_pfmet_mes_minus'].Fill(collmass(row, row.pfMet_mes_minus_Et, row.pfMet_mes_minus_Phi), weight[n])
+                histos[folder+'/h_collmass_pfmet_mes_plus' ].Fill(collmass(row, row.pfMet_mes_plus_Et , row.pfMet_mes_plus_Phi ), weight[n])
+                histos[folder+'/h_collmass_pfmet_tes_minus'].Fill(collmass(row, row.pfMet_tes_minus_Et, row.pfMet_tes_minus_Phi), weight[n])
+                histos[folder+'/h_collmass_pfmet_tes_plus' ].Fill(collmass(row, row.pfMet_tes_plus_Et , row.pfMet_tes_plus_Phi ), weight[n])
+                histos[folder+'/h_collmass_pfmet_ues_minus'].Fill(collmass(row, row.pfMet_ues_minus_Et, row.pfMet_ues_minus_Phi), weight[n])
+                histos[folder+'/h_collmass_pfmet_ues_plus' ].Fill(collmass(row, row.pfMet_ues_plus_Et , row.pfMet_ues_plus_Phi ), weight[n])
 
+                                        
+                histos[folder+'/ePFMET_Mt_jes_minus'].Fill(row.eMtToPfMet_jes_minus, weight[n])
+                histos[folder+'/ePFMET_Mt_jes_plus'].Fill(row.eMtToPfMet_jes_plus,   weight[n])
+                
+                histos[folder+'/ePFMET_Mt_mes_minus'].Fill(row.eMtToPfMet_mes_minus,weight[n]) 
+                histos[folder+'/ePFMET_Mt_mes_plus'].Fill(row.eMtToPfMet_mes_plus,  weight[n]) 
+                
+                histos[folder+'/ePFMET_Mt_ees_minus'].Fill(row.eMtToPfMet_ees_minus,weight[n]) 
+                histos[folder+'/ePFMET_Mt_ees_plus'].Fill(row.eMtToPfMet_ees_plus,  weight[n]) 
+                
+                histos[folder+'/ePFMET_Mt_tes_minus'].Fill(row.eMtToPfMet_tes_minus,weight[n]) 
+                histos[folder+'/ePFMET_Mt_tes_plus'].Fill(row.eMtToPfMet_tes_plus,  weight[n]) 
+                
+                histos[folder+'/ePFMET_Mt_ues_minus'].Fill(row.eMtToPfMet_ues_minus,weight[n]) 
+                histos[folder+'/ePFMET_Mt_ues_plus'].Fill(row.eMtToPfMet_ues_plus,  weight[n]) 
+                
+                histos[folder+'/tPFMET_Mt_jes_plus'].Fill(row.tMtToPfMet_jes_plus,weight[n])
+                histos[folder+'/tPFMET_Mt_mes_plus'].Fill(row.tMtToPfMet_mes_plus,weight[n])
+                histos[folder+'/tPFMET_Mt_ees_plus'].Fill(row.tMtToPfMet_ees_plus,weight[n])
+                histos[folder+'/tPFMET_Mt_tes_plus'].Fill(row.tMtToPfMet_tes_plus,weight[n])
+                histos[folder+'/tPFMET_Mt_ues_plus'].Fill(row.tMtToPfMet_ues_plus,weight[n])
+                histos[folder+'/tPFMET_Mt_jes_minus'].Fill(row.tMtToPfMet_jes_minus,weight[n])
+                histos[folder+'/tPFMET_Mt_mes_minus'].Fill(row.tMtToPfMet_mes_minus,weight[n])
+                histos[folder+'/tPFMET_Mt_ees_minus'].Fill(row.tMtToPfMet_ees_minus,weight[n])
+                histos[folder+'/tPFMET_Mt_tes_minus'].Fill(row.tMtToPfMet_tes_minus,weight[n])
+                histos[folder+'/tPFMET_Mt_ues_minus'].Fill(row.tMtToPfMet_ues_minus,weight[n])
+                
 
 
  

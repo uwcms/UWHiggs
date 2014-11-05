@@ -36,7 +36,7 @@ embedded = True
 
 plotter = BasePlotter(blind_region,use_embedded=embedded)
 
-signs = ['os', 'ss']
+signs = ['os','ss']
 jets = ['0', '1', '2']
 processtype = ['gg']
 threshold = ['ept30']
@@ -46,7 +46,7 @@ histo_info = [('tPt', 'p_{T}(#tau) (GeV)', 5), ('tEta', '#eta(#tau)', 2),  ('tPh
              ('et_DeltaPhi', 'e#tau #Delta#phi', 1), ('et_DeltaR', 'e#tau #Delta R', 1),
              ('h_collmass_pfmet', 'M_{coll}(e#tau) (GeV)', 1), ('h_vismass', 'M_{vis} (GeV)', 1),
              ('jetN_30', 'number of jets (p_{T} > 30 GeV)', 1) , ('ePFMET_Mt', 'M_{T} e-PFMET', 5), 
-             ('tPFMET_Mt', 'M_{T} #tau-PFMET', 5) ]
+              ('tPFMET_Mt', 'M_{T} #tau-PFMET', 5) , ('pfMet_Et', 'pfMet', 5)]
 
 logging.debug("Starting plotting")
 for sign, proc, thr, njet in itertools.product(signs, processtype, threshold, jets):
