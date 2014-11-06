@@ -1,5 +1,9 @@
 from ETauTree import ETauTree
+import sys
+import logging
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 import os
+from pdb import set_trace
 import ROOT
 import math
 import glob
@@ -10,10 +14,42 @@ import FinalStateAnalysis.PlotTools.pytree as pytree
 from FinalStateAnalysis.PlotTools.decorators import  memo_last
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 from math import sqrt, pi, cos
-from fakerate_functions import fakerate_central_histogram, fakerate_p1s_histogram, fakerate_m1s_histogram
+from fakerate_functions import tau_fake_rate, tau_fake_rate_up, tau_fake_rate_dw
+import itertools
+import traceback
+from FinalStateAnalysis.PlotTools.decorators import memo
+import FinalStateAnalysis.PlotTools.pytree as pytree
 from FinalStateAnalysis.Utilities.struct import struct
 
+@memo
+def getVar(name, var):
+    return name+var
 
+met_et  = 'pfMet%sEt'
+met_phi = 'pfMet%sPhi'
+
+@memo
+def met(shift=''):
+    return met_et % shift
+
+@memo
+def metphi(shift=''):
+    return met_phi % shift
+
+def attr_getter(attribute):
+    '''return a function that gets an attribute'''
+    def f(row, weight):
+        return (getattr(row,attribute), weight)
+    return f
+
+def merge_functions(fcn_1, fcn_2):
+    '''merges two functions to become a TH2'''
+    def f(row, weight):
+        r1, w1 = fcn_1(row, weight)
+        r2, w2 = fcn_2(row, weight)
+        w = w1 if w1 and w2 else None
+        return ((r1, r2), w)
+    return f
 
 def collmass(row, met, metPhi):
     ptnu =abs(met*cos(deltaPhi(metPhi, row.tPhi)))
@@ -27,27 +63,83 @@ def deltaPhi(phi1, phi2):
         return PHI
     else:
         return 2*pi-PHI
+
 def deltaR(phi1, ph2, eta1, eta2):
     deta = eta1 - eta2
     dphi = abs(phi1-phi2)
     if (dphi>pi) : dphi = 2*pi-dphi
     return sqrt(deta*deta + dphi*dphi);
 
+def make_collmass_systematics(shift):
+    met_name = met(shift)
+    phi_name = metphi(shift)
+    def collmass_shifted(row, weight):
+        met = getattr(row, met_name)
+        phi = getattr(row, phi_name)
+        return collmass(row, met, phi), weight
+    return collmass_shifted
+
 class LFVHETauAnalyzerMVA(MegaBase):
     tree = 'et/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
+        logging.debug('LFVHETauAnalyzerMVA constructor')
         self.channel='ET'
         super(LFVHETauAnalyzerMVA, self).__init__(tree, outfile, **kwargs)
         self.tree = ETauTree(tree)
         self.out=outfile
         self.histograms = {}
-        self.pucorrector = mcCorrections.make_puCorrector('singlee')
-        self.pucorrectorUp = mcCorrections.make_puCorrectorUp('singlee')
-        self.pucorrectorDown = mcCorrections.make_puCorrectorDown('singlee')
+
+        #understand what we are running
         target = os.path.basename(os.environ['megatarget'])
         self.is_data = target.startswith('data_')
         self.is_embedded = ('Embedded' in target)
         self.is_mc = not (self.is_data or self.is_embedded)
+
+        #systematics used
+        self.systematics = {
+            'trig' : (['', 'trp1s', 'trm1s'] if not self.is_data else []),
+            'pu'   : (['', 'p1s', 'm1s'] if self.is_mc else []),
+            'eid'  : (['', 'eidp1s','eidm1s'] if not self.is_data else []),
+            'eiso' : (['', 'eisop1s','eisom1s'] if not self.is_data else []),
+            'jes'  : (['', '_jes_plus','_jes_minus'] if self.is_mc else ['']),
+            'mvetos': (['', 'mVetoUp', 'mVetoDown'] if self.is_mc else ['']),
+            'tvetos': (['', 'tVetoUp', 'tVetoDown'] if self.is_mc else ['']),
+            'evetos': (['', 'eVetoUp', 'eVetoDown'] if self.is_mc else ['']),
+            'met'  : ([ "_jes_plus_", "_mes_plus_", "_tes_plus_", "_ees_plus_", "_ues_plus_", "_jes_minus_", "_mes_minus_", "_tes_minus_", "_ees_minus_", "_ues_minus_"] if self.is_mc else []),
+        }
+
+        #self filling histograms
+        coll_mass = make_collmass_systematics('') #no sys shift
+        self.histo_locations = {} #just a mapping of the histograms we have to avoid changing self.histograms indexing an screw other files
+        self.hfunc   = { #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in fill_histos later
+            'nTruePU' : lambda row, weight: (row.nTruePU,None),
+            'weight'  : lambda row, weight: (weight,None) if weight is not None else (1.,None),
+            'Event_ID': lambda row, weight: (array.array("f", [row.run,row.lumi,int(row.evt)/10**5,int(row.evt)%10**5] ), None),
+            'h_collmass_pfmet' : coll_mass,
+            'h_collmass_vs_dPhi_pfmet' : merge_functions(
+                attr_getter('tToMETDPhi'),
+                coll_mass
+            ),
+            'MetEt_vs_dPhi' : merge_functions(
+                lambda row, weight: (deltaPhi(row.tPhi, getattr(row, metphi())), weight),
+                attr_getter('type1_pfMetEt')
+            ),
+            'ePFMET_DeltaPhi' : lambda row, weight: (deltaPhi(row.ePhi, getattr(row, metphi())), weight),
+            'tPFMET_DeltaPhi' : lambda row, weight: (deltaPhi(row.tPhi, getattr(row, metphi())), weight),
+            'evtInfo' : lambda row, weight: (struct(run=row.run,lumi=row.lumi,evt=row.evt,weight=weight), None)
+            }
+        for shift in self.systematics['met']:
+            #patch name
+            postfix = shift[:-1]
+            self.hfunc['h_collmass_pfmet%s' % postfix] = make_collmass_systematics(shift)
+
+        #PU correctors
+        self.pucorrector = mcCorrections.make_shifted_weights(
+            mcCorrections.make_puCorrector('singlee'),
+            ['p1s', 'm1s'],
+            [mcCorrections.make_puCorrectorUp('singlee'), mcCorrections.make_puCorrectorDown('singlee')]
+        )     
+        self.trig_weight = mcCorrections.trig_efficiency if self.is_embedded else mcCorrections.trig_correction
 
     @staticmethod 
     def tau_veto(row):
@@ -57,111 +149,61 @@ class LFVHETauAnalyzerMVA(MegaBase):
     @staticmethod
     def obj1_matches_gen(row):
         return row.eGenPdgId == -1*row.eCharge*11
+
     @staticmethod 
     def obj3_matches_gen(row):
         return t.genDecayMode != -2 
 
-    
-    def event_weight(self, row):
-        if self.is_data: #FIXME! add tight ID correction
-            return [1.]
+    def event_weight(self, row, sys_shifts):
+        if self.is_data:
+            return {'' : 1.}
 
-        allmcCorrections=    mcCorrections.get_electronId_corrections13_MVA(row, 'e') * \
-                                 mcCorrections.get_electronIso_corrections13_MVA(row, 'e')
-        trUp_mcCorrections = 1.
-        trDown_mcCorrections = 1.
-        eidUp_mcCorrections=  mcCorrections.get_electronId_corrections13_p1s_MVA(row, 'e') *\
-                              mcCorrections.get_electronIso_corrections13_MVA(row, 'e') 
-        eidDown_mcCorrections= mcCorrections.get_electronId_corrections13_m1s_MVA(row, 'e') * \
-                               mcCorrections.get_electronIso_corrections13_MVA(row, 'e')
-        eisoUp_mcCorrections=    mcCorrections.get_electronId_corrections13_MVA(row, 'e') * \
-                                 mcCorrections.get_electronIso_corrections13_p1s_MVA(row, 'e') 
-        eisoDown_mcCorrections= mcCorrections.get_electronId_corrections13_m1s_MVA(row, 'e') * \
-                                mcCorrections.get_electronIso_corrections13_p1s_MVA(row, 'e') 
-  
-
-        if self.is_embedded:
-            allmcCorrections= allmcCorrections*mcCorrections.get_trigger_efficiency_MVA(row,'e') 
-            trUp_mcCorrections =    allmcCorrections*mcCorrections.get_trigger_efficiency_p1s_MVA(row,'e') 
-            trDown_mcCorrections  = allmcCorrections*mcCorrections.get_trigger_efficiency_m1s_MVA(row,'e') 
-            eidUp_mcCorrections=  eidUp_mcCorrections*  mcCorrections.get_trigger_efficiency_MVA(row,'e') 
-            eidDown_mcCorrections= eidDown_mcCorrections*  mcCorrections.get_trigger_efficiency_MVA(row,'e') 
-            eisoUp_mcCorrections=   eisoUp_mcCorrections * mcCorrections.get_trigger_efficiency_MVA(row,'e') 
-            eisoDown_mcCorrections= eisoDown_mcCorrections* mcCorrections.get_trigger_efficiency_MVA(row,'e') 
-            
-
-            return [allmcCorrections, allmcCorrections, allmcCorrections, trUp_mcCorrections, trDown_mcCorrections ,eidUp_mcCorrections, eidDown_mcCorrections, eisoUp_mcCorrections,eisoDown_mcCorrections]
-
-
-            
-
+        weights = {}
+        embedded_weight = row.EmbPtWeight if self.is_embedded else 1.
+        for shift in sys_shifts:
+            weights[shift] = embedded_weight *\
+                             mcCorrections.eid_correction( row, 'e', shift=shift) * \
+                             mcCorrections.eiso_correction(row, 'e', shift=shift) * \
+                             self.trig_weight(row, 'e', shift=shift) * \
+                             self.pucorrector(row.nTruePU, shift=shift)
                        
-        else:
-            allmcCorrections=    allmcCorrections * mcCorrections.get_trigger_corrections_MVA(row,'e') 
-            
-            
-            trUp_mcCorrections =    allmcCorrections*  mcCorrections.get_trigger_corrections_p1s_MVA(row,'e') 
-            trDown_mcCorrections =  allmcCorrections*  mcCorrections.get_trigger_corrections_m1s_MVA(row,'e') 
-            
-            eidUp_mcCorrections=  eidUp_mcCorrections*  mcCorrections.get_trigger_corrections_MVA(row,'e') 
-            eidDown_mcCorrections= eidDown_mcCorrections*  mcCorrections.get_trigger_corrections_MVA(row,'e') 
-            eisoUp_mcCorrections=   eisoUp_mcCorrections * mcCorrections.get_trigger_corrections_MVA(row,'e') 
-            eisoDown_mcCorrections= eisoDown_mcCorrections* mcCorrections.get_trigger_corrections_MVA(row,'e') 
-            
-            #pucorrlist = self.pucorrector(row.nTruePU)
-            
-            weight =  self.pucorrector(row.nTruePU) *\
-                      allmcCorrections
-            weight_up =  self.pucorrectorUp(row.nTruePU) *\
-                         allmcCorrections
-            weight_down =  self.pucorrectorDown(row.nTruePU) *\
-                           allmcCorrections
-            
-            weight_tr_up = self.pucorrector(row.nTruePU) *\
-                           trUp_mcCorrections
-            weight_tr_down = self.pucorrector(row.nTruePU) *\
-                             trDown_mcCorrections
-            
-            
-            weight_eid_up =  self.pucorrector(row.nTruePU) *\
-                             eidUp_mcCorrections
-            weight_eid_down =  self.pucorrector(row.nTruePU) *\
-                               eidDown_mcCorrections
-            weight_eiso_up =  self.pucorrector(row.nTruePU) *\
-                            eisoUp_mcCorrections
-            weight_eiso_down =  self.pucorrector(row.nTruePU) *\
-                                eisoDown_mcCorrections
-        
-            #if row.evt == 76 :
-            #    print row.evt, weight, self.pucorrector(row.nTruePU) , allmcCorrections, mcCorrections.get_trigger_corrections_MVA(row,'e') , mcCorrections.get_electronId_corrections13_MVA(row, 'e'),  mcCorrections.get_electronIso_corrections13_MVA(row, 'e')
-                    
-            return [weight, weight_up, weight_down, weight_tr_up,  weight_tr_down, weight_eid_up, weight_eid_down, weight_eiso_up,  weight_eiso_down]
-
-
+        return weights
 ## 
     def begin(self):
-
+        logging.debug('Booking histograms directory tree')
+        sys_shifts = self.systematics['trig'] + \
+                     self.systematics['pu'] + \
+                     self.systematics['eid'] + \
+                     self.systematics['eiso'] + \
+                     self.systematics['mvetos'] + \
+                     self.systematics['tvetos'] + \
+                     self.systematics['evetos'] + \
+                     ['tLoose/', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight']
+        sys_shifts = list( set( sys_shifts ) ) #remove double dirs
         processtype=['gg']
         threshold=['ept30']
-        sign=['os', 'ss']
-        jetN = ['0','0_jes_plus','0_jes_minus', '1','1_jes_plus','1_jes_minus', '2','2_jes_plus','2_jes_minus', '3','3_jes_plus','3_jes_minus']
+        signs =['os', 'ss']
+        jetN = [''.join(i) for i in itertools.product(['0', '1', '2', '3'], self.systematics['jes'])]
+
         folder=[]
-        pudir = ['','p1s/', 'm1s/','trp1s/', 'trm1s/', 'eidp1s/','eidm1s/',  'eisop1s/','eisom1s/', 'mVetoUp/', 'mVetoDown/', 'eVetoUp/', 'eVetoDown/', 'tVetoUp/', 'tVetoDown/',  'tLoose/','tLooseUp/','tLooseDown/', 'tLooseUnweight/']
 
-        for d  in pudir :
-            for i in sign:
-                for j in processtype:
-                    for k in threshold:
-                        #folder.append(d+i+'/'+j+'/'+k)
-                        for jn in jetN: 
-
-                            folder.append(d+i+'/'+j+'/'+k +'/'+jn)
-                            folder.append(d+i+'/'+j+'/'+k +'/'+jn+'/selected')
-
-            self.book(d+'os/gg/ept30/', "h_collmass_pfmet" , "h_collmass_pfmet",  32, 0, 320)
-            self.book(d+'os/gg/ept30/', "h_vismass",  "h_vismass",  32, 0, 320)
+        for tuple_path in itertools.product(sys_shifts, signs, processtype, threshold, jetN):
+            folder.append(os.path.join(*tuple_path))
+            path = list(tuple_path)
+            path.append('selected')
+            folder.append(os.path.join(*path))
             
+        def book_with_sys(location, name, *args, **kwargs):
+            postfixes = kwargs['postfixes']
+            del kwargs['postfixes']
+            self.book(location, name, *args, **kwargs)
+            for postfix in postfixes:
+                #patch name to be removed
+                fix = postfix[:-1]
+                self.book(location, name+fix, *args, **kwargs)
 
+        self.book('os/gg/ept30/', "h_collmass_pfmet" , "h_collmass_pfmet",  32, 0, 320)
+        self.book('os/gg/ept30/', "e_t_Mass",  "h_vismass",  32, 0, 320)
                         
         for f in folder: 
             self.book(
@@ -170,618 +212,304 @@ class LFVHETauAnalyzerMVA(MegaBase):
                 'run/l:lumi/l:evt/l:weight/D',
                 type=pytree.PyTree
             )
-            
+
             self.book(f,"tPt", "tau p_{T}", 200, 0, 200)
+            self.book(f,"tPt_tes_plus", "tau p_{T} (tes+)", 200, 0, 200)
+            self.book(f,"tPt_tes_minus", "tau p_{T} (tes-)", 200, 0, 200)
+            
             self.book(f,"tPhi", "tau phi", 100, -3.2, 3.2)
             self.book(f,"tEta", "tau eta",  50, -2.5, 2.5)
             
             self.book(f,"ePt", "e p_{T}", 200, 0, 200)
+            self.book(f,"ePt_ees_plus", "e p_{T} (ees+)", 200, 0, 200)
+            self.book(f,"ePt_ees_minus", "e p_{T} (ees-)", 200, 0, 200)
+
             self.book(f,"ePhi", "e phi",  100, -3.2, 3.2)
             self.book(f,"eEta", "e eta", 50, -2.5, 2.5)
             
-            self.book(f, "et_DeltaPhi", "e-tau DeltaPhi" , 50, 0, 3.2)
-            self.book(f, "et_DeltaR", "e-tau DeltaR" , 50, 0, 3.2)
+            self.book(f, "e_t_DPhi", "e-tau DeltaPhi" , 50, 0, 3.2)
+            self.book(f, "e_t_DR", "e-tau DeltaR" , 50, 0, 3.2)
             
-            self.book(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320)
-            self.book(f, "h_collmass_mvamet",  "h_collmass_mvamet",  32, 0, 320)
-            self.book(f, "h_collmass_pfmet_Ty1",  "h_collmass_pfmet_Ty1",  32, 0, 320)
 
-            self.book(f, "h_collmass_pfmet_jes_plus", "h_collmass_pfmet_jes_plus",  32, 0, 320)
-            self.book(f, "h_collmass_pfmet_mes_plus", "h_collmass_pfmet_mes_plus",  32, 0, 320)
-            self.book(f, "h_collmass_pfmet_tes_plus", "h_collmass_pfmet_tes_plus",  32, 0, 320)
-            self.book(f, "h_collmass_pfmet_ees_plus", "h_collmass_pfmet_ees_plus",  32, 0, 320)
-            self.book(f, "h_collmass_pfmet_ues_plus", "h_collmass_pfmet_ues_plus",  32, 0, 320)
+            #self.book(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320)
+            book_with_sys(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320, 
+                          postfixes=self.systematics['met'])
 
-            self.book(f, "h_collmass_pfmet_jes_minus", "h_collmass_pfmet_jes_minus",  32, 0, 320)
-            self.book(f, "h_collmass_pfmet_mes_minus", "h_collmass_pfmet_mes_minus",  32, 0, 320)
-            self.book(f, "h_collmass_pfmet_tes_minus", "h_collmass_pfmet_tes_minus",  32, 0, 320)
-            self.book(f, "h_collmass_pfmet_ees_minus", "h_collmass_pfmet_ees_minus",  32, 0, 320)
-            self.book(f, "h_collmass_pfmet_ues_minus", "h_collmass_pfmet_ues_minus",  32, 0, 320)
-
-            self.book(f, "h_collmassSpread_pfmet",  "h_collmassSpread_pfmet",  40, -100, 100)
-            self.book(f, "h_collmassSpread_mvamet",  "h_collmassSpread_mvamet",  40, -100, 100)
-            self.book(f, "h_collmassSpread_lowPhi_pfmet",  "h_collmassSpread_lowPhi_pfmet",  40, -100, 100)
-            self.book(f, "h_collmassSpread_lowPhi_mvamet",  "h_collmassSpread_lowPhi_mvamet", 40, -100, 100)
-            self.book(f, "h_collmassSpread_highPhi_pfmet",  "h_collmassSpread_highPhi_pfmet", 40, -100, 100)
-            self.book(f, "h_collmassSpread_highPhi_mvamet",  "h_collmassSpread_highPhi_mvamet", 40, -100, 100)
-            self.book(f, "h_collmass_lowPhi_pfmet",  "h_collmass_lowPhi_pfmet",  32, 0, 320)
-            self.book(f, "h_collmass_lowPhi_mvamet",  "h_collmass_lowPhi_mvamet",  32, 0, 320)
-            self.book(f, "h_collmass_highPhi_pfmet",  "h_collmass_highPhi_pfmet",  32, 0, 320)
-            self.book(f, "h_collmass_highPhi_mvamet", "h_collmass_highPhi_mvamet",  32, 0, 320)
             self.book(f, "h_collmass_vs_dPhi_pfmet",  "h_collmass_vs_dPhi_pfmet", 50, 0, 3.2, 32, 0, 320, type=ROOT.TH2F)
-            self.book(f, "h_collmass_vs_dPhi_mvamet",  "h_collmass_vs_dPhi_mvamet", 50, 0, 3.2, 32, 0, 320, type=ROOT.TH2F)
-            self.book(f, "h_collmassSpread_vs_dPhi_pfmet",  "h_collmassSpread_vs_dPhi_pfmet", 50, 0, 3.2, 20, -100, 100, type=ROOT.TH2F)
-            self.book(f, "h_collmassSpread_vs_dPhi_mvamet",  "h_collmassSpread_vs_dPhi_mvamet", 50, 0, 3.2, 20, -100, 100, type=ROOT.TH2F)
-
-                
             
-            self.book(f, "h_vismass",  "h_vismass",  32, 0, 320)
+            self.book(f, "e_t_Mass",  "h_vismass",  32, 0, 320)
+            self.book(f, "e_t_Mass_tes_plus" ,  "h_vismass_tes_plus",  32, 0, 320)
+            self.book(f, "e_t_Mass_tes_minus",  "h_vismass_tes_minus", 32, 0, 320)
+            self.book(f, "e_t_Mass_ees_plus" ,  "h_vismass_ees_plus",  32, 0, 320)
+            self.book(f, "e_t_Mass_ees_minus",  "h_vismass_ees_minus", 32, 0, 320)
             
-            self.book(f, "type1_pfMet_Et", "PFMet", 200, 0, 200)
-            self.book(f, "pfMet_Et", "PFMet", 200, 0, 200)
-            self.book(f, "type1_pfMet_Phi", "PFMet #phi", 100, -3.2, 3.2)
-            self.book(f, "pfMet_Phi", "PFMet #phi", 100, -3.2, 3.2)
-            
-            self.book(f, "pfMet_Et_ees_minus",  "pfMet_Et_ees_minus",  200, 0, 200)
-            self.book(f, "pfMet_Et_jes_minus",  "pfMet_Et_jes_minus",  200, 0, 200)
-            self.book(f, "pfMet_Et_mes_minus",  "pfMet_Et_mes_minus",  200, 0, 200)
-            self.book(f, "pfMet_Et_tes_minus",  "pfMet_Et_tes_minus",  200, 0, 200)
-            self.book(f, "pfMet_Et_ues_minus",  "pfMet_Et_ues_minus",  200, 0, 200)
+            self.book(f, "MetEt_vs_dPhi", "PFMet vs #Delta#phi(#tau,PFMet)", 50, 0, 3.2, 64, 0, 320, type=ROOT.TH2F)
 
-
-            self.book(f, "pfMet_Et_jes_plus",   "pfMet_Et_jes_plus",   200, 0, 200)
-            self.book(f, "pfMet_Et_ees_plus",   "pfMet_Et_ees_plus",   200, 0, 200)
-            self.book(f, "pfMet_Et_mes_plus",   "pfMet_Et_mes_plus",   200, 0, 200)
-            self.book(f, "pfMet_Et_tes_plus",   "pfMet_Et_tes_plus",   200, 0, 200)
-            self.book(f, "pfMet_Et_ues_plus",   "pfMet_Et_ues_plus",   200, 0, 200)
-
-            self.book(f, "pfMet_Phi_ees_plus",  "pfMet_Phi_ees_plus",  100, -3.2, 3.2)
-            self.book(f, "pfMet_Phi_jes_plus",  "pfMet_Phi_jes_plus",  100, -3.2, 3.2)
-            self.book(f, "pfMet_Phi_mes_plus",  "pfMet_Phi_mes_plus",  100, -3.2, 3.2)
-            self.book(f, "pfMet_Phi_tes_plus",  "pfMet_Phi_tes_plus",  100, -3.2, 3.2)
-            self.book(f, "pfMet_Phi_ues_plus",  "pfMet_Phi_ues_plus",  100, -3.2, 3.2)
-
-            self.book(f, "pfMet_Phi_ees_minus", "pfMet_Phi_ees_minus", 100, -3.2, 3.2)
-            self.book(f, "pfMet_Phi_jes_minus", "pfMet_Phi_jes_minus", 100, -3.2, 3.2)
-            self.book(f, "pfMet_Phi_mes_minus", "pfMet_Phi_mes_minus", 100, -3.2, 3.2)
-            self.book(f, "pfMet_Phi_tes_minus", "pfMet_Phi_tes_minus", 100, -3.2, 3.2)
-            self.book(f, "pfMet_Phi_ues_minus", "pfMet_Phi_ues_minus", 100, -3.2, 3.2)
-
-            #self.book(f, "pfMet_jes_Et",        "pfMet_jes_Et",        200, 0, 200)
-            #self.book(f, "pfMet_jes_Phi",       "pfMet_jes_Phi",       100, -3.2, 3.2)
-            #self.book(f, "pfMet_ues_AtanToPhi", "pfMet_ues_AtanToPhi", 100, -3.2, 3.2)
-
- 
-            self.book(f, "type1_pfMet_Et_vs_dPhi", "PFMet vs #Delta#phi(#tau,PFMet)", 50, 0, 3.2, 64, 0, 320, type=ROOT.TH2F)
-            self.book(f, "mvaMet_Et_vs_dPhi", "MVAMet vs #Delta#phi(#tau,MVAMet)", 50, 0, 3.2, 64, 0, 320, type=ROOT.TH2F)
-
-            self.book(f, "tPFMET_DeltaPhi", "tau-PFMET DeltaPhi" , 50, 0, 3.2)
-            self.book(f, "tPFMET_Mt", "tau-PFMET M_{T}" , 200, 0, 200)
-            self.book(f, "tPFMET_DeltaPhi_Ty1", "tau-type1PFMET DeltaPhi" , 50, 0, 3.2)
-            self.book(f, "tPFMET_Mt_Ty1", "tau-type1PFMET M_{T}" , 200, 0, 200)
-            self.book(f, 'tPFMET_Mt_jes_plus', "tau-MVAMET M_{T} JES_plus" , 200, 0, 200)
-            self.book(f, 'tPFMET_Mt_mes_plus', "tau-MVAMET M_{T} JES_plus" , 200, 0, 200)
-            self.book(f, 'tPFMET_Mt_ees_plus', "tau-MVAMET M_{T} JES_plus" , 200, 0, 200)
-            self.book(f, 'tPFMET_Mt_tes_plus', "tau-MVAMET M_{T} JES_plus" , 200, 0, 200)
-            self.book(f, 'tPFMET_Mt_ues_plus', "tau-MVAMET M_{T} JES_plus" , 200, 0, 200)
-
-            self.book(f, 'tPFMET_Mt_jes_minus', "tau-MVAMET M_{T} JES_minus" , 200, 0, 200)
-            self.book(f, 'tPFMET_Mt_mes_minus', "tau-MVAMET M_{T} JES_minus" , 200, 0, 200)
-            self.book(f, 'tPFMET_Mt_ees_minus', "tau-MVAMET M_{T} JES_minus" , 200, 0, 200)
-            self.book(f, 'tPFMET_Mt_tes_minus', "tau-MVAMET M_{T} JES_minus" , 200, 0, 200)
-            self.book(f, 'tPFMET_Mt_ues_minus', "tau-MVAMET M_{T} JES_minus" , 200, 0, 200)
-            
-            self.book(f, "tMVAMET_DeltaPhi", "tau-MVAMET DeltaPhi" , 50, 0, 3.2)
-            self.book(f, "tMVAMET_Mt", "tau-MVAMET M_{T}" , 200, 0, 200)
-               
-            self.book(f, "ePFMET_DeltaPhi_Ty1", "e-type1PFMET DeltaPhi" , 50, 0, 3.2)
-            self.book(f, "ePFMET_Mt_Ty1", "e-type1PFMET M_{T}" , 200, 0, 200)
+            self.book(f, "tPFMET_DeltaPhi", "tau-type1PFMET DeltaPhi" , 50, 0, 3.2)
+    
             self.book(f, "ePFMET_DeltaPhi", "e-PFMET DeltaPhi" , 50, 0, 3.2)
-            self.book(f, "ePFMET_Mt", "e-PFMET M_{T}" , 200, 0, 200)
-            #self.book(f, 'ePFMET_Mt_jes', "e-MVAMET M_{T} JES" , 200, 0, 200)
-            #self.book(f, 'ePFMET_Mt_mes', "e-MVAMET M_{T} JES" , 200, 0, 200)
-            #self.book(f, 'ePFMET_Mt_ees', "e-MVAMET M_{T} JES" , 200, 0, 200)
-            #self.book(f, 'ePFMET_Mt_tes', "e-MVAMET M_{T} JES" , 200, 0, 200)
-            #self.book(f, 'ePFMET_Mt_ues', "e-MVAMET M_{T} JES" , 200, 0, 200)
-            #self.book(f, "ePFMET_Mt_Ty1_ues_minus", "e-type1PFMET M_{T} ues_minus" , 200, 0, 200)
-            #self.book(f, "ePFMET_Mt_Ty1_ues_plus", "e-type1PFMET M_{T} ues_plus" , 200, 0, 200)
-            self.book(f, 'ePFMET_Mt_jes_minus', "e-MVAMET M_{T} JES_minus" , 200, 0, 200)
-            self.book(f, 'ePFMET_Mt_mes_minus', "e-MVAMET M_{T} JES_minus" , 200, 0, 200)
-            self.book(f, 'ePFMET_Mt_ees_minus', "e-MVAMET M_{T} JES_minus" , 200, 0, 200)
-            self.book(f, 'ePFMET_Mt_tes_minus', "e-MVAMET M_{T} JES_minus" , 200, 0, 200)
-            self.book(f, 'ePFMET_Mt_ues_minus', "e-MVAMET M_{T} JES_minus" , 200, 0, 200)
-            self.book(f, 'ePFMET_Mt_jes_plus', "e-MVAMET M_{T} JES_plus" , 200, 0, 200)
-            self.book(f, 'ePFMET_Mt_mes_plus', "e-MVAMET M_{T} JES_plus" , 200, 0, 200)
-            self.book(f, 'ePFMET_Mt_ees_plus', "e-MVAMET M_{T} JES_plus" , 200, 0, 200)
-            self.book(f, 'ePFMET_Mt_tes_plus', "e-MVAMET M_{T} JES_plus" , 200, 0, 200)
-            self.book(f, 'ePFMET_Mt_ues_plus', "e-MVAMET M_{T} JES_plus" , 200, 0, 200)
-
-            self.book(f, "eMVAMET_DeltaPhi", "e-MVAMET DeltaPhi" , 50, 0, 3.2)
-            self.book(f, "eMVAMET_Mt", "e-MVAMET M_{T}" , 200, 0, 200)
             
-            self.book(f, "jetN_20", "Number of jets, p_{T}>20", 10, -0.5, 9.5) 
-            self.book(f, "jetN_30", "Number of jets, p_{T}>30", 10, -0.5, 9.5) 
+            self.book(f,"tMtToPFMET", "tau-PFMET M_{T}" , 200, 0, 200)
+            #book_with_sys(f, "tMtToPfMet", "tau-PFMET M_{T}" , 200, 0, 200,
+            #              postfixes=self.systematics['met'])
+            self.book(f,"eMtToPFMET", "e-PFMET M_{T}" , 200, 0, 200)
+            #book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 200, 0, 200,
+            #              postfixes=self.systematics['met'])
 
-    def fakerate_weights(self, tEta, central_weights, p1s_weights, m1s_weights):
-        frweight=[1.,1.,1.]
+            
+            self.book(f, "pfMetEt",  "pfMetEt",  200, 0, 200)
+            #book_with_sys(f, "pfMet_Et",  "pfMet_Et",  200, 0, 200, postfixes=self.systematics['met'])
 
-        #central_weights = fakerate_central_histogram(25,0, 2.5)
-        #p1s_weights = fakerate_central_histogram(25,0, 2.5)
-        #m1s_weights = fakerate_central_histogram(25,0, 2.5)
+            self.book(f, "pfMetPhi",  "pfMetPhi", 100, -3.2, 3.2)
+            #book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 100, -3.2, 3.2, postfixes=self.systematics['met'])
+             
 
-        for n,w in enumerate( central_weights ):
-            if abs(tEta) < w[1]:
-                break
-            frweight[0] = w[0]
-            frweight[1] = p1s_weights[n][0]
-            frweight[2] = m1s_weights[n][0]
- 
+            self.book(f, "jetVeto20", "Number of jets, p_{T}>20", 10, -0.5, 9.5) 
+            self.book(f, "jetVeto30", "Number of jets, p_{T}>30", 10, -0.5, 9.5) 
         
+        #index dirs and histograms
+        for key in self.histograms:
+            location = os.path.dirname(key)
+            name     = os.path.basename(key)
+            if location in self.histo_locations:
+                self.histo_locations[location].append(name)
+            else:
+                self.histo_locations[location] = [name]
+
+    def fakerate_weights(self, tEta): 
+        tLoose    = tau_fake_rate(tEta)
+        tLooseUp  = tau_fake_rate_up(tEta) 
+        tLooseDown= tau_fake_rate_dw(tEta) 
+        
+        tLoose    = tLoose     / (1. - tLoose    ) 
+        tLooseUp  = tLooseUp   / (1. - tLooseUp  ) 
+        tLooseDown= tLooseDown / (1. - tLooseDown) 
+
+        frweight = {
+            'tLoose'     : tLoose    ,
+            'tLoose/Up'   : tLooseUp  ,
+            'tLoose/Down' : tLooseDown,
+            'tLooseUnweight' : 1.,
+        }
+
         return  frweight;
 
-    
-                    
-    def fill_histos(self, row, f='os/gg/ept0/0',  isTauTight=False, frw=[1.,1.,1.]):
-        weight = self.event_weight(row)
-        histos = self.histograms
-        pudir =['']
-        if self.is_data == False : pudir.extend( ['p1s/', 'm1s/', 'trp1s/', 'trm1s/', 'eidp1s/','eidm1s/',  'eisop1s/','eisom1s/'])
-        looseList = ['tLoose/', 'tLooseUp/', 'tLooseDown/', 'tLooseUnweight/']
-        
-        
-        if bool(isTauTight) == False:               
-            if f.startswith('os') or  f.startswith('ss')  :
-                frweight_bv = frw[0]/(1.-frw[0])
-                #err = 0.3*abs(2-frw[0]/pow(1-frw[0], 2)) #tau pog told to mu-tau group to use 30% uncertainty on tau fake rate.
-                err=0.3
-                frweight_p1s = frweight_bv*(1+err)
-                frweight_m1s = frweight_bv*(1-err)
-                fr_weights = [frweight_bv, frweight_p1s, frweight_m1s]
-            
-                for n, l in enumerate(looseList) :
-                    frweight = weight[0]*fr_weights[n] if n < len(looseList)-1  else weight[0]
-                    folder = l+f
-                    frweight = row.EmbPtWeight*frweight
-                    if f=='os/gg/ept30' :
-                        histos[folder+'/h_collmass_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), frweight)
-                        histos[folder+'/h_vismass'].Fill(row.e_t_Mass, frweight)
-                        continue
-
-                    
-                    histos[folder+'/tPt'].Fill(row.tPt, frweight)
-                    histos[folder+'/tEta'].Fill(row.tEta, frweight)
-                    histos[folder+'/tPhi'].Fill(row.tPhi, frweight) 
-                    histos[folder+'/ePt'].Fill(row.ePt, frweight)
-                    histos[folder+'/eEta'].Fill(row.eEta, frweight)
-                    histos[folder+'/ePhi'].Fill(row.ePhi, frweight)
-                    histos[folder+'/et_DeltaPhi'].Fill(deltaPhi(row.ePhi, row.tPhi), frweight)
-                    histos[folder+'/et_DeltaR'].Fill(row.e_t_DR, frweight)
-                    histos[folder+'/h_collmass_vs_dPhi_pfmet'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), frweight)
-                    histos[folder+'/h_collmass_vs_dPhi_mvamet'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), collmass(row, row.mva_metEt, row.mva_metPhi), frweight)
-                    histos[folder+'/h_collmassSpread_vs_dPhi_pfmet'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi)-125.0, frweight)
-                    histos[folder+'/h_collmassSpread_vs_dPhi_mvamet'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), collmass(row, row.mva_metEt, row.mva_metPhi)-125.0, frweight)
-                    if deltaPhi(row.tPhi, row.pfMetPhi) > 1.57 :  
-                        histos[folder+'/h_collmass_highPhi_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), frweight)
-                        histos[folder+'/h_collmassSpread_highPhi_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi)-125.0, frweight)
-                    if deltaPhi(row.tPhi, row.pfMetPhi) < 1.57 :  
-                        histos[folder+'/h_collmass_lowPhi_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), frweight)
-                        histos[folder+'/h_collmassSpread_lowPhi_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi)-125.0, frweight)
-                    if deltaPhi(row.tPhi, row.mva_metPhi) > 1.57 :  
-                        histos[folder+'/h_collmass_highPhi_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi), frweight)
-                        histos[folder+'/h_collmassSpread_highPhi_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi)-125.0, frweight)
-                    if deltaPhi(row.tPhi, row.mva_metPhi) < 1.57 :  
-                        histos[folder+'/h_collmass_lowPhi_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi), frweight)
-                        histos[folder+'/h_collmassSpread_lowPhi_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi)-125.0, frweight)
-
-                    histos[folder+'/h_collmassSpread_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi)-125.0, frweight)
-                    histos[folder+'/h_collmassSpread_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi)-125.0, frweight)
-                    histos[folder+'/h_collmass_pfmet'].Fill(collmass(row, row.pfMetEt, row.pfMetPhi), frweight)
-                    histos[folder+'/h_collmass_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi), frweight)
-                    histos[folder+'/h_collmass_pfmet_Ty1'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), frweight)
-
-                    #histos[folder+'/h_collmass_pfmet_jes'].Fill(collmass(row, row.pfMet_jes_Et, row.pfMet_jes_Phi), frweight)
-                    #histos[folder+'/h_collmass_pfmet_mes'].Fill(collmass(row, row.pfMet_mes_Et, row.pfMet_mes_Phi), frweight)
-                    #histos[folder+'/h_collmass_pfmet_tes'].Fill(collmass(row, row.pfMet_tes_Et, row.pfMet_tes_Phi), frweight)
-                    #histos[folder+'/h_collmass_pfmet_ees'].Fill(collmass(row, row.pfMet_ees_Et, row.pfMet_ees_Phi), frweight)
-                    #histos[folder+'/h_collmass_pfmet_ues'].Fill(collmass(row, row.pfMet_ues_Et, row.pfMet_ues_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_ees_minus'].Fill(collmass(row, row.pfMet_ees_minus_Et, row.pfMet_ees_minus_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_ees_plus' ].Fill(collmass(row, row.pfMet_ees_plus_Et , row.pfMet_ees_plus_Phi ), frweight)
-                    histos[folder+'/h_collmass_pfmet_jes_minus'].Fill(collmass(row, row.pfMet_jes_minus_Et, row.pfMet_jes_minus_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_jes_plus' ].Fill(collmass(row, row.pfMet_jes_plus_Et , row.pfMet_jes_plus_Phi ), frweight)
-                    histos[folder+'/h_collmass_pfmet_mes_minus'].Fill(collmass(row, row.pfMet_mes_minus_Et, row.pfMet_mes_minus_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_mes_plus' ].Fill(collmass(row, row.pfMet_mes_plus_Et , row.pfMet_mes_plus_Phi ), frweight)
-                    histos[folder+'/h_collmass_pfmet_tes_minus'].Fill(collmass(row, row.pfMet_tes_minus_Et, row.pfMet_tes_minus_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_tes_plus' ].Fill(collmass(row, row.pfMet_tes_plus_Et , row.pfMet_tes_plus_Phi ), frweight)
-                    histos[folder+'/h_collmass_pfmet_ues_minus'].Fill(collmass(row, row.pfMet_ues_minus_Et, row.pfMet_ues_minus_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_ues_plus' ].Fill(collmass(row, row.pfMet_ues_plus_Et , row.pfMet_ues_plus_Phi ), frweight)
-
-                    
-                    histos[folder+'/h_vismass'].Fill(row.e_t_Mass, frweight)
-                    
-                    histos[folder+'/type1_pfMet_Et'].Fill(row.type1_pfMetEt, frweight)
-                    histos[folder+'/pfMet_Et'].Fill(row.pfMetEt, frweight)
-                    histos[folder+'/type1_pfMet_Phi'].Fill(row.type1_pfMetPhi, frweight)
-                    histos[folder+'/pfMet_Phi'].Fill(row.pfMetPhi, frweight)
-
-                    histos[folder+'/pfMet_Et_ees_minus'].Fill( row.pfMet_ees_minus_Et ,  frweight)
-                    histos[folder+'/pfMet_Et_jes_minus'].Fill( row.pfMet_jes_minus_Et ,  frweight)
-                    histos[folder+'/pfMet_Et_mes_minus'].Fill( row.pfMet_mes_minus_Et ,  frweight)
-                    histos[folder+'/pfMet_Et_tes_minus'].Fill( row.pfMet_tes_minus_Et ,  frweight)
-                    histos[folder+'/pfMet_Et_ues_minus'].Fill( row.pfMet_ues_minus_Et ,  frweight)
-
-                    histos[folder+'/pfMet_Et_ees_plus'].Fill(  row.pfMet_ees_plus_Et  ,  frweight)
-                    histos[folder+'/pfMet_Et_jes_plus'].Fill(  row.pfMet_jes_plus_Et  ,  frweight)
-                    histos[folder+'/pfMet_Et_mes_plus'].Fill(  row.pfMet_mes_plus_Et  ,  frweight)
-                    histos[folder+'/pfMet_Et_tes_plus'].Fill(  row.pfMet_tes_plus_Et  ,  frweight)
-                    histos[folder+'/pfMet_Et_ues_plus'].Fill(  row.pfMet_ues_plus_Et  ,  frweight)
-                    
-                    
-                    histos[folder+'/pfMet_Phi_ees_minus'].Fill(row.pfMet_ees_minus_Phi,  frweight)
-                    histos[folder+'/pfMet_Phi_jes_minus'].Fill(row.pfMet_jes_minus_Phi,  frweight)
-                    histos[folder+'/pfMet_Phi_mes_minus'].Fill(row.pfMet_mes_minus_Phi,  frweight)
-                    histos[folder+'/pfMet_Phi_tes_minus'].Fill(row.pfMet_tes_minus_Phi,  frweight)
-                    histos[folder+'/pfMet_Phi_ues_minus'].Fill(row.pfMet_ues_minus_Phi,  frweight)
-
-                    histos[folder+'/pfMet_Phi_ees_plus'].Fill( row.pfMet_ees_plus_Phi ,  frweight)
-                    histos[folder+'/pfMet_Phi_jes_plus'].Fill( row.pfMet_jes_plus_Phi ,  frweight)
-                    histos[folder+'/pfMet_Phi_mes_plus'].Fill( row.pfMet_mes_plus_Phi ,  frweight)
-                    histos[folder+'/pfMet_Phi_tes_plus'].Fill( row.pfMet_tes_plus_Phi ,  frweight)
-                    histos[folder+'/pfMet_Phi_ues_plus'].Fill( row.pfMet_ues_plus_Phi ,  frweight)
-
-                    #histos[folder+'/pfMet_jes_Et'].Fill(       row.pfMet_jes_Et       ,  frweight)
-                    #histos[folder+'/pfMet_jes_Phi'].Fill(      row.pfMet_jes_Phi      ,  frweight)
-
-                    #histos[folder+'/pfMet_ues_AtanToPhi'].Fill(rowpfMet_ues_AtanToPhi, frweight)
- 
-                    histos[folder+'/type1_pfMet_Et_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), row.type1_pfMetEt, frweight)
-                    histos[folder+'/mvaMet_Et_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), row.mva_metEt, frweight)
-                        
-                    histos[folder+'/ePFMET_DeltaPhi'].Fill(deltaPhi(row.ePhi, row.pfMetPhi), frweight)
-                    histos[folder+'/ePFMET_DeltaPhi_Ty1'].Fill(deltaPhi(row.ePhi, row.type1_pfMetPhi), frweight)
-                    histos[folder+'/eMVAMET_DeltaPhi'].Fill(deltaPhi(row.ePhi, row.mva_metPhi), frweight)
-                    histos[folder+'/ePFMET_Mt'].Fill(row.eMtToPFMET, frweight)
-                    histos[folder+'/ePFMET_Mt_Ty1'].Fill(row.eMtToPfMet_Ty1, frweight)
-                    histos[folder+'/eMVAMET_Mt'].Fill(row.eMtToMVAMET, frweight)
-                    
-                        
-                    histos[folder+'/tPFMET_DeltaPhi'].Fill(deltaPhi(row.tPhi, row.pfMetPhi), frweight)
-                    histos[folder+'/tPFMET_DeltaPhi_Ty1'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), frweight)
-                    histos[folder+'/tMVAMET_DeltaPhi'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), frweight)
-                    histos[folder+'/tPFMET_Mt'].Fill(row.tMtToPFMET, frweight)
-                    histos[folder+'/tMVAMET_Mt'].Fill(row.tMtToMVAMET, frweight)
-                    
-                    histos[folder+'/h_collmass_pfmet_ees_minus'].Fill(collmass(row, row.pfMet_ees_minus_Et, row.pfMet_ees_minus_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_ees_plus' ].Fill(collmass(row, row.pfMet_ees_plus_Et , row.pfMet_ees_plus_Phi ), frweight)
-                    histos[folder+'/h_collmass_pfmet_jes_minus'].Fill(collmass(row, row.pfMet_jes_minus_Et, row.pfMet_jes_minus_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_jes_plus' ].Fill(collmass(row, row.pfMet_jes_plus_Et , row.pfMet_jes_plus_Phi ), frweight)
-                    histos[folder+'/h_collmass_pfmet_mes_minus'].Fill(collmass(row, row.pfMet_mes_minus_Et, row.pfMet_mes_minus_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_mes_plus' ].Fill(collmass(row, row.pfMet_mes_plus_Et , row.pfMet_mes_plus_Phi ), frweight)
-                    histos[folder+'/h_collmass_pfmet_tes_minus'].Fill(collmass(row, row.pfMet_tes_minus_Et, row.pfMet_tes_minus_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_tes_plus' ].Fill(collmass(row, row.pfMet_tes_plus_Et , row.pfMet_tes_plus_Phi ), frweight)
-                    histos[folder+'/h_collmass_pfmet_ues_minus'].Fill(collmass(row, row.pfMet_ues_minus_Et, row.pfMet_ues_minus_Phi), frweight)
-                    histos[folder+'/h_collmass_pfmet_ues_plus' ].Fill(collmass(row, row.pfMet_ues_plus_Et , row.pfMet_ues_plus_Phi ), frweight)
-
-                                        
-                    histos[folder+'/ePFMET_Mt_jes_minus'].Fill(row.eMtToPfMet_jes_minus,frweight)
-                    histos[folder+'/ePFMET_Mt_jes_plus'].Fill(row.eMtToPfMet_jes_plus,  frweight)
-                    
-                    histos[folder+'/ePFMET_Mt_mes_minus'].Fill(row.eMtToPfMet_mes_minus,frweight) 
-                    histos[folder+'/ePFMET_Mt_mes_plus'].Fill(row.eMtToPfMet_mes_plus,  frweight) 
-                    
-                    histos[folder+'/ePFMET_Mt_ees_minus'].Fill(row.eMtToPfMet_ees_minus,frweight) 
-                    histos[folder+'/ePFMET_Mt_ees_plus'].Fill(row.eMtToPfMet_ees_plus,  frweight) 
-                    
-                    histos[folder+'/ePFMET_Mt_tes_minus'].Fill(row.eMtToPfMet_tes_minus,frweight) 
-                    histos[folder+'/ePFMET_Mt_tes_plus'].Fill(row.eMtToPfMet_tes_plus,  frweight) 
-                
-                    histos[folder+'/ePFMET_Mt_ues_minus'].Fill(row.eMtToPfMet_ues_minus,frweight) 
-                    histos[folder+'/ePFMET_Mt_ues_plus'].Fill(row.eMtToPfMet_ues_plus,  frweight) 
-                    
-                    histos[folder+'/tPFMET_Mt_jes_plus'].Fill(row.tMtToPfMet_jes_plus,  frweight)
-                    histos[folder+'/tPFMET_Mt_mes_plus'].Fill(row.tMtToPfMet_mes_plus,  frweight)
-                    histos[folder+'/tPFMET_Mt_ees_plus'].Fill(row.tMtToPfMet_ees_plus,  frweight)
-                    histos[folder+'/tPFMET_Mt_tes_plus'].Fill(row.tMtToPfMet_tes_plus,  frweight)
-                    histos[folder+'/tPFMET_Mt_ues_plus'].Fill(row.tMtToPfMet_ues_plus,  frweight)
-                    histos[folder+'/tPFMET_Mt_jes_minus'].Fill(row.tMtToPfMet_jes_minus,frweight)
-                    histos[folder+'/tPFMET_Mt_mes_minus'].Fill(row.tMtToPfMet_mes_minus,frweight)
-                    histos[folder+'/tPFMET_Mt_ees_minus'].Fill(row.tMtToPfMet_ees_minus,frweight)
-                    histos[folder+'/tPFMET_Mt_tes_minus'].Fill(row.tMtToPfMet_tes_minus,frweight)
-                    histos[folder+'/tPFMET_Mt_ues_minus'].Fill(row.tMtToPfMet_ues_minus,frweight)
-                
-
-
-                    histos[folder+'/jetN_20'].Fill(row.jetVeto20, frweight) 
-                    histos[folder+'/jetN_30'].Fill(row.jetVeto30, frweight) 
-                    
-        else: # if it is TauTight
-            if not f.startswith('os') and not  f.startswith('ss') : # if the dir name start with mVeto, eVeto or tVeto I don't want the different weight of MC corrections
-                pudir = ['']
-                    
-            for n,d  in enumerate(pudir) :
-                if 'minus' in f  or 'plus' in f :
-                    if n >0 : break
-                    
-                folder = d+f
-                weight[n] = row.EmbPtWeight*weight[n]
-                if f=='os/gg/ept30' :
-                    histos[folder+'/h_collmass_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), weight[n])
-                    histos[folder+'/h_vismass'].Fill(row.e_t_Mass, weight[n])
+    def fill_histos(self, folder_str, row, weight, filter_label = ''):
+        '''fills histograms'''
+        #find all keys matching
+        for attr in self.histo_locations[folder_str]:
+            name = attr
+            #if attr=='DEBUG':
+            #    set_trace()
+            if filter_label:
+                if not attr.startswith(filter_label+'$'):
                     continue
-
-                histos[folder+'/evtInfo'].Fill( struct(run=row.run,lumi=row.lumi,evt=row.evt,weight=weight[n]))
-
-                histos[folder+'/tPt'].Fill(row.tPt, weight[n])
-                histos[folder+'/tEta'].Fill(row.tEta, weight[n])
-                histos[folder+'/tPhi'].Fill(row.tPhi, weight[n]) 
-                histos[folder+'/ePt'].Fill(row.ePt, weight[n])
-                histos[folder+'/eEta'].Fill(row.eEta, weight[n])
-                histos[folder+'/ePhi'].Fill(row.ePhi, weight[n])
-                histos[folder+'/et_DeltaPhi'].Fill(deltaPhi(row.ePhi, row.tPhi), weight[n])
-                histos[folder+'/et_DeltaR'].Fill(row.e_t_DR, weight[n])
-                    
-                histos[folder+'/h_collmass_vs_dPhi_pfmet'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), weight[n])
-                histos[folder+'/h_collmass_vs_dPhi_mvamet'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), collmass(row, row.mva_metEt, row.mva_metPhi), weight[n])
-                histos[folder+'/h_collmassSpread_vs_dPhi_pfmet'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi)-125.0, weight[n])
-                histos[folder+'/h_collmassSpread_vs_dPhi_mvamet'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), collmass(row, row.mva_metEt, row.mva_metPhi)-125.0, weight[n])
-                if deltaPhi(row.tPhi, row.pfMetPhi) > 1.57 :  
-                    histos[folder+'/h_collmass_highPhi_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), weight[n])
-                    histos[folder+'/h_collmassSpread_highPhi_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi)-125.0, weight[n])
-                if deltaPhi(row.tPhi, row.pfMetPhi) < 1.57 :  
-                    histos[folder+'/h_collmass_lowPhi_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), weight[n])
-                    histos[folder+'/h_collmassSpread_lowPhi_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi)-125.0, weight[n])
-                if deltaPhi(row.tPhi, row.mva_metPhi) > 1.57 :  
-                    histos[folder+'/h_collmass_highPhi_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi), weight[n])
-                    histos[folder+'/h_collmassSpread_highPhi_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi)-125.0, weight[n])
-                if deltaPhi(row.tPhi, row.mva_metPhi) < 1.57 :  
-                    histos[folder+'/h_collmass_lowPhi_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi), weight[n])
-                    histos[folder+'/h_collmassSpread_lowPhi_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi)-125.0, weight[n])
-                histos[folder+'/h_collmassSpread_pfmet'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi)-125.0, weight[n])
-                histos[folder+'/h_collmassSpread_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi)-125.0, weight[n])
-
-
-                histos[folder+'/h_collmass_pfmet'].Fill(collmass(row, row.pfMetEt, row.pfMetPhi), weight[n])
-                histos[folder+'/h_collmass_mvamet'].Fill(collmass(row, row.mva_metEt, row.mva_metPhi), weight[n])
-                histos[folder+'/h_collmass_pfmet_Ty1'].Fill(collmass(row, row.type1_pfMetEt, row.type1_pfMetPhi), weight[n])
-                
-                 
-                histos[folder+'/h_vismass'].Fill(row.e_t_Mass, weight[n])
-
-                histos[folder+'/type1_pfMet_Et'].Fill(row.type1_pfMetEt, weight[n])
-                histos[folder+'/pfMet_Et'].Fill(row.pfMetEt, weight[n])
-                histos[folder+'/type1_pfMet_Phi'].Fill(row.type1_pfMetPhi, weight[n])
-                histos[folder+'/pfMet_Phi'].Fill(row.pfMetPhi,weight[n])
-                
-                histos[folder+'/pfMet_Et_ees_minus'].Fill( row.pfMet_ees_minus_Et ,  weight[n])
-                histos[folder+'/pfMet_Et_jes_minus'].Fill( row.pfMet_jes_minus_Et ,  weight[n])
-                histos[folder+'/pfMet_Et_mes_minus'].Fill( row.pfMet_mes_minus_Et ,  weight[n])
-                histos[folder+'/pfMet_Et_tes_minus'].Fill( row.pfMet_tes_minus_Et ,  weight[n])
-                histos[folder+'/pfMet_Et_ues_minus'].Fill( row.pfMet_ues_minus_Et ,  weight[n])
-                
-                histos[folder+'/pfMet_Et_ees_plus'].Fill(  row.pfMet_ees_plus_Et  ,  weight[n])
-                histos[folder+'/pfMet_Et_jes_plus'].Fill(  row.pfMet_jes_plus_Et  ,  weight[n])
-                histos[folder+'/pfMet_Et_mes_plus'].Fill(  row.pfMet_mes_plus_Et  ,  weight[n])
-                histos[folder+'/pfMet_Et_tes_plus'].Fill(  row.pfMet_tes_plus_Et  ,  weight[n])
-                histos[folder+'/pfMet_Et_ues_plus'].Fill(  row.pfMet_ues_plus_Et  ,  weight[n])
-                    
-                
-                histos[folder+'/pfMet_Phi_ees_minus'].Fill(row.pfMet_ees_minus_Phi,  weight[n])
-                histos[folder+'/pfMet_Phi_jes_minus'].Fill(row.pfMet_jes_minus_Phi,  weight[n])
-                histos[folder+'/pfMet_Phi_mes_minus'].Fill(row.pfMet_mes_minus_Phi,  weight[n])
-                histos[folder+'/pfMet_Phi_tes_minus'].Fill(row.pfMet_tes_minus_Phi,  weight[n])
-                histos[folder+'/pfMet_Phi_ues_minus'].Fill(row.pfMet_ues_minus_Phi,  weight[n])
-
-                histos[folder+'/pfMet_Phi_ees_plus'].Fill( row.pfMet_ees_plus_Phi ,  weight[n])
-                histos[folder+'/pfMet_Phi_jes_plus'].Fill( row.pfMet_jes_plus_Phi ,  weight[n])
-                histos[folder+'/pfMet_Phi_mes_plus'].Fill( row.pfMet_mes_plus_Phi ,  weight[n])
-                histos[folder+'/pfMet_Phi_tes_plus'].Fill( row.pfMet_tes_plus_Phi ,  weight[n])
-                histos[folder+'/pfMet_Phi_ues_plus'].Fill( row.pfMet_ues_plus_Phi ,  weight[n])
-
-                #histos[folder+'/pfMet_jes_Et'].Fill(       row.pfMet_jes_Et       , weight[n])
-                #histos[folder+'/pfMet_jes_Phi'].Fill(      row.pfMet_jes_Phi      , weight[n])
-
-                #histos[folder+'/pfMet_ues_AtanToPhi'].Fill(row.pfMet_ues_AtanToPhi, weight[n])
-
-
-                histos[folder+'/type1_pfMet_Et_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), row.type1_pfMetEt, weight[n])
-                histos[folder+'/mvaMet_Et_vs_dPhi'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), row.mva_metEt, weight[n])
-                
-                histos[folder+'/ePFMET_DeltaPhi'].Fill(deltaPhi(row.ePhi, row.type1_pfMetPhi), weight[n])
-                histos[folder+'/ePFMET_DeltaPhi_Ty1'].Fill(deltaPhi(row.ePhi, row.type1_pfMetPhi), weight[n])
-                histos[folder+'/eMVAMET_DeltaPhi'].Fill(deltaPhi(row.ePhi, row.mva_metPhi), weight[n])
-                
-                histos[folder+'/ePFMET_Mt'].Fill(row.eMtToPFMET, weight[n])
-                histos[folder+'/ePFMET_Mt_Ty1'].Fill(row.eMtToPfMet_Ty1, weight[n])
-                histos[folder+'/eMVAMET_Mt'].Fill(row.eMtToMVAMET, weight[n])
-                
-                histos[folder+'/tPFMET_DeltaPhi'].Fill(deltaPhi(row.tPhi, row.pfMetPhi), weight[n])
-                histos[folder+'/tPFMET_DeltaPhi_Ty1'].Fill(deltaPhi(row.tPhi, row.type1_pfMetPhi), weight[n])
-                histos[folder+'/tMVAMET_DeltaPhi'].Fill(deltaPhi(row.tPhi, row.mva_metPhi), weight[n])
-                
-                histos[folder+'/tPFMET_Mt'].Fill(row.tMtToPFMET, weight[n])
-                histos[folder+'/tPFMET_Mt_Ty1'].Fill(row.tMtToPfMet_Ty1, weight[n])
-                histos[folder+'/tMVAMET_Mt'].Fill(row.tMtToMVAMET, weight[n])
-                    
-                histos[folder+'/jetN_20'].Fill(row.jetVeto20, weight[n]) 
-                histos[folder+'/jetN_30'].Fill(row.jetVeto30, weight[n]) 
-                
-
-                #                if n == 0: # if I'm in the dir starting with os or ss I want also the energy scale uncertainties
-                histos[folder+'/h_collmass_pfmet_ees_minus'].Fill(collmass(row, row.pfMet_ees_minus_Et, row.pfMet_ees_minus_Phi), weight[n])
-                histos[folder+'/h_collmass_pfmet_ees_plus' ].Fill(collmass(row, row.pfMet_ees_plus_Et , row.pfMet_ees_plus_Phi ), weight[n])
-                histos[folder+'/h_collmass_pfmet_jes_minus'].Fill(collmass(row, row.pfMet_jes_minus_Et, row.pfMet_jes_minus_Phi), weight[n])
-                histos[folder+'/h_collmass_pfmet_jes_plus' ].Fill(collmass(row, row.pfMet_jes_plus_Et , row.pfMet_jes_plus_Phi ), weight[n])
-                histos[folder+'/h_collmass_pfmet_mes_minus'].Fill(collmass(row, row.pfMet_mes_minus_Et, row.pfMet_mes_minus_Phi), weight[n])
-                histos[folder+'/h_collmass_pfmet_mes_plus' ].Fill(collmass(row, row.pfMet_mes_plus_Et , row.pfMet_mes_plus_Phi ), weight[n])
-                histos[folder+'/h_collmass_pfmet_tes_minus'].Fill(collmass(row, row.pfMet_tes_minus_Et, row.pfMet_tes_minus_Phi), weight[n])
-                histos[folder+'/h_collmass_pfmet_tes_plus' ].Fill(collmass(row, row.pfMet_tes_plus_Et , row.pfMet_tes_plus_Phi ), weight[n])
-                histos[folder+'/h_collmass_pfmet_ues_minus'].Fill(collmass(row, row.pfMet_ues_minus_Et, row.pfMet_ues_minus_Phi), weight[n])
-                histos[folder+'/h_collmass_pfmet_ues_plus' ].Fill(collmass(row, row.pfMet_ues_plus_Et , row.pfMet_ues_plus_Phi ), weight[n])
-
-                                        
-                histos[folder+'/ePFMET_Mt_jes_minus'].Fill(row.eMtToPfMet_jes_minus, weight[n])
-                histos[folder+'/ePFMET_Mt_jes_plus'].Fill(row.eMtToPfMet_jes_plus,   weight[n])
-                
-                histos[folder+'/ePFMET_Mt_mes_minus'].Fill(row.eMtToPfMet_mes_minus,weight[n]) 
-                histos[folder+'/ePFMET_Mt_mes_plus'].Fill(row.eMtToPfMet_mes_plus,  weight[n]) 
-                
-                histos[folder+'/ePFMET_Mt_ees_minus'].Fill(row.eMtToPfMet_ees_minus,weight[n]) 
-                histos[folder+'/ePFMET_Mt_ees_plus'].Fill(row.eMtToPfMet_ees_plus,  weight[n]) 
-                
-                histos[folder+'/ePFMET_Mt_tes_minus'].Fill(row.eMtToPfMet_tes_minus,weight[n]) 
-                histos[folder+'/ePFMET_Mt_tes_plus'].Fill(row.eMtToPfMet_tes_plus,  weight[n]) 
-                
-                histos[folder+'/ePFMET_Mt_ues_minus'].Fill(row.eMtToPfMet_ues_minus,weight[n]) 
-                histos[folder+'/ePFMET_Mt_ues_plus'].Fill(row.eMtToPfMet_ues_plus,  weight[n]) 
-                
-                histos[folder+'/tPFMET_Mt_jes_plus'].Fill(row.tMtToPfMet_jes_plus,weight[n])
-                histos[folder+'/tPFMET_Mt_mes_plus'].Fill(row.tMtToPfMet_mes_plus,weight[n])
-                histos[folder+'/tPFMET_Mt_ees_plus'].Fill(row.tMtToPfMet_ees_plus,weight[n])
-                histos[folder+'/tPFMET_Mt_tes_plus'].Fill(row.tMtToPfMet_tes_plus,weight[n])
-                histos[folder+'/tPFMET_Mt_ues_plus'].Fill(row.tMtToPfMet_ues_plus,weight[n])
-                histos[folder+'/tPFMET_Mt_jes_minus'].Fill(row.tMtToPfMet_jes_minus,weight[n])
-                histos[folder+'/tPFMET_Mt_mes_minus'].Fill(row.tMtToPfMet_mes_minus,weight[n])
-                histos[folder+'/tPFMET_Mt_ees_minus'].Fill(row.tMtToPfMet_ees_minus,weight[n])
-                histos[folder+'/tPFMET_Mt_tes_minus'].Fill(row.tMtToPfMet_tes_minus,weight[n])
-                histos[folder+'/tPFMET_Mt_ues_minus'].Fill(row.tMtToPfMet_ues_minus,weight[n])
-                
-
-
- 
-            
-
+                attr = attr.replace(filter_label+'$', '')
+            path = os.path.join(folder_str,name)
+            value = self.histograms[path]
+            if value.InheritsFrom('TH2'):
+                if attr in self.hfunc:
+                    try:
+                        result, out_weight = self.hfunc[attr](row, weight)
+                    except Exception as e:
+                        raise RuntimeError("Error running function %s. Error: \n\n %s" % (attr, str(e)))
+                    r1, r2 = result
+                    if out_weight is None:
+                        value.Fill( r1, r2 ) #saves you when filling NTuples!
+                    else:
+                        value.Fill( r1, r2, out_weight )
+                else:
+                    attr1, attr2 = tuple(attr.split('#'))
+                    v1 = getattr(row,attr1)
+                    v2 = getattr(row,attr2)
+                    value.Fill( v1, v2, weight ) if weight is not None else value.Fill( v1, v2 )
+            else:
+                if attr in self.hfunc:
+                    try:
+                        result, out_weight = self.hfunc[attr](row, weight)
+                    except Exception as e:
+                        raise RuntimeError("Error running function %s. Error: \n\n %s" % (attr, str(e)))
+                    if out_weight is None:
+                        value.Fill( result ) #saves you when filling NTuples!
+                    else:
+                        value.Fill( result, out_weight )
+                else:
+                    value.Fill( getattr(row,attr), weight ) if weight is not None else value.Fill( getattr(row,attr) )
+        return None
+    
 
     def process(self):
-        
-        
-
-        central_weights = fakerate_central_histogram(25,0, 2.5)
-        
-        p1s_weights = fakerate_p1s_histogram(25,0, 2.5)#fakerate_p1s_histogram(25,0, 2.5)
-        
-        m1s_weights = fakerate_m1s_histogram(25,0, 2.5)#fakerate_m1s_histogram(25,0, 2.5)
-        
-                
+        logging.debug('Starting processing')
+        systematics = self.systematics
         
         frw = []
-        myevent =()
+        lock =()
+        ievt = 0
+        logging.debug('Starting evt loop')
         for row in self.tree:
-        #for n, row in enumerate(self.tree):
-            
-            sign = 'ss' if row.e_t_SS else 'os'
-            processtype = '' ## use a line as for sign when the vbf when selections are defined            
-            ptthreshold = [30]
-            processtype ='gg'##changed from 20
-            jn = row.jetVeto30
-            if jn > 3 : jn = 3
-            jn_jes_plus = row.jetVeto30jes_plus
-            jn_jes_minus = row.jetVeto30jes_minus
+            if (ievt % 100) == 0:
+                logging.debug('New event')
+            ievt += 1
+            #avoid double counting events!
+            evt_id = (row.run, row.lumi, row.evt)
+            if evt_id == lock: continue
+            if lock != () and evt_id == lock:
+                logging.info('Removing duplicate of event: %d %d %d' % evt_id)
 
-            if jn_jes_plus >3 :  jn_jes_plus=3
-            if jn_jes_minus >3 : jn_jes_minus=3
-
-            #if row.run > 2 : #apply the trigger to data only (MC triggers enter in the scale factors)
-            
+            #
+            #preselection, common to everything and everyone
+            #
+            #trigger
             if self.is_embedded :
-
                 if not bool(row.doubleMuPass) : continue
             else: 
                 if not bool(row.singleE27WP80Pass) : continue
                 if  not  bool(row.eMatchesSingleE27WP80): continue
-                        
+
+            #objects
             if not selections.eSelection(row, 'e'): continue
-               
-            if not selections.lepton_id_iso(row, 'e', 'eid13Tight_etauiso01'): continue
-                        
-            if abs(row.eEta) > 1.4442 and abs(row.eEta) < 1.566 : continue
-            if not selections.tauSelection(row, 't'): continue
-                        
             if row.ePt < 30 : continue
-            #if row.eMtToPFMET <40 : continue
-            
+            if not selections.tauSelection(row, 't'): continue
             if not row.tAntiElectronMVA5Tight : continue
             if not row.tAntiMuon2Loose : continue
             if not row.tLooseIso3Hits : continue
-            
-            #isTauTight = False
-            frw=self.fakerate_weights(row.tEta, central_weights, p1s_weights, m1s_weights )
 
-            #if row.tauVetoPt20EleTight3MuLoose : continue 
-            #if row.muVetoPt5IsoIdVtx : continue
-            #if row.eVetoCicLooseIso : continue # change it with Loose
+            #e ID/ISO
+            if not selections.lepton_id_iso(row, 'e', 'eid13Tight_etauiso01'): continue
+            logging.debug('Passed preselection')
 
-            if row.tauVetoPt20EleTight3MuLoose  and row.tauVetoPt20EleTight3MuLoose_tes_minus and row.tauVetoPt20EleTight3MuLoose_tes_plus: continue 
-            if row.muVetoPt5IsoIdVtx and row.muVetoPt5IsoIdVtx_mes_minus and row.muVetoPt5IsoIdVtx_mes_plus : continue
-            if row.eVetoCicLooseIso and row.eVetoCicLooseIso_ees_minus and row.eVetoCicLooseIso_ees_plus : continue
-            
-            standardSelection=True
-            tesminus =True
-            tesplus  =True
-            mesminus =True
-            mesplus  =True
-            eesminus =True
-            eesplus  =True        
-            
-            if  row.tauVetoPt20EleTight3MuLoose or row.muVetoPt5IsoIdVtx or  row.eVetoCicLooseIso : standardSelection =  False             
+            #
+            # Compute event weight
+            #
+            #event weight
+            sys_shifts = systematics['trig'] + \
+                         systematics['pu'] + \
+                         systematics['eid'] + \
+                         systematics['eiso']
 
-            if  row.tauVetoPt20EleTight3MuLoose_tes_minus or row.muVetoPt5IsoIdVtx or  row.eVetoCicLooseIso : tesminus =  False 
-            if  row.tauVetoPt20EleTight3MuLoose_tes_plus or row.muVetoPt5IsoIdVtx or  row.eVetoCicLooseIso  : tesplus  =  False 
-            if  row.tauVetoPt20EleTight3MuLoose or row.muVetoPt5IsoIdVtx_mes_minus or  row.eVetoCicLooseIso : mesminus =  False 
-            if  row.tauVetoPt20EleTight3MuLoose or row.muVetoPt5IsoIdVtx_mes_plus or  row.eVetoCicLooseIso  : mesplus  =  False 
-            if  row.tauVetoPt20EleTight3MuLoose or row.muVetoPt5IsoIdVtx or  row.eVetoCicLooseIso_ees_minus : eesminus =  False 
-            if  row.tauVetoPt20EleTight3MuLoose or row.muVetoPt5IsoIdVtx or  row.eVetoCicLooseIso_ees_plus  : eesplus  =  False 
-            
-            dirpaths = [(standardSelection, sign+'/'+processtype), (mesplus, 'mVetoUp/'+sign+'/'+processtype),  (mesminus, 'mVetoDown/'+sign+'/'+processtype), \
-                        (eesplus, 'eVetoUp/'+sign+'/'+processtype),  (eesminus, 'eVetoDown/'+sign+'/'+processtype), \
-                        (tesplus, 'tVetoUp/'+sign+'/'+processtype),  (tesminus, 'tVetoDown/'+sign+'/'+processtype)]
+            #set_trace()
+            weight_map = self.event_weight(row, sys_shifts)
 
-            
-            
-            if (row.run, row.lumi, row.evt)==myevent: continue
-            if myevent!=() and (row.run, row.lumi, row.evt)==(myevent[0], myevent[1], myevent[2]): print row.ePt, row.tPt
-            
-            myevent=(row.run, row.lumi, row.evt)
+            #Fill embedded sample normalization BEFORE the vetoes
+            if not row.e_t_SS:
+                self.fill_histos('os/gg/ept30', row, weight_map[''])
 
+            # it is better vetoing on b-jets  after the histo for the DY embedded
+            #bjet veto
+            if row.bjetCSVVeto30!=0 : continue
+
+            #tau ID, id Tau is tight then go in full selection, otherwise use for fakes
+            tau_id_category = [''] if row.tTightIso3Hits else ['tLoose', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight']
             isTauTight = bool(row.tTightIso3Hits)
-            folder = dirpaths[0][1]+'/ept30'
-            if dirpaths[0][0] == True and sign=='os':
-                self.fill_histos(row, folder,isTauTight, frw)
-            
-            if row.bjetCSVVeto30!=0 : continue # it is better vetoing on b-jets  after the histo for the DY embedded
 
-            for n,dirpath in enumerate(dirpaths):
-                jetlist = [(int(jn), str(int(jn)))]
-                if  dirpath[0]==False : continue 
-                if n==0:
-                    jetlist.extend([(int(jn_jes_plus), str(int(jn_jes_plus))+'_jes_plus'), (int(jn_jes_minus), str(int(jn_jes_plus))+'_jes_minus')])
-                for jet in jetlist:
-                    #for j in ptthreshold:
-                    folder = dirpath[1]+'/ept30/'+jet[1]
-                    #print folder
-                                        
-                        #print row.tLooseIso3Hits, row.tTightIso3Hits, isTauTight
-                                                
-                    self.fill_histos(row, folder,isTauTight, frw)
+            #jet category
+            jn = min(row.jetVeto30, 3)
+            jn_jes_plus = min(row.jetVeto30jes_plus, 3)
+            jn_jes_minus = min(row.jetVeto30jes_minus, 3)
+            jet_categories = [jn, jn_jes_plus, jn_jes_minus]
+            jet_category_names = ['%i%s' % i for i in zip(jet_categories, systematics['jes'])]
+
+            passes_full_selection = False
+
+            #
+            # Full tight selection
+            #
+            full_selection = [[''] for _ in jet_categories]
+            for idx, njet in enumerate(jet_categories):                
+                if njet == 0 :
+                    if row.tPt < 35: continue 
+                    if row.ePt < 40 : continue
+                    if deltaPhi(row.ePhi, row.tPhi) < 2.7 : continue
+                    if row.tMtToPFMET > 50 : continue
+                    full_selection[idx].append('selected')
+                    passes_full_selection = True 
+                elif njet == 1 :
+                    if row.tPt < 40: continue 
+                    if row.ePt < 35 : continue
+                    if row.tMtToPFMET > 35 : continue
+                    full_selection[idx].append('selected')
+                    passes_full_selection = True 
+                elif njet == 2 :
+                    if row.tPt < 40: continue 
+                    if row.ePt < 30 : continue # no cut as only electrons with pt>30 are in the ntuples
+                    if row.tMtToPFMET > 35 : continue
+                    if row.vbfMass < 550 : continue
+                    if row.vbfDeta < 3.5 : continue
+                    full_selection[idx].append('selected')
+                    passes_full_selection = True 
+
+            if passes_full_selection:
+                logging.debug('Passed full selection')
+
+            jet_directories = []
+            for jet_dir, sel_dir in zip(jet_category_names, full_selection):
+                jet_directories.extend(
+                    [os.path.join(jet_dir, i) for i in sel_dir]
+                )
+
+            #
+            #different selections
+            #
+            sign = 'ss' if row.e_t_SS else 'os'
+            processtype ='gg'
+            ptthreshold = ['ept30']
+
+            #
+            # Lepton vetoes
+            #
+            tvetoes = [row.tauVetoPt20EleTight3MuLoose, row.tauVetoPt20EleTight3MuLoose_tes_plus, row.tauVetoPt20EleTight3MuLoose_tes_minus]
+            mvetoes = [row.muVetoPt5IsoIdVtx          , row.muVetoPt5IsoIdVtx_mes_plus          , row.muVetoPt5IsoIdVtx_mes_minus          ]
+            evetoes = [row.eVetoCicLooseIso           , row.eVetoCicLooseIso_ees_plus           , row.eVetoCicLooseIso_ees_minus           ]
+            
+            tdirs = [ i for i, j in zip( systematics['tvetos'], tvetoes) if not j]
+            mdirs = [ i for i, j in zip( systematics['mvetos'], mvetoes) if not j]
+            edirs = [ i for i, j in zip( systematics['evetos'], evetoes) if not j]
+
+            #if any of the lists is empty
+            #set_trace()
+            if not tdirs or not mdirs or not edirs:
+                continue
+            logging.debug('Passed Vetoes')
+
+            #make all possible veto combos...
+            all_dirs = [''.join(i) for i in itertools.product(tdirs, mdirs, edirs)]
+            #...and choose only the meaningful ones
+            veto_sys = set(systematics['tvetos']+systematics['mvetos']+systematics['evetos'])
+            all_dirs = [i for i in all_dirs if i in veto_sys]
+
+            sys_directories = all_dirs + sys_shifts
+            #remove duplicates
+            sys_directories = list(set(sys_directories))
+            if not isTauTight:
+                #if is a loose tau just compute the fakes!                            
+                sys_directories = tau_id_category
                 
-                    if jet[0] == 0 :
-                        if row.tPt < 35: continue 
-                        if row.ePt < 40 : continue
-                        if deltaPhi(row.ePhi, row.tPhi) < 2.7 : continue
-                        if row.tMtToPFMET > 50 : continue
-                    if jet[0] == 1 :
-                        if row.tPt < 40: continue 
-                        if row.ePt < 35 : continue
-                        if row.tMtToPFMET > 35 : continue
-                    if jet[0] == 2 :
-                        if row.tPt < 40: continue 
-                        if row.ePt < 30 : continue # no cut as only electrons with pt>30 are in the ntuples
-                        if row.tMtToPFMET > 35 : continue
-                        if row.vbfMass < 550 : continue
-                        if row.vbfDeta < 3.5 : continue
-                    folder = dirpath[1]+'/ept30/'+jet[1]+'/selected'
-                    self.fill_histos(row, folder, isTauTight,frw)
-                
-                 
-                    
+                #gather the one and only weight we do care about
+                mc_weight = weight_map['']
+
+                #weights are the fr ones...
+                weight_map = self.fakerate_weights(row.tEta)
+                for i in weight_map:
+                    #...times the mc weight (if any)
+                    weight_map[i] *= mc_weight
+
+            #Fill histograms in appropriate direcotries
+            #if passes_full_selection:
+            #dirs = [os.path.join(sys, sign, processtype, e_thr, jet_dir) for sys, e_thr, jet_dir in itertools.product(sys_directories, ptthreshold, jet_directories)]
+            #if len(dirs) <> len(set(dirs)):
+            #    set_trace()
+            for sys, e_thr, jet_dir in itertools.product(sys_directories, ptthreshold, jet_directories):
+                #if we fill a histogram, lock the event
+                lock = evt_id
+                dir_name = os.path.join(sys, sign, processtype, 
+                                        e_thr, jet_dir)
+                if dir_name[-1] == '/':
+                    dir_name = dir_name[:-1]
+                if passes_full_selection:
+                    logging.debug('Filling %s' % dir_name)
+                #fill them!
+                weight_to_use = weight_map[sys] if sys in weight_map else weight_map['']
+                self.fill_histos(dir_name, row, weight_to_use)
              
             
     def finish(self):
