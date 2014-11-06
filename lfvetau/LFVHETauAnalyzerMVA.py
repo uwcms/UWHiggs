@@ -178,7 +178,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                      self.systematics['mvetos'] + \
                      self.systematics['tvetos'] + \
                      self.systematics['evetos'] + \
-                     ['tLoose', 'tLooseUp', 'tLooseDown', 'tLooseUnweight']
+                     ['tLoose/', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight']
         sys_shifts = list( set( sys_shifts ) ) #remove double dirs
         processtype=['gg']
         threshold=['ept30']
@@ -214,32 +214,55 @@ class LFVHETauAnalyzerMVA(MegaBase):
             )
 
             self.book(f,"tPt", "tau p_{T}", 200, 0, 200)
+            self.book(f,"tPt_tes_plus", "tau p_{T} (tes+)", 200, 0, 200)
+            self.book(f,"tPt_tes_minus", "tau p_{T} (tes-)", 200, 0, 200)
+            
             self.book(f,"tPhi", "tau phi", 100, -3.2, 3.2)
             self.book(f,"tEta", "tau eta",  50, -2.5, 2.5)
             
             self.book(f,"ePt", "e p_{T}", 200, 0, 200)
+            self.book(f,"ePt_ees_plus", "e p_{T} (ees+)", 200, 0, 200)
+            self.book(f,"ePt_ees_minus", "e p_{T} (ees-)", 200, 0, 200)
+
             self.book(f,"ePhi", "e phi",  100, -3.2, 3.2)
             self.book(f,"eEta", "e eta", 50, -2.5, 2.5)
             
             self.book(f, "e_t_DPhi", "e-tau DeltaPhi" , 50, 0, 3.2)
             self.book(f, "e_t_DR", "e-tau DeltaR" , 50, 0, 3.2)
             
+
+            #self.book(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320)
             book_with_sys(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320, 
                           postfixes=self.systematics['met'])
 
             self.book(f, "h_collmass_vs_dPhi_pfmet",  "h_collmass_vs_dPhi_pfmet", 50, 0, 3.2, 32, 0, 320, type=ROOT.TH2F)
             
             self.book(f, "e_t_Mass",  "h_vismass",  32, 0, 320)
+            self.book(f, "e_t_Mass_tes_plus" ,  "h_vismass_tes_plus",  32, 0, 320)
+            self.book(f, "e_t_Mass_tes_minus",  "h_vismass_tes_minus", 32, 0, 320)
+            self.book(f, "e_t_Mass_ees_plus" ,  "h_vismass_ees_plus",  32, 0, 320)
+            self.book(f, "e_t_Mass_ees_minus",  "h_vismass_ees_minus", 32, 0, 320)
             
             self.book(f, "MetEt_vs_dPhi", "PFMet vs #Delta#phi(#tau,PFMet)", 50, 0, 3.2, 64, 0, 320, type=ROOT.TH2F)
 
             self.book(f, "tPFMET_DeltaPhi", "tau-type1PFMET DeltaPhi" , 50, 0, 3.2)
+    
+            self.book(f, "ePFMET_DeltaPhi", "e-PFMET DeltaPhi" , 50, 0, 3.2)
             
-            #self.book(f, "ePFMET_DeltaPhi", "e-PFMET DeltaPhi" , 50, 0, 3.2)
-            ## book_with_sys(f, "tMtToPfMet", "tau-PFMET M_{T}" , 200, 0, 200,
-            ##               postfixes=self.systematics['met'])
-            ## book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 200, 0, 200,
-            ##               postfixes=self.systematics['met'])
+            self.book(f,"tMtToPFMET", "tau-PFMET M_{T}" , 200, 0, 200)
+            #book_with_sys(f, "tMtToPfMet", "tau-PFMET M_{T}" , 200, 0, 200,
+            #              postfixes=self.systematics['met'])
+            self.book(f,"eMtToPFMET", "e-PFMET M_{T}" , 200, 0, 200)
+            #book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 200, 0, 200,
+            #              postfixes=self.systematics['met'])
+
+            
+            self.book(f, "pfMetEt",  "pfMetEt",  200, 0, 200)
+            #book_with_sys(f, "pfMet_Et",  "pfMet_Et",  200, 0, 200, postfixes=self.systematics['met'])
+
+            self.book(f, "pfMetPhi",  "pfMetPhi", 100, -3.2, 3.2)
+            #book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 100, -3.2, 3.2, postfixes=self.systematics['met'])
+             
 
             self.book(f, "jetVeto20", "Number of jets, p_{T}>20", 10, -0.5, 9.5) 
             self.book(f, "jetVeto30", "Number of jets, p_{T}>30", 10, -0.5, 9.5) 
@@ -264,8 +287,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
 
         frweight = {
             'tLoose'     : tLoose    ,
-            'tLooseUp'   : tLooseUp  ,
-            'tLooseDown' : tLooseDown,
+            'tLoose/Up'   : tLooseUp  ,
+            'tLoose/Down' : tLooseDown,
             'tLooseUnweight' : 1.,
         }
 
@@ -376,7 +399,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             if row.bjetCSVVeto30!=0 : continue
 
             #tau ID, id Tau is tight then go in full selection, otherwise use for fakes
-            tau_id_category = [''] if row.tTightIso3Hits else ['tLoose', 'tLooseUp', 'tLooseDown', 'tLooseUnweight']
+            tau_id_category = [''] if row.tTightIso3Hits else ['tLoose', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight']
             isTauTight = bool(row.tTightIso3Hits)
 
             #jet category
