@@ -28,6 +28,7 @@ from FinalStateAnalysis.StatTools.quad     import quad
 import ROOT
 import glob
 from pdb import set_trace
+from FinalStateAnalysis.PlotTools.THBin import zipBins
 
 def create_mapper(mapping):
     def _f(path):
@@ -46,7 +47,6 @@ def histo_diff_quad(mc_err, *systematics):
     clone = mc_err.Clone()
     sys_up = [i for i, _ in systematics]
     sys_dw = [i for _, i in systematics]
-
     #bin loop
     for ibin in range(nbins+2): #from uflow to oflow
         content = clone.GetBinContent(ibin)
@@ -55,8 +55,10 @@ def histo_diff_quad(mc_err, *systematics):
         shifts_up = [abs(i.GetBinContent(ibin) - content) for i in sys_up]
         shifts_dw = [abs(i.GetBinContent(ibin) - content) for i in sys_dw]
         max_shift = [max(i, j) for i, j in zip(shifts_up, shifts_dw)]
+        #print shifts_up, shifts_dw, max_shift, error, content
         
         new_err = quad(error, *max_shift)
+        #print clone.GetTitle(), ibin, new_err, clone.GetBinContent(ibin)
         clone.SetBinError(ibin, new_err)
 
     return clone
@@ -82,7 +84,7 @@ class BasePlotter(Plotter):
         self.blind_region=blind_region
         if self.blind_region:
             # Don't look at the SS all pass region
-            blinder = lambda x: BlindView(x, "os/.*",blind_in_range(*self.blind_region))
+            blinder = lambda x: BlindView(x, "os/.*mass*",blind_in_range(*self.blind_region))
 
         super(BasePlotter, self).__init__(files, lumifiles, outputdir, blinder, forceLumi=forceLumi)
 
@@ -95,22 +97,25 @@ class BasePlotter(Plotter):
             '[WZ][WZ]Jets',
             #'Wplus*Jets_madgraph*', #superseded by fakes
             'Z*jets_M50_skimmedLL',
-            'Z*jets_M50_skimmedTT',
+            'Z*jets_M50_skimmedTT'
         ]
 
+        
         if use_embedded:
+            
             self.mc_samples.pop()
-            self.views['Ztt_embedded'] = {'view' : self.make_embedded('os/gg/ept30/h_collmass_pfmet')}
+            self.views['ZetauEmbedded'] = {'view' : self.make_embedded('os/gg/ept30/h_collmass_pfmet')}
         
     def make_fakes(self):
         '''Sets up the fakes view'''
         data_view = self.get_view('data')
         central_fakes = views.SubdirectoryView(data_view, 'tLoose')
         up_fakes = views.SubdirectoryView(data_view, 'tLooseUp')
+        dw_fakes = views.SubdirectoryView(data_view, 'tLooseDown')
         style = data_styles['Fakes*']
         return views.TitleView(
             views.StyleView(
-                MedianView(highv=up_fakes, centv=central_fakes),
+                MedianView(highv=up_fakes, lowv=dw_fakes, centv=central_fakes, maxdiff=True),
                 **remove_name_entry(style)
             ),
             style['name']
@@ -126,9 +131,16 @@ class BasePlotter(Plotter):
 
         embed_int = embedded_histo.Integral()
         zjets_int = zjets_histo.Integral()
+        
 
         scale_factor = zjets_int / embed_int
-        scaled_view = views.ScaleView(embedded_view, scale_factor)
+        
+        scaled_view = views.TitleView(
+            views.StyleView(views.ScaleView(embedded_view, scale_factor),
+                **remove_name_entry(data_styles['ZetauEmbedded'])
+            ),
+            'Z #rightarrow #tau#tau (embedded)'
+        )
         return scaled_view
 
     def simpleplot_mc(self, folder, signal, variable, rebin=1, xaxis='',
@@ -394,6 +406,7 @@ class BasePlotter(Plotter):
         folder_systematics is a list of tuples with the folders containing shifts (up, down)
         name_systematics is a list of tuples containing the postfix to obtain the shifts (up, down)
         '''
+         
         systematics = []
         for sys_up, sys_dw in folder_systematics:
             h_up = view.Get(os.path.join(sys_up, path))
@@ -410,13 +423,27 @@ class BasePlotter(Plotter):
                 (h_up, h_dw)
             )
         
+
         #ADD systematics
         return histo_diff_quad(histo, *systematics)
         
 
+
+
+    def add_histo_error(self, histo, histoerr):
+        clone = histo.GetStack().Last().Clone('errhist')
+        for bin in range(1,clone.GetXaxis().GetNbins()):
+            error = histoerr.GetBinError(bin)*clone.GetBinContent(bin)/histoerr.GetBinContent(bin) if histoerr.GetBinContent(bin) <>0 else histoerr.GetBinError(bin)
+            clone.SetBinError(bin, error )
+       
+        return clone
+
+
     def plot_with_bkg_uncert (self, folder, variable, rebin=1, xaxis='',
                               leftside=True, xrange=None, preprocess=None,
                               show_ratio=False, ratio_range=0.2, sort=True, obj=['e1', 'e2']):
+
+
         #xsection uncertainties
         #names must match with what defined in self.mc_samples
         xsec_unc_mapper = {
@@ -428,10 +455,19 @@ class BasePlotter(Plotter):
             'Z*jets_M50_skimmedTT' : 0.032,
         }
 
+
         path = os.path.join(folder,variable)
 
         #make MC views with xsec error
         mc_views_nosys = self.mc_views(rebin, preprocess)
+        mc_views_noFake=[]
+        for view, name in zip(mc_views_nosys, self.mc_samples):
+            viewNoFake =  views.SubdirectoryView(view, 'tLoose/')
+            mc_views_noFake.append(viewNoFake)
+
+        mc_noFakeStack = views.SumView(*mc_views_noFake) 
+        #mc_noFakes= mc_noFakeStack.Get(path)
+                                                
         mc_views = []
         for view, name in zip(mc_views_nosys, self.mc_samples):
             new = SystematicsView(
@@ -453,22 +489,24 @@ class BasePlotter(Plotter):
             ('p1s', 'm1s'), #PU correction
         ]
 
-        met_systematics = [
-            ('_jes', '_jes_minus'), 
-            ('_mes', '_mes_minus'), 
-            ('_ees', '_ees_minus'), 
-            ('_tes', '_tes_minus'), 
-            ('_ues', '_ues_minus'), 
+        met_systematics = [ #it was without plus
+            ('_jes_plus', '_jes_minus'), 
+            ('_mes_plus', '_mes_minus'), 
+            ('_ees_plus', '_ees_minus'), 
+            ('_tes_plus', '_tes_minus'), 
+            ('_ues_plus', '_ues_minus'), 
         ]
 
         name_systematics = [] #which are not MET
         #add MET sys if necessary
         if 'collmass' in variable.lower() or \
            'met' in variable.lower():
-            c = 1
-            #name_systematics.extend(met_systematics)
+            if not variable.lower().startswith('type1'):
+                c = 1
+                name_systematics.extend(met_systematics) # TO ADD WHEN RERUN WITH THE NEW BINNING 
 
         #add them
+        
         mc_err = self.add_shape_systematics(
             mc_err, 
             path, 
@@ -478,33 +516,44 @@ class BasePlotter(Plotter):
 
         #check if we are using the embedded sample
         if self.use_embedded:
-            embed_view = self.get_view('Ztt_embedded')
+            embed_view = self.get_view('ZetauEmbedded')
             if preprocess:
                 embed_view = preprocess(embed_view)
             embed_view = RebinView( embed_view, rebin)
 
+            embed_view_noFake = views.SubdirectoryView(embed_view, 'tLoose/')
+
             embed = embed_view.Get(path)
+            embed_NoFakes = embed_view_noFake.Get(path)
+
+            #mc_noFakes+=embed_NoFakes 
+            mc_views_noFake.append(embed_view_noFake)
+            
+            mc_noFakeStack = views.SumView( *mc_views_noFake)
 
             #add xsec error
             embed = SystematicsView.add_error( embed, xsec_unc_mapper['Z*jets_M50_skimmedTT'])
-            
+ 
             #add them to backgrounds
             mc_stack.Add(embed)
             mc_err += embed
+            
             mc_sum_view = views.SumView(mc_sum_view, embed_view)
 
         #Add MC and embed systematics
         folder_systematics = [
             ('trp1s', 'trm1s'), #trig scale factor
         ]
-
+        
+        #print folder_systematics
         #Add as many eid sys as requested
         for name in obj:
             folder_systematics.extend([
                 ('%sidp1s'  % name, '%sidm1s'  % name), #eID scale factor
                 ('%sisop1s' % name, '%sisop1s' % name), #e Iso scale factor
             ])
-
+        
+ 
         mc_err = self.add_shape_systematics(
             mc_err, 
             path, 
@@ -520,12 +569,25 @@ class BasePlotter(Plotter):
             fakes_view = preprocess(fakes_view)
         fakes_view = RebinView(fakes_view, rebin)
 
+        fakes_view = SubtractionView(fakes_view, mc_noFakeStack)
         fakes = fakes_view.Get(path)
-
+        
         #add them to backgrounds
         mc_stack.Add(fakes)
-        mc_err += fakes
+
+        mc_err.Sumw2()
+        mc_err.Add(fakes)
         #set_trace()
+
+        #add jet category uncertainty
+        jetcat_unc_mapper = {
+            0 : 0.017,
+            1 : 0.035,
+            2 : 0.05
+        }
+        jetn = folder[len(folder)-1:] if not '/selected' in folder else folder[len(folder)-10:len(folder)-9]
+        mc_err = SystematicsView.add_error( mc_err, jetcat_unc_mapper.get(jetn, 0. ))
+
 
         #draw stack
         mc_stack.Draw()
@@ -533,12 +595,17 @@ class BasePlotter(Plotter):
         
         #set cosmetics
         self.canvas.SetLogy(True)
+        #self.canvas.SetGridx(True)
+        #self.canvas.SetGridy(True)
+        #self.pad.SetGridx(True)
+        #self.pad.SetGridy(True)
+        
         mc_stack.GetHistogram().GetXaxis().SetTitle(xaxis)
         if xrange:
             mc_stack.GetXaxis().SetRangeUser(xrange[0], xrange[1])
             mc_stack.Draw()
               
-        #set cosmetics and draw error
+        #set cosmetics 
         mc_err.SetMarkerStyle(0)
         mc_err.SetLineColor(1)
         mc_err.SetFillStyle('x')
@@ -546,6 +613,8 @@ class BasePlotter(Plotter):
         mc_err.Draw('pe2 same')
         self.keep.append(mc_err)
 
+
+        
         #Get signal
         signals = [
             'ggHiggsToETau',
@@ -578,7 +647,9 @@ class BasePlotter(Plotter):
 
         self.add_legend([data, mc_stack], leftside, entries=len(mc_stack.GetHists())+1)
         if show_ratio:
-           self.add_ratio_plot(data, mc_err, xrange, ratio_range, True) # add_ratio_diff(data, mc_stack, mc_err, xrange, ratio_range)
+            self.add_ratio_plot(data, mc_err, xrange, ratio_range, True) # add_ratio_diff(data, mc_stack, mc_err, xrange, ratio_range)
+            #self.add_ratio_plot(data, mc_stack, xrange, ratio_range, True) # add_ratio_diff(data, mc_stack, mc_err, xrange, ratio_range)
+            
                        
 ##-----
 

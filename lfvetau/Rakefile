@@ -76,6 +76,8 @@ end
 
 $frfit_dir = "results/#{$jobid}/fakerate_fits"
 directory $frfit_dir
+$frfit_dirMC = "results/#{$jobid}/fakerate_fits_MC"
+directory $frfit_dirMC
 $efrfit_dir = "results/#{$jobid}/efakerate_fits"
 directory $efrfit_dir
 exponential = "scale*TMath::Exp(x*decay)+offset"
@@ -112,20 +114,8 @@ efr_fits      = Hash.new
 #mysamples = [ "zjets_skimmedLL", "zjets_skimmedTT"]
 #for s in mysamples
 
-#fr_fits["t_os_tNoCuts_tTigh_tPt"] = Hash[ 
-#                                         "samples" => Array["diboson",  "dataSingleE"],
-#                                         "analyzer" => $fr_analyzer,
-#                                         "function" => pol0,
-#                                         "variables" => pol0_vars,
-#                                         #"rebin" => 1,
-#                                         "rebin" => $fr_binning,
-#                                         "range" => "30 200",
-#                                         "title" => "#tau p_{T} (GeV)",
-#                                         "min"=>"0",
-#                                         "max"=>"0.1"
-#                                        ]
 fr_fits["t_os_tLoose_tTigh_tPt"] = Hash[ 
-                                          "samples" => Array["diboson",  "dataSingleE"],
+                                          "samples" => Array["diboson",  "dataSingleE", "zjets_skimmedLL"],
                                           "analyzer" => $fr_analyzer,
                                         #"function" => exponential,
                                           #"variables" => exponential_vars,
@@ -139,7 +129,7 @@ fr_fits["t_os_tLoose_tTigh_tPt"] = Hash[
                                         "max"=>"1"
                                          ]
 efr_fits["e_os_eLoose_eTigh_e3Pt"] = Hash[ 
-                                          "samples" => Array["diboson",  "dataSingleE"],
+                                          "samples" => Array["diboson",  "dataSingleE", "zjets_skimmedLL"],
                                           "analyzer" => $efr_analyzer,
                                         #"function" => exponential,
                                           #"variables" => exponential_vars,
@@ -153,20 +143,8 @@ efr_fits["e_os_eLoose_eTigh_e3Pt"] = Hash[
                                         "max"=>"1.2"
                                          ]
 
-#fr_fits["t_os_tNoCuts_tTigh_tAbsEta"] = Hash[ 
-#                                               "samples" => Array["diboson", "dataSingleE"],
-#                                               "analyzer" => $fr_analyzer,
-#                                               "function" => pol2,
-#                                               "variables" => pol2_vars,
-#                                               "rebin" => 1,
-#                                               #"range" => "-2.3 2.3",
-#                                               "range" => "0 2.3",
-#                                               "title" => "#tau #eta",
-#                                               "min"=>"0",
-#                                               "max"=>"0.1"
-#                                            ]
 fr_fits["t_os_tLoose_tTigh_tAbsEta"] = Hash[ 
-                                              "samples" => Array["diboson",  "dataSingleE"],
+                                              "samples" => Array["diboson",  "dataSingleE", "zjets_skimmedLL"],
                                               "analyzer" => $fr_analyzer,
                                               "function" => pol2,
                                               "variables" => pol2_vars,
@@ -180,7 +158,7 @@ fr_fits["t_os_tLoose_tTigh_tAbsEta"] = Hash[
 
 
 efr_fits["e_os_eLoose_eTigh_e3AbsEta"] = Hash[ 
-                                              "samples" => Array["diboson",  "dataSingleE"],
+                                              "samples" => Array["diboson",  "dataSingleE", "zjets_skimmedLL"],
                                               "analyzer" => $efr_analyzer,
                                               "function" => pol2,
                                               "variables" => pol2_vars,
@@ -196,7 +174,33 @@ efr_fits["e_os_eLoose_eTigh_e3AbsEta"] = Hash[
 
   
 task :fits => []
+task :fitsMC => []
+
 task :efits => []
+
+fr_fits.each do |fit, fit_info|
+  fit_configuration = fit.split("_")
+  sign = fit_configuration[1]
+  denom = fit_configuration[2]
+  num = fit_configuration[3]
+  var = fit_configuration[4]
+  
+  subsample_inputs = samples['zjets_skimmedLL']
+  fit_output = $frfit_dirMC + "/#{fit}.root"
+  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}/#{x}.root"}
+  subsample_input_list = subsamples_inputs_result_list.join(" ")
+  denom_path = Array[sign, denom,var].join("/")
+  num_path = Array[sign, num, var].join("/")
+
+  file fit_output => subsamples_inputs_result_list + [fit_info['analyzer'] + '.py'] do |t|
+    sh "mkdir -p #{$frfit_dirMC}"
+    sh "fit_efficiency_chi2.py  #{fit_output} '#{num_path}' '#{denom_path}' \'#{pol0}\' \'#{pol0_vars}\' #{subsample_input_list} --plot --xrange #{fit_info['range']} --xtitle \'#{fit_info['title']}\' --min \'#{fit_info['min']}\' --max \'#{fit_info['max']}\' --show-error --rebin #{fit_info['rebin']} "
+    puts ""
+  end
+ 
+ task :fits_MC => fit_output
+  
+end
   
 fr_fits.each do |fit, fit_info|
   fit_configuration = fit.split("_")
@@ -298,9 +302,10 @@ task :genkinEMu => get_analyzer_results("LFVHAnalyzeGENEMu.py", samples['signalM
 
 task :recoplots => get_analyzer_results("LFVHETauAnalyzer.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'])# + samples['dataSingleE'] )
 
-task :recoplotsMVA => get_analyzer_results("LFVHETauAnalyzerMVA.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + 
-                                           samples['Zembedded']+
-                                           samples['dataSingleE'] )
+task :recoplotsMVA => get_analyzer_results("LFVHETauAnalyzerMVA.py", samples['signalMCgg']# + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + 
+                                           #samples['Zembedded']+
+                                           #samples['dataSingleE'] 
+                                           )
 
 task :recoplotsMVAeMtcut => get_analyzer_results("LFVHETauAnalyzerMVA_eMTCut.py", samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets'] + samples['wwjets'] + samples['wzjets'] + samples['zzjets'] + samples['zjets'] + 
                                            samples['dataSingleE'] )
@@ -319,12 +324,14 @@ task :fakeeet => get_analyzer_results("TauFakeRateAnalyzer.py", samples['signalM
                                       samples['wzjets'] +
                                       samples['zjets'] +   samples['Zembedded']+samples['dataSingleE'])
 
-task :fakeeetMVA => get_analyzer_results("TauFakeRateAnalyzerMVA.py",# samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets']  + samples['Zembedded']+ samples['zjets'] +  
+task :fakeeetMVA => get_analyzer_results("TauFakeRateAnalyzerMVA.py",# samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets']  + samples['Zembedded'] +
+                                         samples['zjets'] +  
                                          samples['wwjets']  + samples['zzjets'] + 
                                          samples['wzjets'] +
                                          samples['dataSingleE'])
 
-task :fakeeeeMVA => get_analyzer_results("EleFakeRateAnalyzerMVA.py", #samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets']  + samples['zjets'] +   samples['Zembedded']+
+task :fakeeeeMVA => get_analyzer_results("EleFakeRateAnalyzerMVA.py", #samples['signalMCgg'] + samples['signalMCvbf'] + samples['ggHiggsTo2Taus'] + samples['vbfHiggsTo2Taus'] + samples['ttbar'] + samples['singlet'] + samples['singletbar'] + samples['wjets']  +   samples['Zembedded']+
+                                         samples['zjets'] +
                                          samples['wwjets']  + samples['zzjets'] + 
                                          samples['wzjets']  +
                                          samples['dataSingleE'])
