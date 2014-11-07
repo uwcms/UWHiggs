@@ -25,9 +25,10 @@ from FinalStateAnalysis.Utilities.struct import struct
 def getVar(name, var):
     return name+var
 
-met_et  = 'pfMet%sEt'
-met_phi = 'pfMet%sPhi'
-
+met_et  = 'pfMet_Et%s'
+met_phi = 'pfMet_Phi%s'
+t_pt  = 'tPt%s'
+etMass = 'e_t_Mass%s'
 @memo
 def met(shift=''):
     return met_et % shift
@@ -35,6 +36,14 @@ def met(shift=''):
 @memo
 def metphi(shift=''):
     return met_phi % shift
+@memo
+def tpt(shift=''):
+    return t_pt % shift
+
+@memo
+def vismass(shift=''):
+    return etMass % shift
+
 
 def attr_getter(attribute):
     '''return a function that gets an attribute'''
@@ -71,13 +80,19 @@ def deltaR(phi1, ph2, eta1, eta2):
     return sqrt(deta*deta + dphi*dphi);
 
 def make_collmass_systematics(shift):
-    met_name = met(shift)
-    phi_name = metphi(shift)
-    def collmass_shifted(row, weight):
-        met = getattr(row, met_name)
-        phi = getattr(row, phi_name)
-        return collmass(row, met, phi), weight
-    return collmass_shifted
+    if shift.startswith('tes'):
+        ptnu =abs(met*cos(deltaPhi(metPhi, row.tPhi)))
+        visfrac = tpt/(tpt+ptnu)
+        vis_mass = vismass(shift)
+        return (vis_mass / sqrt(visfrac))
+    else:
+        met_name = met(shift)
+        phi_name = metphi(shift)
+        def collmass_shifted(row, weight):
+            met = getattr(row, met_name)
+            phi = getattr(row, phi_name)
+            return collmass(row, met, phi), weight
+        return collmass_shifted
 
 class LFVHETauAnalyzerMVA(MegaBase):
     tree = 'et/final/Ntuple'
@@ -105,7 +120,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
             'mvetos': (['', 'mVetoUp', 'mVetoDown'] if self.is_mc else ['']),
             'tvetos': (['', 'tVetoUp', 'tVetoDown'] if self.is_mc else ['']),
             'evetos': (['', 'eVetoUp', 'eVetoDown'] if self.is_mc else ['']),
-            'met'  : ([ "_jes_plus_", "_mes_plus_", "_tes_plus_", "_ees_plus_", "_ues_plus_", "_jes_minus_", "_mes_minus_", "_tes_minus_", "_ees_minus_", "_ues_minus_"] if self.is_mc else []),
+            'met'  : ([ "_jes_plus", "_mes_plus", "_tes_plus", "_ees_plus", "_ues_plus", "_jes_minus", "_mes_minus", "_tes_minus", "_ees_minus", "_ues_minus"] if self.is_mc else []),
+            'tes'  : (["_tes_plus","_tes_minus"]),
         }
 
         #self filling histograms
@@ -122,7 +138,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             ),
             'MetEt_vs_dPhi' : merge_functions(
                 lambda row, weight: (deltaPhi(row.tPhi, getattr(row, metphi())), weight),
-                attr_getter('type1_pfMetEt')
+                attr_getter('type1_pfMet_Et')
             ),
             'ePFMET_DeltaPhi' : lambda row, weight: (deltaPhi(row.ePhi, getattr(row, metphi())), weight),
             'tPFMET_DeltaPhi' : lambda row, weight: (deltaPhi(row.tPhi, getattr(row, metphi())), weight),
@@ -130,8 +146,12 @@ class LFVHETauAnalyzerMVA(MegaBase):
             }
         for shift in self.systematics['met']:
             #patch name
-            postfix = shift[:-1]
+            postfix = shift
             self.hfunc['h_collmass_pfmet%s' % postfix] = make_collmass_systematics(shift)
+        for shift in self.systematics['tes']:
+            #patch name
+            postfix = shift
+            self.hfunc['h_collmass%s_pfmet' % postfix] = make_collmass_systematics(shift)
 
         #PU correctors
         self.pucorrector = mcCorrections.make_shifted_weights(
@@ -178,7 +198,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
                      self.systematics['mvetos'] + \
                      self.systematics['tvetos'] + \
                      self.systematics['evetos'] + \
-                     ['tLoose/', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight']
+                     ['tLoose', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight'] + \
+                     ['tesUp', 'tesDown']
         sys_shifts = list( set( sys_shifts ) ) #remove double dirs
         processtype=['gg']
         threshold=['ept30']
@@ -188,23 +209,23 @@ class LFVHETauAnalyzerMVA(MegaBase):
         folder=[]
 
         for tuple_path in itertools.product(sys_shifts, signs, processtype, threshold, jetN):
-            folder.append(os.path.join(*tuple_path))
-            path = list(tuple_path)
-            path.append('selected')
-            folder.append(os.path.join(*path))
-            
+             folder.append(os.path.join(*tuple_path))
+             path = list(tuple_path)
+             path.append('selected')
+             folder.append(os.path.join(*path))
+
         def book_with_sys(location, name, *args, **kwargs):
             postfixes = kwargs['postfixes']
             del kwargs['postfixes']
             self.book(location, name, *args, **kwargs)
             for postfix in postfixes:
                 #patch name to be removed
-                fix = postfix[:-1]
+                fix = postfix
                 self.book(location, name+fix, *args, **kwargs)
 
         self.book('os/gg/ept30/', "h_collmass_pfmet" , "h_collmass_pfmet",  32, 0, 320)
         self.book('os/gg/ept30/', "e_t_Mass",  "h_vismass",  32, 0, 320)
-                        
+
         for f in folder: 
             self.book(
                 f,
@@ -212,7 +233,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                 'run/l:lumi/l:evt/l:weight/D',
                 type=pytree.PyTree
             )
-
+            
             self.book(f,"tPt", "tau p_{T}", 200, 0, 200)
             self.book(f,"tPt_tes_plus", "tau p_{T} (tes+)", 200, 0, 200)
             self.book(f,"tPt_tes_minus", "tau p_{T} (tes-)", 200, 0, 200)
@@ -248,19 +269,19 @@ class LFVHETauAnalyzerMVA(MegaBase):
     
             self.book(f, "ePFMET_DeltaPhi", "e-PFMET DeltaPhi" , 50, 0, 3.2)
             
-            self.book(f,"tMtToPFMET", "tau-PFMET M_{T}" , 200, 0, 200)
-            #book_with_sys(f, "tMtToPfMet", "tau-PFMET M_{T}" , 200, 0, 200,
-            #              postfixes=self.systematics['met'])
-            self.book(f,"eMtToPFMET", "e-PFMET M_{T}" , 200, 0, 200)
-            #book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 200, 0, 200,
-            #              postfixes=self.systematics['met'])
+            #self.book(f,"tMtToPFMET", "tau-PFMET M_{T}" , 200, 0, 200)
+            book_with_sys(f, "tMtToPfMet", "tau-PFMET M_{T}" , 200, 0, 200,
+                          postfixes=self.systematics['met'])
+            #self.book(f,"eMtToPFMET", "e-PFMET M_{T}" , 200, 0, 200)
+            book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 200, 0, 200,
+                          postfixes=self.systematics['met'])
 
             
-            self.book(f, "pfMetEt",  "pfMetEt",  200, 0, 200)
-            #book_with_sys(f, "pfMet_Et",  "pfMet_Et",  200, 0, 200, postfixes=self.systematics['met'])
+            #self.book(f, "pfMetEt",  "pfMetEt",  200, 0, 200)
+            book_with_sys(f, "pfMet_Et",  "pfMet_Et",  200, 0, 200, postfixes=self.systematics['met'])
 
-            self.book(f, "pfMetPhi",  "pfMetPhi", 100, -3.2, 3.2)
-            #book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 100, -3.2, 3.2, postfixes=self.systematics['met'])
+            #self.book(f, "pfMetPhi",  "pfMetPhi", 100, -3.2, 3.2)
+            book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 100, -3.2, 3.2, postfixes=self.systematics['met'])
              
             self.book(f, "jetVeto20", "Number of jets, p_{T}>20", 10, -0.5, 9.5) 
             self.book(f, "jetVeto30", "Number of jets, p_{T}>30", 10, -0.5, 9.5) 
@@ -383,7 +404,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
             sys_shifts = systematics['trig'] + \
                          systematics['pu'] + \
                          systematics['eid'] + \
-                         systematics['eiso']
+                         systematics['eiso'] #+ \ 
+                         #systematics['tesPlus'] + \ #vanno aggiunte piu` avanti come le jet categories. Non hanno un peso, cambia la soglia
+                         #systematics['tesMinus'] 
 
             #set_trace()
             weight_map = self.event_weight(row, sys_shifts)
@@ -413,24 +436,40 @@ class LFVHETauAnalyzerMVA(MegaBase):
             # Full tight selection
             #
             full_selection = [[''] for _ in jet_categories]
+            tes_categories = [ ('', False),( 'tesUp', False), ('tesDown', False)]
             for idx, njet in enumerate(jet_categories):                
                 if njet == 0 :
-                    if row.tPt < 35: continue 
+                    tThr = 35
+                    if min(row.tPt, row.tPt_tes_plus, row.tPt_tes_minus) < tThr: continue
+                    tes_categories=[ ('', bool(row.tPt > tThr)),( 'tesUp', bool(row.tPt_tes_plus > tThr)), ('tesDown', bool(row.tPt_tes_minus > tThr))]
+                    #if row.tPt > 35: tes_categories.append('')
+                    #if row.tPt_tes_plus > 35: tes_categories.append('tesPlus/')
+                    #if row.tPt_tes_minus > 35: tes_categories.append('tesDown/')
                     if row.ePt < 40 : continue
                     if deltaPhi(row.ePhi, row.tPhi) < 2.7 : continue
-                    if row.tMtToPFMET > 50 : continue
+                    if row.tMtToPfMet > 50 : continue
                     full_selection[idx].append('selected')
                     passes_full_selection = True 
                 elif njet == 1 :
-                    if row.tPt < 40: continue 
+                    tThr = 40 
+                    if min(row.tPt, row.tPt_tes_plus, row.tPt_tes_minus) < tThr: continue
+                    tes_categories=[ ('', bool(row.tPt > tThr)),( 'tesUp', bool(row.tPt_tes_plus > tThr)), ('tesDown', bool(row.tPt_tes_minus > tThr))]
+                    #if row.tPt > 40: tes_category.append('')
+                    #if row.tPt_tes_plus > 40: tes_categories.append('tesPlus/')
+                    #if row.tPt_tes_minus > 40: tes_categories.append('tesDown/')
                     if row.ePt < 35 : continue
-                    if row.tMtToPFMET > 35 : continue
+                    if row.tMtToPfMet > 35 : continue
                     full_selection[idx].append('selected')
                     passes_full_selection = True 
                 elif njet == 2 :
-                    if row.tPt < 40: continue 
+                    tThr = 40 
+                    if min(row.tPt, row.tPt_tes_plus, row.tPt_tes_minus) < tThr: continue
+                    tes_categories=[ ('', bool(row.tPt > tThr)),( 'tesUp', bool(row.tPt_tes_plus > tThr)), ('tesDown', bool(row.tPt_tes_minus > tThr))]
+                    #if row.tPt > 40: tes_category.append('')
+                    #if row.tPt_tes_plus > 40: tes_categories.append('tesPlus/')
+                    #if row.tPt_tes_Minus > 40: tes_categories.append('tesDown/')
                     if row.ePt < 30 : continue # no cut as only electrons with pt>30 are in the ntuples
-                    if row.tMtToPFMET > 35 : continue
+                    if row.tMtToPfMet > 35 : continue
                     if row.vbfMass < 550 : continue
                     if row.vbfDeta < 3.5 : continue
                     full_selection[idx].append('selected')
@@ -438,12 +477,15 @@ class LFVHETauAnalyzerMVA(MegaBase):
 
             if passes_full_selection:
                 logging.debug('Passed full selection')
-
+                
+                
             jet_directories = []
             for jet_dir, sel_dir in zip(jet_category_names, full_selection):
                 jet_directories.extend(
                     [os.path.join(jet_dir, i) for i in sel_dir]
                 )
+            
+                
 
             #
             #different selections
@@ -475,9 +517,17 @@ class LFVHETauAnalyzerMVA(MegaBase):
             veto_sys = set(systematics['tvetos']+systematics['mvetos']+systematics['evetos'])
             all_dirs = [i for i in all_dirs if i in veto_sys]
 
-            sys_directories = all_dirs + sys_shifts
+            tes_directories =[]
+            for tdir,tbool in tes_categories:
+                if tbool==True: tes_directories.append(tdir)
+                if tdir == '' and tbool==False : 
+                    all_dirs=[]
+                    syst_shifts=[]
+                        
+            sys_directories = all_dirs + sys_shifts +tes_directories
             #remove duplicates
             sys_directories = list(set(sys_directories))
+            
             if not isTauTight:
                 #if is a loose tau just compute the fakes!                            
                 sys_directories = tau_id_category
@@ -507,6 +557,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     logging.debug('Filling %s' % dir_name)
                 #fill them!
                 weight_to_use = weight_map[sys] if sys in weight_map else weight_map['']
+                
                 self.fill_histos(dir_name, row, weight_to_use)
              
             
