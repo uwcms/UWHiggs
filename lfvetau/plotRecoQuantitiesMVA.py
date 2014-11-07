@@ -76,5 +76,28 @@ for sign, proc, thr, njet in itertools.product(signs, processtype, threshold, je
                 
                 
                 plotter.save(var,dotroot=False)
-                
+
+#make shapes for limit setting
+signal_region = 'os/gg/ept30/%s/selected'
+jets_names = [
+        ('0', 'gg0etau'  ),
+        ('1', 'boostetau'),
+        ('2', 'vbfetau'  ),
+]
+pjoin = os.path.join
+for njets, cat_name in jets_names:
+        output_dir = plotter.base_out_dir
+        tfile = ROOT.TFile(pjoin(output_dir, 'shapes.%s.root' % njets), 'recreate')
+        output_dir = tfile.mkdir(cat_name)
+        unc_conf_lines, unc_vals_lines = plotter.write_shapes( signal_region, 'h_collmass_pfmet', output_dir)
+        logging.warning('shape file %s created' % tfile.GetName()) 
+        tfile.Close()
+        with open(pjoin(output_dir, 'unc.%s.conf' % njets), 'w') as conf:
+                conf.write('\n'.join(unc_conf_lines))
+        with open(pjoin(output_dir, 'unc.%s.vals' % njets), 'w') as vals:
+                vals.write('\n'.join(unc_vals_lines))
+
+
+
+
 

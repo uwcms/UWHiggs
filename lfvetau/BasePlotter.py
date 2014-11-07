@@ -193,6 +193,12 @@ class BasePlotter(Plotter):
                 '-' : lambda x: dir_systematic('Down'),
                 'apply_to' : ['fakes'],
             }
+            'stat' : {
+                'type' : 'stat',
+                '+' : lambda x: x,
+                '-' : lambda x: x,
+                'apply_to' : ['fakes','simbkg'],
+            }
             ## 'TES' : { TODO! MISSING
             ##     'type' : 'shape',
             ##     '+' : ,
@@ -866,9 +872,10 @@ class BasePlotter(Plotter):
                 else:
                     targets.append(target)
 
-            yield_unc = (info['type'] == 'yield')
-            unc_conf = 'lnN' if yield_unc else 'shape'
-            unc_conf_lines.append('%s %s' % (unc_name, unc_conf))
+            unc_conf = 'lnN' if info['type'] == 'yield' or info['type'] == 'stat' else 'shape'            
+            #stat shapes are uncorrelated between samples
+            if info['type'] <> 'stat':
+                unc_conf_lines.append('%s %s' % (unc_name, unc_conf))
             shift = 0.
             for target in targets:
                 up      = bkg_views[target].Get(
@@ -877,7 +884,7 @@ class BasePlotter(Plotter):
                 down    = bkg_views[target].Get(
                     info['-'](path)
                 )
-                if yield_unc:
+                if info['type'] == 'yield':
                     central = bkg_histos[target]
                     integral = central.Integral()
                     integral_up = up.Integral()
@@ -887,15 +894,54 @@ class BasePlotter(Plotter):
                         (integral_up - integral) / integral,
                         (integral - integral_down) / integral
                     )
-                else:
+                elif info['type'] == 'shape':
                     up.SetName('%s_%sUp' % (target, unc_name))
                     down.SetName('%s_%sDown' % (target, unc_name))
                     up.Write()
                     down.Write()
-            shift += 1
-            unc_vals_lines.append(
-                '%s %s %.2f' % (category_name, ','.join(targets), shift)
-            )
+                elif info['type'] == 'stat':
+                    nbins = up.GetNbinsX()
+                    up.Rebin(nbins)
+                    yield_val = up.GetBinContent(1)
+                    yield_err = up.GetBinError(1)
+                    unc_value = 1. + (yield_err / yield_val)
+                    stat_unc_name = '%s_%s' % (target, unc_name)
+                    unc_conf_lines.append('%s %s' % (stat_unc_name, unc_conf))
+                    unc_vals_lines.append(
+                        '%s %s %.2f' % (category_name, target, unc_value)
+                    )
+                else:
+                    raise ValueError('systematic uncertainty type:"%s" not recognised!' % info['type'])
+
+            if info['type'] <> 'stat':
+                shift += 1
+                unc_vals_lines.append(
+                    '%s %s %.2f' % (category_name, ','.join(targets), shift)
+                )
+
+        #Get signal
+        signals = [
+            'ggHiggsToETau',
+            'vbfHiggsToETau',
+        ]
+        for name in signals:
+            sig_view = self.get_view(name)
+            if preprocess:
+                sig_view = preprocess(sig_view)
+            sig_view = RebinView(sig_view, rebin)
+            
+            histogram = sig_view.Get(path)
+            histogram.SetName(self.datacard_names[name])
+            histogram.Write()
+
+        # Draw data
+        data_view = self.get_view('data')
+        if preprocess:
+            data_view = preprocess( data_view )
+        data_view = self.rebin_view(data_view, rebin)
+        data = data_view.Get(path)
+        data.SetName('data_obs')
+        data.Write()
 
         return unc_conf_lines, unc_vals_lines
                        

@@ -1,0 +1,27 @@
+boostetau gghiggs  Theo_PDF_gg  1.097
+boostetau vbfhiggs Theo_PDF_vbf 1.036
+
+boostetau gghiggs  Theo_UE 0.95
+boostetau vbfhiggs Theo_UE 1.0
+
+boostetau gghiggs  Theo_Scale_gg  1.1
+boostetau vbfhiggs Theo_Scale_vbf 1.015
+
+boostetau zjets      Norm_ZTauTau 1.03
+boostetau ztautau    Norm_ZTauTau_et_1Jet_extra 1.05
+boostetau zjetsother Norm_ZJetsOther 1.3
+
+boostetau simulated  lumi     	     1.026
+boostetau simulated  Effi_E  	     1.02
+boostetau simulated  Effi_et_Tau     1.06
+boostetau simulated  Effi_et_Tau_highPt 1.03
+
+boostetau ww        Norm_WW    1.15
+boostetau singlet   Norm_TOP   1.10
+boostetau ttbar     Norm_TT    1.10
+boostetau fakes     Norm_FAKES 1.30
+
+boostetau signal,ztautau,SMVBF126,SMGG126 shape_ETau_TES 1
+boostetau fakes shape_FAKES 1
+
+#boostetau zjetsother norm_JES_muhad 1.060191 

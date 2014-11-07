@@ -6,8 +6,8 @@ require ENV['CMSSW_BASE'] + '/src/FinalStateAnalysis/PlotTools/rake/tools.rb'
 require 'pathname'
 
 $jobid = ENV['jobid']
-
 $blind = ENV['blind']
+
 # Figure out what run period we are in
 $period = '8TeV'
 PU = ENV['PU']
@@ -348,5 +348,116 @@ end
 
 task :drawTauFakeRate => get_plotter_results("plotTauFakeRate.py")
 
-task :drawplots => "#{$emtdir}/plot#{$period}.root"
+##
+## Make shapes
+##
+$shapedir = "plots/#{$jobid}/lfvet/"
+
+#All shape files are made at the same time
+file "#{$shapedir}/.shapes_timestamp" => get_analyzer_results("LFVHETauAnalyzer.py", 
+                                     samples['signalMCgg'] + \
+                                     samples['signalMCvbf'] + \
+                                     samples['ggHiggsTo2Taus'] + \
+                                     samples['vbfHiggsTo2Taus'] + \
+                                     samples['ttbar'] + \
+                                     samples['singlet'] + \
+                                     samples['singletbar'] + \
+                                     samples['wjets'] + \
+                                     samples['wwjets'] + \
+                                     samples['wzjets'] + \
+                                     samples['zzjets'] + \
+                                     samples['zjets']) do |t|
+  sh "python plotRecoQuantitiesMVA.py"
+  sh "touch #{t.name}"
+end
+
+## 
+## Prepare datacards
+## 
+$limitdir = "limits/#{$jobid}/"
+def prepare_limit(category)
+  #input file does not matter since shape files are made all at once
+  datacard = "#{$limitdir}/#{category}/126/datacard.txt"
+  file datacard => "#{$shapedir}/.shapes_timestamp" do |t|
+    sh "./prepare_limit.sh #{category}"
+  end
+  return datacard
+end
+
+0_jet_card = prepare_limit('0')
+1_jet_card = prepare_limit('1')
+2_jet_card = prepare_limit('2')
+
+#combine cards
+cmb_card = "#{$limitdir}/et_cmb/126/datacard.txt"
+file cmb_card => [0_jet_card, 1_jet_card, 2_jet_card] do |t|
+  sh "mkdir -p #{$limitdir}/et_cmb/126"
+  sh "hadd  -f #{$limitdir}/et_cmb/shapes.root #{$limitdir}/[0-9]/shapes.root"
+  chdir("#{$limitdir}/et_cmb/126") do
+    sh "rm -f shapes.root"
+    sh "ln -s ../shapes.root"
+  end
+  sh "combine_cards_with_names.sh #{ t.prerequisites.join(' ')} > #{cmb_card}"
+  end
+end
+
+#TODO combination!
+task :shapes => [
+   0_jet_card, 
+   1_jet_card, 
+   2_jet_card,
+   cmb_card
+]
+
+## 
+## Compute Limit
+## 
+def compute_limit(category)
+  #input file does not matter since shape files are made all at once
+  datacard = "#{$limitdir}/#{category}/126/datacard.txt"
+  timestamp = "#{$limitdir}/#{category}/.limit_timestamp"
+  file timestamp => datacard do |t|
+    sh "compute_limits.sh #{$limitdir}/#{category} 1 #{$blind}"
+    sh "touch #{t.name}"
+  end
+  return timestamp  
+end
+
+0_jet_limit = compute_limit('0')
+1_jet_limit = compute_limit('1')
+2_jet_limit = compute_limit('2')
+c_jet_limit = compute_limit('et_cmb')
+#TODO combination!
+task :limits => [
+   0_jet_limit,
+   1_jet_limit,
+   2_jet_limit,
+   c_jet_limit
+]
+
+## 
+## Compute Significance
+## 
+def compute_significance(category)
+  #input file does not matter since shape files are made all at once
+  datacard = "#{$limitdir}/#{category}/126/datacard.txt"
+  timestamp = "#{$limitdir}/#{category}/.limit_timestamp"
+  file timestamp => datacard do |t|
+    sh "compute_significance.sh #{$limitdir}/#{category}/126 #{$blind}"
+    sh "touch #{t.name}"
+  end
+  return timestamp  
+end
+
+0_jet_significance = compute_significance('0')
+1_jet_significance = compute_significance('1')
+2_jet_significance = compute_significance('2')
+c_jet_significance = compute_significance('et_cmb')
+#TODO combination!
+task :limits => [
+   0_jet_significance,
+   1_jet_significance,
+   2_jet_significance,
+   c_jet_significance
+]
 
