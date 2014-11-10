@@ -384,13 +384,15 @@ def prepare_limit(category)
   return datacard
 end
 
-0_jet_card = prepare_limit('0')
-1_jet_card = prepare_limit('1')
-2_jet_card = prepare_limit('2')
+card_0_jet = prepare_limit('0')
+card_1_jet = prepare_limit('1')
+card_2_jet = prepare_limit('2')
 
 #combine cards
 cmb_card = "#{$limitdir}/et_cmb/126/datacard.txt"
-file cmb_card => [0_jet_card, 1_jet_card, 2_jet_card] do |t|
+file cmb_card => [card_0_jet, 
+                  card_1_jet, 
+                  card_2_jet] do |t|
   sh "mkdir -p #{$limitdir}/et_cmb/126"
   sh "hadd  -f #{$limitdir}/et_cmb/shapes.root #{$limitdir}/[0-9]/shapes.root"
   chdir("#{$limitdir}/et_cmb/126") do
@@ -398,14 +400,13 @@ file cmb_card => [0_jet_card, 1_jet_card, 2_jet_card] do |t|
     sh "ln -s ../shapes.root"
   end
   sh "combine_cards_with_names.sh #{ t.prerequisites.join(' ')} > #{cmb_card}"
-  end
 end
 
 #TODO combination!
 task :shapes => [
-   0_jet_card, 
-   1_jet_card, 
-   2_jet_card,
+   card_0_jet, 
+   card_1_jet, 
+   card_2_jet,
    cmb_card
 ]
 
@@ -423,16 +424,16 @@ def compute_limit(category)
   return timestamp  
 end
 
-0_jet_limit = compute_limit('0')
-1_jet_limit = compute_limit('1')
-2_jet_limit = compute_limit('2')
-c_jet_limit = compute_limit('et_cmb')
+limit_0_jet = compute_limit('0')
+limit_1_jet = compute_limit('1')
+limit_2_jet = compute_limit('2')
+limit_c_jet = compute_limit('et_cmb')
 #TODO combination!
 task :limits => [
-   0_jet_limit,
-   1_jet_limit,
-   2_jet_limit,
-   c_jet_limit
+   limit_0_jet,
+   limit_1_jet,
+   limit_2_jet,
+   limit_c_jet,
 ]
 
 ## 
@@ -449,15 +450,15 @@ def compute_significance(category)
   return timestamp  
 end
 
-0_jet_significance = compute_significance('0')
-1_jet_significance = compute_significance('1')
-2_jet_significance = compute_significance('2')
-c_jet_significance = compute_significance('et_cmb')
+significance_0_jet = compute_significance('0')
+significance_1_jet = compute_significance('1')
+significance_2_jet = compute_significance('2')
+significance_c_jet = compute_significance('et_cmb')
 #TODO combination!
 task :limits => [
-   0_jet_significance,
-   1_jet_significance,
-   2_jet_significance,
-   c_jet_significance
+   significance_0_jet,
+   significance_1_jet,
+   significance_2_jet,
+   significance_c_jet
 ]
 

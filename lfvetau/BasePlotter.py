@@ -145,9 +145,9 @@ class BasePlotter(Plotter):
 
         self.sample_groups = {#parse_cgs_groups('card_config/cgs.0.conf')
             'fullsimbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 
-                            'diboson', 'zjetsother', 'WWVBF126', 'WWGG126',],
-            'simbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 'ztautau'
-                        'diboson', 'zjetsother', 'WWVBF126', 'WWGG126',]
+                            'diboson', 'zjetsother'], #, 'WWVBF126', 'WWGG126',],
+            'simbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 'ztautau',
+                        'diboson', 'zjetsother']#, 'WWVBF126', 'WWGG126',]
             }
 
         self.systematics = {
@@ -155,7 +155,7 @@ class BasePlotter(Plotter):
                 'type' : 'yield',
                 '+' : dir_systematic('p1s'),
                 '-' : dir_systematic('m1s'),
-                'apply_to' : ['simbkg'],
+                'apply_to' : ['fullsimbkg'],
             },
             'E_Trig' : {
                 'type' : 'yield',
@@ -183,16 +183,16 @@ class BasePlotter(Plotter):
             },
             'UES' : {
                 'type' : 'shape',
-                '+' : lambda x: name_systematic('_ues_plus'),
-                '-' : lambda x: name_systematic('_ues_minus'),
+                '+' : name_systematic('_ues_plus'),
+                '-' : name_systematic('_ues_minus'),
                 'apply_to' : ['fullsimbkg'],
             },
             'shape_FAKES' : {
                 'type' : 'shape',
-                '+' : lambda x: dir_systematic('Up'),
-                '-' : lambda x: dir_systematic('Down'),
+                '+' : dir_systematic('Up'),
+                '-' : dir_systematic('Down'),
                 'apply_to' : ['fakes'],
-            }
+            },
             'stat' : {
                 'type' : 'stat',
                 '+' : lambda x: x,
@@ -212,7 +212,7 @@ class BasePlotter(Plotter):
         data_view = self.get_view('data')
         central_fakes = views.SubdirectoryView(data_view, 'tLoose')
         mc_views = self.mc_views()
-        if use_embedded:            
+        if self.use_embedded:            
             mc_views.append(self.get_view('ZetauEmbedded'))
         mc_sum = views.SumView(*mc_views)
         mc_sum = views.SubdirectoryView(mc_sum, 'tLoose')
@@ -847,7 +847,7 @@ class BasePlotter(Plotter):
             mc_histo.SetName(name)
             mc_histo.Write()
 
-        if use_embedded:            
+        if self.use_embedded:            
             view = self.get_view('ZetauEmbedded')
             name = self.datacard_names['ZetauEmbedded']
             bkg_views[name] = view
@@ -864,7 +864,7 @@ class BasePlotter(Plotter):
         unc_conf_lines = []
         unc_vals_lines = []
         category_name  = output_dir.GetName()
-        for unc_name, info in self.systematics:
+        for unc_name, info in self.systematics.iteritems():
             targets = []
             for target in info['apply_to']:
                 if target in self.sample_groups:
@@ -877,12 +877,14 @@ class BasePlotter(Plotter):
             if info['type'] <> 'stat':
                 unc_conf_lines.append('%s %s' % (unc_name, unc_conf))
             shift = 0.
+            path_up = info['+'](path)
+            path_dw = info['-'](path)
             for target in targets:
                 up      = bkg_views[target].Get(
-                    info['+'](path)
+                    path_up
                 )
                 down    = bkg_views[target].Get(
-                    info['-'](path)
+                    path_dw
                 )
                 if info['type'] == 'yield':
                     central = bkg_histos[target]
