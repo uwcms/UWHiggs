@@ -6,6 +6,8 @@
 
 lumi_8TeV               lnN
 
+CMS_trigger_em          lnN
+
 CMS_eff_e               lnN
 CMS_eff_m               lnN
 CMS_eff_t               lnN

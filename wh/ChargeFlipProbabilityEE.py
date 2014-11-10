@@ -100,8 +100,8 @@ class ChargeFlipProbabilityEE(MegaBase):
                 continue
 
             evt_weight = pucorrector(row.nTruePU) * \
-                mcCorrectors.get_electron_corrections(row,'e1','e2')
-
+                mcCorrectors.get_electron_corrections(row,'e1','e2') *\
+                mcCorrectors.double_electron_trigger(row)
             for iso_label in lep_id:
                 if not selections.lepton_id_iso(row, 'e1', iso_label):
                     continue
