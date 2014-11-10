@@ -117,7 +117,7 @@ class TauFakeRateAnalyzerMVA(MegaBase):
 
             self.book(f, "e1e2Mass",  "e1e2 Inv Mass",  32, 0, 320)
 
-            self.book(f, "tMtToPFMET", "#tau Met MT", 100, 0, 100)
+            self.book(f, "tMtToPfMet", "#tau Met MT", 100, 0, 100)
             
             self.book(f,"tRawIso3Hits", "tRawIso3Hits", 500, 0, 100) 
             self.book(f,"tPt", "t p_{T}", 200, 0, 200)
@@ -163,7 +163,7 @@ class TauFakeRateAnalyzerMVA(MegaBase):
         histos[folder+'/e2Phi'].Fill(row.e2Phi, weight)
 
         histos[folder+'/e1e2Mass'].Fill(row.e1_e2_Mass, weight)
-        histos[folder+'/tMtToPFMET'].Fill(row.tMtToPFMET,weight)
+        histos[folder+'/tMtToPfMet'].Fill(row.tMtToPfMet,weight)
     
         #histos[folder+'/tRawIso3Hits'].Fill(row.tRawIso3Hits, weight)
         histos[folder+'/tPt'].Fill(row.tPt, weight)
@@ -173,7 +173,7 @@ class TauFakeRateAnalyzerMVA(MegaBase):
         histos[folder+'/tAbsEta'].Fill(abs(row.tEta), weight)
         histos[folder+'/tPhi'].Fill(row.tPhi, weight) 
  
-        histos[folder+'/type1_pfMetEt'].Fill(row.type1_pfMetEt)
+        histos[folder+'/type1_pfMetEt'].Fill(row.type1_pfMet_Et)
         histos[folder+'/etDR'].Fill(etDR(row)) 
         histos[folder+'/etDPhi'].Fill(etDPhi(row)) 
         histos[folder+'/jetN_30'].Fill(row.jetVeto30, weight) 
