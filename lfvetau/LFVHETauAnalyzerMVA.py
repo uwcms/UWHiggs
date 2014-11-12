@@ -164,57 +164,6 @@ class LFVHETauAnalyzerMVA(MegaBase):
         )     
         self.trig_weight = mcCorrections.trig_efficiency if self.is_embedded else mcCorrections.trig_correction
 
-        #systematics used
-        self.systematics = {
-            'trig' : (['', 'trp1s', 'trm1s'] if not self.is_data else []),
-            'pu'   : (['', 'p1s', 'm1s'] if self.is_mc else []),
-            'eid'  : (['', 'eidp1s','eidm1s'] if not self.is_data else []),
-            'eiso' : (['', 'eisop1s','eisom1s'] if not self.is_data else []),
-            'jes'  : (['', '_jes_plus','_jes_minus'] if self.is_mc else ['']),
-            'mvetos': (['', 'mVetoUp', 'mVetoDown'] if self.is_mc else ['']),
-            'tvetos': (['', 'tVetoUp', 'tVetoDown'] if self.is_mc else ['']),
-            'evetos': (['', 'eVetoUp', 'eVetoDown'] if self.is_mc else ['']),
-            'met'  : ([ "_jes_plus", "_mes_plus", "_tes_plus", "_ees_plus", "_ues_plus", "_jes_minus", "_mes_minus", "_tes_minus", "_ees_minus", "_ues_minus"] if self.is_mc else []),
-            'tes'  : (["_tes_plus","_tes_minus"]),
-        }
-
-        #self filling histograms
-        coll_mass = make_collmass_systematics('') #no sys shift
-        self.histo_locations = {} #just a mapping of the histograms we have to avoid changing self.histograms indexing an screw other files
-        self.hfunc   = { #maps the name of non-trivial histograms to a function to get the proper value, the function MUST have two args (evt and weight). Used in fill_histos later
-            'nTruePU' : lambda row, weight: (row.nTruePU,None),
-            'weight'  : lambda row, weight: (weight,None) if weight is not None else (1.,None),
-            'Event_ID': lambda row, weight: (array.array("f", [row.run,row.lumi,int(row.evt)/10**5,int(row.evt)%10**5] ), None),
-            'h_collmass_pfmet' : coll_mass,
-            'h_collmass_vs_dPhi_pfmet' : merge_functions(
-                attr_getter('tToMETDPhi'),
-                coll_mass
-            ),
-            'MetEt_vs_dPhi' : merge_functions(
-                lambda row, weight: (deltaPhi(row.tPhi, getattr(row, metphi())), weight),
-                attr_getter('type1_pfMet_Et')
-            ),
-            'ePFMET_DeltaPhi' : lambda row, weight: (deltaPhi(row.ePhi, getattr(row, metphi())), weight),
-            'tPFMET_DeltaPhi' : lambda row, weight: (deltaPhi(row.tPhi, getattr(row, metphi())), weight),
-            'evtInfo' : lambda row, weight: (struct(run=row.run,lumi=row.lumi,evt=row.evt,weight=weight), None)
-            }
-        for shift in self.systematics['met']:
-            #patch name
-            postfix = shift
-            self.hfunc['h_collmass_pfmet%s' % postfix] = make_collmass_systematics(shift)
-        for shift in self.systematics['tes']:
-            #patch name
-            postfix = shift
-            self.hfunc['h_collmass%s_pfmet' % postfix] = make_collmass_systematics(shift)
-
-        #PU correctors
-        self.pucorrector = mcCorrections.make_shifted_weights(
-            mcCorrections.make_puCorrector('singlee'),
-            ['p1s', 'm1s'],
-            [mcCorrections.make_puCorrectorUp('singlee'), mcCorrections.make_puCorrectorDown('singlee')]
-        )     
-        self.trig_weight = mcCorrections.trig_efficiency if self.is_embedded else mcCorrections.trig_correction
-
     @staticmethod 
     def tau_veto(row):
         if not row.tAntiMuonLoose2 or not row.tAntiElectronMVA5Tight or not row.tDecayFinding :
@@ -233,9 +182,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
             return {'' : 1.}
 
         weights = {}
-
         for shift in sys_shifts:
             embedded_weight = row.EmbPtWeight*mcCorrections.eEmb_correction( row, 'e', shift=shift) if self.is_embedded else 1.
+
             weights[shift] = embedded_weight *\
                              mcCorrections.eid_correction( row, 'e', shift=shift) * \
                              mcCorrections.eiso_correction(row, 'e', shift=shift) * \
@@ -309,7 +258,6 @@ class LFVHETauAnalyzerMVA(MegaBase):
             self.book(f, "e_t_DPhi", "e-tau DeltaPhi" , 50, 0, 3.2)
             self.book(f, "e_t_DR", "e-tau DeltaR" , 50, 0, 3.2)
             
-
             #self.book(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320)
             book_with_sys(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320, 
                           postfixes=self.systematics['met'])
@@ -334,14 +282,13 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #self.book(f,"eMtToPFMET", "e-PFMET M_{T}" , 200, 0, 200)
             book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 200, 0, 200,
                           postfixes=self.systematics['met'])
-            
+
             #self.book(f, "pfMetEt",  "pfMetEt",  200, 0, 200)
             book_with_sys(f, "pfMet_Et",  "pfMet_Et",  200, 0, 200, postfixes=self.systematics['met'])
 
             #self.book(f, "pfMetPhi",  "pfMetPhi", 100, -3.2, 3.2)
             book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 100, -3.2, 3.2, postfixes=self.systematics['met'])
              
-
             self.book(f, "jetVeto20", "Number of jets, p_{T}>20", 10, -0.5, 9.5) 
             self.book(f, "jetVeto30", "Number of jets, p_{T}>30", 10, -0.5, 9.5) 
         
