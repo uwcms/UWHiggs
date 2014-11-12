@@ -206,6 +206,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                      ['tesUp', 'tesDown'] +\
                      ['eLoose', 'eLoose/Up', 'eLoose/Down'] +\
                      ['etLoose', 'etLoose/Up', 'etLoose/Down']
+                     ['tesUp', 'tesDown']
         sys_shifts = list( set( sys_shifts ) ) #remove double dirs
         processtype=['gg']
         threshold=['ept30']
@@ -257,7 +258,6 @@ class LFVHETauAnalyzerMVA(MegaBase):
             self.book(f, "e_t_DPhi", "e-tau DeltaPhi" , 50, 0, 3.2)
             self.book(f, "e_t_DR", "e-tau DeltaR" , 50, 0, 3.2)
             
-
             #self.book(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320)
             book_with_sys(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320, 
                           postfixes=self.systematics['met'])
@@ -290,7 +290,12 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #self.book(f, "pfMetPhi",  "pfMetPhi", 100, -3.2, 3.2)
             book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 100, -3.2, 3.2, postfixes=self.systematics['met'])
              
+            #self.book(f, "pfMetEt",  "pfMetEt",  200, 0, 200)
+            book_with_sys(f, "pfMet_Et",  "pfMet_Et",  200, 0, 200, postfixes=self.systematics['met'])
 
+            #self.book(f, "pfMetPhi",  "pfMetPhi", 100, -3.2, 3.2)
+            book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 100, -3.2, 3.2, postfixes=self.systematics['met'])
+             
             self.book(f, "jetVeto20", "Number of jets, p_{T}>20", 10, -0.5, 9.5) 
             self.book(f, "jetVeto30", "Number of jets, p_{T}>30", 10, -0.5, 9.5) 
         
