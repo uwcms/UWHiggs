@@ -859,6 +859,7 @@ class BasePlotter(Plotter):
         bkg_views['fakes'] = self.get_view('fakes')
         fake_shape = bkg_views['fakes'].Get(path)
         bkg_histos['fakes'] = fake_shape.Clone()
+        fake_shape.SetName('fakes')
         fake_shape.Write()
         
         unc_conf_lines = []
@@ -910,7 +911,7 @@ class BasePlotter(Plotter):
                     stat_unc_name = '%s_%s' % (target, unc_name)
                     unc_conf_lines.append('%s %s' % (stat_unc_name, unc_conf))
                     unc_vals_lines.append(
-                        '%s %s %.2f' % (category_name, target, unc_value)
+                        '%s %s %s %.2f' % (category_name, target, stat_unc_name, unc_value)
                     )
                 else:
                     raise ValueError('systematic uncertainty type:"%s" not recognised!' % info['type'])
@@ -918,7 +919,7 @@ class BasePlotter(Plotter):
             if info['type'] <> 'stat':
                 shift += 1
                 unc_vals_lines.append(
-                    '%s %s %.2f' % (category_name, ','.join(targets), shift)
+                    '%s %s %s %.2f' % (category_name, ','.join(targets), unc_name, shift)
                 )
 
         #Get signal
