@@ -14,7 +14,7 @@ import FinalStateAnalysis.PlotTools.pytree as pytree
 from FinalStateAnalysis.PlotTools.decorators import  memo_last
 from FinalStateAnalysis.PlotTools.MegaBase import MegaBase
 from math import sqrt, pi, cos
-from fakerate_functions import tau_fake_rate, tau_fake_rate_up, tau_fake_rate_dw
+from fakerate_functions import tau_fake_rate, tau_fake_rate_up, tau_fake_rate_dw, e_fake_rate, e_fake_rate_up, e_fake_rate_dw
 import itertools
 import traceback
 from FinalStateAnalysis.PlotTools.decorators import memo
@@ -109,6 +109,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
         self.is_data = target.startswith('data_')
         self.is_embedded = ('Embedded' in target)
         self.is_mc = not (self.is_data or self.is_embedded)
+        self.efake   = e_fake_rate(0.2)
+        self.efakeup = e_fake_rate_up(0.2)
+        self.efakedw = e_fake_rate_dw(0.2)
 
         #systematics used
         self.systematics = {
@@ -179,8 +182,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
             return {'' : 1.}
 
         weights = {}
-        embedded_weight = row.EmbPtWeight if self.is_embedded else 1.
         for shift in sys_shifts:
+            embedded_weight = row.EmbPtWeight*mcCorrections.eEmb_correction( row, 'e', shift=shift) if self.is_embedded else 1.
+
             weights[shift] = embedded_weight *\
                              mcCorrections.eid_correction( row, 'e', shift=shift) * \
                              mcCorrections.eiso_correction(row, 'e', shift=shift) * \
@@ -199,6 +203,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
                      self.systematics['tvetos'] + \
                      self.systematics['evetos'] + \
                      ['tLoose', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight'] + \
+                     ['tesUp', 'tesDown'] +\
+                     ['eLoose', 'eLoose/Up', 'eLoose/Down'] +\
+                     ['etLoose', 'etLoose/Up', 'etLoose/Down']
                      ['tesUp', 'tesDown']
         sys_shifts = list( set( sys_shifts ) ) #remove double dirs
         processtype=['gg']
@@ -276,7 +283,6 @@ class LFVHETauAnalyzerMVA(MegaBase):
             book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 200, 0, 200,
                           postfixes=self.systematics['met'])
 
-            
             #self.book(f, "pfMetEt",  "pfMetEt",  200, 0, 200)
             book_with_sys(f, "pfMet_Et",  "pfMet_Et",  200, 0, 200, postfixes=self.systematics['met'])
 
@@ -303,11 +309,31 @@ class LFVHETauAnalyzerMVA(MegaBase):
         tLoose    = tLoose     / (1. - tLoose    ) 
         tLooseUp  = tLooseUp   / (1. - tLooseUp  ) 
         tLooseDown= tLooseDown / (1. - tLooseDown) 
+        
+ 
+        eLoose    = self.efake   
+        eLooseUp  = self.efakeup
+        eLooseDown= self.efakedw
+        
+        eLoose    = eLoose     / (1. - eLoose    ) 
+        eLooseUp  = eLooseUp   / (1. - eLooseUp  ) 
+        eLooseDown= eLooseDown / (1. - eLooseDown) 
+
+
+        etLoose    = tLoose * eLoose
+        etLooseUp  = tLooseUp * eLooseUp
+        etLooseDown= tLooseDown *eLooseDown
 
         frweight = {
             'tLoose'     : tLoose    ,
             'tLoose/Up'   : tLooseUp  ,
             'tLoose/Down' : tLooseDown,
+            'eLoose'      : eLoose    ,
+            'eLoose/Up'   : eLooseUp  ,
+            'eLoose/Down' : eLooseDown,
+            'etLoose'      : etLoose    ,
+            'etLoose/Up'   : etLooseUp  ,
+            'etLoose/Down' : etLooseDown,
             'tLooseUnweight' : 1.,
         }
 
@@ -392,10 +418,13 @@ class LFVHETauAnalyzerMVA(MegaBase):
             if not row.tAntiElectronMVA5Tight : continue
             if not row.tAntiMuon2Loose : continue
             if not row.tLooseIso3Hits : continue
-
+            logging.debug('object selection passed')
             #e ID/ISO
-            if not selections.lepton_id_iso(row, 'e', 'eid13Tight_etauiso01'): continue
+            if not selections.lepton_id_iso(row, 'e', 'eid13Tight_idiso02'): continue
             logging.debug('Passed preselection')
+            isETight = False
+            if selections.lepton_id_iso(row, 'e', 'eid13Tight_etauiso01'): isETight = True
+            logging.debug('tigh electron: %s' %isETight)
 
             #
             # Compute event weight
@@ -421,6 +450,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
 
             #tau ID, id Tau is tight then go in full selection, otherwise use for fakes
             tau_id_category = [''] if row.tTightIso3Hits else ['tLoose', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight']
+            e_id_category = [''] if isETight else ['eLoose', 'eLoose/Up', 'eLoose/Down']
+            et_id_category = ['']   if isETight and  row.tTightIso3Hits else  ['etLoose', 'etLoose/Up', 'etLoose/Down']
             isTauTight = bool(row.tTightIso3Hits)
 
             #jet category
@@ -528,7 +559,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #remove duplicates
             sys_directories = list(set(sys_directories))
             
-            if not isTauTight:
+            if not isTauTight and isETight:
                 #if is a loose tau just compute the fakes!                            
                 sys_directories = tau_id_category
                 
@@ -541,6 +572,35 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     #...times the mc weight (if any)
                     weight_map[i] *= mc_weight
 
+            if not isETight and isTauTight:
+                #if is a loose tau just compute the fakes!                            
+                sys_directories = e_id_category
+                logging.debug('fake electron')
+                #gather the one and only weight we do care about
+                mc_weight = weight_map['']
+
+                #weights are the fr ones...
+                weight_map = self.fakerate_weights(row.eEta)
+                for i in weight_map:
+                    #...times the mc weight (if any)
+                    weight_map[i] *= mc_weight
+                    
+            if not isETight and not isTauTight:
+                #if is a loose tau just compute the fakes!                            
+                sys_directories = et_id_category
+                
+                #gather the one and only weight we do care about
+                mc_weight = weight_map['']
+
+                #weights are the fr ones...
+                weight_map = self.fakerate_weights(row.tEta)
+                for i in weight_map:
+                    #...times the mc weight (if any)
+                    weight_map[i] *= mc_weight
+                    
+                    
+            
+            
             #Fill histograms in appropriate direcotries
             #if passes_full_selection:
             #dirs = [os.path.join(sys, sign, processtype, e_thr, jet_dir) for sys, e_thr, jet_dir in itertools.product(sys_directories, ptthreshold, jet_directories)]

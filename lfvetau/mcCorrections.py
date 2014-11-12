@@ -85,10 +85,10 @@ def make_multiple(fcn, indexed=False, shift=0):
     def multiple(row,*args):
         ret = 1.
         for arg in args:
-            abseta = getattr( 
-                    row, 
-                    getVar(arg,'Eta')
-                ) 
+            abseta = getattr(
+                row,
+                getVar(arg,'Eta')
+            ) 
             pt     = getattr(row, getVar(arg,'Pt'))
             fcn_ret = fcn(pt,abseta)
             if indexed:
@@ -127,6 +127,11 @@ efficiency_trigger_mva    = make_multiple(HetauCorrection.single_ele_eff_mva, in
 efficiency_trigger_mva_up = make_multiple(HetauCorrection.single_ele_eff_mva, indexed=True, shift=1)
 efficiency_trigger_mva_dw = make_multiple(HetauCorrection.single_ele_eff_mva, indexed=True, shift=-1)
 
+correct_eEmb     = make_multiple(HetauCorrection.correct_eEmb,indexed=True)
+correct_eEmb_p1s = make_multiple(HetauCorrection.correct_eEmb,indexed=True, shift=1)
+correct_eEmb_m1s = make_multiple(HetauCorrection.correct_eEmb,indexed=True, shift=-1)
+
+
 eiso_correction = make_shifted_weights(
     correct_eiso13_mva, 
     ['eisop1s','eisom1s'], 
@@ -139,6 +144,13 @@ eid_correction = make_shifted_weights(
     [correct_eid13_p1s_mva, correct_eid13_m1s_mva]
 )
 
+eEmb_correction = make_shifted_weights(
+    correct_eEmb,
+    ['eEmbp1s','eEmbm1s'],
+    [correct_eEmb_p1s, correct_eEmb_m1s]
+)
+
+
 trig_correction = make_shifted_weights(
     correct_trigger_mva,
     ['trp1s', 'trm1s'],
@@ -150,3 +162,4 @@ trig_efficiency = make_shifted_weights(
     ['trp1s', 'trm1s'],
     [efficiency_trigger_mva_up, efficiency_trigger_mva_dw]
 )
+

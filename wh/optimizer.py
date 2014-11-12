@@ -6,23 +6,17 @@ import itertools
 RUN_OPTIMIZATION = ('RUN_OPTIMIZATION' in os.environ) and eval(os.environ['RUN_OPTIMIZATION'])
 
 lep_id = [
-    'eid12Tight_idiso02', 
     'eid12Tight_h2taucuts', 
     'eid12Tight_h2taucuts020', 
-    'eid12Loose_idiso02', 
-    'eid12Loose_h2taucuts', 
-    'eid12Loose_h2taucuts020', 
-    'eid12Medium_idiso02', 
+    #'eid12Loose_h2taucuts', 
+    #'eid12Loose_h2taucuts020', 
     'eid12Medium_h2taucuts', 
     'eid12Medium_h2taucuts020'
     ] \
     if RUN_OPTIMIZATION else \
     [
-    'eid12Medium_idiso02', 
-    'eid12Loose_idiso02', 
-    'eid12Tight_idiso02', 
-    'eid12Loose_h2taucuts', 
-    'eid12Loose_h2taucuts020', 
+    #'eid12Loose_h2taucuts', 
+    #'eid12Loose_h2taucuts020', 
     'eid12Tight_h2taucuts',
     'eid12Medium_h2taucuts020',
     'eid12Medium_h2taucuts'
@@ -81,8 +75,8 @@ if RUN_OPTIMIZATION:
         }
 else:
     grid_search['MMT'] = {
-        'leading_iso'    : 'eid12Loose_h2taucuts',
-        'subleading_iso' : 'eid12Loose_h2taucuts020',
+        'leading_iso'    : 'eid12Medium_h2taucuts',
+        'subleading_iso' : 'eid12Medium_h2taucuts020',
         'LT'             : 50,
         'tauID'          : None,
         'tauPT'          : 0,
