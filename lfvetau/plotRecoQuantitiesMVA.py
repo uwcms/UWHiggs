@@ -32,9 +32,11 @@ print "\nPlotting %s for %s\n" % (channel, jobid)
 blind   = 'blind' not in os.environ or os.environ['blind'] == 'YES'
 blind_region=[100, 150] if blind else None
 
-plotter = BasePlotter(blind_region)
+embedded = True
 
-signs = ['os', 'ss']
+plotter = BasePlotter(blind_region,use_embedded=embedded)
+
+signs = ['os','ss']
 jets = ['0', '1', '2']
 processtype = ['gg']
 threshold = ['ept30']
@@ -44,21 +46,35 @@ histo_info = [('tPt', 'p_{T}(#tau) (GeV)', 5), ('tEta', '#eta(#tau)', 2),  ('tPh
              ('et_DeltaPhi', 'e#tau #Delta#phi', 1), ('et_DeltaR', 'e#tau #Delta R', 1),
              ('h_collmass_pfmet', 'M_{coll}(e#tau) (GeV)', 1), ('h_vismass', 'M_{vis} (GeV)', 1),
              ('jetN_30', 'number of jets (p_{T} > 30 GeV)', 1) , ('ePFMET_Mt', 'M_{T} e-PFMET', 5), 
-             ('tPFMET_Mt', 'M_{T} #tau-PFMET', 5) ]
+              ('tPFMET_Mt', 'M_{T} #tau-PFMET', 5) , ('pfMet_Et', 'pfMet', 5)]
 
 logging.debug("Starting plotting")
 for sign, proc, thr, njet in itertools.product(signs, processtype, threshold, jets):
         path = os.path.join(sign, proc, thr, njet)
-        plotter.set_subdir(path)
         
+        plotter.set_subdir(os.path.join('embedded',path)) if embedded else plotter.set_subdir(path)
+                
         for var, xlabel, rebin in histo_info:
                 logging.debug("Plotting %s/%s" % (path, var) )
                 plotter.pad.SetLogy(False)
                 #plotter.plot_without_uncert(foldername,h[0], rebin=int(h[2]), xaxis=h[1], leftside=False, show_ratio=True, ratio_range=0.5, sort=True, obj=['e'])
                 plotter.plot_with_bkg_uncert(path, var, rebin, xlabel,
-                                             leftside=False, show_ratio=True, ratio_range=0.5, 
+                                             leftside=False, show_ratio=True, ratio_range=1., 
                                              sort=True, obj=['e'])
                 
+                
                 plotter.save(var)
+                
+        plotter.set_subdir(os.path.join('embedded', path+'/selected'))if embedded else plotter.set_subdir(path+'/selected')
 
+        for var, xlabel, rebin in histo_info:
+                logging.debug("Plotting %s/%s" % (path, var) )
+                plotter.pad.SetLogy(False)
+                plotter.plot_with_bkg_uncert(path+'/selected', var, rebin, xlabel,
+                                             leftside=False, show_ratio=True, ratio_range=1., 
+                                             sort=True, obj=['e'])
+                
+                
+                plotter.save(var,dotroot=False)
+                
 

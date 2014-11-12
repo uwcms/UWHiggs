@@ -16,7 +16,7 @@ rake "meta:getmeta[inputs/$jobid, eg/metaInfo, 8]"
 
 #export jobid='newNtuple_10Oct'
 echo $jobid
-$jobid '{print $1}')
+$jobid '{print $1}'
 #export datasrc=/nfs_scratch/taroni/data
 #export MEGAPATH=/nfs_scratch/taroni/data
 
