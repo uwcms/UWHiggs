@@ -205,7 +205,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                      ['tLoose', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight'] + \
                      ['tesUp', 'tesDown'] +\
                      ['eLoose', 'eLoose/Up', 'eLoose/Down'] +\
-                     ['etLoose', 'etLoose/Up', 'etLoose/Down']
+                     ['etLoose', 'etLoose/Up', 'etLoose/Down'] +\
                      ['tesUp', 'tesDown']
         sys_shifts = list( set( sys_shifts ) ) #remove double dirs
         processtype=['gg']

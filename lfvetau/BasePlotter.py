@@ -106,7 +106,7 @@ class BasePlotter(Plotter):
         self.blind_region=blind_region
         if self.blind_region:
             # Don't look at the SS all pass region
-            blinder = lambda x: BlindView(x, "os/.*mass*",blind_in_range(*self.blind_region))
+            blinder = lambda x: BlindView(x, "os/.*ass*",blind_in_range(*self.blind_region))
 
         super(BasePlotter, self).__init__(files, lumifiles, outputdir, blinder, forceLumi=forceLumi)
 
