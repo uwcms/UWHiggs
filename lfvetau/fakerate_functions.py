@@ -35,4 +35,22 @@ tau_fake_rate_dw = make_corrector_from_histo(
     '1D'
 )
 
+efrfit_dir = os.path.join('results', os.environ['jobid'], 'efakerate_fits')+'/'
+        
+e_fake_rate = build_roofunctor(
+    efrfit_dir+'e_os_eLoose_eTigh_e3AbsEta.root', 
+    'fit_efficiency', 
+    'efficiency'
+)
+e_fake_rate_up = make_corrector_from_histo(
+    efrfit_dir+'e_os_eLoose_eTigh_e3AbsEta_2.root', 
+    'efficiency_up', 
+    '1D'
+)
+
+e_fake_rate_dw = make_corrector_from_histo(
+    efrfit_dir+'e_os_eLoose_eTigh_e3AbsEta_2.root', 
+    'efficiency_dw', 
+    '1D'
+)
 

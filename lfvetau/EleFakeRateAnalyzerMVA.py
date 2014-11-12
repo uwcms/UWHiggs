@@ -86,13 +86,10 @@ class EleFakeRateAnalyzerMVA(MegaBase):
         #if bool(row.e1MatchesEle27WP80) and  not bool(row.e2MatchesEle27WP80) : etrig = 'e1'
         #if not bool(row.e1MatchesEle27WP80) and  bool(row.e2MatchesEle27WP80) :  etrig = 'e2'
         return self.pucorrector(row.nTruePU) * \
-            mcCorrections.get_electronId_corrections13_MVA(row, 'e1') * \
-            mcCorrections.get_electronIso_corrections13_MVA(row, 'e1') * \
-            mcCorrections.get_electronId_corrections13_MVA(row, 'e2') * \
-            mcCorrections.get_electronIso_corrections13_MVA(row, 'e2')* \
-            mcCorrections.get_electronId_corrections13_MVA(row, 'e3') * \
-            mcCorrections.get_electronIso_corrections13_MVA(row, 'e3') * \
-            mcCorrections.get_trigger_corrections_MVA(row, etrig) 
+            mcCorrections.eid_correction( row, 'e1', 'e2', 'e3') * \
+            mcCorrections.eiso_correction(row, 'e1', 'e2', 'e3') * \
+            mcCorrections.trig_correction(row, etrig     )
+
 ##add the trigger correction 
 
     def begin(self):
@@ -172,7 +169,7 @@ class EleFakeRateAnalyzerMVA(MegaBase):
         #histos[folder+'/tMtToPFMET'].Fill(row.tMtToPFMET,weight)
     
          
-        histos[folder+'/type1_pfMetEt'].Fill(row.type1_pfMetEt)
+        histos[folder+'/type1_pfMetEt'].Fill(row.type1_pfMet_Et)
         histos[folder+'/ee3DR'].Fill(ee3DR(row)) 
         histos[folder+'/ee3DPhi'].Fill(ee3DPhi(row)) 
         histos[folder+'/jetN_30'].Fill(row.jetVeto30, weight) 
@@ -230,7 +227,7 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             if not abs(row.e1_e2_Mass-91.2) < 20: continue
             cut_flow_trk.Fill('ZMass')
 
-            if not selections.lepton_id_iso(row, 'e3', 'eid13Tight_mvaLoose'): continue
+            if not selections.lepton_id_iso(row, 'e3', 'eid13Loose_idiso02'): continue #very loose loose eid13Tight_mvaLoose
 
             cut_flow_trk.Fill('tsel')
 
