@@ -124,7 +124,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             'tvetos': (['', 'tVetoUp', 'tVetoDown'] if self.is_mc else ['']),
             'evetos': (['', 'eVetoUp', 'eVetoDown'] if self.is_mc else ['']),
             'met'  : ([ "_jes_plus", "_mes_plus", "_tes_plus", "_ees_plus", "_ues_plus", "_jes_minus", "_mes_minus", "_tes_minus", "_ees_minus", "_ues_minus"] if self.is_mc else []),
-            'tes'  : (["_tes_plus","_tes_minus"]),
+            'tes'  : (["_tes_plus","_tes_minus"]if self.is_mc else ['']),
         }
 
         #self filling histograms
@@ -205,8 +205,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                      ['tLoose', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight'] + \
                      ['tesUp', 'tesDown'] +\
                      ['eLoose', 'eLoose/Up', 'eLoose/Down'] +\
-                     ['etLoose', 'etLoose/Up', 'etLoose/Down'] +\
-                     ['tesUp', 'tesDown']
+                     ['etLoose', 'etLoose/Up', 'etLoose/Down'] 
         sys_shifts = list( set( sys_shifts ) ) #remove double dirs
         processtype=['gg']
         threshold=['ept30']
@@ -551,9 +550,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
             tes_directories =[]
             for tdir,tbool in tes_categories:
                 if tbool==True: tes_directories.append(tdir)
-                if tdir == '' and tbool==False : 
-                    all_dirs=[]
-                    syst_shifts=[]
+                #if tdir == '' and tbool==False : 
+                  #  all_dirs=[]
+                  #  syst_shifts=[]
                         
             sys_directories = all_dirs + sys_shifts +tes_directories
             #remove duplicates

@@ -75,20 +75,13 @@ class EleFakeRateAnalyzerMVA(MegaBase):
         if row.run > 2: #FIXME! add tight ID correction
             return 1.
 
-        etrig = 'e1'
-        if row.e2Pt > row.e1Pt : etrig = 'e2'
-        if bool(row.e1MatchesSingleE27WP80) and  not bool(row.e2MatchesSingleE27WP80) : etrig = 'e1'
-        if not bool(row.e1MatchesSingleE27WP80) and  bool(row.e2MatchesSingleE27WP80) :  etrig = 'e2'
-
-        if bool(row.e3MatchesSingleE27WP80) and not bool(row.e1MatchesSingleE27WP80)  and not bool(row.e2MatchesSingleE27WP80) : etrig ='e3'
-                
  
         #if bool(row.e1MatchesEle27WP80) and  not bool(row.e2MatchesEle27WP80) : etrig = 'e1'
         #if not bool(row.e1MatchesEle27WP80) and  bool(row.e2MatchesEle27WP80) :  etrig = 'e2'
         return self.pucorrector(row.nTruePU) * \
             mcCorrections.eid_correction( row, 'e1', 'e2', 'e3') * \
             mcCorrections.eiso_correction(row, 'e1', 'e2', 'e3') * \
-            mcCorrections.trig_correction(row, etrig     )
+            mcCorrections.trig_correction(row, 'e3'   )
 
 ##add the trigger correction 
 
