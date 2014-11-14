@@ -219,7 +219,7 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             cut_flow_trk.Fill('e2IDiso')
             if not abs(row.e1_e2_Mass-91.2) < 20: continue
             cut_flow_trk.Fill('ZMass')
-
+            if not selections.eSelection(row, 'e3'): continue
             if not selections.lepton_id_iso(row, 'e3', 'eid13Loose_idiso02'): continue #very loose loose eid13Tight_mvaLoose
 
             cut_flow_trk.Fill('tsel')

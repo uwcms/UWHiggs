@@ -198,12 +198,13 @@ class BasePlotter(Plotter):
                 '+' : lambda x: x,
                 '-' : lambda x: x,
                 'apply_to' : ['fakes','simbkg'],
-            }
-            ## 'TES' : { TODO! MISSING
-            ##     'type' : 'shape',
-            ##     '+' : ,
-            ##     '-' : ,
-            ## },            
+            },
+            'TES' : {
+                'type' : 'shape',
+                '+' : dir_systematic('tesUp'), 
+                '-' : dir_systematic('tesDown'),
+                'apply_to' : ['simbkg'],
+            },            
         }
 
         
@@ -680,7 +681,7 @@ class BasePlotter(Plotter):
             fakes_view, 
             [('Up','Down')]
         )
-        
+        fakes = SystematicsView.add_error(fakes, 0.30)
         #add them to backgrounds
         mc_stack.Add(fakes)
 
