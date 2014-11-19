@@ -32,12 +32,16 @@ def eSelection(row, name):
     if getattr( row, getVar(name,'JetCSVBtag')) > 0.8:  return False
     ###if getattr( row, getVar(name,'JetBtag')) > 3.3:     return False
     if abs(getattr( row, getVar(name,'DZ'))) > 0.2:     return False
+    #if getattr(row, getVar(name, 'MuonIdIsoVtxOverlap')): return False
     return True
     
 def tauSelection(row, name):
     if getattr( row, getVar(name,'Pt')) < 30:          return False
     if getattr( row, getVar(name,'AbsEta')) > 2.3:     return False
     if abs(getattr( row, getVar(name,'DZ'))) > 0.2:    return False
+    if getattr( row, getVar(name, 'MuonIdIsoVtxOverlap')): return False
+    if getattr( row, getVar(name, 'ElectronPt10IdIsoVtxOverlap')): return False # change to tCiCLooseElecOverlap 
+
     return True
 
 

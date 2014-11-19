@@ -242,6 +242,7 @@ class TauFakeRateAnalyzerMVA(MegaBase):
             #if row.tauHpsVetoPt20 : continue
             if row.muVetoPt5IsoIdVtx : continue
             if row.eVetoCicLooseIso : continue # change it with Loose
+
             
             # if not row.tMtToMET < 50:  continue
             cut_flow_trk.Fill('MtToMet')

@@ -423,7 +423,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             logging.debug('Passed preselection')
             isETight = False
             if selections.lepton_id_iso(row, 'e', 'eid13Tight_etauiso01'): isETight = True
-            logging.debug('tigh electron: %s' %isETight)
+            logging.debug('tight electron: %s' %isETight)
 
             #
             # Compute event weight
