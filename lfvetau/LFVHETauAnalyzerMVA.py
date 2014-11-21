@@ -484,7 +484,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             for idx, njet in enumerate(jet_categories):                
                 if njet == 0 :
                     tThr = 35
-                    eThr = 30 
+                    eThr = 40 
                     if min(row.tPt, row.tPt_tes_plus, row.tPt_tes_minus) < tThr: continue
                     if min(row.ePt, row.ePt_ees_plus, row.ePt_ees_minus) < eThr: continue
                     tes_categories_mapper={
