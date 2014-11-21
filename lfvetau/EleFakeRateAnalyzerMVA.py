@@ -69,15 +69,15 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             mcCorrections.eiso_correction(row, self.mye1, self.mye2, self.mye3) * \
             mcCorrections.trig_correction(row, self.mye3   )
 
-    def ee3DR(row):
+    def ee3DR(self, row):
         return getattr(row, self.mye1+'_'+self.mye3+'_DR') if getattr(row, self.mye1+'_'+self.mye3+'_DR')  < getattr(row, self.mye2+'_'+self.mye3+'_DR') else getattr(row, self.mye2+'_'+self.mye3+'_DR')
 
-    def ee3DPhi(row):
+    def ee3DPhi(self, row):
         e1e3DPhi=deltaPhi(getattr(row, self.mye1+'Phi'), getattr(row, self.mye3+'Phi'))
         e2e3DPhi=deltaPhi(getattr(row, self.mye2+'Phi'), getattr(row, self.mye3+'Phi'))
         return e1e3DPhi if e1e3DPhi < e2e3DPhi else e2e3DPhi
 
-    def Z(row):
+    def Z(self, row):
         e1p=ROOT.TVector3(getattr(row, self.mye1+'Pt')*cos(getattr(row, self.mye1+'Phi')),getattr(row, self.mye1+'Pt')*sin(getattr(row, self.mye1+'Phi')),getattr(row, self.mye1+'Pt')*sin(getattr(row, self.mye1+'Eta')))
         e2p=ROOT.TVector3(getattr(row, self.mye2+'Pt')*cos(getattr(row, self.mye2+'Phi')),getattr(row, self.mye2+'Pt')*sin(getattr(row, self.mye2+'Phi')),getattr(row, self.mye2+'Pt')*sin(getattr(row, self.mye2+'Eta')))
         e1FourVector= ROOT.TLorentzVector(e1p, sqrt(e1p.Mag2()+pow(getattr(row, self.mye1+'Mass'),2)))
@@ -171,14 +171,14 @@ class EleFakeRateAnalyzerMVA(MegaBase):
     
          
         histos[folder+'/type1_pfMetEt'].Fill(row.type1_pfMet_Et)
-        histos[folder+'/ee3DR'].Fill(ee3DR(row)) 
-        histos[folder+'/ee3DPhi'].Fill(ee3DPhi(row)) 
+        histos[folder+'/ee3DR'].Fill(self.ee3DR(row)) 
+        histos[folder+'/ee3DPhi'].Fill(self.ee3DPhi(row)) 
         histos[folder+'/jetN_30'].Fill(row.jetVeto30, weight) 
         histos[folder+'/bjetCSVVeto30'].Fill(row.bjetCSVVeto30, weight) 
        
-        histos[folder+'/ze3DR'].Fill(deltaR(Z(row).Phi(), getattr(row, self.mye3+'Phi'), Z(row).Eta(), getattr(row, self.mye3+'Eta')))
-        histos[folder+'/ze3DPhi'].Fill(deltaPhi(Z(row).Phi(), getattr(row, self.mye3+'Phi')))
-        histos[folder+'/Zpt'].Fill(Z(row).Pt())
+        histos[folder+'/ze3DR'].Fill(deltaR(self.Z(row).Phi(), getattr(row, self.mye3+'Phi'), self.Z(row).Eta(), getattr(row, self.mye3+'Eta')))
+        histos[folder+'/ze3DPhi'].Fill(deltaPhi(self.Z(row).Phi(), getattr(row, self.mye3+'Phi')))
+        histos[folder+'/Zpt'].Fill(self.Z(row).Pt())
             
 
     def process(self):
@@ -204,6 +204,7 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             if row.bjetCSVVeto30!=0 : continue 
             if row.e1Pt < 30 : continue
             if row.e2Pt < 30 : continue
+            if row.e3Pt < 30 : continue
                        
 #        for i, row in enumerate(self.tree):
 #            if  i >= 100:

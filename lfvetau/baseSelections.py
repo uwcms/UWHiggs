@@ -22,7 +22,11 @@ def muSelection(row, name):
 
 def eSelection(row, name):
     eAbsEta = getattr( row, getVar(name,'AbsEta'))
-    if getattr( row, getVar(name,'Pt')) < 30:           return False #was 20
+    if getattr( row, getVar(name,'Pt_ees_minus')) !=0 and  getattr( row, getVar(name,'Pt_ees_plus')) !=0:
+        if min(getattr( row, getVar(name,'Pt')),getattr( row, getVar(name,'Pt_ees_minus')),  getattr( row, getVar(name,'Pt_ees_plus'))) < 30:           return False 
+    else:
+        if getattr( row, getVar(name,'Pt')) < 30:           return False #was 20
+
     if eAbsEta > 2.3:      return False
     if getattr( row, getVar(name,'MissingHits')):       return False
     if getattr( row, getVar(name,'HasConversion')):     return False
@@ -36,7 +40,10 @@ def eSelection(row, name):
     return True
     
 def tauSelection(row, name):
-    if getattr( row, getVar(name,'Pt')) < 30:          return False
+    if getattr( row, getVar(name,'Pt_tes_minus')) !=0 and  getattr( row, getVar(name,'Pt_tes_plus')) !=0:
+        if min(getattr( row, getVar(name,'Pt')),getattr( row, getVar(name,'Pt_tes_minus')),  getattr( row, getVar(name,'Pt_tes_plus'))) < 30:           return False 
+    else:
+        if getattr( row, getVar(name,'Pt')) < 30:          return False
     if getattr( row, getVar(name,'AbsEta')) > 2.3:     return False
     if abs(getattr( row, getVar(name,'DZ'))) > 0.2:    return False
     if getattr( row, getVar(name, 'MuonIdIsoVtxOverlap')): return False
