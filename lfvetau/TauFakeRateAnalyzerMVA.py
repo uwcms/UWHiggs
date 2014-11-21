@@ -231,6 +231,7 @@ class TauFakeRateAnalyzerMVA(MegaBase):
             if not abs(row.e1_e2_Mass-91.2) < 20: continue
             cut_flow_trk.Fill('ZMass')
             if not selections.tauSelection(row, 't'): continue
+            if row.tPt < 30 : continue
             cut_flow_trk.Fill('tsel')
 
             if not row.tAntiMuon2Loose: continue
@@ -242,6 +243,7 @@ class TauFakeRateAnalyzerMVA(MegaBase):
             #if row.tauHpsVetoPt20 : continue
             if row.muVetoPt5IsoIdVtx : continue
             if row.eVetoCicLooseIso : continue # change it with Loose
+
             
             # if not row.tMtToMET < 50:  continue
             cut_flow_trk.Fill('MtToMet')

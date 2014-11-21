@@ -44,6 +44,14 @@ def tpt(shift=''):
 def vismass(shift=''):
     return etMass % shift
 
+def create_mapper(mapping):
+    def _f(path):
+        for key, out in mapping.iteritems():
+            if key == path:
+                path = path.replace(key,out)
+                print 'path', path
+        return path
+    return _f
 
 def attr_getter(attribute):
     '''return a function that gets an attribute'''
@@ -124,7 +132,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             'tvetos': (['', 'tVetoUp', 'tVetoDown'] if self.is_mc else ['']),
             'evetos': (['', 'eVetoUp', 'eVetoDown'] if self.is_mc else ['']),
             'met'  : ([ "_jes_plus", "_mes_plus", "_tes_plus", "_ees_plus", "_ues_plus", "_jes_minus", "_mes_minus", "_tes_minus", "_ees_minus", "_ues_minus"] if self.is_mc else []),
-            'tes'  : (["_tes_plus","_tes_minus"]),
+            'tes'  : (["_tes_plus","_tes_minus"]if self.is_mc else ['']),
         }
 
         #self filling histograms
@@ -204,9 +212,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
                      self.systematics['evetos'] + \
                      ['tLoose', 'tLoose/Up', 'tLoose/Down', 'tLooseUnweight'] + \
                      ['tesUp', 'tesDown'] +\
+                     ['eesUp', 'eesDown'] +\
                      ['eLoose', 'eLoose/Up', 'eLoose/Down'] +\
-                     ['etLoose', 'etLoose/Up', 'etLoose/Down']
-                     ['tesUp', 'tesDown']
+                     ['etLoose', 'etLoose/Up', 'etLoose/Down'] 
         sys_shifts = list( set( sys_shifts ) ) #remove double dirs
         processtype=['gg']
         threshold=['ept30']
@@ -241,56 +249,56 @@ class LFVHETauAnalyzerMVA(MegaBase):
                 type=pytree.PyTree
             )
             
-            self.book(f,"tPt", "tau p_{T}", 200, 0, 200)
-            self.book(f,"tPt_tes_plus", "tau p_{T} (tes+)", 200, 0, 200)
-            self.book(f,"tPt_tes_minus", "tau p_{T} (tes-)", 200, 0, 200)
+            self.book(f,"tPt", "tau p_{T}", 40, 0, 200)
+            self.book(f,"tPt_tes_plus", "tau p_{T} (tes+)", 40, 0, 200)
+            self.book(f,"tPt_tes_minus", "tau p_{T} (tes-)",40, 0, 200)
             
-            self.book(f,"tPhi", "tau phi", 100, -3.2, 3.2)
-            self.book(f,"tEta", "tau eta",  50, -2.5, 2.5)
+            self.book(f,"tPhi", "tau phi", 26, -3.25, 3.25)
+            self.book(f,"tEta", "tau eta",  10, -2.5, 2.5)
             
-            self.book(f,"ePt", "e p_{T}", 200, 0, 200)
-            self.book(f,"ePt_ees_plus", "e p_{T} (ees+)", 200, 0, 200)
-            self.book(f,"ePt_ees_minus", "e p_{T} (ees-)", 200, 0, 200)
+            self.book(f,"ePt", "e p_{T}", 40, 0, 200)
+            self.book(f,"ePt_ees_plus", "e p_{T} (ees+)", 40, 0, 200)
+            self.book(f,"ePt_ees_minus", "e p_{T} (ees-)",40, 0, 200)
 
-            self.book(f,"ePhi", "e phi",  100, -3.2, 3.2)
-            self.book(f,"eEta", "e eta", 50, -2.5, 2.5)
+            self.book(f,"ePhi", "e phi",  26, -3.2, 3.2)
+            self.book(f,"eEta", "e eta", 10, -2.5, 2.5)
             
-            self.book(f, "e_t_DPhi", "e-tau DeltaPhi" , 50, 0, 3.2)
-            self.book(f, "e_t_DR", "e-tau DeltaR" , 50, 0, 3.2)
+            self.book(f, "e_t_DPhi", "e-tau DeltaPhi" , 20, 0, 3.2)
+            self.book(f, "e_t_DR", "e-tau DeltaR" , 20, 0, 3.2)
             
             #self.book(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320)
-            book_with_sys(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320, 
+            book_with_sys(f, "h_collmass_pfmet",  "h_collmass_pfmet",  40, 0, 400, 
                           postfixes=self.systematics['met'])
 
-            self.book(f, "h_collmass_vs_dPhi_pfmet",  "h_collmass_vs_dPhi_pfmet", 50, 0, 3.2, 32, 0, 320, type=ROOT.TH2F)
+            self.book(f, "h_collmass_vs_dPhi_pfmet",  "h_collmass_vs_dPhi_pfmet", 20, 0, 3.2, 40, 0, 400, type=ROOT.TH2F)
             
-            self.book(f, "e_t_Mass",  "h_vismass",  32, 0, 320)
-            self.book(f, "e_t_Mass_tes_plus" ,  "h_vismass_tes_plus",  32, 0, 320)
-            self.book(f, "e_t_Mass_tes_minus",  "h_vismass_tes_minus", 32, 0, 320)
-            self.book(f, "e_t_Mass_ees_plus" ,  "h_vismass_ees_plus",  32, 0, 320)
-            self.book(f, "e_t_Mass_ees_minus",  "h_vismass_ees_minus", 32, 0, 320)
+            self.book(f, "e_t_Mass",  "h_vismass",  40, 0, 400)
+            self.book(f, "e_t_Mass_tes_plus" ,  "h_vismass_tes_plus", 40 , 0, 400)
+            self.book(f, "e_t_Mass_tes_minus",  "h_vismass_tes_minus",40 , 0, 400)
+            self.book(f, "e_t_Mass_ees_plus" ,  "h_vismass_ees_plus", 40 , 0, 400)
+            self.book(f, "e_t_Mass_ees_minus",  "h_vismass_ees_minus",40 , 0, 400)
             
-            self.book(f, "MetEt_vs_dPhi", "PFMet vs #Delta#phi(#tau,PFMet)", 50, 0, 3.2, 64, 0, 320, type=ROOT.TH2F)
+            self.book(f, "MetEt_vs_dPhi", "PFMet vs #Delta#phi(#tau,PFMet)", 20, 0, 3.2, 40, 0, 400, type=ROOT.TH2F)
 
-            self.book(f, "tPFMET_DeltaPhi", "tau-type1PFMET DeltaPhi" , 50, 0, 3.2)
+            self.book(f, "tPFMET_DeltaPhi", "tau-type1PFMET DeltaPhi" , 20, 0, 3.2)
     
-            self.book(f, "ePFMET_DeltaPhi", "e-PFMET DeltaPhi" , 50, 0, 3.2)
+            self.book(f, "ePFMET_DeltaPhi", "e-PFMET DeltaPhi" , 20, 0, 3.2)
             
             #self.book(f,"tMtToPFMET", "tau-PFMET M_{T}" , 200, 0, 200)
-            book_with_sys(f, "tMtToPfMet", "tau-PFMET M_{T}" , 200, 0, 200,
+            book_with_sys(f, "tMtToPfMet", "tau-PFMET M_{T}" , 40, 0, 200,
                           postfixes=self.systematics['met'])
             #self.book(f,"eMtToPFMET", "e-PFMET M_{T}" , 200, 0, 200)
-            book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 200, 0, 200,
+            book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 40, 0, 200,
                           postfixes=self.systematics['met'])
 
             #self.book(f, "pfMetEt",  "pfMetEt",  200, 0, 200)
-            book_with_sys(f, "pfMet_Et",  "pfMet_Et",  200, 0, 200, postfixes=self.systematics['met'])
+            book_with_sys(f, "pfMet_Et",  "pfMet_Et",  40, 0, 200, postfixes=self.systematics['met'])
 
             #self.book(f, "pfMetPhi",  "pfMetPhi", 100, -3.2, 3.2)
-            book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 100, -3.2, 3.2, postfixes=self.systematics['met'])
+            book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 26, -3.2, 3.2, postfixes=self.systematics['met'])
              
-            self.book(f, "jetVeto20", "Number of jets, p_{T}>20", 10, -0.5, 9.5) 
-            self.book(f, "jetVeto30", "Number of jets, p_{T}>30", 10, -0.5, 9.5) 
+            self.book(f, "jetVeto20", "Number of jets, p_{T}>20", 5, -0.5, 4.5) 
+            self.book(f, "jetVeto30", "Number of jets, p_{T}>30", 5, -0.5, 4.5) 
         
         #index dirs and histograms
         for key in self.histograms:
@@ -413,7 +421,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
 
             #objects
             if not selections.eSelection(row, 'e'): continue
-            if row.ePt < 30 : continue
+            #if row.ePt < 30 : continue
             if not selections.tauSelection(row, 't'): continue
             if not row.tAntiElectronMVA5Tight : continue
             if not row.tAntiMuon2Loose : continue
@@ -424,7 +432,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             logging.debug('Passed preselection')
             isETight = False
             if selections.lepton_id_iso(row, 'e', 'eid13Tight_etauiso01'): isETight = True
-            logging.debug('tigh electron: %s' %isETight)
+            logging.debug('tight electron: %s' %isETight)
 
             #
             # Compute event weight
@@ -462,29 +470,60 @@ class LFVHETauAnalyzerMVA(MegaBase):
             jet_category_names = ['%i%s' % i for i in zip(jet_categories, systematics['jes'])]
 
             passes_full_selection = False
+            tThr = 30
+            eThr = 30 
+            tes_categories_presel=[ ('', bool(row.tPt > tThr)),( 'tesUp', bool(row.tPt_tes_plus > tThr)), ('tesDown', bool(row.tPt_tes_minus > tThr))]
+            ees_categories_presel=[ ('', bool(row.ePt > eThr)),( 'eesUp', bool(row.ePt_ees_plus > eThr)), ('eesDown', bool(row.ePt_ees_minus > eThr))]
 
             #
             # Full tight selection
             #
             full_selection = [[''] for _ in jet_categories]
-            tes_categories = [ ('', False),( 'tesUp', False), ('tesDown', False)]
+#            tes_categories = [ ('', False),( 'tesUp', False), ('tesDown', False)]
+#            ees_categories = [ ('', False),( 'eesUp', False), ('eesDown', False)]
             for idx, njet in enumerate(jet_categories):                
                 if njet == 0 :
                     tThr = 35
+                    eThr = 30 
                     if min(row.tPt, row.tPt_tes_plus, row.tPt_tes_minus) < tThr: continue
-                    tes_categories=[ ('', bool(row.tPt > tThr)),( 'tesUp', bool(row.tPt_tes_plus > tThr)), ('tesDown', bool(row.tPt_tes_minus > tThr))]
+                    if min(row.ePt, row.ePt_ees_plus, row.ePt_ees_minus) < eThr: continue
+                    tes_categories_mapper={
+                        ''       :  bool(row.tPt > tThr),
+                        'tesUp'  : bool(row.tPt_tes_plus > tThr), 
+                        'tesDown': bool(row.tPt_tes_minus > tThr)}
+                    
+                    ees_categories_mapper={
+                        ''       : bool(row.ePt > eThr),
+                        'eesUp'  : bool(row.ePt_ees_plus > eThr),
+                        'eesDown': bool(row.ePt_ees_minus > eThr)}
+
+
+                                        
                     #if row.tPt > 35: tes_categories.append('')
                     #if row.tPt_tes_plus > 35: tes_categories.append('tesPlus/')
                     #if row.tPt_tes_minus > 35: tes_categories.append('tesDown/')
-                    if row.ePt < 40 : continue
+                    #if row.ePt < 40 : continue
                     if deltaPhi(row.ePhi, row.tPhi) < 2.7 : continue
                     if row.tMtToPfMet > 50 : continue
                     full_selection[idx].append('selected')
                     passes_full_selection = True 
                 elif njet == 1 :
                     tThr = 40 
+                    eThr = 35
+                    
                     if min(row.tPt, row.tPt_tes_plus, row.tPt_tes_minus) < tThr: continue
-                    tes_categories=[ ('', bool(row.tPt > tThr)),( 'tesUp', bool(row.tPt_tes_plus > tThr)), ('tesDown', bool(row.tPt_tes_minus > tThr))]
+                    if min(row.ePt, row.ePt_ees_plus, row.ePt_ees_minus) < eThr: continue
+                    
+                    tes_categories_mapper={
+                        ''       :  bool(row.tPt > tThr),
+                        'tesUp'  : bool(row.tPt_tes_plus > tThr), 
+                        'tesDown': bool(row.tPt_tes_minus > tThr)}
+                    
+                    ees_categories_mapper={
+                        ''       : bool(row.ePt > eThr),
+                        'eesUp'  : bool(row.ePt_ees_plus > eThr),
+                        'eesDown': bool(row.ePt_ees_minus > eThr)}
+
                     #if row.tPt > 40: tes_category.append('')
                     #if row.tPt_tes_plus > 40: tes_categories.append('tesPlus/')
                     #if row.tPt_tes_minus > 40: tes_categories.append('tesDown/')
@@ -494,8 +533,20 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     passes_full_selection = True 
                 elif njet == 2 :
                     tThr = 40 
+                    eThr = 30 
+
                     if min(row.tPt, row.tPt_tes_plus, row.tPt_tes_minus) < tThr: continue
-                    tes_categories=[ ('', bool(row.tPt > tThr)),( 'tesUp', bool(row.tPt_tes_plus > tThr)), ('tesDown', bool(row.tPt_tes_minus > tThr))]
+                    if min(row.ePt, row.ePt_ees_plus, row.ePt_ees_minus) < eThr: continue
+                    tes_categories_mapper={
+                        ''       :  bool(row.tPt > tThr),
+                        'tesUp'  : bool(row.tPt_tes_plus > tThr), 
+                        'tesDown': bool(row.tPt_tes_minus > tThr)}
+                    
+                    ees_categories_mapper={
+                        ''       : bool(row.ePt > eThr),
+                        'eesUp'  : bool(row.ePt_ees_plus > eThr),
+                        'eesDown': bool(row.ePt_ees_minus > eThr)}
+
                     #if row.tPt > 40: tes_category.append('')
                     #if row.tPt_tes_plus > 40: tes_categories.append('tesPlus/')
                     #if row.tPt_tes_Minus > 40: tes_categories.append('tesDown/')
@@ -549,16 +600,20 @@ class LFVHETauAnalyzerMVA(MegaBase):
             all_dirs = [i for i in all_dirs if i in veto_sys]
 
             tes_directories =[]
-            for tdir,tbool in tes_categories:
+            for tdir,tbool in tes_categories_presel:
                 if tbool==True: tes_directories.append(tdir)
-                if tdir == '' and tbool==False : 
-                    all_dirs=[]
-                    syst_shifts=[]
+            ees_directories =[]
+            for edir,ebool in ees_categories_presel:
+                if ebool==True: ees_directories.append(edir)
+                #if tdir == '' and tbool==False : 
+                  #  all_dirs=[]
+                  #  syst_shifts=[]
                         
-            sys_directories = all_dirs + sys_shifts +tes_directories
+            sys_directories = all_dirs + sys_shifts +tes_directories+ees_directories
             #remove duplicates
             sys_directories = list(set(sys_directories))
             
+
             if not isTauTight and isETight:
                 #if is a loose tau just compute the fakes!                            
                 sys_directories = tau_id_category
@@ -598,7 +653,16 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     #...times the mc weight (if any)
                     weight_map[i] *= mc_weight
                     
-                    
+
+            if tes_categories_presel[0]==False or  ees_categories_presel[0]==False :
+                sys_directories = []
+                if ees_categories_presel[0]==True : 
+                    sys_directories.extend([i for i,j  in tes_categories_presel if j==True ])
+                elif tes_categories_presel[0]==True : 
+                    sys_directories.extend([i for i,j  in ees_categories_presel if j==True ])
+                else:
+                    continue
+            
             
             
             #Fill histograms in appropriate direcotries
@@ -617,7 +681,16 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     logging.debug('Filling %s' % dir_name)
                 #fill them!
                 weight_to_use = weight_map[sys] if sys in weight_map else weight_map['']
-                
+                if dir_name.endswith('selected'):
+                    if not dir_name.startswith('tes') and not dir_name.startswith('ees') :
+                        if tes_categories_mapper.get('', False) == False or ees_categories_mapper.get('', False) == False : continue
+                    else :
+                        #print dir_name[:dir_name.index('/')]
+                        name = dir_name[:dir_name.index('/')]
+                        if tes_categories_mapper.get(name, False) == False or ees_categories_mapper.get(name, False) == False : continue
+                         
+                        
+                            
                 self.fill_histos(dir_name, row, weight_to_use)
              
             

@@ -80,6 +80,8 @@ $frfit_dirMC = "results/#{$jobid}/fakerate_fits_MC"
 directory $frfit_dirMC
 $efrfit_dir = "results/#{$jobid}/efakerate_fits"
 directory $efrfit_dir
+$efrfit_dirMC = "results/#{$jobid}/efakerate_fits_MC"
+directory $efrfit_dirMC
 exponential = "scale*TMath::Exp(x*decay)+offset"
 exponential_vars =  "scale[4., 0, 10],decay[-1e-2, -1, -1e-4],offset[1e-2, 0, 0.5]"
 exponentialpol1 = "scale*TMath::Exp(x*decay)+offset+slope*x"
@@ -88,9 +90,9 @@ landau = "scale*TMath::Landau(x,mu,sigma,0)+offset"
 landau_vars =  "scale[0.5, 0, 15],mu[5, 0, 30],sigma[1.9, 0.1, 20],offset[1e-2, 0, 0.5]"
 
 pol0 = "const"
-pol0_vars = "const[ 0.01, 0, 1]"
+pol0_vars = "const[ 0.5, 0, 1]"
 pol1 = "p0+p1*x"
-pol1_vars = "p0[ 0.5, 0, 1], p1[ -0.001, -1, 1]"
+pol1_vars = "p0[ 0.5, 0, 1], p1[ -0.1, -1, 1]"
 pol2 = "p0+p1*x+p2*x*x"
 pol2_vars = "p0[ 0.05, 0, 1], p1[ -0.005, -1, 1], p2[ 0.005, 0, 1]"
 
@@ -160,8 +162,8 @@ fr_fits["t_os_tLoose_tTigh_tAbsEta"] = Hash[
 efr_fits["e_os_eLoose_eTigh_e3AbsEta"] = Hash[ 
                                               "samples" => Array["diboson",  "dataSingleE", "zjets_skimmedLL"],
                                               "analyzer" => $efr_analyzer,
-                                              "function" => pol2,
-                                              "variables" => pol2_vars,
+                                              "function" => pol1,
+                                              "variables" => pol1_vars,
                                               "rebin" => 1,
                                               "range" => "0 2.3",
                                               #"range" => "-2.3 2.3",
@@ -175,6 +177,8 @@ efr_fits["e_os_eLoose_eTigh_e3AbsEta"] = Hash[
   
 task :fits => []
 task :fitsMC => []
+
+task :efitsMC => []
 
 task :efits => []
 
@@ -198,8 +202,31 @@ fr_fits.each do |fit, fit_info|
     puts ""
   end
  
- task :fits_MC => fit_output
+  task :fits_MC => fit_output
   
+end
+
+efr_fits.each do |fit, fit_info|
+  fit_configuration = fit.split("_")
+  sign = fit_configuration[1]
+  denom = fit_configuration[2]
+  num = fit_configuration[3]
+  var = fit_configuration[4]
+  
+  subsample_inputs = samples['zjets_skimmedLL']
+  fit_output = $efrfit_dirMC + "/#{fit}.root"
+  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}/#{x}.root"}
+  subsample_input_list = subsamples_inputs_result_list.join(" ")
+  denom_path = Array[sign, denom,var].join("/")
+  num_path = Array[sign, num, var].join("/")
+
+  file fit_output => subsamples_inputs_result_list + [fit_info['analyzer'] + '.py'] do |t|
+    sh "mkdir -p #{$efrfit_dirMC}"
+    sh "fit_efficiency_chi2.py  #{fit_output} '#{num_path}' '#{denom_path}' \'#{pol0}\' \'#{pol0_vars}\' #{subsample_input_list} --plot --xrange #{fit_info['range']} --xtitle \'#{fit_info['title']}\' --min \'#{fit_info['min']}\' --max \'#{fit_info['max']}\' --show-error --rebin #{fit_info['rebin']} "
+    puts ""
+  end
+ 
+ task :efits_MC => fit_output
 end
   
 fr_fits.each do |fit, fit_info|
@@ -334,7 +361,8 @@ task :fakeeeeMVA => get_analyzer_results("EleFakeRateAnalyzerMVA.py", #samples['
                                          samples['zjets'] +
                                          samples['wwjets']  + samples['zzjets'] + 
                                          samples['wzjets']  +
-                                         samples['dataSingleE'])
+                                         samples['dataSingleE']
+                                         )
 
 
 $etdir = "plots/#{$jobid}/LFVHETauAnalyzer/et/"

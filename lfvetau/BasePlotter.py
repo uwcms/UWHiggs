@@ -106,7 +106,7 @@ class BasePlotter(Plotter):
         self.blind_region=blind_region
         if self.blind_region:
             # Don't look at the SS all pass region
-            blinder = lambda x: BlindView(x, "os/.*mass*",blind_in_range(*self.blind_region))
+            blinder = lambda x: BlindView(x, "os/.*ass*",blind_in_range(*self.blind_region))
 
         super(BasePlotter, self).__init__(files, lumifiles, outputdir, blinder, forceLumi=forceLumi)
 
@@ -124,7 +124,9 @@ class BasePlotter(Plotter):
         if use_embedded:            
             self.mc_samples.pop()
             self.views['ZetauEmbedded'] = {'view' : self.make_embedded('os/gg/ept30/h_collmass_pfmet')}
-        self.views['fakes'] = {'view' : self.make_fakes()}
+        self.views['fakes'] = {'view' : self.make_fakes('t')}
+        #self.views['efakes'] = {'view' : self.make_fakes('e')}
+        #self.views['etfakes'] = {'view' : self.make_fakes('et')}
 
         #names must match with what defined in self.mc_samples
         self.datacard_names = {
@@ -141,6 +143,8 @@ class BasePlotter(Plotter):
             'ggHiggsToETau'  : 'LFVGG',
             'vbfHiggsToETau' : 'LFVVBF',
             'fakes' : 'fakes',
+            ##'efakes' : 'efakes',
+            ##'etfakes' : 'etfakes'            
         }
 
         self.sample_groups = {#parse_cgs_groups('card_config/cgs.0.conf')
@@ -191,7 +195,7 @@ class BasePlotter(Plotter):
                 'type' : 'shape',
                 '+' : dir_systematic('Up'),
                 '-' : dir_systematic('Down'),
-                'apply_to' : ['fakes'],
+                'apply_to' : ['fakes']#,'efakes','etfakes'],
             },
             'stat' : {
                 'type' : 'stat',
@@ -203,21 +207,30 @@ class BasePlotter(Plotter):
                 'type' : 'shape',
                 '+' : dir_systematic('tesUp'),
                 '-' : dir_systematic('tesDown'),
+                'apply_to' : ['simbkg'],
             },            
         }
 
         
-    def make_fakes(self):
+    def make_fakes(self, obj='t'):
         '''Sets up the fakes view'''
+        print 'making fakes for %s' %obj
         data_view = self.get_view('data')
-        central_fakes = views.SubdirectoryView(data_view, 'tLoose')
+        tfakes = views.SubdirectoryView(data_view, 'tLoose')
+        efakes = views.SubdirectoryView(data_view, 'eLoose')
+        etfakes= views.SubdirectoryView(data_view, 'etLoose')
+        central_fakes=SubtractionView(views.SumView(tfakes,efakes),etfakes, restrict_positive=True)
         mc_views = self.mc_views()
         if self.use_embedded:            
             mc_views.append(self.get_view('ZetauEmbedded'))
         mc_sum = views.SumView(*mc_views)
-        mc_sum = views.SubdirectoryView(mc_sum, 'tLoose')
+        mc_sum_t = views.SubdirectoryView(mc_sum, 'tLoose')
+        mc_sum_e = views.SubdirectoryView(mc_sum, 'eLoose')
+        mc_sum_et = views.SubdirectoryView(mc_sum, 'etLoose')
+        allmc=SubtractionView(views.SumView(mc_sum_t,mc_sum_e),mc_sum_et, restrict_positive=True)
 
-        fakes_view = SubtractionView(central_fakes, mc_sum, restrict_positive=True)
+        fakes_view = SubtractionView(central_fakes, allmc, restrict_positive=True)
+        #fakes_view =central_fakes
         style = data_styles['Fakes*']
         return views.TitleView(
             views.StyleView(
@@ -680,13 +693,51 @@ class BasePlotter(Plotter):
             fakes_view, 
             [('Up','Down')]
         )
-        
+        fakes = SystematicsView.add_error(fakes, 0.30)
         #add them to backgrounds
         mc_stack.Add(fakes)
-
+        
         mc_err.Sumw2()
         mc_err.Add(fakes)
         #set_trace()
+         
+        #####get efakes
+        ##efakes_view = self.get_view('efakes')
+        ##if preprocess:
+        ##    efakes_view = preprocess(efakes_view)
+        ##efakes_view = RebinView(efakes_view, rebin)
+        ##efakes = efakes_view.Get(path)
+        ##
+        ##efakes = self.add_shape_systematics(
+        ##    efakes, 
+        ##    path, 
+        ##    efakes_view, 
+        ##    [('Up','Down')]
+        ##)
+        #####add them to backgrounds
+        ##mc_stack.Add(efakes)
+        ##
+        ##mc_err.Sumw2()
+        ##mc_err.Add(efakes)
+        ###set_trace()
+        ##etfakes_view = self.get_view('etfakes')
+        ##if preprocess:
+        ##    etfakes_view = preprocess(etfakes_view)
+        ##etfakes_view = RebinView(etfakes_view, rebin)
+        ##etfakes = etfakes_view.Get(path)
+        ##
+        ##etfakes = self.add_shape_systematics(
+        ##    etfakes, 
+        ##    path, 
+        ##    etfakes_view, 
+        ##    [('Up','Down')]
+        ##)
+        #####add them to backgrounds
+        ##mc_stack.Add(etfakes)
+        ##
+        ##mc_err.Sumw2()
+        ##mc_err.Add(etfakes)
+        ###set_trace()
 
         #draw stack
         mc_stack.Draw()
@@ -694,10 +745,10 @@ class BasePlotter(Plotter):
         
         #set cosmetics
         self.canvas.SetLogy(True)
-        #self.canvas.SetGridx(True)
-        #self.canvas.SetGridy(True)
-        #self.pad.SetGridx(True)
-        #self.pad.SetGridy(True)
+        ##self.canvas.SetGridx(True)
+        ##self.canvas.SetGridy(True)
+        ##self.pad.SetGridx(True)
+        ##self.pad.SetGridy(True)
         
         mc_stack.GetHistogram().GetXaxis().SetTitle(xaxis)
         if xrange:
@@ -782,20 +833,36 @@ class BasePlotter(Plotter):
         
         fake_p1s_histo=None
       
-        if not folder.startswith('tLoose'):
+        if not folder.startswith('tLoose') and not folder.startswith('eLoose') and not folder.startswith('etLoose') :
             isFakesIn= False
+            ##isEFakesIn=False
+            isETFakesIn=False
             if 'Fakes' in self.mc_samples:
                 self.mc_samples.remove('Fakes')  
-                self.mc_samples.remove('finalDYLL')
+                if 'finalDYLL' in self.mc_samples: self.mc_samples.remove('finalDYLL')
                 isFakesIn=True
-            
-            
+            ##if 'eFakes' in self.mc_samples:
+            ##    self.mc_samples.remove('eFakes')  
+            ##    if 'finalDYLL' in self.mc_samples:  self.mc_samples.remove('finalDYLL')
+            ##    isEFakesIn=True
+            ##if 'etFakes' in self.mc_samples:
+            ##    self.mc_samples.remove('etFakes')  
+            ##    if 'finalDYLL' in self.mc_samples:  self.mc_samples.remove('finalDYLL')
+            ##    isETFakesIn=True
+                
+
         ibin =1
             
         if isFakesIn:
             self.mc_samples.append('Fakes')
+           # self.mc_samples.append('etFakes')
             self.mc_samples.append('finalDYLL')
-          
+       ## if isEFakesIn:
+       ##     self.mc_samples.append('eFakes')
+       ##     if not 'finalDYLL' in self.mc_samples:  self.mc_samples.append('finalDYLL')
+       ## if isETFakesIn:
+       ##     self.mc_samples.append('etFakes')
+       ##     if not 'finalDYLL' in self.mc_samples:  self.mc_samples.append('finalDYLL')
 
 
         finalhisto.Draw('samee2')
@@ -861,6 +928,18 @@ class BasePlotter(Plotter):
         bkg_histos['fakes'] = fake_shape.Clone()
         fake_shape.SetName('fakes')
         fake_shape.Write()
+
+        ##bkg_views['efakes'] = self.get_view('efakes')
+        ##efake_shape = bkg_views['efakes'].Get(path)
+        ##bkg_histos['efakes'] = fake_shape.Clone()
+        ##efake_shape.SetName('efakes')
+        ##efake_shape.Write()
+        
+        #bkg_views['etfakes'] = self.get_view('etfakes')
+        #etfake_shape = bkg_views['etfakes'].Get(path)
+        #bkg_histos['etfakes'] = fake_shape.Clone()
+        #etfake_shape.SetName('etfakes')
+        #etfake_shape.Write()
         
         unc_conf_lines = []
         unc_vals_lines = []

@@ -35,22 +35,6 @@ def deltaR(phi1, phi2, eta1, eta2):
     if (dphi>pi) : dphi = 2*pi-dphi
     return sqrt(deta*deta + dphi*dphi);
     
-def ee3DR(row):
-    return row.e1_e3_DR if row.e1_e3_DR < row.e2_e3_DR else row.e2_e3_DR
-
-def ee3DPhi(row):
-    e1e3DPhi=deltaPhi(row.e1Phi, row.e3Phi)
-    e2e3DPhi=deltaPhi(row.e2Phi, row.e3Phi)
-    return e1e3DPhi if e1e3DPhi < e2e3DPhi else e2e3DPhi
-
-def Z(row):
-    e1p=ROOT.TVector3(row.e1Pt*cos(row.e1Phi),row.e1Pt*sin(row.e1Phi),row.e1Pt*sinh(row.e1Eta))
-    e2p=ROOT.TVector3(row.e2Pt*cos(row.e2Phi),row.e2Pt*sin(row.e2Phi),row.e2Pt*sinh(row.e2Eta))
-    e1FourVector= ROOT.TLorentzVector(e1p, sqrt(e1p.Mag2()+row.e1Mass*row.e1Mass))
-    e2FourVector= ROOT.TLorentzVector(e2p, sqrt(e2p.Mag2()+row.e2Mass*row.e2Mass))
-    zFourVector = e1FourVector+e2FourVector
-    return zFourVector
-
 
 class EleFakeRateAnalyzerMVA(MegaBase):
     tree = 'eee/final/Ntuple'
@@ -61,7 +45,9 @@ class EleFakeRateAnalyzerMVA(MegaBase):
         self.out=outfile
         self.histograms = {}
         self.pucorrector = mcCorrections.make_puCorrector('singlee')
-
+        self.mye1 = 'e1'
+        self.mye2 = 'e2'
+        self.mye3 = 'e3'
         optimizer_keys   = [ i for i in optimizer.grid_search.keys() if i.startswith(self.channel) ]
         self.grid_search = {}
         if len(optimizer_keys) > 1:
@@ -75,20 +61,32 @@ class EleFakeRateAnalyzerMVA(MegaBase):
         if row.run > 2: #FIXME! add tight ID correction
             return 1.
 
-        etrig = 'e1'
-        if row.e2Pt > row.e1Pt : etrig = 'e2'
-        if bool(row.e1MatchesSingleE27WP80) and  not bool(row.e2MatchesSingleE27WP80) : etrig = 'e1'
-        if not bool(row.e1MatchesSingleE27WP80) and  bool(row.e2MatchesSingleE27WP80) :  etrig = 'e2'
-
-        if bool(row.e3MatchesSingleE27WP80) and not bool(row.e1MatchesSingleE27WP80)  and not bool(row.e2MatchesSingleE27WP80) : etrig ='e3'
-                
  
         #if bool(row.e1MatchesEle27WP80) and  not bool(row.e2MatchesEle27WP80) : etrig = 'e1'
         #if not bool(row.e1MatchesEle27WP80) and  bool(row.e2MatchesEle27WP80) :  etrig = 'e2'
         return self.pucorrector(row.nTruePU) * \
-            mcCorrections.eid_correction( row, 'e1', 'e2', 'e3') * \
-            mcCorrections.eiso_correction(row, 'e1', 'e2', 'e3') * \
-            mcCorrections.trig_correction(row, etrig     )
+            mcCorrections.eid_correction( row, self.mye1, self.mye2, self.mye3) * \
+            mcCorrections.eiso_correction(row, self.mye1, self.mye2, self.mye3) * \
+            mcCorrections.trig_correction(row, self.mye3   )
+
+    def ee3DR(self, row):
+        return getattr(row, self.mye1+'_'+self.mye3+'_DR') if getattr(row, self.mye1+'_'+self.mye3+'_DR')  < getattr(row, self.mye2+'_'+self.mye3+'_DR') else getattr(row, self.mye2+'_'+self.mye3+'_DR')
+
+    def ee3DPhi(self, row):
+        e1e3DPhi=deltaPhi(getattr(row, self.mye1+'Phi'), getattr(row, self.mye3+'Phi'))
+        e2e3DPhi=deltaPhi(getattr(row, self.mye2+'Phi'), getattr(row, self.mye3+'Phi'))
+        return e1e3DPhi if e1e3DPhi < e2e3DPhi else e2e3DPhi
+
+    def Z(self, row):
+        e1p=ROOT.TVector3(getattr(row, self.mye1+'Pt')*cos(getattr(row, self.mye1+'Phi')),getattr(row, self.mye1+'Pt')*sin(getattr(row, self.mye1+'Phi')),getattr(row, self.mye1+'Pt')*sin(getattr(row, self.mye1+'Eta')))
+        e2p=ROOT.TVector3(getattr(row, self.mye2+'Pt')*cos(getattr(row, self.mye2+'Phi')),getattr(row, self.mye2+'Pt')*sin(getattr(row, self.mye2+'Phi')),getattr(row, self.mye2+'Pt')*sin(getattr(row, self.mye2+'Eta')))
+        e1FourVector= ROOT.TLorentzVector(e1p, sqrt(e1p.Mag2()+pow(getattr(row, self.mye1+'Mass'),2)))
+        e2FourVector= ROOT.TLorentzVector(e2p, sqrt(e2p.Mag2()+pow(getattr(row, self.mye2+'Mass'),2)))
+        zFourVector = e1FourVector+e2FourVector
+        return zFourVector
+
+
+
 
 ##add the trigger correction 
 
@@ -152,32 +150,35 @@ class EleFakeRateAnalyzerMVA(MegaBase):
         weight = self.event_weight(row)
         histos = self.histograms
  
-        histos[folder+'/e1Pt'].Fill(row.e1Pt, weight)
-        histos[folder+'/e1Eta'].Fill(row.e1Eta, weight)
-        histos[folder+'/e1Phi'].Fill(row.e1Phi, weight) 
 
-        histos[folder+'/e2Pt'].Fill(row.e2Pt, weight)
-        histos[folder+'/e2Eta'].Fill(row.e2Eta, weight)
-        histos[folder+'/e2Phi'].Fill(row.e2Phi, weight)
+        
 
-        histos[folder+'/e3Pt'].Fill(row.e3Pt, weight)
-        histos[folder+'/e3Eta'].Fill(row.e3Eta, weight)
-        histos[folder+'/e3AbsEta'].Fill(abs(row.e3Eta), weight)
-        histos[folder+'/e3Phi'].Fill(row.e3Phi, weight)
+        histos[folder+'/e1Pt'].Fill( getattr(row, self.mye1+'Pt'), weight)
+        histos[folder+'/e1Eta'].Fill(getattr(row, self.mye1+'Eta'), weight)
+        histos[folder+'/e1Phi'].Fill(getattr(row, self.mye1+'Phi'), weight) 
 
-        histos[folder+'/e1e2Mass'].Fill(row.e1_e2_Mass, weight)
+        histos[folder+'/e2Pt'].Fill( getattr(row, self.mye2+'Pt' ), weight)
+        histos[folder+'/e2Eta'].Fill(getattr(row, self.mye2+'Eta'), weight)
+        histos[folder+'/e2Phi'].Fill(getattr(row, self.mye2+'Phi'), weight)
+
+        histos[folder+'/e3Pt'].Fill( getattr(row, self.mye3+'Pt' ), weight)
+        histos[folder+'/e3Eta'].Fill(getattr(row, self.mye3+'Eta'), weight)
+        histos[folder+'/e3Phi'].Fill(getattr(row, self.mye3+'Phi'), weight)
+        histos[folder+'/e3AbsEta'].Fill(abs(getattr(row, self.mye3+'Eta')), weight)
+
+        histos[folder+'/e1e2Mass'].Fill(getattr(row, self.mye1+'_'+self.mye2+'_Mass'), weight)
         #histos[folder+'/tMtToPFMET'].Fill(row.tMtToPFMET,weight)
     
          
         histos[folder+'/type1_pfMetEt'].Fill(row.type1_pfMet_Et)
-        histos[folder+'/ee3DR'].Fill(ee3DR(row)) 
-        histos[folder+'/ee3DPhi'].Fill(ee3DPhi(row)) 
+        histos[folder+'/ee3DR'].Fill(self.ee3DR(row)) 
+        histos[folder+'/ee3DPhi'].Fill(self.ee3DPhi(row)) 
         histos[folder+'/jetN_30'].Fill(row.jetVeto30, weight) 
         histos[folder+'/bjetCSVVeto30'].Fill(row.bjetCSVVeto30, weight) 
        
-        histos[folder+'/ze3DR'].Fill(deltaR(Z(row).Phi(), row.e3Phi, Z(row).Eta(), row.e3Eta))
-        histos[folder+'/ze3DPhi'].Fill(deltaPhi(Z(row).Phi(), row.e3Phi))
-        histos[folder+'/Zpt'].Fill(Z(row).Pt())
+        histos[folder+'/ze3DR'].Fill(deltaR(self.Z(row).Phi(), getattr(row, self.mye3+'Phi'), self.Z(row).Eta(), getattr(row, self.mye3+'Eta')))
+        histos[folder+'/ze3DPhi'].Fill(deltaPhi(self.Z(row).Phi(), getattr(row, self.mye3+'Phi')))
+        histos[folder+'/Zpt'].Fill(self.Z(row).Pt())
             
 
     def process(self):
@@ -203,6 +204,7 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             if row.bjetCSVVeto30!=0 : continue 
             if row.e1Pt < 30 : continue
             if row.e2Pt < 30 : continue
+            if row.e3Pt < 30 : continue
                        
 #        for i, row in enumerate(self.tree):
 #            if  i >= 100:
@@ -223,11 +225,21 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             if not selections.lepton_id_iso(row, 'e2', 'eid13Loose_idiso02'): continue
             if abs(row.e2Eta) > 1.4442 and abs(row.e2Eta) < 1.566 : continue
             
-            cut_flow_trk.Fill('e2IDiso')
-            if not abs(row.e1_e2_Mass-91.2) < 20: continue
-            cut_flow_trk.Fill('ZMass')
-
+##            cut_flow_trk.Fill('e2IDiso')
+##            if not abs(row.e1_e2_Mass-91.2) < 20: continue
+##            cut_flow_trk.Fill('ZMass')
+            if not selections.eSelection(row, 'e3'): continue
             if not selections.lepton_id_iso(row, 'e3', 'eid13Loose_idiso02'): continue #very loose loose eid13Tight_mvaLoose
+            if abs(row.e3Eta) > 1.4442 and abs(row.e3Eta) < 1.566 : continue
+
+            Zs= [(abs(row.e1_e2_Mass-91.2), ['e1', 'e2', 'e3']) , (abs(row.e2_e3_Mass-91.2), ['e2', 'e3', 'e1']), (abs(row.e1_e3_Mass-91.2), ['e1', 'e3', 'e2'])]
+                
+            for ele in range(0, 2) :
+                
+                if Zs[ele][0] == min(Zs[z][0] for z in range (0,2)) :
+                    self.mye1 = Zs[ele][1][0]
+                    self.mye2 = Zs[ele][1][1]
+                    self.mye3 = Zs[ele][1][2]
 
             cut_flow_trk.Fill('tsel')
 
