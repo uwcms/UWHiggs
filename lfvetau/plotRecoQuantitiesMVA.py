@@ -107,7 +107,8 @@ for njets, cat_name in jets_names:
    with open(pjoin(output_path, 'unc.%s.vals' % njets), 'w') as vals:
       vals.write('\n'.join(unc_vals_lines))
 
-
+with open(pjoin(output_path,'.shapes_timestamp'),'w') as stamp:
+   stamp.write('no use')
 
 
 
