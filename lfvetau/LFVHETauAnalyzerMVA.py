@@ -44,6 +44,10 @@ def tpt(shift=''):
 def vismass(shift=''):
     return etMass % shift
 
+@memo
+def split(string, separator='#'):
+    return tuple(attr.split(separator))
+
 def create_mapper(mapping):
     def _f(path):
         for key, out in mapping.iteritems():
@@ -131,7 +135,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             'mvetos': (['', 'mVetoUp', 'mVetoDown'] if self.is_mc else ['']),
             'tvetos': (['', 'tVetoUp', 'tVetoDown'] if self.is_mc else ['']),
             'evetos': (['', 'eVetoUp', 'eVetoDown'] if self.is_mc else ['']),
-            'met'  : ([ "_jes_plus", "_mes_plus", "_tes_plus", "_ees_plus", "_ues_plus", "_jes_minus", "_mes_minus", "_tes_minus", "_ees_minus", "_ues_minus"] if self.is_mc else []),
+            'met'  : (["_jes_plus", "_mes_plus", "_tes_plus", "_ees_plus", "_ues_plus", "_jes_minus", "_mes_minus", "_tes_minus", "_ees_minus", "_ues_minus"] if self.is_mc else []),
             'tes'  : (["_tes_plus","_tes_minus"]if self.is_mc else ['']),
         }
 
@@ -301,13 +305,13 @@ class LFVHETauAnalyzerMVA(MegaBase):
             self.book(f, "jetVeto30", "Number of jets, p_{T}>30", 5, -0.5, 4.5) 
         
         #index dirs and histograms
-        for key in self.histograms:
+        for key, value in self.histograms.iteritems():
             location = os.path.dirname(key)
             name     = os.path.basename(key)
-            if location in self.histo_locations:
-                self.histo_locations[location].append(name)
+            if location not in self.histo_locations:
+                self.histo_locations[location] = {name : value}
             else:
-                self.histo_locations[location] = [name]
+                self.histo_locations[location][name] = value
 
     def fakerate_weights(self, tEta): 
         tLoose    = tau_fake_rate(tEta)
@@ -350,7 +354,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
     def fill_histos(self, folder_str, row, weight, filter_label = ''):
         '''fills histograms'''
         #find all keys matching
-        for attr in self.histo_locations[folder_str]:
+        for attr, value in self.histo_locations[folder_str].iteritems():
             name = attr
             #if attr=='DEBUG':
             #    set_trace()
@@ -358,8 +362,6 @@ class LFVHETauAnalyzerMVA(MegaBase):
                 if not attr.startswith(filter_label+'$'):
                     continue
                 attr = attr.replace(filter_label+'$', '')
-            path = os.path.join(folder_str,name)
-            value = self.histograms[path]
             if value.InheritsFrom('TH2'):
                 if attr in self.hfunc:
                     try:
@@ -372,7 +374,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     else:
                         value.Fill( r1, r2, out_weight )
                 else:
-                    attr1, attr2 = tuple(attr.split('#'))
+                    attr1, attr2 = split(attr)
                     v1 = getattr(row,attr1)
                     v2 = getattr(row,attr2)
                     value.Fill( v1, v2, weight ) if weight is not None else value.Fill( v1, v2 )
@@ -390,7 +392,6 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     value.Fill( getattr(row,attr), weight ) if weight is not None else value.Fill( getattr(row,attr) )
         return None
     
-
     def process(self):
         logging.debug('Starting processing')
         systematics = self.systematics
@@ -417,7 +418,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                 if not bool(row.doubleMuPass) : continue
             else: 
                 if not bool(row.singleE27WP80Pass) : continue
-                if  not  bool(row.eMatchesSingleE27WP80): continue
+                if not bool(row.eMatchesSingleE27WP80): continue
 
             #objects
             if not selections.eSelection(row, 'e'): continue
