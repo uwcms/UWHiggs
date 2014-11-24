@@ -37,25 +37,25 @@ embedded = True
 plotter = BasePlotter(blind_region,use_embedded=embedded)
 
 signs = ['os','ss']
-jets = ['0', '1', '2']
+jets = ['0','1','2']
 processtype = ['gg']
 threshold = ['ept30']
 
 histo_info = [
-   ('tPt', 'p_{T}(#tau) (GeV)', 5), 
-   ('tEta', '#eta(#tau)', 2),  
-   ('tPhi', '#phi(#tau)', 5), 
-   ('ePt', 'p_{T}(e) (GeV)', 5), 
-   ('eEta', '#eta(e)', 2),  
-   ('ePhi', '#phi(e)', 5), 
+   ('tPt', 'p_{T}(#tau) (GeV)', 1), 
+   ('tEta', '#eta(#tau)', 1),  
+   ('tPhi', '#phi(#tau)', 1), 
+   ('ePt', 'p_{T}(e) (GeV)', 1), 
+   ('eEta', '#eta(e)', 1),  
+   ('ePhi', '#phi(e)', 1), 
    ('e_t_DPhi', 'e#tau #Delta#phi', 1), 
    ('e_t_DR', 'e#tau #Delta R', 1),
    ('h_collmass_pfmet', 'M_{coll}(e#tau) (GeV)', 1), 
    ('e_t_Mass', 'M_{vis} (GeV)', 1),
    ('jetVeto30', 'number of jets (p_{T} > 30 GeV)', 1) , 
-   ('eMtToPfMet', 'M_{T} e-PFMET', 5), 
-   ('tMtToPfMet', 'M_{T} #tau-PFMET', 5) , 
-   ('pfMet_Et', 'pfMet', 5)
+   ('eMtToPfMet', 'M_{T} e-PFMET', 1), 
+   ('tMtToPfMet', 'M_{T} #tau-PFMET', 1) , 
+   ('pfMet_Et', 'pfMet', 1)
 ]
 
 logging.debug("Starting plotting")
@@ -68,16 +68,27 @@ for sign, proc, thr, njet in itertools.product(signs, processtype, threshold, je
       logging.debug("Plotting %s/%s" % (path, var) )
       plotter.pad.SetLogy(False)
       #plotter.plot_without_uncert(foldername,h[0], rebin=int(h[2]), xaxis=h[1], leftside=False, show_ratio=True, ratio_range=0.5, sort=True, obj=['e'])
+      if int(njet)==2: 
+         if 'collmass' in var or 'Mass' in var: 
+            rebin=rebin*5
+         elif not 'Eta' in var and not 'jet' in var: 
+            rebin = rebin*2
+
       plotter.plot_with_bkg_uncert(path, var, rebin, xlabel,
-                                   leftside=False, show_ratio=True, ratio_range=1., 
-                                   sort=True, obj=['e'])
-      
-      
+                                    leftside=False, show_ratio=True, ratio_range=1., 
+                                    sort=True, obj=['e'])
+
+
       plotter.save(var)
-           
+
    plotter.set_subdir(os.path.join('embedded', path+'/selected'))if embedded else plotter.set_subdir(path+'/selected')
 
    for var, xlabel, rebin in histo_info:
+      if int(njet)==1: 
+         if not 'Eta' in var and not 'jet' in var: rebin = rebin*2
+      if int(njet) ==2: 
+         if 'collmass' in var or 'Mass' in var: rebin=rebin*5
+         if 'Pt' in var or 'Mt' in var or 'pfMet' in var : rebin=rebin*4
       logging.debug("Plotting %s/%s" % (path, var) )
       plotter.pad.SetLogy(False)
       plotter.plot_with_bkg_uncert(path+'/selected', var, rebin, xlabel,
