@@ -201,11 +201,11 @@ class BasePlotter(Plotter):
                 'type' : 'stat',
                 '+' : lambda x: x,
                 '-' : lambda x: x,
-                'apply_to' : ['fakes']#,'simbkg','efakes','etfakes'],
-            },
-            'TES' : {
+                'apply_to' : ['fakes','simbkg'],
+            }
+            'TES' : { 
                 'type' : 'shape',
-                '+' : dir_systematic('tesUp'), 
+                '+' : dir_systematic('tesUp'),
                 '-' : dir_systematic('tesDown'),
                 'apply_to' : ['simbkg'],
             },            
@@ -894,7 +894,7 @@ class BasePlotter(Plotter):
         if show_ratio:
             self.add_ratio_diff(data, mc_stack, finalhisto, xrange, ratio_range)
             
-    def write_shapes(self, folder, variable, output_dir,
+    def write_shapes(self, folder, variable, output_dir, br_strenght=0.01,
                      rebin=1, preprocess=None): #, systematics):
         '''Makes shapes for computing the limit and returns a list of systematic effects to be added to unc.vals/conf 
         make_shapes(folder, variable, output_dir, [rebin=1, preprocess=None) --> unc_conf_lines (list), unc_vals_lines (list)
@@ -1010,7 +1010,10 @@ class BasePlotter(Plotter):
             sig_view = self.get_view(name)
             if preprocess:
                 sig_view = preprocess(sig_view)
-            sig_view = RebinView(sig_view, rebin)
+            sig_view = views.ScaleView(
+                RebinView(sig_view, rebin),
+                br_strenght
+                )
             
             histogram = sig_view.Get(path)
             histogram.SetName(self.datacard_names[name])

@@ -382,22 +382,26 @@ task :drawTauFakeRate => get_plotter_results("plotTauFakeRate.py")
 $shapedir = "plots/#{$jobid}/lfvet/"
 
 #All shape files are made at the same time
-file "#{$shapedir}/.shapes_timestamp" => get_analyzer_results("LFVHETauAnalyzer.py", 
-                                     samples['signalMCgg'] + \
-                                     samples['signalMCvbf'] + \
-                                     samples['ggHiggsTo2Taus'] + \
-                                     samples['vbfHiggsTo2Taus'] + \
-                                     samples['ttbar'] + \
-                                     samples['singlet'] + \
-                                     samples['singletbar'] + \
-                                     samples['wjets'] + \
-                                     samples['wwjets'] + \
-                                     samples['wzjets'] + \
-                                     samples['zzjets'] + \
-                                     samples['zjets']) do |t|
+## file "#{$shapedir}/.shapes_timestamp" => get_analyzer_results("LFVHETauAnalyzer.py", 
+##                                      samples['signalMCgg'] + \
+##                                      samples['signalMCvbf'] + \
+##                                      samples['ggHiggsTo2Taus'] + \
+##                                      samples['vbfHiggsTo2Taus'] + \
+##                                      samples['ttbar'] + \
+##                                      samples['singlet'] + \
+##                                      samples['singletbar'] + \
+##                                      samples['wjets'] + \
+##                                      samples['wwjets'] + \
+##                                      samples['wzjets'] + \
+##                                      samples['zzjets'] + \
+##                                      samples['zjets']) do |t|
+##   sh "python plotRecoQuantitiesMVA.py"
+##   sh "touch #{t.name}"
+## end
+file "#{$shapedir}/.shapes_timestamp" => [] do |t|
   sh "python plotRecoQuantitiesMVA.py"
-  sh "touch #{t.name}"
 end
+
 
 ## 
 ## Prepare datacards
@@ -405,7 +409,7 @@ end
 $limitdir = "limits/#{$jobid}/"
 def prepare_limit(category)
   #input file does not matter since shape files are made all at once
-  datacard = "#{$limitdir}/#{category}/126/datacard.txt"
+  datacard = "#{$limitdir}/#{category}/126/datacard_et_#{category}.txt"
   file datacard => "#{$shapedir}/.shapes_timestamp" do |t|
     sh "./prepare_limit.sh #{category}"
   end
@@ -417,17 +421,19 @@ card_1_jet = prepare_limit('1')
 card_2_jet = prepare_limit('2')
 
 #combine cards
-cmb_card = "#{$limitdir}/et_cmb/126/datacard.txt"
+cmb_card = "#{$limitdir}/et_cmb/126/datacard_et_cmb.txt"
 file cmb_card => [card_0_jet, 
                   card_1_jet, 
                   card_2_jet] do |t|
-  sh "mkdir -p #{$limitdir}/et_cmb/126"
-  sh "hadd  -f #{$limitdir}/et_cmb/shapes.root #{$limitdir}/[0-9]/shapes.root"
-  chdir("#{$limitdir}/et_cmb/126") do
+  sh "mkdir -p #{$limitdir}/cmb/126"
+  sh "hadd  -f #{$limitdir}/cmb/shapes.root #{$limitdir}/[0-9]/shapes.root"
+  chdir("#{$limitdir}/cmb/126") do
     sh "rm -f shapes.root"
     sh "ln -s ../shapes.root"
+    local_paths = t.prerequisites.map{|x| x.sub($limitdir,'../../')}
+    local_name = File.basename(t.name)
+    sh "combine_cards_with_names.sh #{ local_paths.join(' ')} > #{local_name}"
   end
-  sh "combine_cards_with_names.sh #{ t.prerequisites.join(' ')} > #{cmb_card}"
 end
 
 #TODO combination!
@@ -443,7 +449,7 @@ task :shapes => [
 ## 
 def compute_limit(category)
   #input file does not matter since shape files are made all at once
-  datacard = "#{$limitdir}/#{category}/126/datacard.txt"
+  datacard = "#{$limitdir}/#{category}/126/datacard_et_#{category}.txt"
   timestamp = "#{$limitdir}/#{category}/.limit_timestamp"
   file timestamp => datacard do |t|
     sh "compute_limits.sh #{$limitdir}/#{category} 1 #{$blind}"
@@ -455,7 +461,7 @@ end
 limit_0_jet = compute_limit('0')
 limit_1_jet = compute_limit('1')
 limit_2_jet = compute_limit('2')
-limit_c_jet = compute_limit('et_cmb')
+limit_c_jet = compute_limit('cmb')
 #TODO combination!
 task :limits => [
    limit_0_jet,
@@ -469,10 +475,13 @@ task :limits => [
 ## 
 def compute_significance(category)
   #input file does not matter since shape files are made all at once
-  datacard = "#{$limitdir}/#{category}/126/datacard.txt"
-  timestamp = "#{$limitdir}/#{category}/.limit_timestamp"
+  datacard = "#{$limitdir}/#{category}/126/datacard_et_#{category}.txt"
+  timestamp = "#{$limitdir}/#{category}/.significance_timestamp"
   file timestamp => datacard do |t|
-    sh "compute_significance.sh #{$limitdir}/#{category}/126 #{$blind}"
+    chdir("#{$limitdir}/#{category}") do
+      dcard_name = File.basename(datacard)
+      sh "compute_significance.sh 126 #{$blind} #{dcard_name}"
+    end
     sh "touch #{t.name}"
   end
   return timestamp  
@@ -481,12 +490,12 @@ end
 significance_0_jet = compute_significance('0')
 significance_1_jet = compute_significance('1')
 significance_2_jet = compute_significance('2')
-significance_c_jet = compute_significance('et_cmb')
+significance_c_jet = compute_significance('cmb')
 #TODO combination!
-task :limits => [
+task :significance => [
    significance_0_jet,
    significance_1_jet,
    significance_2_jet,
-   significance_c_jet
+#   significance_c_jet
 ]
 

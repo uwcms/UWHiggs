@@ -69,7 +69,7 @@ pushd 126
 rm -rf shapes.root
 ln -s ../shapes.root
 popd
-create-datacard.py -i shapes.root -o 126/datacard.txt
+create-datacard.py -i shapes.root -o 126/datacard_et_$category.txt
 popd
 
 exit 0

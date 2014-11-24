@@ -4,104 +4,63 @@
 import os
 import itertools
 
+def make_0j_selector(tthr, ethr, e_t_DPhi, tMT):
+    def selector(row):
+        return row.tPt > tthr and \
+             row.ePt > ethr and \
+             row.e_t_DPhi > e_t_DPhi and \
+             row.tMtToPfMet < tMT
+    return selector
+
+def make_1j_selector(tthr, ethr, tMT):
+    def selector(row):
+        return row.tPt > tthr and \
+            row.ePt > ethr and \
+            row.tMtToPfMet < tMT
+    return selector
+
+def make_2j_selector(tthr, ethr, tMT, vbfmass, vbfdeta):
+    def selector(row):
+        return row.tPt > tthr and \
+            row.ePt > ethr and \
+            row.tMtToPfMet < tMT and \
+            row.vbfMass > vbfmass and \
+            row.vbfDeta > vbfdeta
+    return selector
+
 RUN_OPTIMIZATION = ('RUN_OPTIMIZATION' in os.environ) and eval(os.environ['RUN_OPTIMIZATION'])
 
-lep_id = [
-    'eid12Tight_h2taucuts', 
-    'eid12Tight_h2taucuts020', 
-    #'eid12Loose_h2taucuts', 
-    #'eid12Loose_h2taucuts020', 
-    'eid12Medium_h2taucuts', 
-    'eid12Medium_h2taucuts020'
-    ] \
-    if RUN_OPTIMIZATION else \
-    [
-    #'eid12Loose_h2taucuts', 
-    #'eid12Loose_h2taucuts020', 
-    'eid12Tight_h2taucuts',
-    'eid12Medium_h2taucuts020',
-    'eid12Medium_h2taucuts'
-    ]
+grid_search = {
+    0 : {},
+    1 : {},
+    2 : {},
+}
 
-LT_cut = [
-    0,
-    80,
-    110,
-    140,
-    170,
-    200,
-    3000
-    ]
-
-tauIDs = [
-    'tMediumIso3Hits',
-    None
-    ]
-
-tauPTs = [
-    0,
-    30,
-    40,
-    60
-    ]
-
-charge_fakes = [
-    80,
-    ]
-
-grid_search = {}
-counter_1, counter_2, counter_3, counter_4 = 0, 0, 0, 0
 if RUN_OPTIMIZATION:
-    for lead_id, sublead_id, lt_thr, tauID, tauPT, charge_fakes in \
-        itertools.product(lep_id, lep_id, LT_cut, tauIDs, tauPTs, charge_fakes):
-        cut_name = '%s:%s:%s:%s:%s:%s' % (lead_id, sublead_id, lt_thr, tauID, tauPT, charge_fakes)
-        counter_1 += 1
-        if (lead_id.startswith('eid13Loose') or sublead_id.startswith('eid13Loose')) and \
-            not (lead_id.startswith('eid13Loose') and sublead_id.startswith('eid13Loose')):
-            continue
-        counter_2 += 1 
-        if tauPT > 0 and lt_thr > 0:
-            continue
-        counter_3 += 1
-        ## if lt_thr and not tauID:
-        ##     continue
-        ## counter_4 += 1
-        grid_search[cut_name] = {
-            'leading_iso' : lead_id,
-            'subleading_iso' : sublead_id,
-            'LT'   : lt_thr,
-            'tauID': tauID,
-            'tauPT': tauPT,
-            'charge_fakes' : charge_fakes,
-        }
-else:
-    grid_search['MMT'] = {
-        'leading_iso'    : 'eid12Medium_h2taucuts',
-        'subleading_iso' : 'eid12Medium_h2taucuts020',
-        'LT'             : 50,
-        'tauID'          : None,
-        'tauPT'          : 0,
-        'charge_fakes'   : 80,
-    }
-    grid_search['EMT'] = {
-        'leading_iso'    : 'eid12Medium_h2taucuts',
-        'subleading_iso' : 'eid12Medium_h2taucuts',
-        'LT'             : 50,
-        'tauID'          : None,
-        'tauPT'          : 0,
-        'charge_fakes'   : 80,
-    }
-    grid_search['EET'] = {
-        'leading_iso'    : 'eid12Tight_h2taucuts',
-        'subleading_iso' : 'eid12Medium_h2taucuts020',
-        'LT'             : 50, 
-        'tauID'          : None,
-        'tauPT'          : 0,
-        'charge_fakes'   : 100,
-    }
+    t_thrs = range(20,70,10)+[35,45]
+    e_thr  = range(20,70,10)+[35,45]
+
+    mt_thr = range(0,50,10)+[35]
+    dphi = [3.14, 3.00, 2.7, 2.4, 2.2]
+    vbf_mass = range(400, 700, 100) + [550]
+    vbf_deta = [3.0, 3.5, 4.0]
+    
+    gg_template = 't%i_e%i_dp%.1f_mt%i'
+    for thresholds in itertools.product(t_thrs, e_thr, dphi, mt_thr):
+        grid_search[0][gg_template % thresholds] = make_0j_selector(*thresholds)
+
+    boost_template = 't%i_e%i_mt%i'
+    for thresholds in itertools.product(t_thrs, e_thr, mt_thr):
+        grid_search[1][boost_template % thresholds] = make_1j_selector(*thresholds)
+
+    vbf_template = 't%i_e%i_mt%i_vbfm%i_vbfeta%i'
+    for thresholds in itertools.product(t_thrs, e_thr, mt_thr, vbf_mass, vbf_deta):
+        grid_search[2][vbf_template % thresholds] = make_2j_selector(*thresholds)
 
 
 if __name__ == "__main__":
-    print '\n'.join(grid_search.keys())
+    from pdb import set_trace
+    set_trace()
+    #print '\n'.join(grid_search.keys())
 else:
     print "Running optimization: %s" % RUN_OPTIMIZATION
