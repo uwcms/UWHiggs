@@ -167,7 +167,15 @@ class LFVHETauAnalyzerMVA(MegaBase):
         for shift in self.systematics['tes']:
             #patch name
             postfix = shift
-            self.hfunc['h_collmass%s_pfmet' % postfix] = make_collmass_systematics(shift)
+            self.hfunc['h_collmass_pfmet%s' % postfix] = make_collmass_systematics(shift)
+        for shift in self.systematics['jes']:
+            #patch name
+            postfix = shift
+            self.hfunc['h_collmass_pfmet%s' % postfix] = make_collmass_systematics(shift)
+        for shift in self.systematics['ees']:
+            #patch name
+            postfix = shift
+            self.hfunc['h_collmass_pfmet%s' % postfix] = make_collmass_systematics(shift)
 
         #PU correctors
         self.pucorrector = mcCorrections.make_shifted_weights(
