@@ -48,13 +48,13 @@ class EleFakeRateAnalyzerMVA(MegaBase):
         self.mye1 = 'e1'
         self.mye2 = 'e2'
         self.mye3 = 'e3'
-        optimizer_keys   = [ i for i in optimizer.grid_search.keys() if i.startswith(self.channel) ]
+        #optimizer_keys   = [ i for i in optimizer.grid_search.keys() if i.startswith(self.channel) ]
         self.grid_search = {}
-        if len(optimizer_keys) > 1:
-            for key in optimizer_keys:
-                self.grid_search[key] = optimizer.grid_search[key]
-        else:
-            self.grid_search[''] = optimizer.grid_search[optimizer_keys[0]]
+        #if len(optimizer_keys) > 1:
+        #    for key in optimizer_keys:
+        #        self.grid_search[key] = optimizer.grid_search[key]
+        #else:
+        #    self.grid_search[''] = optimizer.grid_search[optimizer_keys[0]]
 
 
     def event_weight(self, row):
@@ -70,7 +70,18 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             mcCorrections.trig_correction(row, self.mye3   )
 
     def ee3DR(self, row):
-        return getattr(row, self.mye1+'_'+self.mye3+'_DR') if getattr(row, self.mye1+'_'+self.mye3+'_DR')  < getattr(row, self.mye2+'_'+self.mye3+'_DR') else getattr(row, self.mye2+'_'+self.mye3+'_DR')
+        mye1_mye3_dr = 100.
+        mye2_mye3_dr = 100.
+        try:        
+            mye1_mye3_dr = getattr(row, self.mye1+'_'+self.mye3+'_DR')
+        except AttributeError:
+            mye1_mye3_dr =getattr(row, self.mye3+'_'+self.mye1+'_DR')
+        try :
+            mye2_mye3_dr = getattr(row, self.mye2+'_'+self.mye3+'_DR')
+        except AttributeError:
+            mye2_mye3_dr =getattr(row, self.mye3+'_'+self.mye2+'_DR')
+
+        return mye1_mye3_dr  if mye1_mye3_dr  < mye2_mye3_dr else mye1_mye3_dr 
 
     def ee3DPhi(self, row):
         e1e3DPhi=deltaPhi(getattr(row, self.mye1+'Phi'), getattr(row, self.mye3+'Phi'))
