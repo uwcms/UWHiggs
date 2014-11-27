@@ -7,7 +7,7 @@ vbfetau vbfhiggs Theo_UE 0.99
 vbfetau gghiggs  Theo_Scale_gg  0.7
 vbfetau vbfhiggs Theo_Scale_vbf 1.02
 
-vbfetau zjets      Norm_ZTauTau 1.03
+vbfetau ztautau    Norm_ZTauTau 1.03
 vbfetau ztautau    Norm_ZTauTau_et_vbf_extra 1.10
 vbfetau zjetsother Norm_ZJetsOther 1.3
 
@@ -19,7 +19,7 @@ vbfetau simulated  lumi 1.026
 vbfetau simulated  Effi_et_Tau 1.06
 vbfetau simulated  Effi_et_Tau_highPt 1.03
 
-vbfetau ww      Norm_WW       1.15
+vbfetau diboson Norm_DIBOSON  1.15
 vbfetau singlet Norm_TOP      1.10
 vbfetau ttbar   Norm_TT       1.10
 vbfetau fakes   Norm_FAKES    1.30

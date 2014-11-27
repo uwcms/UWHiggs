@@ -7,7 +7,7 @@ boostetau vbfhiggs Theo_UE 1.0
 boostetau gghiggs  Theo_Scale_gg  1.1
 boostetau vbfhiggs Theo_Scale_vbf 1.015
 
-boostetau zjets      Norm_ZTauTau 1.03
+boostetau ztautau    Norm_ZTauTau 1.03
 boostetau ztautau    Norm_ZTauTau_et_1Jet_extra 1.05
 boostetau zjetsother Norm_ZJetsOther 1.3
 
