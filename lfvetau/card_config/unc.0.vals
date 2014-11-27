@@ -7,7 +7,7 @@ gg0mutau vbfhiggs Theo_UE 1.1
 gg0mutau gghiggs  Theo_Scale_gg  1.08
 gg0mutau vbfhiggs Theo_Scale_vbf 1.04
 
-gg0mutau zjets      Norm_ZTauTau 1.03
+gg0mutau ztautau    Norm_ZTauTau 1.03
 gg0mutau ztautau    Norm_ZTauTau_et_0Jet_extra 1.05
 gg0mutau zjetsother Norm_ZJetsOther 1.3
 

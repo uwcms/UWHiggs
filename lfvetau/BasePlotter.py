@@ -181,8 +181,20 @@ class BasePlotter(Plotter):
             },
             'JES' : {
                 'type' : 'shape',
-                '+' : lambda x: x.replace('/0/','/0_jes_plus/').replace('/1/','/1_jes_plus/').replace('/2/','/2_jes_plus/')+'_jes_plus' ,
-                '-' : lambda x: x.replace('/0/','/0_jes_minus/').replace('/1/','/1_jes_minus/').replace('/2/','/2_jes_minus/')+'_jes_minus' ,
+                '+' : lambda x: os.path.join('jes_plus', x)+'_jes_plus' ,
+                '-' : lambda x: os.path.join('jes_minus', x)+'_jes_minus' ,
+                'apply_to' : ['fullsimbkg'],
+            },
+            'TES' : {
+                'type' : 'shape',
+                '+' : lambda x: os.path.join('tes_plus', x)+'_tes_plus' ,
+                '-' : lambda x: os.path.join('tes_minus', x)+'_tes_minus' ,
+                'apply_to' : ['fullsimbkg'],
+            },
+            'EES' : {
+                'type' : 'shape',
+                '+' : lambda x: os.path.join('ees_plus', x) +'_ees_plus' ,
+                '-' : lambda x: os.path.join('ees_minus', x)+'_ees_minus' ,
                 'apply_to' : ['fullsimbkg'],
             },
             'UES' : {
@@ -203,12 +215,6 @@ class BasePlotter(Plotter):
                 '-' : lambda x: x,
                 'apply_to' : ['fakes','simbkg'],
             }
-            'TES' : { 
-                'type' : 'shape',
-                '+' : dir_systematic('tesUp'),
-                '-' : dir_systematic('tesDown'),
-                'apply_to' : ['simbkg'],
-            },            
         }
 
         
@@ -916,14 +922,21 @@ class BasePlotter(Plotter):
 
         if self.use_embedded:            
             view = self.get_view('ZetauEmbedded')
+            if preprocess:
+                view = preprocess(view)
+            view = self.rebin_view(view, rebin)
             name = self.datacard_names['ZetauEmbedded']
             bkg_views[name] = view
             mc_histo = view.Get(path)
             bkg_histos[name] = mc_histo.Clone()
             mc_histo.SetName(name)
             mc_histo.Write()
-            
-        bkg_views['fakes'] = self.get_view('fakes')
+          
+        fakes_view = self.get_view('fakes')
+        if preprocess:
+            fakes_view = preprocess(fakes_view)
+        fakes_view = self.rebin_view(fakes_view, rebin)
+        bkg_views['fakes'] = fakes_view
         fake_shape = bkg_views['fakes'].Get(path)
         bkg_histos['fakes'] = fake_shape.Clone()
         fake_shape.SetName('fakes')
