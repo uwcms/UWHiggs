@@ -919,7 +919,7 @@ class BasePlotter(Plotter):
         if show_ratio:
             self.add_ratio_diff(data, mc_stack, finalhisto, xrange, ratio_range)
             
-    def write_shapes(self, folder, variable, output_dir, br_strenght=0.01,
+    def write_shapes(self, folder, variable, output_dir, br_strenght=1,
                      rebin=1, preprocess=None): #, systematics):
         '''Makes shapes for computing the limit and returns a list of systematic effects to be added to unc.vals/conf 
         make_shapes(folder, variable, output_dir, [rebin=1, preprocess=None) --> unc_conf_lines (list), unc_vals_lines (list)
@@ -974,7 +974,6 @@ class BasePlotter(Plotter):
         fakes_view = self.rebin_view(fakes_view, rebin)
         bkg_views['fakes'] = fakes_view
         bkg_weights['fakes'] = mean(weights)
-        print bkg_weights['fakes']
         fake_shape = bkg_views['fakes'].Get(path)
         bkg_histos['fakes'] = fake_shape.Clone()
         fake_shape = remove_empty_bins(

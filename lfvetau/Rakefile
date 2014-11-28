@@ -421,7 +421,7 @@ card_1_jet = prepare_limit('1')
 card_2_jet = prepare_limit('2')
 
 #combine cards
-cmb_card = "#{$limitdir}/et_cmb/126/datacard_et_cmb.txt"
+cmb_card = "#{$limitdir}/cmb/126/datacard_et_cmb.txt"
 file cmb_card => [card_0_jet, 
                   card_1_jet, 
                   card_2_jet] do |t|
