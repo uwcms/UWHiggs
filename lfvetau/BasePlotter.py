@@ -63,6 +63,13 @@ def histo_diff_quad(mc_err, *systematics):
 
     return clone
 
+def mean(histo):
+    '''compute histogram mean because root is not able to'''
+    nbins = histo.GetNbinsX()
+    wsum = sum( histo.GetBinCenter(i)*histo.GetBinContent(i) for i in xrange(1, nbins+1))
+    entries = sum(histo.GetBinContent(i) for i in xrange(1, nbins+1))
+    return float(wsum)/entries
+
 def name_systematic(name):
     '''makes functor that makes a name systematic (with postfix)'''
     return lambda x: x+name
@@ -83,7 +90,14 @@ def parse_cgs_groups(file_path):
             if match:
                 groups[match.group('groupname')] = [ i.strip() for i in match.group('includes').split(',') ]
     return groups
-                
+
+def remove_empty_bins(histogram, weight):
+    ret  = histogram.Clone()
+    for i in range(ret.GetNbinsX() + 2):
+        if ret.GetBinContent(i) <= 0:
+            ret.SetBinContent(i, 0.9200*weight) #MEAN WEIGHT
+            ret.SetBinError(i, 1.8*weight)
+    return ret                
 
 class BasePlotter(Plotter):
     def __init__ (self, blind_region=None, forceLumi=-1, use_embedded=False): 
@@ -123,7 +137,11 @@ class BasePlotter(Plotter):
         
         if use_embedded:            
             self.mc_samples.pop()
-            self.views['ZetauEmbedded'] = {'view' : self.make_embedded('os/gg/ept30/h_collmass_pfmet')}
+            embedded_view, weight = self.make_embedded('os/gg/ept30/h_collmass_pfmet')
+            self.views['ZetauEmbedded'] = {
+                'view' : embedded_view,
+                'weight' : weight
+                }
         self.views['fakes'] = {'view' : self.make_fakes('t')}
         #self.views['efakes'] = {'view' : self.make_fakes('e')}
         #self.views['etfakes'] = {'view' : self.make_fakes('et')}
@@ -151,7 +169,8 @@ class BasePlotter(Plotter):
             'fullsimbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 
                             'diboson', 'zjetsother'], #, 'WWVBF126', 'WWGG126',],
             'simbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 'ztautau',
-                        'diboson', 'zjetsother']#, 'WWVBF126', 'WWGG126',]
+                        'diboson', 'zjetsother'], #'WWVBF126', 'WWGG126',]
+            'realtau' : ['ztautau', 'SMGG126', 'SMVBF126'],
             }
 
         self.systematics = {
@@ -189,7 +208,7 @@ class BasePlotter(Plotter):
                 'type' : 'shape',
                 '+' : lambda x: os.path.join('tes_plus', x)+'_tes_plus' ,
                 '-' : lambda x: os.path.join('tes_minus', x)+'_tes_minus' ,
-                'apply_to' : ['simbkg'],
+                'apply_to' : ['realtau'],
             },
             'EES' : {
                 'type' : 'shape',
@@ -267,7 +286,7 @@ class BasePlotter(Plotter):
             ),
             'Z #rightarrow #tau#tau (embedded)'
         )
-        return scaled_view
+        return scaled_view, scale_factor
 
     def simpleplot_mc(self, folder, signal, variable, rebin=1, xaxis='',
                       leftside=True, xrange=None, preprocess=None, sort=True,forceLumi=-1):
@@ -912,48 +931,56 @@ class BasePlotter(Plotter):
         bkg_views  = dict(
             [(self.datacard_names[i], j) for i, j in zip(self.mc_samples, self.mc_views(rebin, preprocess))]
         )
+        bkg_weights = dict(
+            [(self.datacard_names[i], self.get_view(i, 'weight')) for i in self.mc_samples]
+        )
         #cache histograms, since getting them is time consuming
         bkg_histos = {}
         for name, view in bkg_views.iteritems():
             mc_histo = view.Get(path)
             bkg_histos[name] = mc_histo.Clone()
+            mc_histo = remove_empty_bins(
+                mc_histo, bkg_weights[name])
             mc_histo.SetName(name)
             mc_histo.Write()
 
         if self.use_embedded:            
             view = self.get_view('ZetauEmbedded')
+            weight = self.get_view('ZetauEmbedded', 'weight')
             if preprocess:
                 view = preprocess(view)
             view = self.rebin_view(view, rebin)
             name = self.datacard_names['ZetauEmbedded']
+            bkg_weights[name] = weight
             bkg_views[name] = view
             mc_histo = view.Get(path)
             bkg_histos[name] = mc_histo.Clone()
+            mc_histo = remove_empty_bins(
+                mc_histo, weight)
             mc_histo.SetName(name)
             mc_histo.Write()
           
         fakes_view = self.get_view('fakes')
+        d_view = self.get_view('data')
+        weights_view = views.SumView(
+            views.SubdirectoryView(d_view, 'tLoose'),
+            views.SubdirectoryView(d_view, 'eLoose'),
+            views.SubdirectoryView(d_view, 'etLoose')
+            )
         if preprocess:
             fakes_view = preprocess(fakes_view)
+            weights_view = preprocess(weights_view)
+        weights = weights_view.Get(os.path.join(folder,'weight'))
         fakes_view = self.rebin_view(fakes_view, rebin)
         bkg_views['fakes'] = fakes_view
+        bkg_weights['fakes'] = mean(weights)
         fake_shape = bkg_views['fakes'].Get(path)
         bkg_histos['fakes'] = fake_shape.Clone()
+        fake_shape = remove_empty_bins(
+            fake_shape, bkg_weights['fakes'])
         fake_shape.SetName('fakes')
         fake_shape.Write()
 
-        ##bkg_views['efakes'] = self.get_view('efakes')
-        ##efake_shape = bkg_views['efakes'].Get(path)
-        ##bkg_histos['efakes'] = fake_shape.Clone()
-        ##efake_shape.SetName('efakes')
-        ##efake_shape.Write()
-        
-        #bkg_views['etfakes'] = self.get_view('etfakes')
-        #etfake_shape = bkg_views['etfakes'].Get(path)
-        #bkg_histos['etfakes'] = fake_shape.Clone()
-        #etfake_shape.SetName('etfakes')
-        #etfake_shape.Write()
-        
         unc_conf_lines = []
         unc_vals_lines = []
         category_name  = output_dir.GetName()
@@ -990,6 +1017,10 @@ class BasePlotter(Plotter):
                         (integral - integral_down) / integral
                     )
                 elif info['type'] == 'shape':
+                    #remove empty bins also for shapes 
+                    #(but not in general to not spoil the stat uncertainties)
+                    up = remove_empty_bins(up, bkg_weights[target])
+                    down = remove_empty_bins(down, bkg_weights[target])
                     up.SetName('%s_%sUp' % (target, unc_name))
                     down.SetName('%s_%sDown' % (target, unc_name))
                     up.Write()
@@ -1000,7 +1031,7 @@ class BasePlotter(Plotter):
                     yield_val = up.GetBinContent(1)
                     yield_err = up.GetBinError(1)
                     unc_value = 1. + (yield_err / yield_val)
-                    stat_unc_name = '%s_%s' % (target, unc_name)
+                    stat_unc_name = '%s_%s_%s' % (target, category_name, unc_name)
                     unc_conf_lines.append('%s %s' % (stat_unc_name, unc_conf))
                     unc_vals_lines.append(
                         '%s %s %s %.2f' % (category_name, target, stat_unc_name, unc_value)
