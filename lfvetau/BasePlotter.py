@@ -63,6 +63,13 @@ def histo_diff_quad(mc_err, *systematics):
 
     return clone
 
+def mean(histo):
+    '''compute histogram mean because root is not able to'''
+    nbins = histo.GetNbinsX()
+    wsum = sum( histo.GetBinCenter(i)*histo.GetBinContent(i) for i in xrange(1, nbins+1))
+    entries = sum(histo.GetBinContent(i) for i in xrange(1, nbins+1))
+    return float(wsum)/entries
+
 def name_systematic(name):
     '''makes functor that makes a name systematic (with postfix)'''
     return lambda x: x+name
@@ -954,19 +961,27 @@ class BasePlotter(Plotter):
             mc_histo.Write()
           
         fakes_view = self.get_view('fakes')
+        d_view = self.get_view('data')
+        weights_view = views.SumView(
+            views.SubdirectoryView(d_view, 'tLoose'),
+            views.SubdirectoryView(d_view, 'eLoose'),
+            views.SubdirectoryView(d_view, 'etLoose')
+            )
         if preprocess:
             fakes_view = preprocess(fakes_view)
-        weights = fakes_view.Get(os.path.join(folder,'weight'))
+            weights_view = preprocess(weights_view)
+        weights = weights_view.Get(os.path.join(folder,'weight'))
         fakes_view = self.rebin_view(fakes_view, rebin)
         bkg_views['fakes'] = fakes_view
-        bkg_weights['fakes'] = abs(weights.GetMean())
+        bkg_weights['fakes'] = mean(weights)
+        print bkg_weights['fakes']
         fake_shape = bkg_views['fakes'].Get(path)
         bkg_histos['fakes'] = fake_shape.Clone()
         fake_shape = remove_empty_bins(
             fake_shape, bkg_weights['fakes'])
         fake_shape.SetName('fakes')
         fake_shape.Write()
-        
+
         unc_conf_lines = []
         unc_vals_lines = []
         category_name  = output_dir.GetName()
