@@ -136,8 +136,8 @@ class LFVHETauAnalyzerMVA(MegaBase):
             'tvetos': (['', 'tVetoUp', 'tVetoDown'] if self.is_mc else ['']),
             'evetos': (['', 'eVetoUp', 'eVetoDown'] if self.is_mc else ['']),
             'met'  : (["_mes_plus", "_ues_plus", "_mes_minus", "_ues_minus"] if self.is_mc else []),
-            'tes'  : (["", "_tes_plus", "_tes_minus"] if self.is_mc else ['']),
-            'ees'  : (["", "_ees_plus", '_ees_minus'] if self.is_mc else [''])
+            'tes'  : (["", "_tes_plus", "_tes_minus"] if not self.is_data else ['']),
+            'ees'  : (["", "_ees_plus", '_ees_minus'] if not self.is_data else [''])
         }
 
         #self filling histograms
@@ -176,6 +176,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #patch name
             postfix = shift
             self.hfunc['h_collmass_pfmet%s' % postfix] = make_collmass_systematics(shift)
+        
 
         #PU correctors
         self.pucorrector = mcCorrections.make_shifted_weights(
@@ -259,13 +260,13 @@ class LFVHETauAnalyzerMVA(MegaBase):
         self.book('os/gg/ept30/', "e_t_Mass",  "h_vismass",  32, 0, 320)
 
         for f in folder: 
-            self.book(
-                f,
-                'evtInfo', 'evtInfo',
-                'run/l:lumi/l:evt/l:weight/D',
-                type=pytree.PyTree
-            )
-            
+            #self.book(
+            #    f,
+            #    'evtInfo', 'evtInfo',
+            #    'run/l:lumi/l:evt/l:weight/D',
+            #    type=pytree.PyTree
+            #)
+            self.book(f,"weight", "weight", 100, 0, 10)
             self.book(f,"tPt", "tau p_{T}", 40, 0, 200)
             self.book(f,"tPt_tes_plus", "tau p_{T} (tes+)", 40, 0, 200)
             self.book(f,"tPt_tes_minus", "tau p_{T} (tes-)",40, 0, 200)

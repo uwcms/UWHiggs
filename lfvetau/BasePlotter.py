@@ -189,13 +189,13 @@ class BasePlotter(Plotter):
                 'type' : 'shape',
                 '+' : lambda x: os.path.join('tes_plus', x)+'_tes_plus' ,
                 '-' : lambda x: os.path.join('tes_minus', x)+'_tes_minus' ,
-                'apply_to' : ['fullsimbkg'],
+                'apply_to' : ['simbkg'],
             },
             'EES' : {
                 'type' : 'shape',
                 '+' : lambda x: os.path.join('ees_plus', x) +'_ees_plus' ,
                 '-' : lambda x: os.path.join('ees_minus', x)+'_ees_minus' ,
-                'apply_to' : ['fullsimbkg'],
+                'apply_to' : ['simbkg'],
             },
             'UES' : {
                 'type' : 'shape',
@@ -900,7 +900,7 @@ class BasePlotter(Plotter):
         if show_ratio:
             self.add_ratio_diff(data, mc_stack, finalhisto, xrange, ratio_range)
             
-    def write_shapes(self, folder, variable, output_dir, br_strenght=0.01,
+    def write_shapes(self, folder, variable, output_dir, br_strenght=1,
                      rebin=1, preprocess=None): #, systematics):
         '''Makes shapes for computing the limit and returns a list of systematic effects to be added to unc.vals/conf 
         make_shapes(folder, variable, output_dir, [rebin=1, preprocess=None) --> unc_conf_lines (list), unc_vals_lines (list)
