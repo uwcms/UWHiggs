@@ -586,7 +586,7 @@ class BasePlotter(Plotter):
 
     def plot_with_bkg_uncert (self, folder, variable, rebin=1, xaxis='',
                               leftside=True, xrange=None, preprocess=None,
-                              show_ratio=False, ratio_range=0.2, sort=True, obj=['e1', 'e2']):
+                              show_ratio=False, ratio_range=0.2, sort=True, obj=['e1', 'e2'], plot_data=False):
 
 
         #xsection uncertainties
@@ -795,33 +795,43 @@ class BasePlotter(Plotter):
             'ggHiggsToETau',
             'vbfHiggsToETau',
         ]
+        sig = []
         for name in signals:
             sig_view = self.get_view(name)
             if preprocess:
                 sig_view = preprocess(sig_view)
             sig_view = RebinView(sig_view, rebin)
+            sig_view = views.ScaleView(sig_view, 100)
             
             histogram = sig_view.Get(path)
             histogram.Draw('same')
             self.keep.append(histogram)
+            sig.append(histogram)
+        for lfvh in sig:
+            if lfvh.GetMaximum() > mc_stack.GetMaximum():
+                mc_stack.SetMaximum(1.2*lfvh.GetMaximum()) 
 
-        # Draw data
-        data_view = self.get_view('data')
-        if preprocess:
-            data_view = preprocess( data_view )
-        data_view = self.rebin_view(data_view, rebin)
-        data = data_view.Get(path)
+        if plot_data==True:
+            # Draw data
+            data_view = self.get_view('data')
+            if preprocess:
+                data_view = preprocess( data_view )
+            data_view = self.rebin_view(data_view, rebin)
+            data = data_view.Get(path)
 
-        data.Draw('same')
-        print 'data', data.Integral()
-        self.keep.append(data)
+            data.Draw('same')
+            print 'data', data.Integral()
+            self.keep.append(data)
 
-        ## Make sure we can see everything
-        if data.GetMaximum() > mc_stack.GetMaximum():
-            mc_stack.SetMaximum(1.2*data.GetMaximum()) 
+            ## Make sure we can see everything
+            if data.GetMaximum() > mc_stack.GetMaximum():
+                mc_stack.SetMaximum(1.2*data.GetMaximum()) 
 
-        self.add_legend([data, mc_stack], leftside, entries=len(mc_stack.GetHists())+1)
-        if show_ratio:
+        if plot_data:
+            self.add_legend([data, mc_stack], leftside, entries=len(mc_stack.GetHists())+1)
+        else:
+            self.add_legend([sig[0], sig[1], mc_stack], leftside, entries=len(mc_stack.GetHists())+1)
+        if show_ratio and plot_data:
             self.add_ratio_plot(data, mc_err, xrange, ratio_range, True) # add_ratio_diff(data, mc_stack, mc_err, xrange, ratio_range)
             #self.add_ratio_plot(data, mc_stack, xrange, ratio_range, True) # add_ratio_diff(data, mc_stack, mc_err, xrange, ratio_range)
             

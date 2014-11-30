@@ -83,29 +83,29 @@ if not args.no_plots:
             elif not 'Eta' in var and not 'jet' in var: 
                rebin = rebin*2
                
-            plotter.plot_with_bkg_uncert(path, var, rebin, xlabel,
-                                         leftside=False, show_ratio=True, ratio_range=1., 
-                                         sort=True, obj=['e'])
+         plotter.plot_with_bkg_uncert(path, var, rebin, xlabel,
+                                      leftside=False, show_ratio=True, ratio_range=1., 
+                                      sort=True, obj=['e'], data=True)
 
             
-            plotter.save(var)
+         plotter.save(var)
             
-            plotter.set_subdir(os.path.join('embedded', path+'/selected'))if embedded else plotter.set_subdir(path+'/selected')
+      plotter.set_subdir(os.path.join('embedded', path+'/selected'))if embedded else plotter.set_subdir(path+'/selected')
 
-         for var, xlabel, rebin in histo_info:
-            if int(njet)==1: 
-               if not 'Eta' in var and not 'jet' in var: rebin = rebin*2
-            if int(njet) ==2: 
-               if 'collmass' in var or 'Mass' in var: rebin=rebin*5
-               if 'Pt' in var or 'Mt' in var or 'pfMet' in var : rebin=rebin*4
-            logging.debug("Plotting %s/%s" % (path, var) )
-            plotter.pad.SetLogy(False)
-            plotter.plot_with_bkg_uncert(path+'/selected', var, rebin, xlabel,
-                                         leftside=False, show_ratio=True, ratio_range=1., 
-                                         sort=True, obj=['e'])
+      for var, xlabel, rebin in histo_info:
+         if int(njet)==1: 
+            if not 'Eta' in var and not 'jet' in var: rebin = rebin*2
+         if int(njet) ==2: 
+            if 'collmass' in var or 'Mass' in var: rebin=rebin*5
+            if 'Pt' in var or 'Mt' in var or 'pfMet' in var : rebin=rebin*4
+         logging.debug("Plotting %s/%s" % (path, var) )
+         plotter.pad.SetLogy(False)
+         plotter.plot_with_bkg_uncert(path+'/selected', var, rebin, xlabel,
+                                      leftside=False, show_ratio=True, ratio_range=1., 
+                                      sort=True, obj=['e'], plot_data=True)
       
         
-            plotter.save(var,dotroot=False)
+         plotter.save(var,dotroot=False)
 
 #make shapes for limit setting
 if not args.no_shapes:
