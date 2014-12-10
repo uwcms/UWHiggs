@@ -109,9 +109,13 @@ class BasePlotter(Plotter):
         print "\nPlotting e tau for %s\n" % jobid
 
         files     = glob.glob('results/%s/LFVHETauAnalyzerMVA/*.root' % jobid)
+        #files     = glob.glob('results/%s/EmbeddedCheck/*.root' % jobid)
+        #files     = glob.glob('results/%s/TTbarControlRegion/*.root' % jobid)
         lumifiles = glob.glob('inputs/%s/*.lumicalc.sum' % jobid)
 
         outputdir = 'plots/%s/lfvet' % jobid
+        #outputdir = 'plots/%s/EmbeddedCheck' % jobid
+        #outputdir = 'plots/%s/TTBar' % jobid
         if not os.path.exists(outputdir):
             os.makedirs(outputdir)
 
@@ -132,7 +136,12 @@ class BasePlotter(Plotter):
             '[WZ][WZ]Jets',
             #'Wplus*Jets_madgraph*', #superseded by fakes
             'Z*jets_M50_skimmedLL',
+            #'WH*HToTauTau',
+            #'WH*HToWW',
+            #'vbfHWW',
+            #'ggHWW',
             'Z*jets_M50_skimmedTT'
+            
         ]
         
         if use_embedded:            
@@ -158,19 +167,23 @@ class BasePlotter(Plotter):
             'Z*jets_M50_skimmedLL'     : 'zjetsother',
             'missing1'       : 'WWVBF126',
             'missing2'       : 'WWGG126',
+#            'vbfHWW'       :  'WWVBF126',
+#            'ggHWW'        :  'WWGG126',
             'ggHiggsToETau'  : 'LFVGG',
             'vbfHiggsToETau' : 'LFVVBF',
             'fakes' : 'fakes',
+#            'WH*HToTauTau' : 'VHtautau'   , #"VHtautau",
+#            'WH*HToWW'     : 'VHWW'   , #"VHWW",
             ##'efakes' : 'efakes',
             ##'etfakes' : 'etfakes'            
         }
 
         self.sample_groups = {#parse_cgs_groups('card_config/cgs.0.conf')
             'fullsimbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 
-                            'diboson', 'zjetsother'], #, 'WWVBF126', 'WWGG126',],
+                            'diboson', 'zjetsother'],# 'WWVBF126', 'WWGG126','VHWW','VHtautau'],
             'simbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 'ztautau',
-                        'diboson', 'zjetsother'], #'WWVBF126', 'WWGG126',]
-            'realtau' : ['ztautau', 'SMGG126', 'SMVBF126'],
+                        'diboson', 'zjetsother'],#'WWVBF126', 'WWGG126','VHWW','VHtautau'],
+            'realtau' : ['ztautau', 'SMGG126', 'SMVBF126'],# 'VHtautau'],
             }
 
         self.systematics = {
@@ -801,7 +814,8 @@ class BasePlotter(Plotter):
             if preprocess:
                 sig_view = preprocess(sig_view)
             sig_view = RebinView(sig_view, rebin)
-            sig_view = views.ScaleView(sig_view, 100)
+            if not plot_data:
+                sig_view = views.ScaleView(sig_view, 100)
             
             histogram = sig_view.Get(path)
             histogram.Draw('same')
@@ -1021,11 +1035,14 @@ class BasePlotter(Plotter):
                     integral = central.Integral()
                     integral_up = up.Integral()
                     integral_down = down.Integral()
-                    shift = max(
-                        shift,
-                        (integral_up - integral) / integral,
-                        (integral - integral_down) / integral
-                    )
+                    if integral == 0  and integral_up == 0 and integral_down ==0 :
+                        shift=shift
+                    else:
+                        shift = max(
+                            shift,
+                            (integral_up - integral) / integral,
+                            (integral - integral_down) / integral
+                        )
                 elif info['type'] == 'shape':
                     #remove empty bins also for shapes 
                     #(but not in general to not spoil the stat uncertainties)
@@ -1040,7 +1057,175 @@ class BasePlotter(Plotter):
                     up.Rebin(nbins)
                     yield_val = up.GetBinContent(1)
                     yield_err = up.GetBinError(1)
-                    unc_value = 1. + (yield_err / yield_val)
+                    print target, yield_val, yield_err, 
+                    if yield_val==0:
+                        unc_value = 0.
+                    else:
+                        unc_value = 1. + (yield_err / yield_val)
+                    stat_unc_name = '%s_%s_%s' % (target, category_name, unc_name)
+                    unc_conf_lines.append('%s %s' % (stat_unc_name, unc_conf))
+                    unc_vals_lines.append(
+                        '%s %s %s %.2f' % (category_name, target, stat_unc_name, unc_value)
+                    )
+                else:
+                    raise ValueError('systematic uncertainty type:"%s" not recognised!' % info['type'])
+
+            if info['type'] <> 'stat':
+                shift += 1
+                unc_vals_lines.append(
+                    '%s %s %s %.2f' % (category_name, ','.join(targets), unc_name, shift)
+                )
+
+        #Get signal
+        signals = [
+            'ggHiggsToETau',
+            'vbfHiggsToETau',
+        ]
+        for name in signals:
+            sig_view = self.get_view(name)
+            if preprocess:
+                sig_view = preprocess(sig_view)
+            sig_view = views.ScaleView(
+                RebinView(sig_view, rebin),
+                br_strenght
+                )
+            
+            histogram = sig_view.Get(path)
+            histogram.SetName(self.datacard_names[name])
+            histogram.Write()
+
+        # Draw data
+        data_view = self.get_view('data')
+        if preprocess:
+            data_view = preprocess( data_view )
+        data_view = self.rebin_view(data_view, rebin)
+        data = data_view.Get(path)
+        data.SetName('data_obs')
+        data.Write()
+
+        return unc_conf_lines, unc_vals_lines
+                       
+##-----
+
+   def write_shapes_for_yields(self, folder, variable, output_dir, br_strenght=1,
+                     rebin=1, preprocess=None): #, systematics):
+        '''Makes shapes for computing the limit and returns a list of systematic effects to be added to unc.vals/conf 
+        make_shapes(folder, variable, output_dir, [rebin=1, preprocess=None) --> unc_conf_lines (list), unc_vals_lines (list)
+        '''
+        output_dir.cd()
+        path = os.path.join(folder,variable)
+
+        #make MC views with xsec error
+        bkg_views  = dict(
+            [(self.datacard_names[i], j) for i, j in zip(self.mc_samples, self.mc_views(rebin, preprocess))]
+        )
+        bkg_weights = dict(
+            [(self.datacard_names[i], self.get_view(i, 'weight')) for i in self.mc_samples]
+        )
+        #cache histograms, since getting them is time consuming
+        bkg_histos = {}
+        for name, view in bkg_views.iteritems():
+            mc_histo = view.Get(path)
+            bkg_histos[name] = mc_histo.Clone()
+            #mc_histo = remove_empty_bins(
+            #    mc_histo, bkg_weights[name])
+            mc_histo.SetName(name)
+            mc_histo.Write()
+
+        if self.use_embedded:            
+            view = self.get_view('ZetauEmbedded')
+            weight = self.get_view('ZetauEmbedded', 'weight')
+            if preprocess:
+                view = preprocess(view)
+            view = self.rebin_view(view, rebin)
+            name = self.datacard_names['ZetauEmbedded']
+            bkg_weights[name] = weight
+            bkg_views[name] = view
+            mc_histo = view.Get(path)
+            bkg_histos[name] = mc_histo.Clone()
+            #mc_histo = remove_empty_bins(
+            #    mc_histo, weight)
+            mc_histo.SetName(name)
+            mc_histo.Write()
+          
+        fakes_view = self.get_view('fakes')
+        d_view = self.get_view('data')
+        weights_view = views.SumView(
+            views.SubdirectoryView(d_view, 'tLoose'),
+            views.SubdirectoryView(d_view, 'eLoose'),
+            views.SubdirectoryView(d_view, 'etLoose')
+            )
+        if preprocess:
+            fakes_view = preprocess(fakes_view)
+            weights_view = preprocess(weights_view)
+        weights = weights_view.Get(os.path.join(folder,'weight'))
+        fakes_view = self.rebin_view(fakes_view, rebin)
+        bkg_views['fakes'] = fakes_view
+        bkg_weights['fakes'] = mean(weights)
+        fake_shape = bkg_views['fakes'].Get(path)
+        bkg_histos['fakes'] = fake_shape.Clone()
+        #fake_shape = remove_empty_bins(
+        #    fake_shape, bkg_weights['fakes'])
+        fake_shape.SetName('fakes')
+        fake_shape.Write()
+
+        unc_conf_lines = []
+        unc_vals_lines = []
+        category_name  = output_dir.GetName()
+        for unc_name, info in self.systematics.iteritems():
+            targets = []
+            for target in info['apply_to']:
+                if target in self.sample_groups:
+                    targets.extend(self.sample_groups[target])
+                else:
+                    targets.append(target)
+
+            unc_conf = 'lnN' if info['type'] == 'yield' or info['type'] == 'stat' else 'shape'            
+            #stat shapes are uncorrelated between samples
+            if info['type'] <> 'stat':
+                unc_conf_lines.append('%s %s' % (unc_name, unc_conf))
+            shift = 0.
+            path_up = info['+'](path)
+            path_dw = info['-'](path)
+            for target in targets:
+                up      = bkg_views[target].Get(
+                    path_up
+                )
+                down    = bkg_views[target].Get(
+                    path_dw
+                )
+                if info['type'] == 'yield':
+                    central = bkg_histos[target]
+                    integral = central.Integral()
+                    integral_up = up.Integral()
+                    integral_down = down.Integral()
+                    if integral == 0  and integral_up == 0 and integral_down ==0 :
+                        shift=shift
+                    else:
+                        shift = max(
+                            shift,
+                            (integral_up - integral) / integral,
+                            (integral - integral_down) / integral
+                        )
+                elif info['type'] == 'shape':
+                    #remove empty bins also for shapes 
+                    #(but not in general to not spoil the stat uncertainties)
+                    #up = remove_empty_bins(up, bkg_weights[target])
+                    #down = remove_empty_bins(down, bkg_weights[target])
+                    up.SetName('%s_%sUp' % (target, unc_name))
+                    down.SetName('%s_%sDown' % (target, unc_name))
+                    up.Write()
+                    down.Write()
+                elif info['type'] == 'stat':
+                    nbins = up.GetNbinsX()
+                    up.Rebin(nbins)
+                    yield_val = up.GetBinContent(1)
+                    yield_err = up.GetBinError(1)
+                    print target, yield_val, yield_err, 
+                    if yield_val==0:
+                        unc_value = 0.
+                    else:
+                        unc_value = 1. + (yield_err / yield_val)
                     stat_unc_name = '%s_%s_%s' % (target, category_name, unc_name)
                     unc_conf_lines.append('%s %s' % (stat_unc_name, unc_conf))
                     unc_vals_lines.append(

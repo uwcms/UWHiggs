@@ -39,6 +39,25 @@ def eSelection(row, name):
     if abs(getattr( row, getVar(name,'DZ'))) > 0.2:     return False
     #if getattr(row, getVar(name, 'MuonIdIsoVtxOverlap')): return False
     return True
+def eLowPtSelection(row, name):
+    eAbsEta = getattr( row, getVar(name,'AbsEta'))
+    ept = getattr( row, getVar(name,'Pt_ees_minus'))
+    if ept:
+        if ept < 15:           return False 
+    else:
+        if getattr( row, getVar(name,'Pt')) < 15:   return False #was 20
+
+    if eAbsEta > 2.3:      return False
+    if getattr( row, getVar(name,'MissingHits')):       return False
+    if getattr( row, getVar(name,'HasConversion')):     return False
+    if eAbsEta > 1.4442 and eAbsEta < 1.566: return False
+#    if not getattr( row, getVar(name,'ChargeIdTight')): return False
+    if not getattr( row, getVar(name,'ChargeIdLoose')): return False
+    if getattr( row, getVar(name,'JetCSVBtag')) > 0.8:  return False
+    ###if getattr( row, getVar(name,'JetBtag')) > 3.3:     return False
+    if abs(getattr( row, getVar(name,'DZ'))) > 0.2:     return False
+    #if getattr(row, getVar(name, 'MuonIdIsoVtxOverlap')): return False
+    return True
     
 def tauSelection(row, name):
     tpt = getattr( row, getVar(name,'Pt_tes_minus'))
@@ -81,6 +100,8 @@ def lepton_id_iso(row, name, label): #label in the format eidtype_isotype
         return bool( RelPFIsoDB < 0.15 or (RelPFIsoDB < 0.20 and AbsEta < 1.479))
     if isolabel == 'idiso02':
         return bool( RelPFIsoDB < 0.20 )
+    if isolabel == 'idantiso':
+        return bool( RelPFIsoDB > 0.20 )
     if isolabel == 'etauiso012' or isolabel == 'mutauiso012': 
         return bool( RelPFIsoDB < 0.12 ) 
     if isolabel == 'etauiso01' or isolabel == 'mutauiso01': 
