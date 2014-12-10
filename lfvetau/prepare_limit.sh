@@ -21,7 +21,8 @@ cp card_config/unc.$category.conf $output_dir/unc.conf
 cp card_config/unc.$category.vals $output_dir/unc.vals
 
 #copy shape file
-cp $input_dir/shapes.$file_extension.root $output_dir/shapes.root
+shapes=shapesETau$category'Jet.root'
+cp $input_dir/shapes.$file_extension.root $output_dir/$shapes
 
 #add dynamically assigned variables
 cat $input_dir/unc.$file_extension.conf >> $output_dir/unc.conf
@@ -52,8 +53,8 @@ echo "#bbb uncertainties" >> $output_dir/unc.conf
 echo "#bbb uncertainties" >> $output_dir/unc.vals    
 for sample in $samples; do
     echo "adding bbb errors for $sample"
-    echo add_stat_shapes.py $output_dir/shapes.root $output_dir/shapes.root --normalize --filter $category_name/$sample --prefix $category_name
-    bbb_added=$(add_stat_shapes.py $output_dir/shapes.root $output_dir/shapes.root --normalize --filter $category_name/$sample --prefix $category_name | grep _bin_)
+    echo add_stat_shapes.py $output_dir/$shapes $output_dir/$shapes --normalize --filter $category_name/$sample --prefix $category_name
+    bbb_added=$(add_stat_shapes.py $output_dir/$shapes $output_dir/$shapes --normalize --filter $category_name/$sample --prefix $category_name | grep _bin_)
     echo >> $output_dir/unc.conf
     echo >> $output_dir/unc.vals    
     for unc in $bbb_added; do
@@ -66,10 +67,10 @@ done
 pushd $output_dir
 mkdir -p 126
 pushd 126
-rm -rf shapes.root
-ln -s ../shapes.root
+rm -rf $shapes
+ln -s ../$shapes 
 popd
-create-datacard.py -i shapes.root -o 126/datacard_et_$category.txt
+create-datacard.py -i $shapes -o 126/datacard_et_$category.txt
 popd
 
 exit 0
