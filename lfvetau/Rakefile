@@ -426,10 +426,10 @@ file cmb_card => [card_0_jet,
                   card_1_jet, 
                   card_2_jet] do |t|
   sh "mkdir -p #{$limitdir}/cmb/126"
-  sh "hadd  -f #{$limitdir}/cmb/shapes.root #{$limitdir}/[0-9]/shapes.root"
+  sh "hadd  -f #{$limitdir}/cmb/shapesETauHad.root #{$limitdir}/[0-9]/shapesETau$category?Jet.root"
   chdir("#{$limitdir}/cmb/126") do
-    sh "rm -f shapes.root"
-    sh "ln -s ../shapes.root"
+    sh "rm -f shapesETauHad.root"
+    sh "ln -s ../shapesETauHad.root"
     local_paths = t.prerequisites.map{|x| x.sub($limitdir,'../../')}
     local_name = File.basename(t.name)
     sh "combine_cards_with_names.sh #{ local_paths.join(' ')} > #{local_name}"
