@@ -110,7 +110,8 @@ if not args.no_shapes:
       tfile = ROOT.TFile(pjoin(output_path, 'shapes.%s.root' % njets), 'recreate')
       output_dir = tfile.mkdir(cat_name)
       unc_conf_lines, unc_vals_lines = plotter.write_shapes( 
-         signal_region % njets, 'h_collmass_pfmet', output_dir, rebin=rebin)
+         signal_region % njets, 'h_collmass_pfmet', output_dir, rebin=rebin,
+         br_strenght=1)
       logging.warning('shape file %s created' % tfile.GetName()) 
       tfile.Close()
       with open(pjoin(output_path, 'unc.%s.conf' % njets), 'w') as conf:
