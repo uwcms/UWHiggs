@@ -106,12 +106,12 @@ def make_collmass_systematics(shift):
             return collmass(row, met, phi), weight
         return collmass_shifted
 
-class LFVHETauAnalyzerMVA(MegaBase):
+class TTbarControlRegion(MegaBase):
     tree = 'et/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
-        logging.debug('LFVHETauAnalyzerMVA constructor')
+        logging.debug('TTbar constructor')
         self.channel='ET'
-        super(LFVHETauAnalyzerMVA, self).__init__(tree, outfile, **kwargs)
+        super(TTbarControlRegion, self).__init__(tree, outfile, **kwargs)
         self.tree = ETauTree(tree)
         self.out=outfile
         self.histograms = {}
@@ -473,7 +473,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
 
             # it is better vetoing on b-jets  after the histo for the DY embedded
             #bjet veto
-            if row.bjetCSVVeto30!=0 : continue
+            if row.bjetCSVVeto30==0 : continue
 
             #tau ID, id Tau is tight then go in full selection, otherwise use for fakes
             isTauTight = bool(row.tTightIso3Hits)
@@ -488,11 +488,13 @@ class LFVHETauAnalyzerMVA(MegaBase):
 
             #jet category
             central = struct(
-                njets = min(row.jetVeto30, 3),
+                njets = 2,
+                #njets = min(row.jetVeto30, 3),
                 tPt = row.tPt,
                 ePt = row.ePt
                 )
-            jets = [min(row.jetVeto30, 3), min(row.jetVeto30jes_plus, 3),  min(row.jetVeto30jes_minus, 3)]
+            #jets = [min(row.jetVeto30, 3), min(row.jetVeto30jes_plus, 3),  min(row.jetVeto30jes_minus, 3)]
+            jets = [2,2,2]
             tpts = [row.tPt_tes_plus, row.tPt_tes_minus]
             epts = [row.ePt_ees_plus, row.ePt_ees_minus]
             sys_effects = [(name, central.clone(njets = jnum)) for name, jnum in zip(jes_dirs, jets)]
@@ -515,25 +517,26 @@ class LFVHETauAnalyzerMVA(MegaBase):
                 else:
                     continue
 
-                if shifted.njets == 0 :
-                    if shifted.tPt < 30: continue #was 35
-                    if shifted.ePt < 50: continue #was 40
-                    if deltaPhi(row.ePhi, row.tPhi) < 2.5 : continue #was 2.7
-                    if row.tMtToPfMet > 70 : continue #was 50
-                    selection_categories.append((name, '0', 'selected'))
-                    passes_full_selection = True 
-                elif shifted.njets == 1 :
-                    if shifted.tPt < 30: continue #was 40
-                    if shifted.ePt < 40: continue #was 35
-                    if row.tMtToPfMet > 45 : continue #was 35
-                    selection_categories.append((name, '1', 'selected'))
-                    passes_full_selection = True 
-                elif shifted.njets == 2 :
-                    if shifted.tPt < 30: continue #was 40
-                    if shifted.ePt < 40: continue #was 30
-                    if row.tMtToPfMet > 55 : continue #was 35
-                    if row.vbfMass < 500 : continue #was 550
-                    if row.vbfDeta < 2.5 : continue #was 3.5
+                ##if shifted.njets == 0 :
+                ##    if shifted.tPt < 35: continue
+                ##    if shifted.ePt < 40: continue
+                ##    if deltaPhi(row.ePhi, row.tPhi) < 2.7 : continue
+                ##    if row.tMtToPfMet > 50 : continue
+                ##    selection_categories.append((name, '0', 'selected'))
+                ##    passes_full_selection = True 
+                ##elif shifted.njets == 1 :
+                ##    if shifted.tPt < 40: continue
+                ##    if shifted.ePt < 35: continue
+                ##    if row.tMtToPfMet > 35 : continue
+                ##    selection_categories.append((name, '1', 'selected'))
+                ##    passes_full_selection = True 
+                ##el
+                if shifted.njets == 2 :
+                    if shifted.tPt < 40: continue
+                    if shifted.ePt < 30: continue
+                    if row.tMtToPfMet > 35 : continue
+                    if row.vbfMass < 550 : continue
+                    if row.vbfDeta < 3.5 : continue
                     selection_categories.append((name, '2', 'selected'))
                     passes_full_selection = True 
 

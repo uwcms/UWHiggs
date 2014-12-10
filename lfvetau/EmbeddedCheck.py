@@ -106,12 +106,12 @@ def make_collmass_systematics(shift):
             return collmass(row, met, phi), weight
         return collmass_shifted
 
-class LFVHETauAnalyzerMVA(MegaBase):
+class EmbeddedCheck(MegaBase):
     tree = 'et/final/Ntuple'
     def __init__(self, tree, outfile, **kwargs):
-        logging.debug('LFVHETauAnalyzerMVA constructor')
+        logging.debug('EmbeddedCheck constructor')
         self.channel='ET'
-        super(LFVHETauAnalyzerMVA, self).__init__(tree, outfile, **kwargs)
+        super(EmbeddedCheck, self).__init__(tree, outfile, **kwargs)
         self.tree = ETauTree(tree)
         self.out=outfile
         self.histograms = {}
@@ -257,8 +257,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                 self.book(location, name+fix, *args, **kwargs)
 
         self.book('os/gg/ept30/', "h_collmass_pfmet" , "h_collmass_pfmet",  32, 0, 320)
-        self.book('os/gg/ept30/', "e_t_Mass",  "h_vismass",  32, 0, 320)
-
+ 
         for f in folder: 
             #self.book(
             #    f,
@@ -457,7 +456,11 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #e ID/ISO
             if not selections.lepton_id_iso(row, 'e', 'eid13Tight_idiso02'): continue
             logging.debug('Passed preselection')
-
+            
+            
+            #TO ENHANCE Z->tautau
+            if row.e_t_DR > 2.0: continue
+            
             #
             # Compute event weight
             #
@@ -516,24 +519,24 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     continue
 
                 if shifted.njets == 0 :
-                    if shifted.tPt < 30: continue #was 35
-                    if shifted.ePt < 50: continue #was 40
-                    if deltaPhi(row.ePhi, row.tPhi) < 2.5 : continue #was 2.7
-                    if row.tMtToPfMet > 70 : continue #was 50
+                    if shifted.tPt < 35: continue
+                    if shifted.ePt < 40: continue
+                    if deltaPhi(row.ePhi, row.tPhi) < 2.7 : continue
+                    if row.tMtToPfMet > 50 : continue
                     selection_categories.append((name, '0', 'selected'))
                     passes_full_selection = True 
                 elif shifted.njets == 1 :
-                    if shifted.tPt < 30: continue #was 40
-                    if shifted.ePt < 40: continue #was 35
-                    if row.tMtToPfMet > 45 : continue #was 35
+                    if shifted.tPt < 40: continue
+                    if shifted.ePt < 35: continue
+                    if row.tMtToPfMet > 35 : continue
                     selection_categories.append((name, '1', 'selected'))
                     passes_full_selection = True 
                 elif shifted.njets == 2 :
-                    if shifted.tPt < 30: continue #was 40
-                    if shifted.ePt < 40: continue #was 30
-                    if row.tMtToPfMet > 55 : continue #was 35
-                    if row.vbfMass < 500 : continue #was 550
-                    if row.vbfDeta < 2.5 : continue #was 3.5
+                    if shifted.tPt < 40: continue
+                    if shifted.ePt < 30: continue
+                    if row.tMtToPfMet > 35 : continue
+                    if row.vbfMass < 550 : continue
+                    if row.vbfDeta < 3.5 : continue
                     selection_categories.append((name, '2', 'selected'))
                     passes_full_selection = True 
 

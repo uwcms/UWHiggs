@@ -90,6 +90,7 @@ def make_multiple(fcn, indexed=False, shift=0):
                 getVar(arg,'Eta')
             ) 
             pt     = getattr(row, getVar(arg,'Pt'))
+            if pt<30: pt =30 #only fakerate checks allow pt < 30. This is an approximation to not re-run the Tag and Probe
             fcn_ret = fcn(pt,abseta)
             if indexed:
                 value, err = fcn_ret
