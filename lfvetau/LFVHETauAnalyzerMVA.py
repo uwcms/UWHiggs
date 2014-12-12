@@ -20,6 +20,7 @@ import traceback
 from FinalStateAnalysis.PlotTools.decorators import memo
 import FinalStateAnalysis.PlotTools.pytree as pytree
 from FinalStateAnalysis.Utilities.struct import struct
+import optimizer
 
 @memo
 def getVar(name, var):
@@ -129,12 +130,12 @@ class LFVHETauAnalyzerMVA(MegaBase):
         self.systematics = {
             'trig' : (['', 'trp1s', 'trm1s'] if not self.is_data else []),
             'pu'   : (['', 'p1s', 'm1s'] if self.is_mc else []),
-            'eid'  : (['', 'eidp1s','eidm1s'] if not self.is_data else []),
-            'eiso' : (['', 'eisop1s','eisom1s'] if not self.is_data else []),
+            'eid'  : (['', 'eidp1s','eidm1s']   if False else []),
+            'eiso' : (['', 'eisop1s','eisom1s'] if False else []),
             'jes'  : (['', '_jes_plus','_jes_minus'] if self.is_mc else ['']),
-            'mvetos': (['', 'mVetoUp', 'mVetoDown'] if self.is_mc else ['']),
-            'tvetos': (['', 'tVetoUp', 'tVetoDown'] if self.is_mc else ['']),
-            'evetos': (['', 'eVetoUp', 'eVetoDown'] if self.is_mc else ['']),
+            'mvetos': (['', 'mVetoUp', 'mVetoDown'] if False else ['']),
+            'tvetos': (['', 'tVetoUp', 'tVetoDown'] if False else ['']),
+            'evetos': (['', 'eVetoUp', 'eVetoDown'] if False else ['']),
             'met'  : (["_mes_plus", "_ues_plus", "_mes_minus", "_ues_minus"] if self.is_mc else []),
             'tes'  : (["", "_tes_plus", "_tes_minus"] if not self.is_data else ['']),
             'ees'  : (["", "_ees_plus", '_ees_minus'] if not self.is_data else [''])
@@ -246,6 +247,11 @@ class LFVHETauAnalyzerMVA(MegaBase):
              path = list(tuple_path)
              path.append('selected')
              folder.append(os.path.join(*path))
+             prefix_path = os.path.join(*tuple_path)
+             for region in optimizer.regions[tuple_path[-1]]:
+                 folder.append(
+                     os.path.join(prefix_path, region)
+                     )
 
         def book_with_sys(location, name, *args, **kwargs):
             postfixes = kwargs['postfixes']
@@ -266,57 +272,57 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #    'run/l:lumi/l:evt/l:weight/D',
             #    type=pytree.PyTree
             #)
-            self.book(f,"weight", "weight", 100, 0, 10)
-            self.book(f,"tPt", "tau p_{T}", 40, 0, 200)
-            self.book(f,"tPt_tes_plus", "tau p_{T} (tes+)", 40, 0, 200)
-            self.book(f,"tPt_tes_minus", "tau p_{T} (tes-)",40, 0, 200)
-            
-            self.book(f,"tPhi", "tau phi", 26, -3.25, 3.25)
-            self.book(f,"tEta", "tau eta",  10, -2.5, 2.5)
-            
-            self.book(f,"ePt", "e p_{T}", 40, 0, 200)
-            self.book(f,"ePt_ees_plus", "e p_{T} (ees+)", 40, 0, 200)
-            self.book(f,"ePt_ees_minus", "e p_{T} (ees-)",40, 0, 200)
-
-            self.book(f,"ePhi", "e phi",  26, -3.2, 3.2)
-            self.book(f,"eEta", "e eta", 10, -2.5, 2.5)
-            
-            self.book(f, "e_t_DPhi", "e-tau DeltaPhi" , 20, 0, 3.2)
-            self.book(f, "e_t_DR", "e-tau DeltaR" , 20, 0, 3.2)
+            #@# self.book(f,"weight", "weight", 100, 0, 10)
+            #@# self.book(f,"tPt", "tau p_{T}", 40, 0, 200)
+            #@# self.book(f,"tPt_tes_plus", "tau p_{T} (tes+)", 40, 0, 200)
+            #@# self.book(f,"tPt_tes_minus", "tau p_{T} (tes-)",40, 0, 200)
+            #@# 
+            #@# self.book(f,"tPhi", "tau phi", 26, -3.25, 3.25)
+            #@# self.book(f,"tEta", "tau eta",  10, -2.5, 2.5)
+            #@# 
+            #@# self.book(f,"ePt", "e p_{T}", 40, 0, 200)
+            #@# self.book(f,"ePt_ees_plus", "e p_{T} (ees+)", 40, 0, 200)
+            #@# self.book(f,"ePt_ees_minus", "e p_{T} (ees-)",40, 0, 200)
+            #@# 
+            #@# self.book(f,"ePhi", "e phi",  26, -3.2, 3.2)
+            #@# self.book(f,"eEta", "e eta", 10, -2.5, 2.5)
+            #@# 
+            #@# self.book(f, "e_t_DPhi", "e-tau DeltaPhi" , 20, 0, 3.2)
+            #@# self.book(f, "e_t_DR", "e-tau DeltaR" , 20, 0, 3.2)
             
             #self.book(f, "h_collmass_pfmet",  "h_collmass_pfmet",  32, 0, 320)
             book_with_sys(f, "h_collmass_pfmet",  "h_collmass_pfmet",  40, 0, 400, 
                           postfixes=full_met_systematics)
 
-            self.book(f, "h_collmass_vs_dPhi_pfmet",  "h_collmass_vs_dPhi_pfmet", 20, 0, 3.2, 40, 0, 400, type=ROOT.TH2F)
-            
-            self.book(f, "e_t_Mass",  "h_vismass",  40, 0, 400)
-            self.book(f, "e_t_Mass_tes_plus" ,  "h_vismass_tes_plus", 40 , 0, 400)
-            self.book(f, "e_t_Mass_tes_minus",  "h_vismass_tes_minus",40 , 0, 400)
-            self.book(f, "e_t_Mass_ees_plus" ,  "h_vismass_ees_plus", 40 , 0, 400)
-            self.book(f, "e_t_Mass_ees_minus",  "h_vismass_ees_minus",40 , 0, 400)
-            
-            self.book(f, "MetEt_vs_dPhi", "PFMet vs #Delta#phi(#tau,PFMet)", 20, 0, 3.2, 40, 0, 400, type=ROOT.TH2F)
-
-            self.book(f, "tPFMET_DeltaPhi", "tau-type1PFMET DeltaPhi" , 20, 0, 3.2)
-    
-            self.book(f, "ePFMET_DeltaPhi", "e-PFMET DeltaPhi" , 20, 0, 3.2)
-            
-            #self.book(f,"tMtToPFMET", "tau-PFMET M_{T}" , 200, 0, 200)
-            book_with_sys(f, "tMtToPfMet", "tau-PFMET M_{T}" , 40, 0, 200,
-                          postfixes=full_met_systematics)
-            #self.book(f,"eMtToPFMET", "e-PFMET M_{T}" , 200, 0, 200)
-            book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 40, 0, 200,
-                          postfixes=full_met_systematics)
-
-            #self.book(f, "pfMetEt",  "pfMetEt",  200, 0, 200)
-            book_with_sys(f, "pfMet_Et",  "pfMet_Et",  40, 0, 200, postfixes=full_met_systematics)
-
-            #self.book(f, "pfMetPhi",  "pfMetPhi", 100, -3.2, 3.2)
-            book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 26, -3.2, 3.2, postfixes=full_met_systematics)
-             
-            self.book(f, "jetVeto20", "Number of jets, p_{T}>20", 5, -0.5, 4.5) 
-            self.book(f, "jetVeto30", "Number of jets, p_{T}>30", 5, -0.5, 4.5) 
+            #@# self.book(f, "h_collmass_vs_dPhi_pfmet",  "h_collmass_vs_dPhi_pfmet", 20, 0, 3.2, 40, 0, 400, type=ROOT.TH2F)
+            #@# 
+            #@# self.book(f, "e_t_Mass",  "h_vismass",  40, 0, 400)
+            #@# self.book(f, "e_t_Mass_tes_plus" ,  "h_vismass_tes_plus", 40 , 0, 400)
+            #@# self.book(f, "e_t_Mass_tes_minus",  "h_vismass_tes_minus",40 , 0, 400)
+            #@# self.book(f, "e_t_Mass_ees_plus" ,  "h_vismass_ees_plus", 40 , 0, 400)
+            #@# self.book(f, "e_t_Mass_ees_minus",  "h_vismass_ees_minus",40 , 0, 400)
+            #@# 
+            #@# self.book(f, "MetEt_vs_dPhi", "PFMet vs #Delta#phi(#tau,PFMet)", 20, 0, 3.2, 40, 0, 400, type=ROOT.TH2F)
+            #@# 
+            #@# self.book(f, "tPFMET_DeltaPhi", "tau-type1PFMET DeltaPhi" , 20, 0, 3.2)
+            #@# 
+            #@# self.book(f, "ePFMET_DeltaPhi", "e-PFMET DeltaPhi" , 20, 0, 3.2)
+            #@# 
+            #@# #self.book(f,"tMtToPFMET", "tau-PFMET M_{T}" , 200, 0, 200)
+            #@# book_with_sys(f, "tMtToPfMet", "tau-PFMET M_{T}" , 40, 0, 200,
+            #@#               postfixes=full_met_systematics)
+            #@# #self.book(f,"eMtToPFMET", "e-PFMET M_{T}" , 200, 0, 200)
+            #@# book_with_sys(f, "eMtToPfMet", "e-PFMET M_{T}" , 40, 0, 200,
+            #@#               postfixes=full_met_systematics)
+            #@# 
+            #@# #self.book(f, "pfMetEt",  "pfMetEt",  200, 0, 200)
+            #@# book_with_sys(f, "pfMet_Et",  "pfMet_Et",  40, 0, 200, postfixes=full_met_systematics)
+            #@# 
+            #@# #self.book(f, "pfMetPhi",  "pfMetPhi", 100, -3.2, 3.2)
+            #@# book_with_sys(f, "pfMet_Phi",  "pfMet_Phi", 26, -3.2, 3.2, postfixes=full_met_systematics)
+            #@#  
+            #@# self.book(f, "jetVeto20", "Number of jets, p_{T}>20", 5, -0.5, 4.5) 
+            #@# self.book(f, "jetVeto30", "Number of jets, p_{T}>30", 5, -0.5, 4.5) 
         
         #index dirs and histograms
         for key, value in self.histograms.iteritems():
@@ -516,6 +522,12 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     continue
 
                 if shifted.njets == 0 :
+                    selection_categories.extend([
+                        (name, '0', i) for i in optimizer.compute_regions_0jet(
+                            shifted.tPt, shifted.ePt, deltaPhi(row.ePhi, row.tPhi),
+                            row.tMtToPfMet)
+                        ])
+                    
                     if shifted.tPt < 30: continue #was 35
                     if shifted.ePt < 50: continue #was 40
                     if deltaPhi(row.ePhi, row.tPhi) < 2.5 : continue #was 2.7
@@ -523,12 +535,23 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     selection_categories.append((name, '0', 'selected'))
                     passes_full_selection = True 
                 elif shifted.njets == 1 :
+                    selection_categories.extend([
+                        (name, '1', i) for i in optimizer.compute_regions_1jet(
+                            shifted.tPt, shifted.ePt, row.tMtToPfMet)
+                        ])
+
                     if shifted.tPt < 30: continue #was 40
                     if shifted.ePt < 40: continue #was 35
                     if row.tMtToPfMet > 45 : continue #was 35
                     selection_categories.append((name, '1', 'selected'))
                     passes_full_selection = True 
                 elif shifted.njets == 2 :
+                    selection_categories.extend([
+                        (name, '2', i) for i in optimizer.compute_regions_2jet(
+                            shifted.tPt, shifted.ePt, row.tMtToPfMet, row.vbfMass,
+                            row.vbfDeta)
+                        ])
+
                     if shifted.tPt < 30: continue #was 40
                     if shifted.ePt < 40: continue #was 30
                     if row.tMtToPfMet > 55 : continue #was 35

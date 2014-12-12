@@ -1,4 +1,4 @@
-#author Mauro Verzetti
+ #author Mauro Verzetti
 'small interface module to deal with optimizization'
 
 import os
@@ -41,12 +41,12 @@ _2jets = {
     'vbf_deta' : [2.5, 3.0, 3.5, 4.0],
 }
 _2jet_region_template = 'tPt%i_ePt%i_tMtToPfMet%i_vbf_mass%i_vbf_deta%.1f'
-def _get_2jet_regions(tPt, ePt, dphi, tMtToPfMet, vbf_mass, vbf_deta):
+def _get_2jet_regions(tPt, ePt, tMtToPfMet, vbf_mass, vbf_deta):
     pass_tPt        = [i for i in _2jets['tPt'       ] if tPt        > i]
     pass_ePt        = [i for i in _2jets['ePt'       ] if ePt        > i]
     pass_tMtToPfMet = [i for i in _2jets['tMtToPfMet'] if tMtToPfMet < i]
-    pass_vbf_mass = [i for i in _2jets['vbf_mass'] if vbf_mass < i]
-    pass_vbf_deta = [i for i in _2jets['vbf_deta'] if vbf_deta < i]
+    pass_vbf_mass = [i for i in _2jets['vbf_mass'] if vbf_mass > i]
+    pass_vbf_deta = [i for i in _2jets['vbf_deta'] if vbf_deta > i]
     return [_2jet_region_template % i for i in itertools.product(pass_tPt, pass_ePt, pass_tMtToPfMet, pass_vbf_mass, pass_vbf_deta)]
 
 def empty(*args):
@@ -56,13 +56,13 @@ compute_regions_0jet = _get_0jet_regions if RUN_OPTIMIZATION else empty
 compute_regions_1jet = _get_1jet_regions if RUN_OPTIMIZATION else empty
 compute_regions_2jet = _get_2jet_regions if RUN_OPTIMIZATION else empty
 
-regions = {0 : [], 1 : [], 2 : []}
+regions = {'0' : [], '1' : [], '2' : [], '3' : []}
 if RUN_OPTIMIZATION:
     regions = {
-        0 : [_0jet_region_template % i for i in itertools.product(_0jets['tPt'], _0jets['ePt'], _0jets['dphi'], _0jets['tMtToPfMet'])],
-        1 : [_1jet_region_template % i for i in itertools.product(_1jets['tPt'], _1jets['ePt'], _1jets['tMtToPfMet'])],
-        2 : [_2jet_region_template % i for i in itertools.product(_2jets['tPt'], _2jets['ePt'], _2jets['tMtToPfMet'], _2jets['vbf_mass'], _2jets['vbf_deta'])],
-        }
+        '0' : [_0jet_region_template % i for i in itertools.product(_0jets['tPt'], _0jets['ePt'], _0jets['dphi'], _0jets['tMtToPfMet'])],
+        '1' : [_1jet_region_template % i for i in itertools.product(_1jets['tPt'], _1jets['ePt'], _1jets['tMtToPfMet'])],
+        '2' : [_2jet_region_template % i for i in itertools.product(_2jets['tPt'], _2jets['ePt'], _2jets['tMtToPfMet'], _2jets['vbf_mass'], _2jets['vbf_deta'])],
+        '3' : []}
 
 if __name__ == "__main__":
     from pdb import set_trace
