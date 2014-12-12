@@ -18,7 +18,7 @@ def _get_0jet_regions(tPt, ePt, dphi, tMtToPfMet):
     pass_ePt        = [i for i in _0jets['ePt'       ] if ePt        > i] 
     pass_dphi       = [i for i in _0jets['dphi'      ] if dphi       > i] 
     pass_tMtToPfMet = [i for i in _0jets['tMtToPfMet'] if tMtToPfMet < i] 
-    return [_0jet_region_template % i for i in itertools(pass_tPt, pass_ePt, pass_dphi, pass_tMtToPfMet)]
+    return [_0jet_region_template % i for i in itertools.product(pass_tPt, pass_ePt, pass_dphi, pass_tMtToPfMet)]
 
 
 _1jets = {
@@ -31,7 +31,7 @@ def _get_1jet_regions(tPt, ePt, tMtToPfMet):
     pass_tPt        = [i for i in _1jets['tPt'       ] if tPt        > i]
     pass_ePt        = [i for i in _1jets['ePt'       ] if ePt        > i]
     pass_tMtToPfMet = [i for i in _1jets['tMtToPfMet'] if tMtToPfMet < i]
-    return [_1jet_region_template % i for i in itertools(pass_tPt, pass_ePt, pass_tMtToPfMet)]
+    return [_1jet_region_template % i for i in itertools.product(pass_tPt, pass_ePt, pass_tMtToPfMet)]
 
 _2jets = {
     'tPt'  : range(20,70,10)+[35,45],
@@ -47,7 +47,7 @@ def _get_2jet_regions(tPt, ePt, dphi, tMtToPfMet, vbf_mass, vbf_deta):
     pass_tMtToPfMet = [i for i in _2jets['tMtToPfMet'] if tMtToPfMet < i]
     pass_vbf_mass = [i for i in _2jets['vbf_mass'] if vbf_mass < i]
     pass_vbf_deta = [i for i in _2jets['vbf_deta'] if vbf_deta < i]
-    return [_2jet_region_template % i for i in itertools(pass_tPt, pass_ePt, pass_tMtToPfMet, pass_vbf_mass, pass_vbf_deta)]
+    return [_2jet_region_template % i for i in itertools.product(pass_tPt, pass_ePt, pass_tMtToPfMet, pass_vbf_mass, pass_vbf_deta)]
 
 def empty(*args):
     return []
@@ -59,9 +59,9 @@ compute_regions_2jet = _get_2jet_regions if RUN_OPTIMIZATION else empty
 regions = {0 : [], 1 : [], 2 : []}
 if RUN_OPTIMIZATION:
     regions = {
-        0 : [_0jet_region_template % i for i in itertools(_0jets['tPt'], _0jets['ePt'], _0jets['dphi'], _0jets['tMtToPfMet'])],
-        1 : [_1jet_region_template % i for i in itertools(_1jets['tPt'], _1jets['ePt'], _1jets['tMtToPfMet'])],
-        2 : [_2jet_region_template % i for i in itertools(_2jets['tPt'], _2jets['ePt'], _2jets['tMtToPfMet'], _2jets['vbf_mass'], _2jets['vbf_deta'])],
+        0 : [_0jet_region_template % i for i in itertools.product(_0jets['tPt'], _0jets['ePt'], _0jets['dphi'], _0jets['tMtToPfMet'])],
+        1 : [_1jet_region_template % i for i in itertools.product(_1jets['tPt'], _1jets['ePt'], _1jets['tMtToPfMet'])],
+        2 : [_2jet_region_template % i for i in itertools.product(_2jets['tPt'], _2jets['ePt'], _2jets['tMtToPfMet'], _2jets['vbf_mass'], _2jets['vbf_deta'])],
         }
 
 if __name__ == "__main__":
