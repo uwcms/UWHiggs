@@ -7,10 +7,10 @@ import itertools
 RUN_OPTIMIZATION = ('RUN_OPTIMIZATION' in os.environ) and eval(os.environ['RUN_OPTIMIZATION'])
 
 _0jets = {
-    'tPt'  : range(20,70,10)+[35,45],
-    'ePt'  : range(20,70,10)+[35,45],
+    'tPt'  : range(30,50,10)+[35,45],
+    'ePt'  : range(30,70,10)+[35,45],
     'dphi' : [3.14, 3.00, 2.7, 2.4, 2.2],
-    'tMtToPfMet' : range(0,50,10)+[35],
+    'tMtToPfMet' : range(20,50,10)+[35],
 }
 _0jet_region_template = 'tPt%i_ePt%i_dphi%.2f_tMtToPfMet%i'
 def _get_0jet_regions(tPt, ePt, dphi, tMtToPfMet):
@@ -22,9 +22,9 @@ def _get_0jet_regions(tPt, ePt, dphi, tMtToPfMet):
 
 
 _1jets = {
-    'tPt'  : range(20,70,10)+[35,45],
-    'ePt'  : range(20,70,10)+[35,45],
-    'tMtToPfMet' : range(0,50,10)+[35],
+    'tPt'  : range(30,60,10)+[35,45],
+    'ePt'  : range(30,70,10)+[35,45],
+    'tMtToPfMet' : range(20,50,10)+[35],
 }
 _1jet_region_template = 'tPt%i_ePt%i_tMtToPfMet%i'
 def _get_1jet_regions(tPt, ePt, tMtToPfMet):
@@ -34,11 +34,11 @@ def _get_1jet_regions(tPt, ePt, tMtToPfMet):
     return [_1jet_region_template % i for i in itertools.product(pass_tPt, pass_ePt, pass_tMtToPfMet)]
 
 _2jets = {
-    'tPt'  : range(20,70,10)+[35,45],
-    'ePt'  : range(20,70,10)+[35,45],
+    'tPt'  : range(30,50,10)+[35,45],
+    'ePt'  : range(30,70,10)+[35,45],
     'tMtToPfMet' : range(0,50,10)+[35],
-    'vbf_mass' : range(400, 700, 100) + [550],
-    'vbf_deta' : [3.0, 3.5, 4.0],
+    'vbf_mass' : range(400, 600, 100) + [550],
+    'vbf_deta' : [2.5, 3.0, 3.5, 4.0],
 }
 _2jet_region_template = 'tPt%i_ePt%i_tMtToPfMet%i_vbf_mass%i_vbf_deta%.1f'
 def _get_2jet_regions(tPt, ePt, dphi, tMtToPfMet, vbf_mass, vbf_deta):
