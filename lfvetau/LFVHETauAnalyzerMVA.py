@@ -252,6 +252,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                  folder.append(
                      os.path.join(prefix_path, region)
                      )
+                 
 
         def book_with_sys(location, name, *args, **kwargs):
             postfixes = kwargs['postfixes']
@@ -266,6 +267,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
         self.book('os/gg/ept30/', "e_t_Mass",  "h_vismass",  32, 0, 320)
 
         for f in folder: 
+            #print f
             #self.book(
             #    f,
             #    'evtInfo', 'evtInfo',
@@ -522,6 +524,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                     continue
 
                 if shifted.njets == 0 :
+
                     selection_categories.extend([
                         (name, '0', i) for i in optimizer.compute_regions_0jet(
                             shifted.tPt, shifted.ePt, deltaPhi(row.ePhi, row.tPhi),
@@ -628,6 +631,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
                 lock = evt_id
                 dir_name = os.path.join(sys, selection_sys, sign, processtype, 
                                         e_thr, jet_dir, selection_step)
+ 
                 if dir_name[-1] == '/':
                     dir_name = dir_name[:-1]
                 if passes_full_selection:
