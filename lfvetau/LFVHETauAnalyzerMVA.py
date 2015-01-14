@@ -274,7 +274,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #    'run/l:lumi/l:evt/l:weight/D',
             #    type=pytree.PyTree
             #)
-            #@# self.book(f,"weight", "weight", 100, 0, 10)
+            self.book(f,"weight", "weight", 100, 0, 10)
             #@# self.book(f,"tPt", "tau p_{T}", 40, 0, 200)
             #@# self.book(f,"tPt_tes_plus", "tau p_{T} (tes+)", 40, 0, 200)
             #@# self.book(f,"tPt_tes_minus", "tau p_{T} (tes-)",40, 0, 200)

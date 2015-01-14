@@ -22,7 +22,7 @@ def muSelection(row, name):
 
 def eSelection(row, name):
     eAbsEta = getattr( row, getVar(name,'AbsEta'))
-    ept = getattr( row, getVar(name,'Pt_ees_minus'))
+    ept = getattr( row, getVar(name,'Pt_ees_minus')) 
     if ept:
         if ept < 30:           return False 
     else:
@@ -100,6 +100,8 @@ def lepton_id_iso(row, name, label): #label in the format eidtype_isotype
         return bool( RelPFIsoDB < 0.15 or (RelPFIsoDB < 0.20 and AbsEta < 1.479))
     if isolabel == 'idiso02':
         return bool( RelPFIsoDB < 0.20 )
+    if isolabel == 'idiso05':
+        return bool( RelPFIsoDB < 0.5 )
     if isolabel == 'idantiso':
         return bool( RelPFIsoDB > 0.20 )
     if isolabel == 'etauiso012' or isolabel == 'mutauiso012': 
