@@ -27,7 +27,7 @@ import math
 #f= ROOT.TFile("/hdfs/store/user/taroni/testneNtupleMoreTrees/Zjets_M50/make_ntuples_cfg-patTuple_cfg-00037C53-AAD1-E111-B1BE-003048D45F38.root")
 #one tree only 
 #f= ROOT.TFile("/hdfs/store/user/taroni/testneNtuple/Zjets_M50/make_ntuples_cfg-patTuple_cfg-00037C53-AAD1-E111-B1BE-003048D45F38.root")
-
+f= ROOT.TFile("/hdfs/store/user/taroni/newNtuple_3Dec/data_SingleElectron_Run2012A_22Jan2013_v1/make_ntuples_cfg-patTuple_cfg-08172766-C973-E211-B14C-0030487D8541.root")
 
 f.ls()
 mytree = f.Get("et/final/Ntuple")

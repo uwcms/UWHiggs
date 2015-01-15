@@ -105,7 +105,7 @@ erf_vars =  "scale[0.1, 0, 10],shift[1., 0.8, 1.2],steep[100.], offset[1e-2, 0, 
 
 #$fr_binning =  "30,35,40,45,50,55,60,70,80,90,100,120,140,160,180,200"
 #$fr_binning = "30,40,50,60,70,80,100,120,140,160,200"
-$fr_binning = "30,40,50,60,70,80,100,120,150,200"
+$fr_binning = "0,30,40,50,60,70,80,100,120,150,200"
 #$fr_binning = "30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200"
 $fr_analyzer = "TauFakeRateAnalyzerMVA" #was TauFakeRateAnalyzer
 $efr_analyzer = "EleFakeRateAnalyzerMVA"
@@ -117,7 +117,7 @@ efr_fits      = Hash.new
 #for s in mysamples
 
 fr_fits["t_os_tLoose_tTigh_tPt"] = Hash[ 
-                                          "samples" => Array["diboson",  "dataSingleE", "zjets_skimmedLL"],
+                                          "samples" => Array["diboson",  "dataSingleE"],#, "zjets_skimmedLL"],
                                           "analyzer" => $fr_analyzer,
                                         #"function" => exponential,
                                           #"variables" => exponential_vars,
@@ -131,14 +131,14 @@ fr_fits["t_os_tLoose_tTigh_tPt"] = Hash[
                                         "max"=>"1"
                                          ]
 efr_fits["e_os_eLoose_eTigh_e3Pt"] = Hash[ 
-                                          "samples" => Array["diboson",  "dataSingleE", "zjets_skimmedLL"],
+                                          "samples" => Array["diboson",  "dataSingleE"],
                                           "analyzer" => $efr_analyzer,
                                         #"function" => exponential,
                                           #"variables" => exponential_vars,
                                           "function" => pol0, 
                                           "variables"=>pol0_vars, 
                                           #"rebin" => 1,
-                                          "rebin" => $fr_binning,
+                                          "rebin" => "30,50,70,100,150,200",#$fr_binning,
                                           "range" => "30 200",
                                           "title" => "e p_{T} (GeV)",
                                           "min"=>"0",
@@ -160,11 +160,11 @@ fr_fits["t_os_tLoose_tTigh_tAbsEta"] = Hash[
 
 
 efr_fits["e_os_eLoose_eTigh_e3AbsEta"] = Hash[ 
-                                              "samples" => Array["diboson",  "dataSingleE", "zjets_skimmedLL"],
+                                              "samples" => Array["diboson",  "dataSingleE"],#, "zjets_skimmedLL"],
                                               "analyzer" => $efr_analyzer,
-                                              "function" => pol1,
-                                              "variables" => pol1_vars,
-                                              "rebin" => 1,
+                                              "function" => pol0,
+                                              "variables" => pol0_vars,
+                                              "rebin" => "0.,0.4,0.8,1.2,1.6,2.0,2.3",#4,
                                               "range" => "0 2.3",
                                               #"range" => "-2.3 2.3",
                                               "title" => "e #eta",
@@ -182,30 +182,30 @@ task :efitsMC => []
 
 task :efits => []
 
-fr_fits.each do |fit, fit_info|
-  fit_configuration = fit.split("_")
-  sign = fit_configuration[1]
-  denom = fit_configuration[2]
-  num = fit_configuration[3]
-  var = fit_configuration[4]
-  
-  subsample_inputs = samples['zjets_skimmedLL']
-  fit_output = $frfit_dirMC + "/#{fit}.root"
-  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}/#{x}.root"}
-  subsample_input_list = subsamples_inputs_result_list.join(" ")
-  denom_path = Array[sign, denom,var].join("/")
-  num_path = Array[sign, num, var].join("/")
-
-  file fit_output => subsamples_inputs_result_list + [fit_info['analyzer'] + '.py'] do |t|
-    sh "mkdir -p #{$frfit_dirMC}"
-    sh "fit_efficiency_chi2.py  #{fit_output} '#{num_path}' '#{denom_path}' \'#{pol0}\' \'#{pol0_vars}\' #{subsample_input_list} --plot --xrange #{fit_info['range']} --xtitle \'#{fit_info['title']}\' --min \'#{fit_info['min']}\' --max \'#{fit_info['max']}\' --show-error --rebin #{fit_info['rebin']} "
-    puts ""
-  end
- 
-  task :fits_MC => fit_output
-  
-end
-
+##fr_fits.each do |fit, fit_info|
+##  fit_configuration = fit.split("_")
+##  sign = fit_configuration[1]
+##  denom = fit_configuration[2]
+##  num = fit_configuration[3]
+##  var = fit_configuration[4]
+##  
+##  subsample_inputs = samples['zjets_skimmedLL']
+##  fit_output = $frfit_dirMC + "/#{fit}.root"
+##  subsamples_inputs_result_list = subsample_inputs.map{|x|  "results/#{$jobid}/#{fit_info['analyzer']}/#{x}.root"}
+##  subsample_input_list = subsamples_inputs_result_list.join(" ")
+##  denom_path = Array[sign, denom,var].join("/")
+##  num_path = Array[sign, num, var].join("/")
+##
+##  file fit_output => subsamples_inputs_result_list + [fit_info['analyzer'] + '.py'] do |t|
+##    sh "mkdir -p #{$frfit_dirMC}"
+##    sh "fit_efficiency_chi2.py  #{fit_output} '#{num_path}' '#{denom_path}' \'#{pol0}\' \'#{pol0_vars}\' #{subsample_input_list} --plot --xrange #{fit_info['range']} --xtitle \'#{fit_info['title']}\' --min \'#{fit_info['min']}\' --max \'#{fit_info['max']}\' --show-error --rebin #{fit_info['rebin']} "
+##    puts ""
+##  end
+## 
+##  task :fits_MC => fit_output
+##  
+##end
+##
 efr_fits.each do |fit, fit_info|
   fit_configuration = fit.split("_")
   sign = fit_configuration[1]
@@ -293,7 +293,8 @@ efr_fits.each do |fit, fit_info|
   num_path = Array[sign, num, var].join("/")
   
   corrected_file = fit_output.sub('.root', '.corrected_inputs.root')
-  file corrected_file => subsamples_inputs_result_list + [fit_info['analyzer'] + '.py', "CorrectFakeRateData.py"] do |t|
+  #file corrected_file => subsamples_inputs_result_list + [fit_info['analyzer'] + '.py', "CorrectFakeRateData.py"] do |t|
+  file corrected_file do |t|
     sh "mkdir -p #{$efrfit_dir}"
     sh "python CorrectFakeRateData.py --files #{subsample_input_list} --lumifiles inputs/#{$jobid}/*sum --outputfile #{t.name} --numerator '#{num_path}' --denom '#{denom_path}' --rebin #{fit_info['rebin']}"
       puts ""
