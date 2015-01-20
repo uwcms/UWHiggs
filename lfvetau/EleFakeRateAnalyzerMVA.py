@@ -128,6 +128,7 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             ##self.book(f,"e3Phi", "e3 phi",  100, -3.2, 3.2)
             self.book(f,"e3Eta", "e3 eta", 46, -2.3, 2.3)
             self.book(f,"e3AbsEta", "e3 abs eta", 23, 0, 2.3)
+            self.book(f,"e3Pt_vs_e3AbsEta", "e3 pt vs e3 abs eta", 23, 0, 2.3,  20, 0, 200.,  type=ROOT.TH2F)
 
             ##self.book(f, "e1e2Mass",  "e1e2 Inv Mass",  32, 0, 320)
             ##
@@ -176,6 +177,7 @@ class EleFakeRateAnalyzerMVA(MegaBase):
         histos[folder+'/e3Eta'].Fill(getattr(row, self.mye3+'Eta'), weight)
         ##histos[folder+'/e3Phi'].Fill(getattr(row, self.mye3+'Phi'), weight)
         histos[folder+'/e3AbsEta'].Fill(abs(getattr(row, self.mye3+'Eta')), weight)
+        histos[folder+'/e3Pt_vs_e3AbsEta'].Fill(abs(getattr(row, self.mye3+'Eta')), getattr(row, self.mye3+'Pt'), weight)
 
         ##histos[folder+'/e1e2Mass'].Fill(getattr(row, self.mye1+'_'+self.mye2+'_Mass'), weight)
         ###histos[folder+'/tMtToPFMET'].Fill(row.tMtToPFMET,weight)
@@ -226,21 +228,21 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             cut_flow_trk.Fill('allEvents')
             if not selections.eSelection(row, 'e1'): continue
             cut_flow_trk.Fill('e1sel')
-            if not selections.lepton_id_iso(row, 'e1', 'eid13Tight_idiso02'): continue
+            if not selections.lepton_id_iso(row, 'e1', 'eid13Loose_idiso05'): continue
             if abs(row.e1Eta) > 1.4442 and abs(row.e1Eta < 1.566) : continue
             
             
             cut_flow_trk.Fill('e1IDiso')
             if not selections.eSelection(row, 'e2'): continue
             cut_flow_trk.Fill('e2sel')
-            if not selections.lepton_id_iso(row, 'e2', 'eid13Tight_idiso02'): continue
+            if not selections.lepton_id_iso(row, 'e2', 'eid13Loose_idiso05'): continue
             if abs(row.e2Eta) > 1.4442 and abs(row.e2Eta) < 1.566 : continue
             
 ##            cut_flow_trk.Fill('e2IDiso')
 ##            if not abs(row.e1_e2_Mass-91.2) < 20: continue
 ##            cut_flow_trk.Fill('ZMass')
             if not selections.eSelection(row, 'e3'): continue
-            if not selections.lepton_id_iso(row, 'e3', 'eid13Tight_idiso02'): continue #very loose loose eid13Tight_mvaLoose
+            if not selections.lepton_id_iso(row, 'e3', 'eid13Loose_idiso05'): continue #very loose loose eid13Tight_mvaLoose
             if abs(row.e3Eta) > 1.4442 and abs(row.e3Eta) < 1.566 : continue
 
             Zs= [(abs(row.e1_e2_Mass-91.2), ['e1', 'e2', 'e3']) , (abs(row.e2_e3_Mass-91.2), ['e2', 'e3', 'e1']), (abs(row.e1_e3_Mass-91.2), ['e1', 'e3', 'e2'])]
@@ -255,17 +257,16 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             cut_flow_trk.Fill('tsel')
 
 
-            if row.tauVetoPt20EleTight3MuLoose : continue 
-            #if row.tauHpsVetoPt20 : continue
-            if row.muVetoPt5IsoIdVtx : continue
-            if row.eVetoCicLooseIso : continue # change it with Loose
+            #if row.tauVetoPt20EleTight3MuLoose : continue 
+            #if row.muVetoPt5IsoIdVtx : continue
+            #if row.eVetoCicLooseIso : continue # change it with Loose
             
             #if not row.e3MtToMET < 50:  continue
-            cut_flow_trk.Fill('MtToMet')
+             cut_flow_trk.Fill('MtToMet')
             
-            #            if  etDR(row) < 1. : continue 
-            if (row.run, row.lumi, row.evt, row.e1Pt, row.e2Pt)==myevent: continue
-            myevent=(row.run, row.lumi, row.evt, row.e1Pt, row.e2Pt)
+            
+            #if (row.run, row.lumi, row.evt, row.e1Pt, row.e2Pt)==myevent: continue
+            #myevent=(row.run, row.lumi, row.evt, row.e1Pt, row.e2Pt)
 
             eleiso = 'eLoose'
             sign = 'ss' if row.e1_e2_SS else 'os'
