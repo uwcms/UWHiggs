@@ -257,12 +257,12 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             cut_flow_trk.Fill('tsel')
 
 
-            #if row.tauVetoPt20EleTight3MuLoose : continue 
-            #if row.muVetoPt5IsoIdVtx : continue
-            #if row.eVetoCicLooseIso : continue # change it with Loose
+            if row.tauVetoPt20EleTight3MuLoose : continue 
+            if row.muVetoPt5IsoIdVtx : continue
+            if row.eVetoCicLooseIso : continue # change it with Loose
             
             #if not row.e3MtToMET < 50:  continue
-             cut_flow_trk.Fill('MtToMet')
+            cut_flow_trk.Fill('MtToMet')
             
             
             #if (row.run, row.lumi, row.evt, row.e1Pt, row.e2Pt)==myevent: continue
@@ -276,7 +276,7 @@ class EleFakeRateAnalyzerMVA(MegaBase):
             folder=folder+'/'+str(int(jn))
             self.fill_histos(row, folder)
             
-            if selections.lepton_id_iso(row, 'e3', 'eid13Tight_etauiso01'):
+            if selections.lepton_id_iso(row, 'e3', 'eid13Loose_etauiso01'):
                 eleiso = 'eTigh' 
                 folder = sign+'/'+eleiso
                 self.fill_histos(row,  folder)
