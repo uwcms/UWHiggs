@@ -91,13 +91,24 @@ def parse_cgs_groups(file_path):
                 groups[match.group('groupname')] = [ i.strip() for i in match.group('includes').split(',') ]
     return groups
 
-def remove_empty_bins(histogram, weight):
+def remove_empty_bins(histogram, weight, first = 0, last = 0):
     ret  = histogram.Clone()
-    for i in range(ret.GetNbinsX() + 2):
+    last = last if last else ret.GetNbinsX() + 1
+    for i in range(first, last+1):
         if ret.GetBinContent(i) <= 0:
             ret.SetBinContent(i, 0.9200*weight) #MEAN WEIGHT
             ret.SetBinError(i, 1.8*weight)
     return ret                
+
+def find_fill_range(histo):
+    first, last = (0, 0)
+    for i in range(histo.GetNbinsX() + 2):
+        if histo.GetBinContent(i) > 0:
+            if first:
+                last = i
+            else:
+                first = i
+    return first, last
 
 class BasePlotter(Plotter):
     def __init__ (self, blind_region=None, forceLumi=-1, use_embedded=False): 
@@ -129,17 +140,19 @@ class BasePlotter(Plotter):
         super(BasePlotter, self).__init__(files, lumifiles, outputdir, blinder, forceLumi=forceLumi)
 
         self.mc_samples = [
-            'GluGluToHToTauTau_M-125*', 
-            'VBF_HToTauTau_M-125*',
+            'ggH[tWB][tWB]',
+            'vbfH[tWB][tWB]',
+            ##'GluGluToHToTauTau_M-125*', 
+            ##'VBF_HToTauTau_M-125*',
             'TTJets*',
             'T*_t*',
             '[WZ][WZ]Jets',
-            'Wplus*Jets_madgraph*', #superseded by fakes #add in case of optimization study
+            #'Wplus*Jets_madgraph*', #superseded by fakes #add in case of optimization study
             'Z*jets_M50_skimmedLL',
-            #'WH*HToTauTau',
-            #'WH*HToWW',
-            #'vbfHWW',
-            #'ggHWW',
+            ##'WH*HToTauTau',
+            ##'WH*HToWW',
+            ##'vbfHWW',
+            ##'ggHWW'#,
             'Z*jets_M50_skimmedTT'
             
         ]
@@ -151,14 +164,16 @@ class BasePlotter(Plotter):
                 'view' : embedded_view,
                 'weight' : weight
                 }
-        #self.views['fakes'] = {'view' : self.make_fakes('t')}
+        self.views['fakes'] = {'view' : self.make_fakes('t')} # comment in case of optimization study
         #self.views['efakes'] = {'view' : self.make_fakes('e')}
         #self.views['etfakes'] = {'view' : self.make_fakes('et')}
 
         #names must match with what defined in self.mc_samples
         self.datacard_names = {
-            'GluGluToHToTauTau_M-125*' : 'SMGG126'   , 
-            'VBF_HToTauTau_M-125*'     : 'SMVBF126'  ,
+            ##'GluGluToHToTauTau_M-125*' : 'SMGG126'   , 
+            ##'VBF_HToTauTau_M-125*'     : 'SMVBF126'  ,
+            'ggH[tWB][tWB]' : 'SMGG126'   , 
+            'vbfH[tWB][tWB]' : 'SMVBF126'   ,
             'TTJets*'                  : 'ttbar'     ,
             'T*_t*'                    : 'singlet'   ,
             '[WZ][WZ]Jets'             : 'diboson'   ,
@@ -167,23 +182,23 @@ class BasePlotter(Plotter):
             'Z*jets_M50_skimmedLL'     : 'zjetsother',
             'missing1'       : 'WWVBF126',
             'missing2'       : 'WWGG126',
-#            'vbfHWW'       :  'WWVBF126',
-#            'ggHWW'        :  'WWGG126',
+            ##'vbfHWW'       :  'WWVBF126',
+            ##'ggHWW'        :  'WWGG126',
             'ggHiggsToETau'  : 'LFVGG',
             'vbfHiggsToETau' : 'LFVVBF',
-           'Wplus*Jets_madgraph*' : 'wplusjets'#add in case of optimization study
-#            'fakes' : 'fakes',
-#            'WH*HToTauTau' : 'VHtautau'   , #"VHtautau",
-#            'WH*HToWW'     : 'VHWW'   , #"VHWW",
+#           'Wplus*Jets_madgraph*' : 'wplusjets'#add in case of optimization study
+            'fakes' : 'fakes',
+            ##'WH*HToTauTau' : 'VHtautau'   , #"VHtautau",
+            ##'WH*HToWW'     : 'VHWW'   , #"VHWW",
             ##'efakes' : 'efakes',
             ##'etfakes' : 'etfakes'            
         }
 
         self.sample_groups = {#parse_cgs_groups('card_config/cgs.0.conf')
             'fullsimbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 
-                            'diboson', 'zjetsother', 'wplusjets'],# 'WWVBF126', 'WWGG126','VHWW','VHtautau'], #wplusjets added in case of optimization study
+                            'diboson', 'zjetsother'],# 'WWVBF126', 'WWGG126','VHWW','VHtautau'], #wplusjets added in case of optimization study# 'wplusjets'],
             'simbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 'ztautau',
-                        'diboson', 'zjetsother', 'wplusjets'],#'WWVBF126', 'WWGG126','VHWW','VHtautau'],
+                        'diboson', 'zjetsother'],# 'WWVBF126', 'WWGG126','VHWW','VHtautau'],# 'wplusjets'],
             'realtau' : ['ztautau', 'SMGG126', 'SMVBF126'],# 'VHtautau'],
             }
 
@@ -200,18 +215,18 @@ class BasePlotter(Plotter):
                 '-' : dir_systematic('trm1s'),
                 'apply_to' : ['simbkg'],
             },
-##            'E_ID' : { ## to comment in case of optimization study
-##                'type' : 'yield',
-##                '+' : dir_systematic('eidp1s'),
-##                '-' : dir_systematic('eidm1s'),
-##                'apply_to' : ['simbkg'],
-##            },
-##            'E_Iso' : { ## to comment in case of optimization study
-##                'type' : 'yield',
-##                '+' : dir_systematic('eisop1s'),
-##                '-' : dir_systematic('eisom1s'),
-##                'apply_to' : ['simbkg'],
-##            },
+            'E_ID' : { ## to comment in case of optimization study
+                'type' : 'yield',
+                '+' : dir_systematic('eidp1s'),
+                '-' : dir_systematic('eidm1s'),
+                'apply_to' : ['simbkg'],
+            },
+            'E_Iso' : { ## to comment in case of optimization study
+                'type' : 'yield',
+                '+' : dir_systematic('eisop1s'),
+                '-' : dir_systematic('eisom1s'),
+                'apply_to' : ['simbkg'],
+            },
             'JES' : {
                 'type' : 'shape',
                 '+' : lambda x: os.path.join('jes_plus', x)+'_jes_plus' ,
@@ -224,24 +239,24 @@ class BasePlotter(Plotter):
                 '-' : lambda x: os.path.join('tes_minus', x)+'_tes_minus' ,
                 'apply_to' : ['realtau'],
             },
-            'EES' : {
+            ##'EES' : {
+            ##    'type' : 'shape',
+            ##    '+' : lambda x: os.path.join('ees_plus', x) +'_ees_plus' ,
+            ##    '-' : lambda x: os.path.join('ees_minus', x)+'_ees_minus' ,
+            ##    'apply_to' : ['simbkg'],
+            ##},
+            'UES' : { ## to comment in case of optimization study
                 'type' : 'shape',
-                '+' : lambda x: os.path.join('ees_plus', x) +'_ees_plus' ,
-                '-' : lambda x: os.path.join('ees_minus', x)+'_ees_minus' ,
-                'apply_to' : ['simbkg'],
+                '+' : name_systematic('_ues_plus'),
+                '-' : name_systematic('_ues_minus'),
+                'apply_to' : ['fullsimbkg'],
             },
-##            'UES' : { ## to comment in case of optimization study
-##                'type' : 'shape',
-##                '+' : name_systematic('_ues_plus'),
-##                '-' : name_systematic('_ues_minus'),
-##                'apply_to' : ['fullsimbkg'],
-##            },
-##            'shape_FAKES' : { ## to comment in case of optimization study
-##                'type' : 'shape',
-##                '+' : dir_systematic('Up'),
-##                '-' : dir_systematic('Down'),
-##                'apply_to' : ['fakes']#,'efakes','etfakes'],
-##            },
+            'shape_FAKES' : { ## to comment in case of optimization study
+                'type' : 'shape',
+                '+' : dir_systematic('Up'),
+                '-' : dir_systematic('Down'),
+                'apply_to' : ['fakes']#,'efakes','etfakes'],
+            },
             'stat' : {
                 'type' : 'stat',
                 '+' : lambda x: x,
@@ -643,7 +658,7 @@ class BasePlotter(Plotter):
         met_systematics = [ #it was without plus
             ('_jes_plus', '_jes_minus'), 
             ('_mes_plus', '_mes_minus'), 
-            ('_ees_plus', '_ees_minus'), 
+            ##('_ees_plus', '_ees_minus'), 
             ('_tes_plus', '_tes_minus'), 
             ('_ues_plus', '_ues_minus'), 
         ]
@@ -841,9 +856,12 @@ class BasePlotter(Plotter):
             ## Make sure we can see everything
             if data.GetMaximum() > mc_stack.GetMaximum():
                 mc_stack.SetMaximum(1.2*data.GetMaximum()) 
-
+                if lfvh.GetMaximum() > mc_stack.GetMaximum():
+                    mc_stack.SetMaximum(1.2*lfvh.GetMaximum()) 
+    
         if plot_data:
             self.add_legend([data, mc_stack], leftside, entries=len(mc_stack.GetHists())+1)
+            #self.add_legend([data, sig[0], sig[1], mc_stack], leftside, entries=len(mc_stack.GetHists())+3)
         else:
             self.add_legend([sig[0], sig[1], mc_stack], leftside, entries=len(mc_stack.GetHists())+1)
         if show_ratio and plot_data:
@@ -952,6 +970,16 @@ class BasePlotter(Plotter):
         output_dir.cd()
         path = os.path.join(folder,variable)
 
+        # Draw data
+        data_view = self.get_view('data')
+        if preprocess:
+            data_view = preprocess( data_view )
+        data_view = self.rebin_view(data_view, rebin)
+        data = data_view.Get(path)
+        first_filled, last_filled = find_fill_range(data)
+        data.SetName('data_obs')
+        data.Write()
+
         #make MC views with xsec error
         bkg_views  = dict(
             [(self.datacard_names[i], j) for i, j in zip(self.mc_samples, self.mc_views(rebin, preprocess))]
@@ -965,7 +993,8 @@ class BasePlotter(Plotter):
             mc_histo = view.Get(path)
             bkg_histos[name] = mc_histo.Clone()
             mc_histo = remove_empty_bins(
-                mc_histo, bkg_weights[name])
+                mc_histo, bkg_weights[name],
+                first_filled, last_filled)
             mc_histo.SetName(name)
             mc_histo.Write()
 
@@ -981,7 +1010,8 @@ class BasePlotter(Plotter):
             mc_histo = view.Get(path)
             bkg_histos[name] = mc_histo.Clone()
             mc_histo = remove_empty_bins(
-                mc_histo, weight)
+                mc_histo, weight,
+                first_filled, last_filled)
             mc_histo.SetName(name)
             mc_histo.Write()
           
@@ -1002,7 +1032,8 @@ class BasePlotter(Plotter):
         fake_shape = bkg_views['fakes'].Get(path)
         bkg_histos['fakes'] = fake_shape.Clone()
         fake_shape = remove_empty_bins(
-            fake_shape, bkg_weights['fakes'])
+            fake_shape, bkg_weights['fakes'],
+            first_filled, last_filled)
         fake_shape.SetName('fakes')
         fake_shape.Write()
 
@@ -1047,8 +1078,12 @@ class BasePlotter(Plotter):
                 elif info['type'] == 'shape':
                     #remove empty bins also for shapes 
                     #(but not in general to not spoil the stat uncertainties)
-                    up = remove_empty_bins(up, bkg_weights[target])
-                    down = remove_empty_bins(down, bkg_weights[target])
+                    up = remove_empty_bins(
+                        up, bkg_weights[target],
+                        first_filled, last_filled)
+                    down = remove_empty_bins(
+                        down, bkg_weights[target],
+                        first_filled, last_filled)
                     up.SetName('%s_%sUp' % (target, unc_name))
                     down.SetName('%s_%sDown' % (target, unc_name))
                     up.Write()
@@ -1390,7 +1425,7 @@ class BasePlotter(Plotter):
                     up.Rebin(nbins)
                     yield_val = up.GetBinContent(1)
                     yield_err = up.GetBinError(1)
-                    print target, yield_val, yield_err, 
+                    #print target, yield_val, yield_err, 
                     if yield_val==0:
                         unc_value = 0.
                     else:
