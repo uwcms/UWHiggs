@@ -142,17 +142,17 @@ class BasePlotter(Plotter):
         self.mc_samples = [
             'ggH[tWB][tWB]',
             'vbfH[tWB][tWB]',
-            ##'GluGluToHToTauTau_M-125*', 
-            ##'VBF_HToTauTau_M-125*',
+            #'GluGluToHToTauTau_M-125*', 
+            #'VBF_HToTauTau_M-125*',
             'TTJets*',
             'T*_t*',
             '[WZ][WZ]Jets',
             #'Wplus*Jets_madgraph*', #superseded by fakes #add in case of optimization study
             'Z*jets_M50_skimmedLL',
-            ##'WH*HToTauTau',
-            ##'WH*HToWW',
-            ##'vbfHWW',
-            ##'ggHWW'#,
+            #'WH*HToTauTau',
+            #'WH*HToWW',
+            #'vbfHWW',
+            #'ggHWW',
             'Z*jets_M50_skimmedTT'
             
         ]
@@ -170,8 +170,8 @@ class BasePlotter(Plotter):
 
         #names must match with what defined in self.mc_samples
         self.datacard_names = {
-            ##'GluGluToHToTauTau_M-125*' : 'SMGG126'   , 
-            ##'VBF_HToTauTau_M-125*'     : 'SMVBF126'  ,
+            #'GluGluToHToTauTau_M-125*' : 'SMGG126'   , 
+            #'VBF_HToTauTau_M-125*'     : 'SMVBF126'  ,
             'ggH[tWB][tWB]' : 'SMGG126'   , 
             'vbfH[tWB][tWB]' : 'SMVBF126'   ,
             'TTJets*'                  : 'ttbar'     ,
@@ -180,26 +180,26 @@ class BasePlotter(Plotter):
             'Z*jets_M50_skimmedTT'     : 'ztautau'   ,
             'ZetauEmbedded'            : 'ztautau'   ,
             'Z*jets_M50_skimmedLL'     : 'zjetsother',
-            'missing1'       : 'WWVBF126',
-            'missing2'       : 'WWGG126',
-            ##'vbfHWW'       :  'WWVBF126',
-            ##'ggHWW'        :  'WWGG126',
+            #'missing1'       : 'WWVBF126',
+            #'missing2'       : 'WWGG126',
+            #'vbfHWW'       :  'WWVBF126',
+            #'ggHWW'        :  'WWGG126',
             'ggHiggsToETau'  : 'LFVGG',
             'vbfHiggsToETau' : 'LFVVBF',
 #           'Wplus*Jets_madgraph*' : 'wplusjets'#add in case of optimization study
             'fakes' : 'fakes',
-            ##'WH*HToTauTau' : 'VHtautau'   , #"VHtautau",
-            ##'WH*HToWW'     : 'VHWW'   , #"VHWW",
+            #'WH*HToTauTau' : 'VH',#'VHtautau'   , #"VHtautau",
+            #'WH*HToWW'     :  'VH'#,'VHWW'   , #"VHWW",
             ##'efakes' : 'efakes',
             ##'etfakes' : 'etfakes'            
         }
 
         self.sample_groups = {#parse_cgs_groups('card_config/cgs.0.conf')
             'fullsimbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 
-                            'diboson', 'zjetsother'],# 'WWVBF126', 'WWGG126','VHWW','VHtautau'], #wplusjets added in case of optimization study# 'wplusjets'],
+                            'diboson', 'zjetsother'],#, 'WWVBF126', 'WWGG126','VHWW','VHtautau'], #wplusjets added in case of optimization study# 'wplusjets'],
             'simbkg' : ['SMGG126', 'SMVBF126', 'ttbar', 'singlet', 'ztautau',
-                        'diboson', 'zjetsother'],# 'WWVBF126', 'WWGG126','VHWW','VHtautau'],# 'wplusjets'],
-            'realtau' : ['ztautau', 'SMGG126', 'SMVBF126'],# 'VHtautau'],
+                        'diboson', 'zjetsother'],#, 'WWVBF126', 'WWGG126','VHWW','VHtautau'],# 'wplusjets'],
+            'realtau' : ['ztautau', 'SMGG126', 'SMVBF126'],#, 'VHtautau'],
             }
 
         self.systematics = {
@@ -215,18 +215,18 @@ class BasePlotter(Plotter):
                 '-' : dir_systematic('trm1s'),
                 'apply_to' : ['simbkg'],
             },
-            'E_ID' : { ## to comment in case of optimization study
-                'type' : 'yield',
-                '+' : dir_systematic('eidp1s'),
-                '-' : dir_systematic('eidm1s'),
-                'apply_to' : ['simbkg'],
-            },
-            'E_Iso' : { ## to comment in case of optimization study
-                'type' : 'yield',
-                '+' : dir_systematic('eisop1s'),
-                '-' : dir_systematic('eisom1s'),
-                'apply_to' : ['simbkg'],
-            },
+            ##'E_ID' : { ## to comment in case of optimization study
+            ##    'type' : 'yield',
+            ##    '+' : dir_systematic('eidp1s'),
+            ##    '-' : dir_systematic('eidm1s'),
+            ##    'apply_to' : ['simbkg'],
+            ##},
+            ##'E_Iso' : { ## to comment in case of optimization study
+            ##    'type' : 'yield',
+            ##    '+' : dir_systematic('eisop1s'),
+            ##    '-' : dir_systematic('eisom1s'),
+            ##    'apply_to' : ['simbkg'],
+            ##},
             'JES' : {
                 'type' : 'shape',
                 '+' : lambda x: os.path.join('jes_plus', x)+'_jes_plus' ,
