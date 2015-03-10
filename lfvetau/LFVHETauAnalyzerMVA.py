@@ -98,11 +98,6 @@ def deltaR(phi1, ph2, eta1, eta2):
     if (dphi>pi) : dphi = 2*pi-dphi
     return sqrt(deta*deta + dphi*dphi);
 
-def collmassZeeShift(row,weight):
-    ptnu =abs(row.type1_pfMet_Et*cos(deltaPhi(type1_pfMet_Phi, row.tPhi)))
-    visfrac = row.tPt/(row.tPt+ptnu)
-    #print met, cos(deltaPhi(metPhi, row.tPhi)), ptnu, visfrac
-    return (row.e_t_Mass / sqrt(visfrac))*weight
 
 
 def make_collmass_systematics(shift):
@@ -118,12 +113,13 @@ def make_collmass_systematics(shift):
         vis_mass = vismass(shift)
         return (vis_mass / sqrt(visfrac))
    
-    elif shift.startswith('etaufake'):
-
-        if shift== 'etaufakep1s':
-            return collmassZeeShift(row, 1.025)
+    elif shift.startswith('_Zee'):
+        ptnu =abs(row.type1_pfMet_Et*cos(deltaPhi(row.type1_pfMet_Phi, row.tPhi)))
+        visfrac = row.tPt/(row.tPt+ptnu)
+        if shift== '_Zee_p1s':
+            return  1.025*(row.e_t_Mass / sqrt(visfrac))
         else:
-            return collmassZeeShift(row,0.975)
+            return 0.975*(row.e_t_Mass / sqrt(visfrac))
      
     else:
         met_name = met(shift)
@@ -168,7 +164,9 @@ class LFVHETauAnalyzerMVA(MegaBase):
             'evetos': (['', 'eVetoUp', 'eVetoDown'] if self.is_mc else ['']),
             'met'  : (["_mes_plus", "_ues_plus", "_mes_minus", "_ues_minus"] if self.is_mc else []),
             'tes'  : (["", "_tes_plus", "_tes_minus"] if not self.is_data else ['']),
-            'ees'  : (["", "_ees_plus", '_ees_minus'] if not self.is_data else [''])
+            'ees'  : (["", "_ees_plus", '_ees_minus'] if not self.is_data else ['']),
+            'Zee'  : (['', '_Zee_p1s','Zee_m1s'] if self.is_Zee else ['']),
+           
     ####            'trig' : (['', 'trp1s', 'trm1s'] if not self.is_data else []),
     ####            'pu'   : (['', 'p1s', 'm1s'] if self.is_mc else []),
     ####            'eid'  : (['', 'eidp1s','eidm1s']   if False else []),
@@ -218,7 +216,7 @@ class LFVHETauAnalyzerMVA(MegaBase):
             #patch name
             postfix = shift
             self.hfunc['h_collmass_pfmet%s' % postfix] = make_collmass_systematics(shift)
-        for shift in self.systematics['etaufake']:
+        for shift in self.systematics['Zee']:
             #patch name
             postfix = shift
             self.hfunc['h_collmass_pfmet%s' % postfix] = make_collmass_systematics(shift)
