@@ -108,12 +108,12 @@ def collmassZeeShift(row,weight):
 def make_collmass_systematics(shift):
     
     if shift.startswith('tes'):
-        ptnu =abs(met*cos(deltaPhi(metphi, row.tPhi)))
+        ptnu =abs(met*cos(deltaPhi(metPhi, row.tPhi)))
         visfrac = tpt/(tpt+ptnu)
         vis_mass = vismass(shift)
         return (vis_mass / sqrt(visfrac))
     elif shift.startswith('ees'):
-        ptnu =abs(met*cos(deltaPhi(metphi, row.tPhi)))
+        ptnu =abs(met*cos(deltaPhi(metPhi, row.tPhi)))
         visfrac = tpt/(tpt+ptnu)
         vis_mass = vismass(shift)
         return (vis_mass / sqrt(visfrac))
