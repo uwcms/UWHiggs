@@ -23,3 +23,9 @@ docs/build/*
 callgrind.out.*
 *.orig
 *.rej
+*.*~
+*.out
+*_setup.py
+*Tree.pyx
+*Tree.cpp
+#*.*#

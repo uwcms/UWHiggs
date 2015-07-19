@@ -1,0 +1,24 @@
+gg0etau gghiggs  Theo_PDF_gg  1.097
+gg0etau vbfhiggs Theo_PDF_vbf 1.036
+
+gg0etau gghiggs  Theo_UE 1.04
+gg0etau vbfhiggs Theo_UE 1.1
+
+gg0etau gghiggs  Theo_Scale_gg  1.08
+gg0etau vbfhiggs Theo_Scale_vbf 1.04
+
+gg0etau ztautau    Norm_ZTauTau 1.03
+gg0etau ztautau    Norm_ZTauTau_et_0Jet_extra 1.05
+gg0etau zjetsother Norm_ZJetsOther 1.3
+
+#TODO: check eff electron
+gg0etau simulated  lumi 1.026
+gg0etau simulated  Effi_et_Tau 1.06
+gg0etau simulated  Effi_et_Tau_highPt 1.03
+
+gg0etau diboson Norm_DIBOSON    1.15
+gg0etau singlet Norm_TOP   1.10
+gg0etau ttbar   Norm_TT    1.10
+gg0etau fakes   Norm_FAKES 1.30
+
+

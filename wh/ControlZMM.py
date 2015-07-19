@@ -112,6 +112,9 @@ class ControlZMM(MegaBase):
         if row.m1_m2_Mass > 120: return False
         if not selections.muSelection(row, 'm1'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
         if not selections.muSelection(row, 'm2'): return False #applies basic selection (eta, pt > 10, DZ, pixHits, jetBTag)
+        if row.muVetoPt5IsoIdVtx: return False
+        if row.eVetoMVAIsoVtx:    return False
+        if row.tauVetoPt20Loose3HitsVtx: return False
         return True
 
     def obj1_id(self, row):

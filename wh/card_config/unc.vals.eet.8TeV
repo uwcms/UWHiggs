@@ -3,11 +3,14 @@
 # Example:
 # emu_vbf,emu_novbf,emu_boost     signal,EWK              lumi            1.045
 
-eetCatLow,eetCatHigh simulated lumi_8TeV      1.042
+eetCatLow,eetCatHigh simulated lumi_8TeV      1.026
+
+# Trigger uncertainties
+eetCatLow,eetCatHigh simulated CMS_trigger_e 1.01
 
 # Efficiency uncertainties
-eetCatLow,eetCatHigh simulated CMS_eff_e 1.02
-eetCatLow,eetCatHigh simulated CMS_eff_t 1.08
+eetCatLow,eetCatHigh simulated CMS_eff_e 1.04
+eetCatLow,eetCatHigh simulated CMS_eff_t 1.06
 
 # Scale uncertainties
 eetCatLow,eetCatHigh simulated CMS_scale_t 1.03
@@ -22,8 +25,8 @@ eetCatLow,eetCatHigh zz QCDscale_VV 1.023
 eetCatLow,eetCatHigh wz pdf_qqbar 1.04
 eetCatLow,eetCatHigh wz QCDscale_VV 1.04
 
-eetCatLow,eetCatHigh signal pdf_qqbar 1.034
-eetCatLow,eetCatHigh signal QCDscale_VH 1.004
+eetCatLow,eetCatHigh signal pdf_qqbar 1.023
+eetCatLow,eetCatHigh signal QCDscale_VH 1.01
 
 #charge flip uncertainty
 eetCatLow,eetCatHigh charge_fakes CMS_vhtt_eet_chargeFlip_8TeV 1.0
